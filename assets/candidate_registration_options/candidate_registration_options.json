@@ -1,0 +1,51 @@
+{
+    "Role": [
+      "Software Engineer",
+      "Product Manager",
+      "Data Scientist",
+      "UX Designer",
+      "Sales Representative",
+      "HR Manager",
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+    ],
+    "Industry": [
+      "Technology",
+      "Finance",
+      "Healthcare",
+      "Retail",
+      "Education",
+      "Manufacturing"
+    ],
+    "CompanySize": [
+      "Startup",
+      "Small Business",
+      "Mid-sized Company",
+      "Large Corporation",
+      "Enterprise",
+      "Multinational"
+    ],
+    "Oriented": [
+      "Customer-Centric",
+      "Innovation-Driven",
+      "Data-Driven",
+      "Growth-Oriented",
+      "Sustainability-Focused",
+      "Employee-Focused"
+    ],
+    "Culture": [
+      "Collaborative",
+      "Inclusive",
+      "Agile",
+      "Transparent",
+      "Fast-Paced",
+      "Quality-Focused"
+    ]
+}
+  
