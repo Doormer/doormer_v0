@@ -13,7 +13,7 @@ WebRouter defines the routing structure and logic specifically for the web platf
 
 class WebRouter {
   static final GoRouter router = GoRouter(
-    initialLocation: '/auth/registration',
+    initialLocation: '/auth',
     routes: [
       // Authentication Routes (Only for users NOT logged in)
       GoRoute(
