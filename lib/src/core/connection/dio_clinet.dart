@@ -8,7 +8,7 @@ import 'package:doormer/src/shared/sessions/bloc/global_session_bloc.dart';
 
 class DioClient {
   // Config constants
-  static const String _apiUrl = AppConfig.apiBaseUrl;
+  static final String _apiUrl = AppConfig.apiBaseUrl;
   static const Duration _connectTimeout =
       Duration(milliseconds: AppConfig.connectTimeout);
   static const Duration _receiveTimeout =
