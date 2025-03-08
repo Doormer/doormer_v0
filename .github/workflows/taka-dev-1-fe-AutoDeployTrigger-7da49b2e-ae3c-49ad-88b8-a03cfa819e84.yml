@@ -36,7 +36,7 @@ jobs:
         with:
           appSourcePath: ${{ github.workspace }}
           _dockerfilePathKey_: _dockerfilePath_
-          registryUrl: 
+          acrName: takadev1acr
           registryUsername: ${{ secrets.TAKADEV1FE_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.TAKADEV1FE_REGISTRY_PASSWORD }}
           containerAppName: taka-dev-1-fe
