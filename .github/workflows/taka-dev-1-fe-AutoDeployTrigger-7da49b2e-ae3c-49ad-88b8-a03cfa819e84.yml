@@ -21,8 +21,8 @@ jobs:
       contents: read #Required when GH token is used to authenticate with private repo
 
     steps:
-      - name: Checkout to the branch
-        uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
       - name: Azure Login
         uses: azure/login@v1
@@ -31,18 +31,23 @@ jobs:
           tenant-id: ${{ secrets.TAKADEV1FE_AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.TAKADEV1FE_AZURE_SUBSCRIPTION_ID }}
 
-      - name: Build and push container image to registry
+      - name: Log in to Azure Container Registry (ACR)
+        run: |
+          az acr login --name takadev1acr
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t takadev1acr.azurecr.io/taka-dev-1-fe:${{ github.sha }} -f Dockerfile .
+          docker push takadev1acr.azurecr.io/taka-dev-1-fe:${{ github.sha }}
+
+      - name: Deploy to Azure Container Apps
         uses: azure/container-apps-deploy-action@v2
         with:
-          appSourcePath: ${{ github.workspace }}
-          _dockerfilePathKey_: _dockerfilePath_
-          acrName: takadev1acr
-          registryUsername: ${{ secrets.TAKADEV1FE_REGISTRY_USERNAME }}
-          registryPassword: ${{ secrets.TAKADEV1FE_REGISTRY_PASSWORD }}
           containerAppName: taka-dev-1-fe
           resourceGroup: taka-dev
-          imageToBuild: default/[parameters('containerAppName')]:${{ github.sha }}
-          _buildArgumentsKey_: |
-            _buildArgumentsValues_
-
+          registryUrl: takadev1acr.azurecr.io
+          registryUsername: ${{ secrets.TAKADEV1FE_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.TAKADEV1FE_REGISTRY_PASSWORD }}
+          imageToDeploy: takadev1acr.azurecr.io/taka-dev-1-fe:${{ github.sha }}
+          dockerfilePath: Dockerfile
 
