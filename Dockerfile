@@ -8,13 +8,16 @@ WORKDIR /app
 COPY . .
 
 # Install dependencies and build Flutter Web
-RUN flutter pub get && flutter build web
+RUN flutter config --no-analytics \
+    && flutter doctor \
+    && flutter pub get \
+    && flutter build web
 
 # Use Nginx as the base image
 FROM nginx:alpine
 
 # Copy the Flutter Web build output to the Nginx web directory
-COPY build/web /usr/share/nginx/html
+COPY --from=build /app/build/web /usr/share/nginx/html
 
 # Expose port 80 to serve the app
 EXPOSE 80
