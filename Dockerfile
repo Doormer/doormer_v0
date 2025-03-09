@@ -16,6 +16,12 @@ RUN flutter config --no-analytics \
 # Use Nginx as the base image
 FROM nginx:alpine
 
+# Remove default Nginx configuration
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copy custom Nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 # Copy the Flutter Web build output to the Nginx web directory
 COPY --from=build /app/build/web /usr/share/nginx/html
 
