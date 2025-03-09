@@ -13,6 +13,9 @@ RUN flutter config --no-analytics \
     && flutter pub get \
     && flutter build web
 
+# Copy the .env file inside the container
+COPY assets/.env /app/build/web/assets/.env
+
 # Use Nginx as the base image
 FROM nginx:alpine
 

@@ -11,7 +11,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await dotenv.load(); // Load .env file
+  await dotenv.load(fileName: "assets/.env"); // Load .env file
 
   setUrlStrategy(PathUrlStrategy());
 
