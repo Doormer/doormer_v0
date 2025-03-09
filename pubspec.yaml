@@ -62,7 +62,6 @@ flutter:
   generate: true
 
   assets:
-    - assets/.env
     # Add assets from the images directory to the application.
     - assets/images/
     - assets/mock/mock_login_response.json

@@ -151,4 +151,4 @@ app.*.symbols
 .gclient_previous_sync_commits
 
 # .env
-assets/.env
+.env

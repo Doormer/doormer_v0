@@ -24,9 +24,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Create .env File
-        run: echo "${{ secrets.FLUTTER_ENV }}" > assets/.env
-
       - name: Azure Login
         uses: azure/login@v1
         with:
@@ -41,7 +38,12 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t takadev1acr.azurecr.io/taka-dev-1-fe:${{ github.sha }} -f Dockerfile .
+          docker build \
+            --build-arg API_BASE_URL=${{ secrets.API_BASE_URL }} \
+            --build-arg GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} \
+            -t takadev1acr.azurecr.io/taka-dev-1-fe:${{ github.sha }} \
+            -f Dockerfile .
+          
           docker push takadev1acr.azurecr.io/taka-dev-1-fe:${{ github.sha }}
 
       - name: Deploy to Azure Container Apps

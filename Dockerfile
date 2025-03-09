@@ -13,8 +13,14 @@ RUN flutter config --no-analytics \
     && flutter pub get \
     && flutter build web
 
-# Copy the .env file inside the container
-COPY assets/.env /app/build/web/assets/.env
+# Inject environment variables at build time
+ARG API_BASE_URL
+ARG GOOGLE_CLIENT_ID
+
+# Build Flutter Web with --dart-define
+RUN flutter pub get && flutter build web \
+  --dart-define=API_BASE_URL=${API_BASE_URL} \
+  --dart-define=GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
 
 # Use Nginx as the base image
 FROM nginx:alpine
