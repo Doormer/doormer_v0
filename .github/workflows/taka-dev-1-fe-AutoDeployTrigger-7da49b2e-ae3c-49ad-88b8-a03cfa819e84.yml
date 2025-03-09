@@ -34,9 +34,10 @@ jobs:
           tenant-id: ${{ secrets.TAKADEV1FE_AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.TAKADEV1FE_AZURE_SUBSCRIPTION_ID }}
 
-      - name: Log in to Azure Container Registry (ACR)
+      - name: Authenticate with ACR using Admin Credentials
         run: |
-          az acr login --name takadev1acr
+          echo "${{ secrets.TAKADEV1FE_REGISTRY_PASSWORD }}" | docker login takadev1acr.azurecr.io -u ${{ secrets.TAKADEV1FE_REGISTRY_USERNAME }} --password-stdin
+  
 
       - name: Build and Push Docker Image
         run: |
