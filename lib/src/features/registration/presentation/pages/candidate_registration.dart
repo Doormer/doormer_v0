@@ -343,7 +343,7 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
                                               .selectedItems,
                                           companySize: _priority3Controller
                                               .selectedItems,
-                                          oriented: _priority4Controller
+                                          expectation: _priority4Controller
                                               .selectedItems,
                                           culture: _priority5Controller
                                               .selectedItems,

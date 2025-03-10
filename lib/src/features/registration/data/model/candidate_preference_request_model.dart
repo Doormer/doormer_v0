@@ -4,14 +4,14 @@ class CandidatePreferenceRequestModel {
   final List<String> role;
   final List<String> industry;
   final List<String> companySize;
-  final List<String> oriented;
+  final List<String> expectation;
   final List<String> culture;
 
   CandidatePreferenceRequestModel({
     required this.role,
     required this.industry,
     required this.companySize,
-    required this.oriented,
+    required this.expectation,
     required this.culture,
   });
 
@@ -22,7 +22,7 @@ class CandidatePreferenceRequestModel {
       role: entity.role,
       industry: entity.industry,
       companySize: entity.companySize,
-      oriented: entity.oriented,
+      expectation: entity.expectation,
       culture: entity.culture,
     );
   }
@@ -33,7 +33,7 @@ class CandidatePreferenceRequestModel {
       role: role,
       industry: industry,
       companySize: companySize,
-      oriented: oriented,
+      expectation: expectation,
       culture: culture,
     );
   }
@@ -44,7 +44,7 @@ class CandidatePreferenceRequestModel {
       role: List<String>.from(json['role'] ?? []),
       industry: List<String>.from(json['industry'] ?? []),
       companySize: List<String>.from(json['companySize'] ?? []),
-      oriented: List<String>.from(json['oriented'] ?? []),
+      expectation: List<String>.from(json['expectation'] ?? []),
       culture: List<String>.from(json['culture'] ?? []),
     );
   }
@@ -55,7 +55,7 @@ class CandidatePreferenceRequestModel {
       'role': role,
       'industry': industry,
       'companySize': companySize,
-      'oriented': oriented,
+      'expectation': expectation,
       'culture': culture,
     };
   }
