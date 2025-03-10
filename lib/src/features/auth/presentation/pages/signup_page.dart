@@ -61,10 +61,10 @@ class SignUpPageWeb extends StatelessWidget {
                         }
                         if (state is AuthFailure) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
+                            const SnackBar(
                               content: Text(
-                                state.error,
-                                style: const TextStyle(
+                                'Sign Up Failed.',
+                                style: TextStyle(
                                   fontSize: 14,
                                 ),
                               ),
@@ -74,7 +74,7 @@ class SignUpPageWeb extends StatelessWidget {
                       },
                       builder: (context, state) {
                         return Container(
-                          width: 400, // Fixed width for phone browsers
+                          width: 360, // Fixed width for phone browsers
                           padding: const EdgeInsets.all(24.0), // Inner padding
                           decoration: BoxDecoration(
                             border: Border.all(color: AppColors.borders),
@@ -88,14 +88,14 @@ class SignUpPageWeb extends StatelessWidget {
                               children: [
                                 // Heading at the top center
                                 const Text(
-                                  'Create an account',
+                                  'Join Doormer Today!',
                                   textAlign: TextAlign.center,
                                   style: AppTextStyles.displayMedium,
                                 ),
                                 const SizedBox(height: 8),
                                 // Hint text below the heading
                                 Text(
-                                  'Sign up to get started with doormer',
+                                  'Sign up to get started with doormer.',
                                   textAlign: TextAlign.center,
                                   style: AppTextStyles.hintText,
                                 ),

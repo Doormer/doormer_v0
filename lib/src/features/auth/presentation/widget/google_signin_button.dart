@@ -58,10 +58,10 @@ class GoogleSignInButtonState extends State<GoogleSignInButton> {
               type: web.GSIButtonType.standard,
               theme: web.GSIButtonTheme.filledBlue,
               size: web.GSIButtonSize.large,
-              text: web.GSIButtonText.signupWith,
+              text: web.GSIButtonText.continueWith,
               shape: web.GSIButtonShape.rectangular,
               logoAlignment: web.GSIButtonLogoAlignment.left,
-              minimumWidth: 350, // Width in pixels as a string
+              minimumWidth: 360 - 48,
             ),
           ),
         ),
