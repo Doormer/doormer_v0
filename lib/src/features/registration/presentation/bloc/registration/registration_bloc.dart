@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/registration/domain/entity/candidate_details.dart';
 import 'package:doormer/src/features/registration/domain/entity/candidate_preference.dart';
 import 'package:doormer/src/features/registration/domain/usecase/registration_usecase.dart';
@@ -22,6 +23,7 @@ class RegistrationBloc extends Bloc<RegistrationEvent, RegistrationState> {
       RegisterCandidateEvent event, Emitter<RegistrationState> emit) async {
     emit(RegistrationLoading());
     try {
+      AppLogger.info(event.candidatePreference.companySize.toString());
       // Execute the use case that concurrently uploads files and registers candidate details.
       await registrationUseCase.registerCandidate(
         candidateDetails: event.candidateDetails,

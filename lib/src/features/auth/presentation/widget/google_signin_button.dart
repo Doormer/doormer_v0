@@ -50,9 +50,21 @@ class GoogleSignInButtonState extends State<GoogleSignInButton> {
         'GoogleSignInPlatform instance: ${GoogleSignInPlatform.instance.runtimeType}');
     return Column(
       children: [
-        // Render Google Sign-In button
-        (GoogleSignInPlatform.instance as web.GoogleSignInPlugin)
-            .renderButton(),
+        // Render Google Sign-In button with custom width
+        SizedBox(
+          child: (GoogleSignInPlatform.instance as web.GoogleSignInPlugin)
+              .renderButton(
+            configuration: web.GSIButtonConfiguration(
+              type: web.GSIButtonType.standard,
+              theme: web.GSIButtonTheme.filledBlue,
+              size: web.GSIButtonSize.large,
+              text: web.GSIButtonText.signupWith,
+              shape: web.GSIButtonShape.rectangular,
+              logoAlignment: web.GSIButtonLogoAlignment.left,
+              minimumWidth: 350, // Width in pixels as a string
+            ),
+          ),
+        ),
       ],
     );
   }

@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-/// A controller to hold the selected items of a MultiSelectDropdown.
+/// Controller to hold the selected items of a PriorityMultiSelectMenu/CategorySelectionCard.
 class MultiSelectController extends ValueNotifier<List<String>> {
   MultiSelectController([List<String>? initialValue])
       : super(initialValue ?? []);

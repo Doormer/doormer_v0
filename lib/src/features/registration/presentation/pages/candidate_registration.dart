@@ -6,7 +6,8 @@ import 'package:doormer/src/features/registration/domain/entity/candidate_detail
 import 'package:doormer/src/features/registration/domain/entity/candidate_preference.dart';
 import 'package:doormer/src/features/registration/presentation/bloc/document_upload/registration_document_bloc.dart';
 import 'package:doormer/src/features/registration/presentation/bloc/registration/registration_bloc.dart';
-import 'package:doormer/src/features/registration/presentation/widget/priority_multi_select_menu.dart';
+import 'package:doormer/src/features/registration/presentation/widget/category_selection_card.dart';
+import 'package:doormer/src/features/registration/utils/priority_multi_select_menu_controller.dart';
 import 'package:doormer/src/shared/widget/custom_textfield_web.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -22,27 +23,29 @@ class CandidateRegistrationPage extends StatefulWidget {
 }
 
 class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
-  // Shared configuration for multi-select menus
-  static const Color kMainColor = Colors.white;
-  static const Color kButtonColor = Colors.blue;
-  static const Color kBadgeColor = Colors.green;
-  static const Color kCircularAvatarTextColor = Colors.white;
+  // Unified configuration for border appearance.
+  static const Color unifiedBorderColor = Colors.grey;
+  static const double unifiedBorderThickness = 1.0;
+  // Unified configuration for button height.
+  static const double unifiedButtonHeight = 35.0;
+
+  // Shared configuration for multi-select menus.
   static const int kMaxSelection = 3;
 
-  // Controllers for the multi-select menus (Candidate Preferences)
+  // Controllers for the multi-select menus (Candidate Preferences).
   final MultiSelectController _priority1Controller = MultiSelectController();
   final MultiSelectController _priority2Controller = MultiSelectController();
   final MultiSelectController _priority3Controller = MultiSelectController();
   final MultiSelectController _priority4Controller = MultiSelectController();
   final MultiSelectController _priority5Controller = MultiSelectController();
 
-  // Controllers for candidate info text fields
+  // Controllers for candidate info text fields.
   final TextEditingController firstNameController = TextEditingController();
   final TextEditingController lastNameController = TextEditingController();
   final TextEditingController phoneNumberController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  // Local state is kept to update the UI accordingly.
+  // Local state to update the UI accordingly.
   bool isDocumentUploaded = false;
   bool showDocumentError = false;
   String? documentErrorMessage;
@@ -167,222 +170,216 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
             return Scaffold(
               body: SingleChildScrollView(
                 padding: const EdgeInsets.all(16.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Candidate Information Section
-                      const Text(
-                        'Enter Information',
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 24),
-                      CustomTextFieldWeb(
-                        label: 'First Name',
-                        //hintText: 'Enter your first name',
-                        controller: firstNameController,
-                        validator: (value) =>
-                            value!.isEmpty ? 'First name is required' : null,
-                      ),
-                      const SizedBox(height: 16),
-                      CustomTextFieldWeb(
-                        label: 'Last Name',
-                        //hintText: 'Enter your last name',
-                        controller: lastNameController,
-                        validator: (value) =>
-                            value!.isEmpty ? 'Last name is required' : null,
-                      ),
-                      const SizedBox(height: 24),
-                      CustomTextFieldWeb(
-                        label: 'Phone Number',
-                        //hintText: 'Enter your phone number',
-                        controller: phoneNumberController,
-                        keyboardType: TextInputType.phone,
-                        validator: _validateNZPhoneNumber,
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Upload CV (PDF) *Required',
-                        style: AppTextStyles.bodyMedium,
-                      ),
-                      // Show the uploaded file name if available.
-                      if (uploadedFileName != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            'Uploaded: $uploadedFileName',
-                            style: AppTextStyles.bodySmall,
+                child: Center(
+                  // Limit the maximum width to avoid stretching on large screens.
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 600),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Candidate Information Section
+                          const Text(
+                            'Enter Information',
+                            style: TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.bold),
                           ),
-                        ),
-                      const SizedBox(height: 8),
-                      Container(
-                        margin: EdgeInsets.symmetric(
-                          horizontal: MediaQuery.of(context).size.width * 0.01,
-                        ),
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.uploadButton,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4.0),
+                          const SizedBox(height: 24),
+                          // Passing unified border config to the text fields.
+                          CustomTextFieldWeb(
+                            label: 'First Name',
+                            controller: firstNameController,
+                            validator: (value) => value!.isEmpty
+                                ? 'First name is required'
+                                : null,
+                            borderColor: unifiedBorderColor,
+                            borderThickness: unifiedBorderThickness,
+                          ),
+                          const SizedBox(height: 16),
+                          CustomTextFieldWeb(
+                            label: 'Last Name',
+                            controller: lastNameController,
+                            validator: (value) =>
+                                value!.isEmpty ? 'Last name is required' : null,
+                            borderColor: unifiedBorderColor,
+                            borderThickness: unifiedBorderThickness,
+                          ),
+                          const SizedBox(height: 24),
+                          CustomTextFieldWeb(
+                            label: 'Phone Number',
+                            controller: phoneNumberController,
+                            keyboardType: TextInputType.phone,
+                            validator: _validateNZPhoneNumber,
+                            borderColor: unifiedBorderColor,
+                            borderThickness: unifiedBorderThickness,
+                          ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Upload CV (PDF) *Required',
+                            style: AppTextStyles.bodyMedium,
+                          ),
+                          if (uploadedFileName != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(
+                                'Uploaded: $uploadedFileName',
+                                style: AppTextStyles.bodySmall,
+                              ),
+                            ),
+                          const SizedBox(height: 8),
+                          Container(
+                            margin: EdgeInsets.symmetric(
+                              horizontal:
+                                  MediaQuery.of(context).size.width * 0.005,
+                            ),
+                            width: double.infinity,
+                            height: unifiedButtonHeight,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.uploadButton,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(4.0),
+                                ),
+                              ),
+                              onPressed: () => _pickFile(context),
+                              child: const Text(
+                                'Upload CV',
+                                style: AppTextStyles.buttonText,
+                              ),
                             ),
                           ),
-                          onPressed: () => _pickFile(context),
-                          child: const Text(
-                            'Upload CV',
-                            style: AppTextStyles.buttonText,
+                          const SizedBox(height: 32),
+                          // CategorySelectionCard widgets with unified border config
+                          // and unified button height.
+                          CategorySelectionCard(
+                            title: 'Roles',
+                            description: 'Choose your top 3 roles',
+                            options: List<String>.from(options['Role'] ?? []),
+                            controller: _priority1Controller,
+                            borderColor: unifiedBorderColor,
+                            borderThickness: unifiedBorderThickness,
+                            buttonHeight: unifiedButtonHeight,
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      // Roles Multi-Select
-                      const Text('Roles', style: AppTextStyles.bodyMedium),
-                      const SizedBox(height: 8),
-                      PriorityMultiSelectMenu(
-                        controller: _priority1Controller,
-                        options: List<String>.from(options['Role'] ?? []),
-                        maxSelection: kMaxSelection,
-                        dialogTitle: 'Choose your top 3 roles',
-                        hintText: 'Select roles...',
-                        mainColor: kMainColor,
-                        buttonColor: kButtonColor,
-                        badgeColor: kBadgeColor,
-                        circularAvatarTextColor: kCircularAvatarTextColor,
-                      ),
-                      const SizedBox(height: 16),
-                      // Industry Multi-Select
-                      const Text('Industry', style: AppTextStyles.bodyMedium),
-                      const SizedBox(height: 8),
-                      PriorityMultiSelectMenu(
-                        controller: _priority2Controller,
-                        options: List<String>.from(options['Industry'] ?? []),
-                        maxSelection: kMaxSelection,
-                        dialogTitle: 'Choose up to 3 industries',
-                        hintText: 'Select industries...',
-                        mainColor: kMainColor,
-                        buttonColor: kButtonColor,
-                        badgeColor: kBadgeColor,
-                        circularAvatarTextColor: kCircularAvatarTextColor,
-                      ),
-                      const SizedBox(height: 16),
-                      // Company Size Multi-Select
-                      const Text('Company Size',
-                          style: AppTextStyles.bodyMedium),
-                      const SizedBox(height: 8),
-                      PriorityMultiSelectMenu(
-                        controller: _priority3Controller,
-                        options:
-                            List<String>.from(options['CompanySize'] ?? []),
-                        maxSelection: kMaxSelection,
-                        dialogTitle: 'Choose up to 3 company sizes',
-                        hintText: 'Select company sizes...',
-                        mainColor: kMainColor,
-                        buttonColor: kButtonColor,
-                        badgeColor: kBadgeColor,
-                        circularAvatarTextColor: kCircularAvatarTextColor,
-                      ),
-                      const SizedBox(height: 16),
-                      // Oriented Multi-Select
-                      const Text('Oriented', style: AppTextStyles.bodyMedium),
-                      const SizedBox(height: 8),
-                      PriorityMultiSelectMenu(
-                        controller: _priority4Controller,
-                        options: List<String>.from(options['Oriented'] ?? []),
-                        maxSelection: kMaxSelection,
-                        dialogTitle: 'Choose your top 3 orientation',
-                        hintText: 'Select orientation...',
-                        mainColor: kMainColor,
-                        buttonColor: kButtonColor,
-                        badgeColor: kBadgeColor,
-                        circularAvatarTextColor: kCircularAvatarTextColor,
-                      ),
-                      const SizedBox(height: 16),
-                      // Culture Multi-Select
-                      const Text('Culture', style: AppTextStyles.bodyMedium),
-                      const SizedBox(height: 8),
-                      PriorityMultiSelectMenu(
-                        controller: _priority5Controller,
-                        options: List<String>.from(options['Culture'] ?? []),
-                        maxSelection: kMaxSelection,
-                        dialogTitle: 'Choose up to 3 cultures',
-                        hintText: 'Select cultures...',
-                        mainColor: kMainColor,
-                        buttonColor: kButtonColor,
-                        badgeColor: kBadgeColor,
-                        circularAvatarTextColor: kCircularAvatarTextColor,
-                      ),
-                      const SizedBox(height: 24),
-                      const SizedBox(height: 16),
-                      // Submit Button
-                      Container(
-                        margin: EdgeInsets.symmetric(
-                          horizontal: MediaQuery.of(context).size.width * 0.01,
-                        ),
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                isFormValid ? AppColors.primary : Colors.grey,
+                          const SizedBox(height: 32),
+                          CategorySelectionCard(
+                            title: 'Industry',
+                            description: 'Choose up to 3 industries',
+                            options:
+                                List<String>.from(options['Industry'] ?? []),
+                            controller: _priority2Controller,
+                            borderColor: unifiedBorderColor,
+                            borderThickness: unifiedBorderThickness,
+                            buttonHeight: unifiedButtonHeight,
                           ),
-                          onPressed: isFormValid
-                              ? () {
-                                  // Retrieve the document state from RegistrationDocumentBloc.
-                                  final docState = context
-                                      .read<RegistrationDocumentBloc>()
-                                      .state;
-                                  if (_formKey.currentState!.validate() &&
-                                      docState
-                                          is RegistrationDocumentUploaded) {
-                                    final candidateDetails = CandidateDetails(
-                                      firstName: firstNameController.text,
-                                      lastName: lastNameController.text,
-                                      mobileNumber: phoneNumberController.text,
-                                    );
-                                    final candidatePreference =
-                                        CandidatePreference(
-                                      role: _priority1Controller.selectedItems,
-                                      industry:
-                                          _priority2Controller.selectedItems,
-                                      companySize:
-                                          _priority3Controller.selectedItems,
-                                      oriented:
-                                          _priority4Controller.selectedItems,
-                                      culture:
-                                          _priority5Controller.selectedItems,
-                                    );
-                                    context
-                                        .read<RegistrationBloc>()
-                                        .add(RegisterCandidateEvent(
-                                          candidateDetails: candidateDetails,
-                                          candidatePreference:
-                                              candidatePreference,
-                                          cvBytes: docState.fileBytes,
-                                          cvFileName: docState.fileName,
+                          const SizedBox(height: 32),
+                          CategorySelectionCard(
+                            title: 'Company Size',
+                            description: 'Choose up to 3 company sizes',
+                            options:
+                                List<String>.from(options['CompanySize'] ?? []),
+                            controller: _priority3Controller,
+                            borderColor: unifiedBorderColor,
+                            borderThickness: unifiedBorderThickness,
+                            buttonHeight: unifiedButtonHeight,
+                          ),
+                          const SizedBox(height: 32),
+                          CategorySelectionCard(
+                            title: 'Expectations',
+                            description: 'Choose your top 3 expectations',
+                            options:
+                                List<String>.from(options['Expectation'] ?? []),
+                            controller: _priority4Controller,
+                            borderColor: unifiedBorderColor,
+                            borderThickness: unifiedBorderThickness,
+                            buttonHeight: unifiedButtonHeight,
+                          ),
+                          const SizedBox(height: 32),
+                          CategorySelectionCard(
+                            title: 'Culture',
+                            description: 'Choose up to 3 cultures',
+                            options:
+                                List<String>.from(options['Culture'] ?? []),
+                            controller: _priority5Controller,
+                            borderColor: unifiedBorderColor,
+                            borderThickness: unifiedBorderThickness,
+                            buttonHeight: unifiedButtonHeight,
+                          ),
+                          const SizedBox(height: 32),
+                          // Submit Button
+                          Container(
+                            margin: EdgeInsets.symmetric(
+                              horizontal:
+                                  MediaQuery.of(context).size.width * 0.01,
+                            ),
+                            width: double.infinity,
+                            height: unifiedButtonHeight,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isFormValid
+                                    ? AppColors.primary
+                                    : Colors.grey,
+                              ),
+                              onPressed: isFormValid
+                                  ? () {
+                                      final docState = context
+                                          .read<RegistrationDocumentBloc>()
+                                          .state;
+                                      if (_formKey.currentState!.validate() &&
+                                          docState
+                                              is RegistrationDocumentUploaded) {
+                                        final candidateDetails =
+                                            CandidateDetails(
+                                          firstName: firstNameController.text,
+                                          lastName: lastNameController.text,
+                                          mobileNumber:
+                                              phoneNumberController.text,
+                                        );
+                                        final candidatePreference =
+                                            CandidatePreference(
+                                          role: _priority1Controller
+                                              .selectedItems,
+                                          industry: _priority2Controller
+                                              .selectedItems,
+                                          companySize: _priority3Controller
+                                              .selectedItems,
+                                          oriented: _priority4Controller
+                                              .selectedItems,
+                                          culture: _priority5Controller
+                                              .selectedItems,
+                                        );
+                                        context
+                                            .read<RegistrationBloc>()
+                                            .add(RegisterCandidateEvent(
+                                              candidateDetails:
+                                                  candidateDetails,
+                                              candidatePreference:
+                                                  candidatePreference,
+                                              cvBytes: docState.fileBytes,
+                                              cvFileName: docState.fileName,
+                                            ));
+                                      } else {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(const SnackBar(
+                                          content: Text(
+                                            'Please complete all required fields and upload CV',
+                                          ),
                                         ));
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Please complete all required fields and upload CV',
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                }
-                              : null,
-                          child: const Text('Submit',
-                              style: AppTextStyles.buttonText),
-                        ),
+                                      }
+                                    }
+                                  : null,
+                              child: const Text('Submit',
+                                  style: AppTextStyles.buttonText),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             );
           }
-          // Fallback if state does not match any condition.
           return const SizedBox();
         },
       ),

@@ -19,6 +19,12 @@ class AppTextStyles {
     color: Colors.black,
   );
 
+  static const TextStyle titleMedium = TextStyle(
+    fontSize: 16.0,
+    fontWeight: FontWeight.bold,
+    color: Colors.black,
+  );
+
   static const TextStyle bodyLarge = TextStyle(
     fontSize: 16.0,
     fontWeight: FontWeight.normal,
@@ -45,10 +51,10 @@ class AppTextStyles {
   );
 
   // Dropdowns or Textfields
-  static const TextStyle hintText = TextStyle(
+  static TextStyle hintText = TextStyle(
     fontSize: 14.0,
     fontWeight: FontWeight.normal,
-    color: Colors.grey,
+    color: Colors.grey.shade600,
   );
 
   static const TextStyle selectedText = TextStyle(

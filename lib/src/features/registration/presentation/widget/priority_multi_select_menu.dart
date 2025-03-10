@@ -1,15 +1,8 @@
 import 'package:doormer/src/core/theme/app_colors.dart';
 import 'package:doormer/src/core/theme/app_text_styles.dart';
+import 'package:doormer/src/features/registration/presentation/widget/priority_multi_select_bottom_sheet.dart';
+import 'package:doormer/src/features/registration/utils/priority_multi_select_menu_controller.dart';
 import 'package:flutter/material.dart';
-
-/// Controller to hold the selected items of a PriorityMultiSelectMenu.
-class MultiSelectController extends ValueNotifier<List<String>> {
-  MultiSelectController([List<String>? initialValue])
-      : super(initialValue ?? []);
-
-  List<String> get selectedItems => value;
-  set selectedItems(List<String> items) => value = items;
-}
 
 /// A reusable widget that displays a dropdown for multi-selection.
 class PriorityMultiSelectMenu extends StatefulWidget {
@@ -70,7 +63,7 @@ class PriorityMultiSelectMenuState extends State<PriorityMultiSelectMenu> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: _openMultiSelectDialog,
+      onTap: _openMultiSelectBottomSheet,
       child: _buildDropdownContainer(),
     );
   }
@@ -80,7 +73,7 @@ class PriorityMultiSelectMenuState extends State<PriorityMultiSelectMenu> {
     return InputDecorator(
       decoration: InputDecoration(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
           borderSide: BorderSide(color: AppColors.borders),
@@ -136,23 +129,52 @@ class PriorityMultiSelectMenuState extends State<PriorityMultiSelectMenu> {
     );
   }
 
-  Future<void> _openMultiSelectDialog() async {
-    final List<String>? result = await showDialog<List<String>>(
+  Future<void> _openMultiSelectBottomSheet() async {
+    final List<String>? result = await showModalBottomSheet<List<String>>(
       context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (BuildContext context) {
-        return MultiSelectDialog(
-          options: widget.options,
-          initialSelected: selectedItems,
-          maxSelection: widget.maxSelection,
-          dialogTitle: widget.dialogTitle,
-          buttonColor: widget.buttonColor,
-          badgeColor: widget.badgeColor,
-          circularAvatarTextColor: widget.circularAvatarTextColor,
+        return FractionallySizedBox(
+          widthFactor:
+              1.0, // Ensures the bottom sheet spans the full window width.
+          child: Container(
+            height: MediaQuery.of(context).size.height * 0.75,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: MultiSelectBottomSheet(
+              options: widget.options,
+              initialSelected: selectedItems,
+              maxSelection: widget.maxSelection,
+              dialogTitle: widget.dialogTitle,
+              buttonColor: widget.buttonColor,
+              badgeColor: widget.badgeColor,
+              circularAvatarTextColor: widget.circularAvatarTextColor,
+              // Listener to update as selection changes inside the bottom sheet.
+              onSelectionChanged: (updatedSelection) {
+                setState(() {
+                  selectedItems = updatedSelection;
+                });
+                if (widget.controller != null) {
+                  widget.controller!.value = updatedSelection;
+                }
+                if (widget.onSelectionChanged != null) {
+                  widget.onSelectionChanged!(updatedSelection);
+                }
+              },
+            ),
+          ),
         );
       },
     );
 
     if (result != null) {
+      // When the bottom sheet is dismissed with a final result,
+      // update the local state, controller, and notify listeners.
       setState(() {
         selectedItems = result;
       });
@@ -160,126 +182,8 @@ class PriorityMultiSelectMenuState extends State<PriorityMultiSelectMenu> {
         widget.controller!.value = result;
       }
       if (widget.onSelectionChanged != null) {
-        widget.onSelectionChanged!(selectedItems);
+        widget.onSelectionChanged!(result);
       }
     }
-  }
-}
-
-/// Dialog for selecting multiple options.
-class MultiSelectDialog extends StatefulWidget {
-  final List<String> options;
-  final List<String> initialSelected;
-  final int maxSelection;
-  final String dialogTitle;
-  final Color buttonColor;
-  final Color badgeColor;
-  final Color circularAvatarTextColor;
-
-  const MultiSelectDialog({
-    super.key,
-    required this.options,
-    required this.initialSelected,
-    this.maxSelection = 3,
-    this.dialogTitle = 'Select options',
-    this.buttonColor = AppColors.primary,
-    this.badgeColor = AppColors.primary,
-    this.circularAvatarTextColor = AppColors.surface,
-  });
-
-  @override
-  MultiSelectDialogState createState() => MultiSelectDialogState();
-}
-
-class MultiSelectDialogState extends State<MultiSelectDialog> {
-  late List<String> tempSelected;
-  static const double _maxDialogWidth = 500;
-
-  @override
-  void initState() {
-    super.initState();
-    tempSelected = List.from(widget.initialSelected);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final double dialogWidth = constraints.maxWidth * 0.8 > _maxDialogWidth
-            ? _maxDialogWidth
-            : constraints.maxWidth * 0.8;
-        return AlertDialog(
-          backgroundColor: AppColors.background,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(4.0),
-          ),
-          title: Text(
-            widget.dialogTitle,
-            style: AppTextStyles.bodyLarge,
-          ),
-          content: SizedBox(
-            width: dialogWidth,
-            child: SingleChildScrollView(
-              child: ListBody(
-                children: _buildOptionsList(),
-              ),
-            ),
-          ),
-          actions: _buildDialogActions(),
-        );
-      },
-    );
-  }
-
-  List<Widget> _buildOptionsList() {
-    return widget.options.map((option) {
-      final int selectedIndex = tempSelected.indexOf(option);
-      return ListTile(
-        title: Text(
-          option,
-          style: AppTextStyles.bodyMedium,
-        ),
-        trailing:
-            selectedIndex != -1 ? _buildSelectionBadge(selectedIndex) : null,
-        onTap: () => _toggleOption(option, selectedIndex),
-      );
-    }).toList();
-  }
-
-  Widget _buildSelectionBadge(int selectedIndex) {
-    return CircleAvatar(
-      backgroundColor: widget.badgeColor,
-      radius: 14,
-      child: Text(
-        '${selectedIndex + 1}',
-        style: TextStyle(
-          color: widget.circularAvatarTextColor,
-          fontSize: 12,
-        ),
-      ),
-    );
-  }
-
-  void _toggleOption(String option, int selectedIndex) {
-    setState(() {
-      if (selectedIndex != -1) {
-        tempSelected.remove(option);
-      } else if (tempSelected.length < widget.maxSelection) {
-        tempSelected.add(option);
-      }
-    });
-  }
-
-  List<Widget> _buildDialogActions() {
-    return [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: Text('Cancel', style: TextStyle(color: widget.buttonColor)),
-      ),
-      TextButton(
-        onPressed: () => Navigator.pop(context, tempSelected),
-        child: Text('OK', style: TextStyle(color: widget.buttonColor)),
-      ),
-    ];
   }
 }
