@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/auth/domain/usecase/auth_usecase.dart';
 import 'package:doormer/src/shared/sessions/bloc/global_session_bloc.dart';
+import 'package:doormer/src/shared/user/entity/user.dart';
 import 'package:equatable/equatable.dart';
 
 part 'auth_event.dart';
@@ -34,44 +35,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     try {
       // Call signup method on authUseCase and await result
-      await authUseCase.signup(
+      final user = await authUseCase.signup(
         email: event.email,
         password: event.password,
       );
 
       // Dispatch SessionStarted to GlobalSessionBloc
-      globalSessionBloc.add(SessionStarted());
+      globalSessionBloc.add(SessionStarted(user));
 
       // Emit success state with user data upon successful signup
       emit(AuthSuccess());
       AppLogger.info('AuthSuccess state emitted.');
     } catch (e) {
-      String errorMessage;
-
-      // Check if the error is a Map and extract a message if available.
-      if (e is Map) {
-        // Try to extract the 'message' field if it exists.
-        final dynamic msg = e['message'];
-        AppLogger.error(msg);
-        if (msg is String) {
-          errorMessage = msg;
-        } else {
-          errorMessage = msg?.toString() ?? 'Signup failed';
-        }
-      } else {
-        // Otherwise, assume it's already a string-like error.
-        errorMessage = e.toString();
-      }
-
-      // Normalize the error message for the UI.
-      if (errorMessage.contains("user is already registered")) {
-        errorMessage = "User is already registered";
-      } else {
-        errorMessage = "Signup Failed";
-      }
-
-      emit(AuthFailure(errorMessage));
-      AppLogger.error('AuthFailure state emitted with error $errorMessage');
+      emit(AuthFailure(e.toString()));
+      AppLogger.error('AuthFailure state emitted with error ${e.toString()}');
     }
   }
 
@@ -90,10 +67,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       AppLogger.info('User acquired: $user');
       // Dispatch SessionStarted to GlobalSessionBloc
-      globalSessionBloc.add(SessionStarted());
+      globalSessionBloc.add(SessionStarted(user));
 
       // Emit success state with user data upon successful login
       emit(AuthSuccess());
+
       AppLogger.info('AuthSuccess state emitted');
     } catch (e, stackTrace) {
       // Handle errors by emitting failure state and logging the error
@@ -125,10 +103,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     try {
       // Perform Google sign-in (update the method with actual logic)
-      await authUseCase.signInWithGoogle(event.idToken);
+      final user = await authUseCase.signInWithGoogle(event.idToken);
       AppLogger.info('AuthUsecase called googleSignIn');
       // Dispatch SessionStarted to GlobalSessionBloc
-      globalSessionBloc.add(SessionStarted());
+      globalSessionBloc.add(SessionStarted(user));
 
       // Emit success state with user data
       emit(AuthSuccess());

@@ -8,7 +8,13 @@ import 'package:google_sign_in_platform_interface/google_sign_in_platform_interf
 import 'package:doormer/src/features/auth/presentation/bloc/auth_bloc.dart';
 
 class GoogleSignInButton extends StatefulWidget {
-  const GoogleSignInButton({super.key});
+  /// The minimum width for the Google Sign-In button.
+  final double minimumWidth;
+
+  const GoogleSignInButton({
+    super.key,
+    this.minimumWidth = 320 - 50,
+  });
 
   @override
   GoogleSignInButtonState createState() => GoogleSignInButtonState();
@@ -20,7 +26,6 @@ class GoogleSignInButtonState extends State<GoogleSignInButton> {
   @override
   void initState() {
     super.initState();
-
     // Retrieve the GoogleSignIn instance from serviceLocator
     _googleSignIn = serviceLocator<GoogleSignIn>();
 
@@ -50,7 +55,7 @@ class GoogleSignInButtonState extends State<GoogleSignInButton> {
         'GoogleSignInPlatform instance: ${GoogleSignInPlatform.instance.runtimeType}');
     return Column(
       children: [
-        // Render Google Sign-In button with custom width
+        // Render Google Sign-In button with custom minimum width from the widget property.
         SizedBox(
           child: (GoogleSignInPlatform.instance as web.GoogleSignInPlugin)
               .renderButton(
@@ -61,7 +66,7 @@ class GoogleSignInButtonState extends State<GoogleSignInButton> {
               text: web.GSIButtonText.continueWith,
               shape: web.GSIButtonShape.rectangular,
               logoAlignment: web.GSIButtonLogoAlignment.left,
-              minimumWidth: 360 - 48,
+              minimumWidth: widget.minimumWidth,
             ),
           ),
         ),

@@ -1,3 +1,4 @@
+import 'package:doormer/src/features/auth/presentation/pages/login_page.dart';
 import 'package:doormer/src/features/auth/presentation/pages/signup_page.dart';
 import 'package:doormer/src/features/registration/presentation/pages/candidate_registration.dart';
 import 'package:doormer/src/features/registration/presentation/pages/registration_complete_page.dart';
@@ -21,6 +22,10 @@ class WebRouter {
         builder: (context, state) => SignUpPageWeb(),
         routes: [
           GoRoute(path: 'signup', builder: (context, state) => SignUpPageWeb()),
+          GoRoute(
+            path: 'login',
+            builder: (context, state) => LoginPageWeb(),
+          ),
           GoRoute(
               path: 'registration',
               builder: (context, state) => const CandidateRegistrationPage()),

@@ -8,14 +8,14 @@ class UserModel {
   /// Creates a new UserModel instance from a JSON map.
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      userRegistrationStatus: json['userRegistrationStatus'] as int,
+      userRegistrationStatus: json['user_registration_status'] as int,
     );
   }
 
   /// Converts the UserModel instance to a JSON map.
   Map<String, dynamic> toJson() {
     return {
-      'userRegistrationStatus': userRegistrationStatus,
+      'user_registration_status': userRegistrationStatus,
     };
   }
 

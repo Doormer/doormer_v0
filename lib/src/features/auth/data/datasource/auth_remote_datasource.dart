@@ -40,13 +40,15 @@ class AuthRemoteDataSource {
 
   Future<LoginResponseModel> login(String email, String password) async {
     try {
+      final formData = FormData.fromMap({
+        'auth_type': 1,
+        'email': email,
+        'password': password,
+      });
+      AppLogger.info('Requesting Login: ${formData}');
       final response = await dio.post(
         '/login',
-        data: {
-          'auth_type': '1',
-          'email': email,
-          'password': password,
-        },
+        data: formData,
         options: Options(
           extra: {'skipAuth': true},
         ),
@@ -54,7 +56,7 @@ class AuthRemoteDataSource {
 
       AppLogger.info('Passing to UserModel.fromJson: ${response.data}');
       return LoginResponseModel.fromJson(response.data);
-    } catch (e, stacktrace) {
+    } on DioException catch (e, stacktrace) {
       AppLogger.error('Error in login API call: $e\n$stacktrace');
       throw Exception('Failed to login');
     }
@@ -74,7 +76,7 @@ class AuthRemoteDataSource {
     }
   }
 
-  // Exchange Google ID token for backend tokens.
+// Exchange Google ID token for backend tokens.
   Future<LoginResponseModel> verifyGoogleIdToken(String googleIdToken) async {
     AppLogger.info('Google Id Token: $googleIdToken');
     try {
@@ -84,11 +86,9 @@ class AuthRemoteDataSource {
       });
 
       final response = await dio.post(
-        '/signup', // Your backend endpoint
+        '/signup',
         data: formData,
-        options: Options(
-          extra: {'skipAuth': true},
-        ),
+        options: Options(extra: {'skipAuth': true}),
       );
 
       if (response.statusCode == 200) {
@@ -97,9 +97,39 @@ class AuthRemoteDataSource {
         throw Exception(
             'Failed to exchange Google ID token for backend tokens');
       }
-    } catch (e) {
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 400 &&
+          e.response!.data.toString().contains('user is already registered')) {
+        AppLogger.warn('User already registered, retrying with /login');
+        return _retryWithLogin(googleIdToken);
+      }
       throw Exception(
-          'Error while exchanging Google ID token: ${e.toString()}');
+          'Error while exchanging Google ID token: ${e.response?.data ?? e.toString()}');
+    }
+  }
+
+  // Retry with /login if user is already registered
+  Future<LoginResponseModel> _retryWithLogin(String googleIdToken) async {
+    try {
+      final formData = FormData.fromMap({
+        'auth_type': 2,
+        'token': googleIdToken,
+      });
+
+      final response = await dio.post(
+        '/login',
+        data: formData,
+        options: Options(extra: {'skipAuth': true}),
+      );
+
+      if (response.statusCode == 200) {
+        return LoginResponseModel.fromJson(response.data);
+      } else {
+        throw Exception('Failed to login after signup failure');
+      }
+    } on DioException catch (e) {
+      throw Exception(
+          'Login failed after signup failure: ${e.response?.data ?? e.toString()}');
     }
   }
 }

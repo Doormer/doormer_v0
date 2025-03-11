@@ -44,7 +44,7 @@ class GlobalSessionBloc extends Bloc<GlobalSessionEvent, GlobalSessionState> {
     try {
       emit(SessionLoadingState());
       await _sessionService.refreshToken();
-      emit(SessionActiveState());
+      emit(SessionActiveState(event.user));
     } catch (e) {
       emit(SessionExpiredState());
     }
@@ -55,7 +55,19 @@ class GlobalSessionBloc extends Bloc<GlobalSessionEvent, GlobalSessionState> {
     SessionStarted event, // Fix the event type here
     Emitter<GlobalSessionState> emit,
   ) async {
-    emit(SessionActiveState());
+    emit(SessionActiveState(event.user));
     AppLogger.info('Session Started');
+  }
+
+  /// Returns the current user if session is active, otherwise expires session.
+  User getUser() {
+    final currentState = state;
+
+    if (currentState is SessionActiveState) {
+      return currentState.user;
+    } else {
+      add(ExpireSession()); // Move the state to SessionExpiredState
+      throw Exception("User session is expired. Redirecting to login.");
+    }
   }
 }

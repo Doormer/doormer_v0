@@ -41,6 +41,7 @@ dependencies:
   flutter_dotenv:
   flutter_markdown: 
   flutter_html:
+  toastification:
 
 dev_dependencies:
   flutter_test:

@@ -28,7 +28,7 @@ class AuthRepositoryImpl implements AuthRepository {
         refreshToken: loginResponse.refreshToken,
       );
       // Return User entity
-      return User(userRegistrationStatus: 1);
+      return User(userRegistrationStatus: 0);
     } catch (error) {
       rethrow;
     }
@@ -37,17 +37,21 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<User> login({required String email, required String password}) async {
     // Call remote data source to get LoginResponseModel
-    final loginResponse = await remoteDataSource.login(email, password);
-    AppLogger.info('$loginResponse');
+    try {
+      final loginResponse = await remoteDataSource.login(email, password);
+      AppLogger.info('$loginResponse');
 
-    // Save tokens using SessionService
-    await sessionService.saveTokens(
-      accessToken: loginResponse.accessToken,
-      refreshToken: loginResponse.refreshToken,
-    );
+      // Save tokens using SessionService
+      await sessionService.saveTokens(
+        accessToken: loginResponse.accessToken,
+        refreshToken: loginResponse.refreshToken,
+      );
 
-    // Return User entity
-    return User(userRegistrationStatus: 1);
+      // Return User entity
+      return loginResponse.user!.toEntity();
+    } catch (error) {
+      rethrow;
+    }
   }
 
   @override
@@ -70,7 +74,8 @@ class AuthRepositoryImpl implements AuthRepository {
       accessToken: loginResponse.accessToken,
       refreshToken: loginResponse.refreshToken,
     );
-    // Return User entity
-    return User(userRegistrationStatus: 1);
+
+    // Check if loginResponse.user is not null
+    return loginResponse.user?.toEntity() ?? User(userRegistrationStatus: 0);
   }
 }
