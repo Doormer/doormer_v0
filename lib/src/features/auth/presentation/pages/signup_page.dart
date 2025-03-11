@@ -1,6 +1,7 @@
 import 'package:doormer/src/core/theme/app_colors.dart';
 import 'package:doormer/src/core/theme/app_text_styles.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
+import 'package:doormer/src/features/auth/presentation/widget/agreement_text_widget.dart';
 import 'package:doormer/src/features/auth/presentation/widget/signup_button.dart';
 import 'package:doormer/src/features/auth/utils/auth_validators.dart';
 import 'package:flutter/material.dart';
@@ -99,6 +100,8 @@ class SignUpPageWeb extends StatelessWidget {
                                   textAlign: TextAlign.center,
                                   style: AppTextStyles.hintText,
                                 ),
+                                const SizedBox(height: 24),
+                                const AgreementTextWidget(),
                                 const SizedBox(height: 24),
                                 // Google button at the top
                                 const Center(child: GoogleSignInButton()),
