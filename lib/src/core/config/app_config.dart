@@ -10,4 +10,7 @@ class AppConfig {
   // Google OAuth Client
   static String get googleClientId =>
       const String.fromEnvironment('GOOGLE_CLIENT_ID');
+
+  static const String surveyURL =
+      'https://forms.office.com/Pages/ResponsePage.aspx?id=DQSIkWdsW0yxEjajBLZtrQAAAAAAAAAAAAMAALkU5oxUM002V0xCM1RRTzFIUVJEU0xRNDJMSlpTSC4u';
 }
