@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:doormer/src/features/registration/data/datasource/registration_local_datasource.dart';
-import 'package:doormer/src/features/registration/data/datasource/registration_remote_datasource,dart';
+import 'package:doormer/src/features/registration/data/datasource/registration_remote_datasource.dart';
 import 'package:doormer/src/features/registration/data/repository/registration_repository_impl.dart';
 import 'package:doormer/src/features/registration/domain/repository/registration_repository.dart';
 import 'package:doormer/src/features/registration/domain/usecase/registration_usecase.dart';

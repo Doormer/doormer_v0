@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:doormer/src/features/registration/data/datasource/registration_local_datasource.dart';
-import 'package:doormer/src/features/registration/data/datasource/registration_remote_datasource,dart';
+import 'package:doormer/src/features/registration/data/datasource/registration_remote_datasource.dart';
 import 'package:doormer/src/features/registration/data/model/candidate_preference_request_model.dart';
 import 'package:doormer/src/features/registration/data/model/candidate_registration_request_model.dart';
 import 'package:doormer/src/features/registration/domain/entity/candidate_details.dart';
