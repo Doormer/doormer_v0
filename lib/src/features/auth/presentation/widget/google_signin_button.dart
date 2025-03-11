@@ -11,9 +11,13 @@ class GoogleSignInButton extends StatefulWidget {
   /// The minimum width for the Google Sign-In button.
   final double minimumWidth;
 
+  /// The text configuration for the button.
+  final web.GSIButtonText buttonText;
+
   const GoogleSignInButton({
     super.key,
     this.minimumWidth = 320 - 50,
+    this.buttonText = web.GSIButtonText.continueWith,
   });
 
   @override
@@ -55,7 +59,7 @@ class GoogleSignInButtonState extends State<GoogleSignInButton> {
         'GoogleSignInPlatform instance: ${GoogleSignInPlatform.instance.runtimeType}');
     return Column(
       children: [
-        // Render Google Sign-In button with custom minimum width from the widget property.
+        // Render Google Sign-In button with custom minimum width and text from the widget properties.
         SizedBox(
           child: (GoogleSignInPlatform.instance as web.GoogleSignInPlugin)
               .renderButton(
@@ -63,7 +67,7 @@ class GoogleSignInButtonState extends State<GoogleSignInButton> {
               type: web.GSIButtonType.standard,
               theme: web.GSIButtonTheme.filledBlue,
               size: web.GSIButtonSize.large,
-              text: web.GSIButtonText.continueWith,
+              text: widget.buttonText,
               shape: web.GSIButtonShape.rectangular,
               logoAlignment: web.GSIButtonLogoAlignment.left,
               minimumWidth: widget.minimumWidth,

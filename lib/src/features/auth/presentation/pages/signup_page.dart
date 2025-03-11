@@ -1,3 +1,4 @@
+import 'dart:html' as html;
 import 'package:doormer/src/core/theme/app_colors.dart';
 import 'package:doormer/src/core/theme/app_text_styles.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
@@ -13,6 +14,7 @@ import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/shared/sessions/bloc/global_session_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_sign_in_web/google_sign_in_web.dart';
 import 'package:toastification/toastification.dart';
 
 class SignUpPageWeb extends StatelessWidget {
@@ -43,6 +45,21 @@ class SignUpPageWeb extends StatelessWidget {
       child: Scaffold(
         body: LayoutBuilder(
           builder: (context, constraints) {
+            // Determine if the device is a phone by checking the user agent.
+            bool isPhone;
+            try {
+              final userAgent = html.window.navigator.userAgent.toLowerCase();
+              isPhone = userAgent.contains('iphone') ||
+                  userAgent.contains('android') ||
+                  userAgent.contains('mobile');
+            } catch (e) {
+              // Fallback: use constraints as a heuristic.
+              isPhone = constraints.maxWidth < 400;
+            }
+            // Set container and Google button widths based on device type.
+            final containerWidth = isPhone ? 320.0 : 400.0;
+            final googleButtonMinWidth = isPhone ? 320.0 - 50 : 400.0 - 50;
+
             return SingleChildScrollView(
               child: ConstrainedBox(
                 constraints: BoxConstraints(
@@ -90,13 +107,6 @@ class SignUpPageWeb extends StatelessWidget {
                         }
                       },
                       builder: (context, state) {
-                        // Define a breakpoint. Here, if the available width is less than 400, we'll consider it a smaller device.
-                        final isSmallScreen = constraints.maxWidth < 380;
-                        // Set the container width: you might use 340 on small screens and 400 on larger ones.
-                        final containerWidth = isSmallScreen ? 340.0 : 380.0;
-                        // Adjust the minimum width for the Google button accordingly.
-                        final googleButtonMinWidth =
-                            isSmallScreen ? 320.0 - 50 : 380.0 - 50;
                         return Container(
                           width: containerWidth,
                           padding: const EdgeInsets.all(24.0),
@@ -129,11 +139,13 @@ class SignUpPageWeb extends StatelessWidget {
                                   child: AgreementTextWidget(),
                                 ),
                                 const SizedBox(height: 24),
-                                // Google button at the top
+                                // Google Sign-In button with dynamic minimum width.
                                 Center(
-                                    child: GoogleSignInButton(
-                                  minimumWidth: googleButtonMinWidth,
-                                )),
+                                  child: GoogleSignInButton(
+                                    minimumWidth: googleButtonMinWidth,
+                                    buttonText: GSIButtonText.signupWith,
+                                  ),
+                                ),
                                 const SizedBox(height: 24),
                                 // Divider row
                                 const Row(
@@ -193,7 +205,7 @@ class SignUpPageWeb extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(height: 24),
-                                // Login up redirect
+                                // Login redirect
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
