@@ -38,7 +38,7 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build \
+          docker build --no-cache \
             --build-arg API_BASE_URL=${{ secrets.API_BASE_URL }} \
             --build-arg GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} \
             -t takadev1acr.azurecr.io/taka-dev-1-fe:${{ github.sha }} \

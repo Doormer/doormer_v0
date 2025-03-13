@@ -18,7 +18,7 @@ ARG API_BASE_URL
 ARG GOOGLE_CLIENT_ID
 
 # Build Flutter Web with --dart-define
-RUN flutter pub get && flutter build web \
+RUN flutter clean && flutter pub get && flutter build web \
   --dart-define=API_BASE_URL=${API_BASE_URL} \
   --dart-define=GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
 
