@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:doormer/src/core/connection/dio_clinet.dart';
+import 'package:doormer/src/core/connection/dio_client.dart';
 import 'package:doormer/src/core/services/sessions/session_service.dart';
 import 'package:doormer/src/core/services/sessions/session_service_impl.dart';
 import 'package:doormer/src/core/utils/token_storage/token_storage.dart';
