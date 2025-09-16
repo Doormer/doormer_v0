@@ -122,14 +122,14 @@ class SignUpPageWeb extends StatelessWidget {
                               children: [
                                 // Heading at the top center
                                 const Text(
-                                  'Join Doormer Today!',
+                                  'Join Today!',
                                   textAlign: TextAlign.center,
                                   style: AppTextStyles.displayMedium,
                                 ),
                                 const SizedBox(height: 8),
                                 // Hint text below the heading
                                 Text(
-                                  'Sign up to get started with doormer.',
+                                  'Sign up to get started',
                                   textAlign: TextAlign.center,
                                   style: AppTextStyles.hintText,
                                 ),
