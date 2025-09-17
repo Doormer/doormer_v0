@@ -32,4 +32,84 @@ class CustomToast {
       showProgressBar: showProgressBar,
     );
   }
+
+  /// Displays a success toast notification.
+  static void showSuccessToast({
+    required BuildContext context,
+    required String title,
+    required String description,
+    required ToastificationType type,
+    Duration autoCloseDuration = const Duration(seconds: 3),
+  }) {
+    toastification.show(
+      context: context,
+      title: title,
+      description: description,
+      autoCloseDuration: autoCloseDuration,
+      type: ToastificationType.success,
+      style: ToastificationStyle.minimal,
+      alignment: Alignment.topRight,
+      showProgressBar: true,
+    );
+  }
+
+  /// Displays an error toast notification.
+  static void showErrorToast({
+    required BuildContext context,
+    required String title,
+    required String description,
+    required ToastificationType type,
+    Duration autoCloseDuration = const Duration(seconds: 4),
+  }) {
+    toastification.show(
+      context: context,
+      title: title,
+      description: description,
+      autoCloseDuration: autoCloseDuration,
+      type: ToastificationType.error,
+      style: ToastificationStyle.minimal,
+      alignment: Alignment.topRight,
+      showProgressBar: true,
+    );
+  }
+
+  /// Displays an info toast notification.
+  static void showInfoToast({
+    required BuildContext context,
+    required String title,
+    required String description,
+    required ToastificationType type,
+    Duration autoCloseDuration = const Duration(seconds: 3),
+  }) {
+    toastification.show(
+      context: context,
+      title: title,
+      description: description,
+      autoCloseDuration: autoCloseDuration,
+      type: ToastificationType.info,
+      style: ToastificationStyle.minimal,
+      alignment: Alignment.topRight,
+      showProgressBar: true,
+    );
+  }
+
+  /// Displays a warning toast notification.
+  static void showWarningToast({
+    required BuildContext context,
+    required String title,
+    required String description,
+    required ToastificationType type,
+    Duration autoCloseDuration = const Duration(seconds: 3),
+  }) {
+    toastification.show(
+      context: context,
+      title: title,
+      description: description,
+      autoCloseDuration: autoCloseDuration,
+      type: ToastificationType.warning,
+      style: ToastificationStyle.minimal,
+      alignment: Alignment.topRight,
+      showProgressBar: true,
+    );
+  }
 }

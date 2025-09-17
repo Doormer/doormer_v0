@@ -13,6 +13,18 @@ class AppTextStyles {
     color: Colors.black,
   );
 
+  static const TextStyle headingLarge = TextStyle(
+    fontSize: 28.0,
+    fontWeight: FontWeight.bold,
+    color: Colors.black,
+  );
+
+  static const TextStyle headingMedium = TextStyle(
+    fontSize: 24.0,
+    fontWeight: FontWeight.w600,
+    color: Colors.black,
+  );
+
   static const TextStyle titleLarge = TextStyle(
     fontSize: 20.0,
     fontWeight: FontWeight.bold,
