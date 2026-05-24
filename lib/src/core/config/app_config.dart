@@ -1,6 +1,9 @@
 class AppConfig {
   // API configurations
-  static String get apiBaseUrl => const String.fromEnvironment('API_BASE_URL');
+  static String get apiBaseUrl => const String.fromEnvironment(
+        'API_BASE_URL',
+        defaultValue: 'http://localhost:8888',
+      );
   static const int connectTimeout = 15000; // in milliseconds
   static const int receiveTimeout = 15000;
 
