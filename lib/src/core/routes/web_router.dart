@@ -1,6 +1,5 @@
 import 'package:doormer/src/features/auth/presentation/pages/login_page.dart';
 import 'package:doormer/src/features/auth/presentation/pages/signup_page.dart';
-import 'package:doormer/src/features/mistake_mirror/presentation/pages/mistake_mirror_page.dart';
 import 'package:doormer/src/features/registration/presentation/pages/candidate_registration.dart';
 import 'package:doormer/src/features/registration/presentation/pages/registration_complete_page.dart';
 import 'package:flutter/material.dart';
@@ -33,9 +32,6 @@ class WebRouter {
           GoRoute(
               path: 'registration-complete',
               builder: (context, state) => const RegistrationCompletePage()),
-          GoRoute(
-              path: 'mistake-mirror',
-              builder: (context, state) => const MistakeMirrorPage()),
         ],
       ),
     ],
