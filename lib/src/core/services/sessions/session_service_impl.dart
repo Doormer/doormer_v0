@@ -36,7 +36,7 @@ class SessionServiceImpl implements SessionService {
     AppLogger.info('User logged out and tokens cleared.');
 
     //TODO: Notify the app about the logout
-}
+  }
 
   @override
   Future<String?> refreshToken() async {
@@ -64,10 +64,12 @@ class SessionServiceImpl implements SessionService {
       AppLogger.info('Tokens refreshed successfully.');
       return newAccessToken;
     } on DioException catch (e, stackTrace) {
-      AppLogger.error('Failed to refresh token', error: e, stackTrace: stackTrace);
+      AppLogger.error('Failed to refresh token',
+          error: e, stackTrace: stackTrace);
       throw AuthFailure('Failed to refresh token');
     } catch (e, stackTrace) {
-      AppLogger.error('Unexpected error while refreshing token', error: e, stackTrace: stackTrace);
+      AppLogger.error('Unexpected error while refreshing token',
+          error: e, stackTrace: stackTrace);
       throw UnknownFailure('An unexpected error occurred');
     }
   }

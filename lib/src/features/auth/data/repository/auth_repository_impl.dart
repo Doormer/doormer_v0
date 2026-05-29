@@ -20,7 +20,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<User> signup({required String email, required String password}) async {
     final loginResponse = await remoteDataSource.signup(email, password);
-    
+
     try {
       await sessionService.saveTokens(
         accessToken: loginResponse.accessToken,
@@ -29,7 +29,8 @@ class AuthRepositoryImpl implements AuthRepository {
     } on Failure {
       rethrow;
     } catch (e, stackTrace) {
-      AppLogger.error('Failed to save session tokens after signup', error: e, stackTrace: stackTrace);
+      AppLogger.error('Failed to save session tokens after signup',
+          error: e, stackTrace: stackTrace);
       throw DatabaseFailure('Session could not be saved. Please try again.');
     }
     return User(userRegistrationStatus: 0);
@@ -46,7 +47,8 @@ class AuthRepositoryImpl implements AuthRepository {
     } on Failure {
       rethrow;
     } catch (e, stackTrace) {
-      AppLogger.error('Failed to save session tokens after login', error: e, stackTrace: stackTrace);
+      AppLogger.error('Failed to save session tokens after login',
+          error: e, stackTrace: stackTrace);
       throw DatabaseFailure('Session could not be saved. Please try again.');
     }
     return loginResponse.user!.toEntity();
@@ -74,7 +76,8 @@ class AuthRepositoryImpl implements AuthRepository {
     } on Failure {
       rethrow;
     } catch (e, stackTrace) {
-      AppLogger.error('Failed to save session tokens after Google sign-in', error: e, stackTrace: stackTrace);
+      AppLogger.error('Failed to save session tokens after Google sign-in',
+          error: e, stackTrace: stackTrace);
       throw DatabaseFailure('Session could not be saved. Please try again.');
     }
     return loginResponse.user?.toEntity() ?? User(userRegistrationStatus: 0);

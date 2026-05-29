@@ -21,13 +21,17 @@ class RegistrationRemoteDataSource {
       if (response.statusCode == 200 && response.data != null) {
         return response.data["signed_upload_destination_url"];
       } else {
-        AppLogger.error("Failed to get SAS URL: ${response.statusCode} - ${response.data}");
-        throw ServerFailure('Failed to prepare your CV upload. Please try again.');
+        AppLogger.error(
+            "Failed to get SAS URL: ${response.statusCode} - ${response.data}");
+        throw ServerFailure(
+            'Failed to prepare your CV upload. Please try again.');
       }
     } on DioException catch (e, stackTrace) {
-      AppLogger.error('Failed to get SAS URL', error: e, stackTrace: stackTrace);
+      AppLogger.error('Failed to get SAS URL',
+          error: e, stackTrace: stackTrace);
       throw dioExceptionToFailure(e,
-          userFacingMessage: 'Failed to prepare your CV upload. Please try again.');
+          userFacingMessage:
+              'Failed to prepare your CV upload. Please try again.');
     }
   }
 
@@ -52,12 +56,12 @@ class RegistrationRemoteDataSource {
       } else {
         AppLogger.error(
             'Upload failed with status ${response.statusCode}: ${response.data}');
-        throw ServerFailure(
-            'CV upload failed. Please try again.');
+        throw ServerFailure('CV upload failed. Please try again.');
       }
     } on DioException catch (e, stackTrace) {
       AppLogger.error('File upload failed', error: e, stackTrace: stackTrace);
-      throw dioExceptionToFailure(e, userFacingMessage: 'CV upload failed. Please try again.');
+      throw dioExceptionToFailure(e,
+          userFacingMessage: 'CV upload failed. Please try again.');
     }
   }
 
@@ -82,12 +86,13 @@ class RegistrationRemoteDataSource {
       } else {
         AppLogger.error(
             'Upload failed with status ${response.statusCode}: ${response.data}');
-        throw ServerFailure(
-            'Preferences upload failed. Please try again.');
+        throw ServerFailure('Preferences upload failed. Please try again.');
       }
     } on DioException catch (e, stackTrace) {
-      AppLogger.error('JSON file upload failed', error: e, stackTrace: stackTrace);
-      throw dioExceptionToFailure(e, userFacingMessage: 'Preferences upload failed. Please try again.');
+      AppLogger.error('JSON file upload failed',
+          error: e, stackTrace: stackTrace);
+      throw dioExceptionToFailure(e,
+          userFacingMessage: 'Preferences upload failed. Please try again.');
     }
   }
 
@@ -101,8 +106,10 @@ class RegistrationRemoteDataSource {
         data: formData,
       );
     } on DioException catch (e, stackTrace) {
-      AppLogger.error('Candidate registration failed', error: e, stackTrace: stackTrace);
-      throw dioExceptionToFailure(e, userFacingMessage: 'Registration failed. Please try again.');
+      AppLogger.error('Candidate registration failed',
+          error: e, stackTrace: stackTrace);
+      throw dioExceptionToFailure(e,
+          userFacingMessage: 'Registration failed. Please try again.');
     }
   }
 }

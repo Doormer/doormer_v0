@@ -52,7 +52,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       AppLogger.error('Signup failed', error: f, stackTrace: stackTrace);
     } catch (e, stackTrace) {
       emit(AuthError('An unexpected error occurred'));
-      AppLogger.error('Signup unexpected error', error: e, stackTrace: stackTrace);
+      AppLogger.error('Signup unexpected error',
+          error: e, stackTrace: stackTrace);
     }
   }
 
@@ -82,7 +83,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       AppLogger.error('Login failed', error: f, stackTrace: stackTrace);
     } catch (e, stackTrace) {
       emit(AuthError('An unexpected error occurred'));
-      AppLogger.error('Login unexpected error', error: e, stackTrace: stackTrace);
+      AppLogger.error('Login unexpected error',
+          error: e, stackTrace: stackTrace);
     }
   }
 
@@ -95,10 +97,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthSuccess()); // No user data needed for email verification
     } on Failure catch (f, stackTrace) {
       emit(AuthError(f.message));
-      AppLogger.error('Email verification failed', error: f, stackTrace: stackTrace);
+      AppLogger.error('Email verification failed',
+          error: f, stackTrace: stackTrace);
     } catch (e, stackTrace) {
       emit(AuthError('An unexpected error occurred'));
-      AppLogger.error('Email verification unexpected error', error: e, stackTrace: stackTrace);
+      AppLogger.error('Email verification unexpected error',
+          error: e, stackTrace: stackTrace);
     }
   }
 
@@ -123,10 +127,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       AppLogger.info('AuthSuccess state emitted');
     } on Failure catch (f, stackTrace) {
       emit(AuthError(f.message));
-      AppLogger.error('Google sign-in failed', error: f, stackTrace: stackTrace);
+      AppLogger.error('Google sign-in failed',
+          error: f, stackTrace: stackTrace);
     } catch (e, stackTrace) {
       emit(AuthError('An unexpected error occurred'));
-      AppLogger.error('Google sign-in unexpected error', error: e, stackTrace: stackTrace);
+      AppLogger.error('Google sign-in unexpected error',
+          error: e, stackTrace: stackTrace);
     }
   }
 }

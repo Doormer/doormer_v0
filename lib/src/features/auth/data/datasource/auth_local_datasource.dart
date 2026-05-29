@@ -52,7 +52,8 @@ class AuthLocalDataSource {
           await rootBundle.loadString('assets/mock/mock_login_response.json');
       return json.decode(mockJson);
     } catch (e, stackTrace) {
-      AppLogger.error('Failed to load auth mock data', error: e, stackTrace: stackTrace);
+      AppLogger.error('Failed to load auth mock data',
+          error: e, stackTrace: stackTrace);
       throw DatabaseFailure('Something went wrong. Please try again.');
     }
   }
