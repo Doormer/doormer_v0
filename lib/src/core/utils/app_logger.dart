@@ -17,8 +17,8 @@ class AppLogger {
     _logger.w(message);
   }
 
-  static void error(String message, [dynamic error, StackTrace? stackTrace]) {
-    _logger.e(message);
+  static void error(String message, {dynamic? error, StackTrace? stackTrace}) {
+    _logger.e(message, error, stackTrace);
   }
 
   // Add a disable method that sets the logger to a no-op logger.

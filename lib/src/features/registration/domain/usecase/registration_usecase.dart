@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/features/registration/domain/entity/candidate_details.dart';
 import 'package:doormer/src/features/registration/domain/entity/candidate_preference.dart';
 import 'package:doormer/src/features/registration/domain/repository/registration_repository.dart';
@@ -27,32 +28,27 @@ class RegisterCandidate {
     required String cvFileName,
     required CandidatePreference candidatePreference,
   }) async {
-    // Validate the CV file extension (only PDF allowed) based on the file name.
+    // Validate the CV file extension (only PDF allowed).
     final allowedExtensions = ['pdf'];
     final fileExtension = cvFileName.split('.').last.toLowerCase();
     if (!allowedExtensions.contains(fileExtension)) {
-      throw Exception(
-          "Invalid file format. Only PDF or DOCX files are allowed.");
+      throw ValidationFailure(
+          "Invalid file format. Only PDF files are allowed.");
     }
 
-    try {
-      // Generate a file name for candidate preference based on candidateDetails.
-      final preferenceFileName =
-          "${candidateDetails.firstName}_${candidateDetails.lastName}.json";
+    // Generate a file name for candidate preference based on candidateDetails.
+    final preferenceFileName =
+        "${candidateDetails.firstName}_${candidateDetails.lastName}.json";
 
-      // Step 1: Concurrently upload the CV and candidate preference.
-      await Future.wait([
-        repository.uploadCV(cvBytes, cvFileName),
-        repository.uploadCandidatePreference(
-            candidatePreference, preferenceFileName),
-      ]);
+    // Step 1: Concurrently upload the CV and candidate preference.
+    await Future.wait([
+      repository.uploadCV(cvBytes, cvFileName),
+      repository.uploadCandidatePreference(
+          candidatePreference, preferenceFileName),
+    ]);
 
-      // Step 2: Register candidate details after successful file uploads.
-      await repository.registerCandidateDetails(candidateDetails);
-    } catch (error) {
-      // Handle errors appropriately.
-      throw Exception("Registration failed: $error");
-    }
+    // Step 2: Register candidate details after successful file uploads.
+    await repository.registerCandidateDetails(candidateDetails);
   }
 }
 
@@ -62,13 +58,7 @@ class GetRegistrationOptions {
 
   GetRegistrationOptions(this.repository);
 
-  /// Retrieves the registration options from the repository.
   Future<Map<String, dynamic>> call() async {
-    try {
-      final options = await repository.getRegistrationOptions();
-      return options;
-    } catch (error) {
-      throw Exception("Failed to get registration options: $error");
-    }
+    return await repository.getRegistrationOptions();
   }
 }

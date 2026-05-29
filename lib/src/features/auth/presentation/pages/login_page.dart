@@ -84,7 +84,7 @@ class LoginPageWeb extends StatelessWidget {
                           }
                         }
 
-                        if (state is AuthFailure) {
+                        if (state is AuthError) {
                           final errorMsg = state.error.toString().toLowerCase();
                           if (errorMsg.contains('wrong email or password')) {
                             CustomToast.show(

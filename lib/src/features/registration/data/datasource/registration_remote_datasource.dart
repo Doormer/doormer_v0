@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'package:doormer/src/core/connection/dio_exception_mapper.dart';
+import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/registration/data/model/candidate_registration_request_model.dart';
 
@@ -19,11 +21,17 @@ class RegistrationRemoteDataSource {
       if (response.statusCode == 200 && response.data != null) {
         return response.data["signed_upload_destination_url"];
       } else {
-        throw Exception('Failed to retrieve SAS upload URL');
+        AppLogger.error(
+            "Failed to get SAS URL: ${response.statusCode} - ${response.data}");
+        throw ServerFailure(
+            'Failed to prepare your CV upload. Please try again.');
       }
-    } catch (e) {
-      AppLogger.error('Failed to get SAS URL: $e');
-      throw Exception('Error fetching SAS upload URL: $e');
+    } on DioException catch (e, stackTrace) {
+      AppLogger.error('Failed to get SAS URL',
+          error: e, stackTrace: stackTrace);
+      throw dioExceptionToFailure(e,
+          userFacingMessage:
+              'Failed to prepare your CV upload. Please try again.');
     }
   }
 
@@ -48,19 +56,18 @@ class RegistrationRemoteDataSource {
       } else {
         AppLogger.error(
             'Upload failed with status ${response.statusCode}: ${response.data}');
-        throw Exception(
-            'Error uploading file: status code ${response.statusCode}');
+        throw ServerFailure('CV upload failed. Please try again.');
       }
-    } catch (e) {
-      AppLogger.error('File upload failed: $e');
-      throw Exception('Error uploading file: $e');
+    } on DioException catch (e, stackTrace) {
+      AppLogger.error('File upload failed', error: e, stackTrace: stackTrace);
+      throw dioExceptionToFailure(e,
+          userFacingMessage: 'CV upload failed. Please try again.');
     }
   }
 
   /// Upload the JSON data to Azure Blob Storage using the SAS URL (external call)
   Future<void> uploadJsonToSasUrl(String jsonString, String sasUrl) async {
     try {
-      // Upload the file bytes using a PUT request.
       final response = await dio.put(
         sasUrl,
         data: jsonString,
@@ -79,12 +86,13 @@ class RegistrationRemoteDataSource {
       } else {
         AppLogger.error(
             'Upload failed with status ${response.statusCode}: ${response.data}');
-        throw Exception(
-            'Error uploading JSON file: status code ${response.statusCode}');
+        throw ServerFailure('Preferences upload failed. Please try again.');
       }
-    } catch (e) {
-      AppLogger.error('JSON file upload failed: $e');
-      throw Exception('Error uploading JSON file: $e');
+    } on DioException catch (e, stackTrace) {
+      AppLogger.error('JSON file upload failed',
+          error: e, stackTrace: stackTrace);
+      throw dioExceptionToFailure(e,
+          userFacingMessage: 'Preferences upload failed. Please try again.');
     }
   }
 
@@ -97,9 +105,11 @@ class RegistrationRemoteDataSource {
         '/candidate/register',
         data: formData,
       );
-    } catch (e) {
-      AppLogger.error('Candidate registration failed: $e');
-      throw Exception('Error registering candidate: $e');
+    } on DioException catch (e, stackTrace) {
+      AppLogger.error('Candidate registration failed',
+          error: e, stackTrace: stackTrace);
+      throw dioExceptionToFailure(e,
+          userFacingMessage: 'Registration failed. Please try again.');
     }
   }
 }

@@ -6,17 +6,17 @@ abstract class Failure {
   String toString() => message;
 }
 
-// Network-related failures
+/// Network-related failures (timeout, no internet)
 class NetworkFailure extends Failure {
   NetworkFailure([super.message = "Network error"]);
 }
 
-// Server-related failures (e.g., 500 Internal Server Error)
+/// Server-related failures (5xx responses)
 class ServerFailure extends Failure {
   ServerFailure([super.message = "Server error occurred"]);
 }
 
-// API Response Failures (e.g., 400 Bad Request, 404 Not Found)
+/// API response failures (4xx responses)
 class ApiFailure extends Failure {
   final int statusCode;
 
@@ -24,17 +24,22 @@ class ApiFailure extends Failure {
       : super("Error $statusCode: $message");
 }
 
-// Authentication failures (e.g., Invalid token, Unauthorized access)
+/// Authentication failures (401, invalid credentials)
 class AuthFailure extends Failure {
   AuthFailure([super.message = "Authentication failed"]);
 }
 
-// Database / Local Storage failures (e.g., Cache miss, SQLite failure)
+/// Validation failures (422, invalid input data)
+class ValidationFailure extends Failure {
+  ValidationFailure([super.message = "Validation failed"]);
+}
+
+/// Database / local storage failures
 class DatabaseFailure extends Failure {
   DatabaseFailure([super.message = "Database error occurred"]);
 }
 
-// General unknown failure (catch-all for unexpected errors)
+/// General unknown failure (catch-all)
 class UnknownFailure extends Failure {
   UnknownFailure([super.message = "An unknown error occurred"]);
 }

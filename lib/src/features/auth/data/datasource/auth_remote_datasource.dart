@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:doormer/src/core/connection/dio_exception_mapper.dart';
+import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/services/sessions/session_service.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/auth/data/model/login_response_model.dart';
@@ -32,9 +34,10 @@ class AuthRemoteDataSource {
       );
       final loginResponseModel = LoginResponseModel.fromJson(response.data);
       return loginResponseModel;
-    } on DioException catch (e) {
-      AppLogger.error('Signup Error: ${e.response?.data}');
-      throw Exception(e.response?.data ?? 'SignUp Failed');
+    } on DioException catch (e, stackTrace) {
+      AppLogger.error('Signup failed', error: e, stackTrace: stackTrace);
+      throw dioExceptionToFailure(e,
+          userFacingMessage: 'Sign up failed. Please try again.');
     }
   }
 
@@ -45,7 +48,7 @@ class AuthRemoteDataSource {
         'email': email,
         'password': password,
       });
-      AppLogger.info('Requesting Login: ${formData}');
+      AppLogger.info('Requesting Login: $formData');
       final response = await dio.post(
         '/login',
         data: formData,
@@ -56,27 +59,27 @@ class AuthRemoteDataSource {
 
       AppLogger.info('Passing to UserModel.fromJson: ${response.data}');
       return LoginResponseModel.fromJson(response.data);
-    } on DioException catch (e, stacktrace) {
-      AppLogger.error('Error in login API call: $e\n$stacktrace');
-      throw Exception('Failed to login');
+    } on DioException catch (e, stackTrace) {
+      AppLogger.error('Login failed', error: e, stackTrace: stackTrace);
+      throw dioExceptionToFailure(e,
+          userFacingMessage: 'Login failed. Please check your credentials.');
     }
   }
 
-  // Sends verification code to verify email
-  // This endpoint is assumed to require authentication so no skipAuth flag is added.
   Future<void> verifyEmail(String email, String code) async {
     try {
       await dio.post(
-        '/confirm-email', // Replace with your actual endpoint
+        '/confirm-email',
         data: {'email': email, 'code': code},
       );
-    } on DioException catch (e) {
-      throw Exception(
-          e.response?.data['message'] ?? 'Email confirmation failed');
+    } on DioException catch (e, stackTrace) {
+      AppLogger.error('Email verification failed',
+          error: e, stackTrace: stackTrace);
+      throw dioExceptionToFailure(e,
+          userFacingMessage: 'Email confirmation failed. Please try again.');
     }
   }
 
-// Exchange Google ID token for backend tokens.
   Future<LoginResponseModel> verifyGoogleIdToken(String googleIdToken) async {
     AppLogger.info('Google Id Token: $googleIdToken');
     try {
@@ -94,21 +97,21 @@ class AuthRemoteDataSource {
       if (response.statusCode == 200) {
         return LoginResponseModel.fromJson(response.data);
       } else {
-        throw Exception(
-            'Failed to exchange Google ID token for backend tokens');
+        throw ServerFailure('Sign up failed. Please try again.');
       }
-    } on DioException catch (e) {
+    } on DioException catch (e, stackTrace) {
       if (e.response?.statusCode == 400 &&
           e.response!.data.toString().contains('user is already registered')) {
         AppLogger.warn('User already registered, retrying with /login');
         return _retryWithLogin(googleIdToken);
       }
-      throw Exception(
-          'Error while exchanging Google ID token: ${e.response?.data ?? e.toString()}');
+      AppLogger.error('Google ID token exchange failed',
+          error: e, stackTrace: stackTrace);
+      throw dioExceptionToFailure(e,
+          userFacingMessage: 'Sign in with Google failed. Please try again.');
     }
   }
 
-  // Retry with /login if user is already registered
   Future<LoginResponseModel> _retryWithLogin(String googleIdToken) async {
     try {
       final formData = FormData.fromMap({
@@ -125,11 +128,13 @@ class AuthRemoteDataSource {
       if (response.statusCode == 200) {
         return LoginResponseModel.fromJson(response.data);
       } else {
-        throw Exception('Failed to login after signup failure');
+        throw ServerFailure('Sign in with Google failed. Please try again.');
       }
-    } on DioException catch (e) {
-      throw Exception(
-          'Login failed after signup failure: ${e.response?.data ?? e.toString()}');
+    } on DioException catch (e, stackTrace) {
+      AppLogger.error('Login retry after signup failure',
+          error: e, stackTrace: stackTrace);
+      throw dioExceptionToFailure(e,
+          userFacingMessage: 'Sign in with Google failed. Please try again.');
     }
   }
 }

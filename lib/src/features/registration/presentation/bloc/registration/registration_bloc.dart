@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/registration/domain/entity/candidate_details.dart';
 import 'package:doormer/src/features/registration/domain/entity/candidate_preference.dart';
@@ -32,8 +33,13 @@ class RegistrationBloc extends Bloc<RegistrationEvent, RegistrationState> {
         candidatePreference: event.candidatePreference,
       );
       emit(RegistrationSuccess());
-    } catch (error) {
-      emit(RegistrationFailure(errorMessage: error.toString()));
+    } on Failure catch (f, stackTrace) {
+      emit(RegistrationFailure(errorMessage: f.message));
+      AppLogger.error('Registration failed', error: f, stackTrace: stackTrace);
+    } catch (error, stackTrace) {
+      emit(RegistrationFailure(errorMessage: 'An unexpected error occurred'));
+      AppLogger.error('Registration unexpected error',
+          error: error, stackTrace: stackTrace);
     }
   }
 
@@ -43,8 +49,15 @@ class RegistrationBloc extends Bloc<RegistrationEvent, RegistrationState> {
     try {
       final options = await registrationUseCase.getRegistrationOptions.call();
       emit(RegistrationOptionsLoaded(options: options));
-    } catch (error) {
-      emit(RegistrationOptionsFailure(errorMessage: error.toString()));
+    } on Failure catch (f, stackTrace) {
+      emit(RegistrationOptionsFailure(errorMessage: f.message));
+      AppLogger.error('Load registration options failed',
+          error: f, stackTrace: stackTrace);
+    } catch (error, stackTrace) {
+      emit(RegistrationOptionsFailure(
+          errorMessage: 'An unexpected error occurred'));
+      AppLogger.error('Load registration options unexpected error',
+          error: error, stackTrace: stackTrace);
     }
   }
 }

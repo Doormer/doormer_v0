@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/auth/domain/usecase/auth_usecase.dart';
 import 'package:doormer/src/shared/sessions/bloc/global_session_bloc.dart';
@@ -46,9 +47,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // Emit success state with user data upon successful signup
       emit(AuthSuccess());
       AppLogger.info('AuthSuccess state emitted.');
-    } catch (e) {
-      emit(AuthFailure(e.toString()));
-      AppLogger.error('AuthFailure state emitted with error ${e.toString()}');
+    } on Failure catch (f, stackTrace) {
+      emit(AuthError(f.message));
+      AppLogger.error('Signup failed', error: f, stackTrace: stackTrace);
+    } catch (e, stackTrace) {
+      emit(AuthError('An unexpected error occurred'));
+      AppLogger.error('Signup unexpected error',
+          error: e, stackTrace: stackTrace);
     }
   }
 
@@ -73,10 +78,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthSuccess());
 
       AppLogger.info('AuthSuccess state emitted');
+    } on Failure catch (f, stackTrace) {
+      emit(AuthError(f.message));
+      AppLogger.error('Login failed', error: f, stackTrace: stackTrace);
     } catch (e, stackTrace) {
-      // Handle errors by emitting failure state and logging the error
-      emit(AuthFailure(e.toString()));
-      AppLogger.error('AuthFailure state emitted with error', e, stackTrace);
+      emit(AuthError('An unexpected error occurred'));
+      AppLogger.error('Login unexpected error',
+          error: e, stackTrace: stackTrace);
     }
   }
 
@@ -87,8 +95,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       await authUseCase.verifyEmail(email: event.email, code: event.code);
       emit(AuthSuccess()); // No user data needed for email verification
-    } catch (e) {
-      emit(AuthFailure(e.toString()));
+    } on Failure catch (f, stackTrace) {
+      emit(AuthError(f.message));
+      AppLogger.error('Email verification failed',
+          error: f, stackTrace: stackTrace);
+    } catch (e, stackTrace) {
+      emit(AuthError('An unexpected error occurred'));
+      AppLogger.error('Email verification unexpected error',
+          error: e, stackTrace: stackTrace);
     }
   }
 
@@ -111,11 +125,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // Emit success state with user data
       emit(AuthSuccess());
       AppLogger.info('AuthSuccess state emitted');
+    } on Failure catch (f, stackTrace) {
+      emit(AuthError(f.message));
+      AppLogger.error('Google sign-in failed',
+          error: f, stackTrace: stackTrace);
     } catch (e, stackTrace) {
-      // Emit failure state
-      emit(AuthFailure(e.toString()));
-      AppLogger.error(
-          'AuthFailure state emitted for Google Sign-In', e, stackTrace);
+      emit(AuthError('An unexpected error occurred'));
+      AppLogger.error('Google sign-in unexpected error',
+          error: e, stackTrace: stackTrace);
     }
   }
 }
