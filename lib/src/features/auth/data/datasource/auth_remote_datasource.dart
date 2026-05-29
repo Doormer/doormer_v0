@@ -36,8 +36,7 @@ class AuthRemoteDataSource {
       return loginResponseModel;
     } on DioException catch (e, stackTrace) {
       AppLogger.error('Signup failed', error: e, stackTrace: stackTrace);
-      throw dioExceptionToFailure(e,
-          userFacingMessage: 'Sign up failed. Please try again.');
+      throw dioExceptionToFailure(e, userFacingMessage: 'Sign up failed. Please try again.');
     }
   }
 
@@ -61,8 +60,7 @@ class AuthRemoteDataSource {
       return LoginResponseModel.fromJson(response.data);
     } on DioException catch (e, stackTrace) {
       AppLogger.error('Login failed', error: e, stackTrace: stackTrace);
-      throw dioExceptionToFailure(e,
-          userFacingMessage: 'Login failed. Please check your credentials.');
+      throw dioExceptionToFailure(e, userFacingMessage: 'Login failed. Please check your credentials.');
     }
   }
 
@@ -73,10 +71,8 @@ class AuthRemoteDataSource {
         data: {'email': email, 'code': code},
       );
     } on DioException catch (e, stackTrace) {
-      AppLogger.error('Email verification failed',
-          error: e, stackTrace: stackTrace);
-      throw dioExceptionToFailure(e,
-          userFacingMessage: 'Email confirmation failed. Please try again.');
+      AppLogger.error('Email verification failed', error: e, stackTrace: stackTrace);
+      throw dioExceptionToFailure(e, userFacingMessage: 'Email confirmation failed. Please try again.');
     }
   }
 
@@ -97,7 +93,8 @@ class AuthRemoteDataSource {
       if (response.statusCode == 200) {
         return LoginResponseModel.fromJson(response.data);
       } else {
-        throw ServerFailure('Sign up failed. Please try again.');
+        throw ServerFailure(
+            'Sign up failed. Please try again.');
       }
     } on DioException catch (e, stackTrace) {
       if (e.response?.statusCode == 400 &&
@@ -105,8 +102,7 @@ class AuthRemoteDataSource {
         AppLogger.warn('User already registered, retrying with /login');
         return _retryWithLogin(googleIdToken);
       }
-      AppLogger.error('Google ID token exchange failed',
-          error: e, stackTrace: stackTrace);
+      AppLogger.error('Google ID token exchange failed', error: e, stackTrace: stackTrace);
       throw dioExceptionToFailure(e,
           userFacingMessage: 'Sign in with Google failed. Please try again.');
     }
@@ -131,8 +127,7 @@ class AuthRemoteDataSource {
         throw ServerFailure('Sign in with Google failed. Please try again.');
       }
     } on DioException catch (e, stackTrace) {
-      AppLogger.error('Login retry after signup failure',
-          error: e, stackTrace: stackTrace);
+      AppLogger.error('Login retry after signup failure', error: e, stackTrace: stackTrace);
       throw dioExceptionToFailure(e,
           userFacingMessage: 'Sign in with Google failed. Please try again.');
     }

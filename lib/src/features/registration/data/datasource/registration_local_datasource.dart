@@ -12,9 +12,9 @@ class RegistrationLocalDataSource {
       );
       return json.decode(jsonString) as Map<String, dynamic>;
     } catch (error, stackTrace) {
-      AppLogger.error('Failed to load registration options',
-          error: error, stackTrace: stackTrace);
-      throw DatabaseFailure('Failed to load registration options.');
+      AppLogger.error('Failed to load registration options', error: error, stackTrace: stackTrace);
+      throw DatabaseFailure(
+          'Failed to load registration options.');
     }
   }
 }
