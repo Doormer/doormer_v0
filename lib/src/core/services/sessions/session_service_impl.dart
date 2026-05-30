@@ -78,8 +78,14 @@ class SessionServiceImpl implements SessionService {
   @override
   Future<void> saveTokens(
       {required String accessToken, required String refreshToken}) async {
-    _tokenStorage.saveAccessToken(accessToken);
-    _tokenStorage.saveRefreshToken(refreshToken);
-    AppLogger.info('Tokens Saved');
+    try {
+      await _tokenStorage.saveAccessToken(accessToken);
+      await _tokenStorage.saveRefreshToken(refreshToken);
+      AppLogger.info('Tokens saved.');
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to save tokens',
+          error: e, stackTrace: stackTrace);
+      throw DatabaseFailure('Session could not be saved. Please try again.');
+    }
   }
 }
