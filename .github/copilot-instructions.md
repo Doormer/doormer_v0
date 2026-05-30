@@ -40,20 +40,24 @@ Each feature has three layers: **data → domain → presentation**, plus a feat
 
 ```
 lib/src/
-├── core/       # DI, routing, theme, errors, HTTP client, config, utils
+├── core/       # DI, routing, theme, errors, HTTP client, config, services, utils
+│   ├── connection/   # dio_client.dart, dio_exception_mapper.dart, interceptors/
+│   ├── errors/       # failure.dart (typed Failure hierarchy)
+│   ├── services/     # cross-cutting services (e.g. sessions/SessionService)
+│   └── utils/        # AppLogger, token storage, helpers
 ├── features/<feature>/
 │   ├── di/            # GetIt module for this feature
 │   ├── data/          # datasource/ (Remote + Local), model/ (DTOs), repository/ (impl)
 │   ├── domain/        # entity/, repository/ (abstract), usecase/
 │   └── presentation/  # bloc/, pages/, widget/, utils/
-└── shared/     # GlobalSessionBloc, User model, reusable widgets
+└── shared/     # cross-feature code: user/ (User entity + model), sessions/ (GlobalSessionBloc), widget/
 ```
 
 ### Layer rules — enforce these
 
-- **Domain layer is pure Dart** — no Flutter or package imports. Repositories are abstract interfaces here.
+- **Domain layer is pure Dart** — no Flutter or package imports. Repositories are abstract interfaces here. `core/errors/failure.dart` is pure Dart and safe to reference from any layer.
 - **BLoCs depend on UseCases only** — never on repositories or datasources directly.
-- **Features never import each other.** Cross-feature state goes through `shared/` (e.g., `GlobalSessionBloc`).
+- **Features never import each other.** Cross-feature state and entities go through `shared/` (e.g., `GlobalSessionBloc`, the `User` entity in `shared/user/entity/`). Do not duplicate shared entities inside a feature's `domain/entity/`.
 - **Model ↔ Entity conversion**: response models expose `toEntity()`, request models use `factory fromEntity()`.
 
 ## Key Patterns
@@ -63,7 +67,18 @@ lib/src/
 - Events and states extend **Equatable** (not Freezed).
 - Use `part` directives to split event/state files from the BLoC file.
 - Handler naming: `on<EventName>(_onEventName)` — private async methods.
-- State flow: emit `Loading` → `Success` or `Failure(error)`.
+- State flow: emit `Loading` → `Success` or an **error state**.
+- **Error states use the `XxxError` suffix** (e.g., `AuthError`), NOT `XxxFailure`. `XxxFailure` names are reserved for the domain `Failure` types in `core/errors/failure.dart` — using them as state names creates a collision.
+- BLoC error handling: catch typed `Failure` first, then a generic fallback. Always log in both branches:
+  ```dart
+  } on Failure catch (f, stackTrace) {
+    emit(AuthError(f.message));
+    AppLogger.error('Login failed', error: f, stackTrace: stackTrace);
+  } catch (e, stackTrace) {
+    emit(AuthError('An unexpected error occurred'));
+    AppLogger.error('Login unexpected error', error: e, stackTrace: stackTrace);
+  }
+  ```
 - Cross-BLoC: inject the target BLoC, call `.add(Event)`.
 - See `lib/src/features/auth/presentation/bloc/` for the reference pattern.
 
@@ -76,19 +91,39 @@ lib/src/
 ### HTTP (Dio)
 
 - Client: `core/connection/dio_client.dart` — 15s timeouts.
-- `SessionInterceptor` attaches Bearer tokens; 401 → auto session expiry.
+- `SessionInterceptor` (`core/connection/interceptors/`) attaches Bearer tokens; 401 → auto session expiry.
 - Skip auth: `Options(extra: {'skipAuth': true})`.
-- Catch `DioException` in datasources, throw domain exceptions.
+- In datasources, catch `DioException` and convert it with `dioExceptionToFailure` (see Error Handling).
 
 ### Models & Serialization
 
 - **Manual JSON** — no codegen. Response: `factory fromJson(Map<String, dynamic>)`. Request: `toJson()`.
-- Models in `data/model/`, entities in `domain/entity/`.
+- Models in `data/model/`, entities in `domain/entity/` (shared entities in `shared/`).
 
 ### Error Handling
 
-- Failure hierarchy in `core/errors/failure.dart`: `NetworkFailure`, `ServerFailure`, `ApiFailure(statusCode)`, `AuthFailure`, `DatabaseFailure`, `UnknownFailure`.
-- BLoCs catch exceptions and emit `Failure` states. dartz `Either` is not used — stick with try/catch.
+Typed `Failure` hierarchy in `core/errors/failure.dart` (pure Dart): `NetworkFailure`, `ServerFailure`, `ApiFailure(statusCode, message)`, `AuthFailure`, `ValidationFailure`, `DatabaseFailure`, `UnknownFailure`. `Failure.toString()` returns its `message`.
+
+Rules:
+
+- **Datasources throw typed `Failure`s — never raw `Exception`.** For `DioException`, use the shared mapper `dioExceptionToFailure(e, {required String userFacingMessage})` in `core/connection/dio_exception_mapper.dart`. It maps by type/status: timeout & connection → `NetworkFailure`, 401 → `AuthFailure`, 422 → `ValidationFailure`, 5xx → `ServerFailure`, other 4xx → `ApiFailure`, else → `UnknownFailure`.
+- **`userFacingMessage` must be user-friendly** — no server jargon. Server response bodies are NEVER put into `Failure.message`; they only go to logs (pass the raw exception as `error:`).
+- **Every `catch` must log before throwing/rethrowing.** Use `AppLogger.error('context', error: e, stackTrace: stackTrace)`.
+- **Repositories and UseCases pass `Failure`s through** — don't re-wrap. Use `on Failure { rethrow; }` to let typed failures propagate, only wrapping genuinely new failure sources (e.g., a local save) in their own typed `Failure`.
+- **BLoCs catch `Failure` and emit error states** — see BLoC section. `dartz`/`Either` is not used; stick with try/catch.
+- **Never log secrets** (tokens, passwords, raw credentials).
+
+Datasource pattern:
+```dart
+try {
+  final response = await dio.post('/login', data: {...});
+  return LoginResponseModel.fromJson(response.data);
+} on DioException catch (e, stackTrace) {
+  AppLogger.error('Login failed', error: e, stackTrace: stackTrace);
+  throw dioExceptionToFailure(e,
+      userFacingMessage: 'Login failed. Please check your credentials.');
+}
+```
 
 ### Routing (GoRouter)
 
@@ -99,7 +134,7 @@ lib/src/
 
 - **File naming**: `snake_case.dart`. Web-specific widgets use `_web` suffix.
 - **Theming**: use `AppColors` and `AppTextStyles` constants — no raw hex. Use ScreenUtil extensions (`.sp`, `.w`, `.h`).
-- **Logging**: use `AppLogger` (`core/utils/app_logger.dart`) — never `print()`.
+- **Logging**: use `AppLogger` (`core/utils/app_logger.dart`) — never `print()`. For errors use named args: `AppLogger.error('context', error: e, stackTrace: stackTrace)`. Never log secrets (tokens, passwords).
 - **Widgets**: pages in `pages/`, small reusables in `widget/`, helpers in `utils/`.
 
 ## Adding a New Feature

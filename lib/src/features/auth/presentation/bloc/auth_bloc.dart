@@ -3,7 +3,6 @@ import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/auth/domain/usecase/auth_usecase.dart';
 import 'package:doormer/src/shared/sessions/bloc/global_session_bloc.dart';
-import 'package:doormer/src/shared/user/entity/user.dart';
 import 'package:equatable/equatable.dart';
 
 part 'auth_event.dart';

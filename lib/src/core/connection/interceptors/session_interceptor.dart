@@ -39,8 +39,9 @@ class SessionInterceptor extends Interceptor {
       if (accessToken != null) {
         options.headers['Authorization'] = 'Bearer $accessToken';
       }
-    } catch (e) {
-      AppLogger.error("Failed to attach access token: $e");
+    } catch (e, stackTrace) {
+      AppLogger.error("Failed to attach access token",
+          error: e, stackTrace: stackTrace);
     }
     handler.next(options);
   }

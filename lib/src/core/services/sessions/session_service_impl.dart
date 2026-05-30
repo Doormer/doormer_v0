@@ -22,10 +22,11 @@ class SessionServiceImpl implements SessionService {
   Future<String?> getAccessToken() async {
     try {
       final token = await _tokenStorage.getAccessToken();
-      AppLogger.info('Access token retrieved from storage $token.');
+      AppLogger.info('Access token retrieved from storage.');
       return token;
-    } catch (e) {
-      AppLogger.error('Failed to retrieve access token: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to retrieve access token',
+          error: e, stackTrace: stackTrace);
       return null;
     }
   }
