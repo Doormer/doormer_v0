@@ -17,10 +17,10 @@ class RegistrationLoading extends RegistrationState {}
 class RegistrationSuccess extends RegistrationState {}
 
 /// State when registration fails.
-class RegistrationFailure extends RegistrationState {
+class RegistrationError extends RegistrationState {
   final String errorMessage;
 
-  const RegistrationFailure({required this.errorMessage});
+  const RegistrationError({required this.errorMessage});
 
   @override
   List<Object?> get props => [errorMessage];
@@ -40,10 +40,10 @@ class RegistrationOptionsLoaded extends RegistrationState {
 }
 
 /// State when loading registration options JSON fails.
-class RegistrationOptionsFailure extends RegistrationState {
+class RegistrationOptionsError extends RegistrationState {
   final String errorMessage;
 
-  const RegistrationOptionsFailure({required this.errorMessage});
+  const RegistrationOptionsError({required this.errorMessage});
 
   @override
   List<Object?> get props => [errorMessage];

@@ -34,10 +34,10 @@ class RegistrationBloc extends Bloc<RegistrationEvent, RegistrationState> {
       );
       emit(RegistrationSuccess());
     } on Failure catch (f, stackTrace) {
-      emit(RegistrationFailure(errorMessage: f.message));
+      emit(RegistrationError(errorMessage: f.message));
       AppLogger.error('Registration failed', error: f, stackTrace: stackTrace);
     } catch (error, stackTrace) {
-      emit(RegistrationFailure(errorMessage: 'An unexpected error occurred'));
+      emit(RegistrationError(errorMessage: 'An unexpected error occurred'));
       AppLogger.error('Registration unexpected error',
           error: error, stackTrace: stackTrace);
     }
@@ -50,11 +50,11 @@ class RegistrationBloc extends Bloc<RegistrationEvent, RegistrationState> {
       final options = await registrationUseCase.getRegistrationOptions.call();
       emit(RegistrationOptionsLoaded(options: options));
     } on Failure catch (f, stackTrace) {
-      emit(RegistrationOptionsFailure(errorMessage: f.message));
+      emit(RegistrationOptionsError(errorMessage: f.message));
       AppLogger.error('Load registration options failed',
           error: f, stackTrace: stackTrace);
     } catch (error, stackTrace) {
-      emit(RegistrationOptionsFailure(
+      emit(RegistrationOptionsError(
           errorMessage: 'An unexpected error occurred'));
       AppLogger.error('Load registration options unexpected error',
           error: error, stackTrace: stackTrace);

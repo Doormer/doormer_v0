@@ -1,7 +1,7 @@
 # Doormer — Project Instructions
 
 Doormer is a Flutter **web-first** application for candidate onboarding (auth, registration, learning tools).  
-**Flutter 3.27.1 / Dart SDK ^3.5.3** · Primary target: **web** (localStorage, `flutter_web_plugins`).
+**Flutter 3.27.1 / Dart SDK ^3.5.3** · Primary target: **web** (cookies via `universal_html`, `flutter_web_plugins` for URL strategy).
 
 ## Build & Run
 
@@ -49,13 +49,14 @@ lib/src/
 │   ├── di/            # GetIt module for this feature
 │   ├── data/          # datasource/ (Remote + Local), model/ (DTOs), repository/ (impl)
 │   ├── domain/        # entity/, repository/ (abstract), usecase/
-│   └── presentation/  # bloc/, pages/, widget/, utils/
+│   ├── presentation/  # bloc/, pages/, widget/
+│   └── utils/         # feature-level helpers and validators
 └── shared/     # cross-feature code: user/ (User entity + model), sessions/ (GlobalSessionBloc), widget/
 ```
 
 ### Layer rules — enforce these
 
-- **Domain layer is pure Dart** — no Flutter or package imports. Repositories are abstract interfaces here. `core/errors/failure.dart` is pure Dart and safe to reference from any layer.
+- **Domain layer is pure Dart** — no Flutter or third-party package imports. Repositories are abstract interfaces here. `core/errors/failure.dart` is pure Dart and safe to reference from any layer. `dart:` core libraries (e.g. `dart:typed_data` for `Uint8List`) are allowed.
 - **BLoCs depend on UseCases only** — never on repositories or datasources directly.
 - **Features never import each other.** Cross-feature state and entities go through `shared/` (e.g., `GlobalSessionBloc`, the `User` entity in `shared/user/entity/`). Do not duplicate shared entities inside a feature's `domain/entity/`.
 - **Model ↔ Entity conversion**: response models expose `toEntity()`, request models use `factory fromEntity()`.
@@ -85,7 +86,9 @@ lib/src/
 ### Dependency Injection (GetIt)
 
 - Central setup: `core/di/service_locator.dart` → calls each feature's `init<Feature>Module()`.
-- **factory** for BLoCs, **lazySingleton** for repos/usecases/services.
+- **factory** for BLoCs (each page needs a fresh instance with clean state).
+- **lazySingleton** for repos, usecases, datasources, and services (stateless — one instance is enough).
+- **singleton** (eager) for app-wide BLoCs (e.g. `GlobalSessionBloc`) and platform services (e.g. `TokenStorage`) that must exist before any lazy resolution occurs.
 - Access: `serviceLocator<T>()`.
 
 ### HTTP (Dio)

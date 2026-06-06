@@ -161,7 +161,7 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );
-          } else if (state is RegistrationOptionsFailure) {
+          } else if (state is RegistrationOptionsError) {
             return Scaffold(
               body: Center(child: Text('Error: ${state.errorMessage}')),
             );

@@ -19,7 +19,7 @@ void initAuthModule() {
       scopes: ['openid', 'email', 'profile']));
 
   // Register AuthRemoteDataSource
-  serviceLocator.registerFactory<AuthRemoteDataSource>(
+  serviceLocator.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSource(
       sessionService: serviceLocator<SessionService>(),
       googleSignIn: serviceLocator<GoogleSignIn>(),
@@ -28,7 +28,7 @@ void initAuthModule() {
   );
 
   serviceLocator
-      .registerFactory<AuthLocalDataSource>(() => AuthLocalDataSource());
+      .registerLazySingleton<AuthLocalDataSource>(() => AuthLocalDataSource());
 
   // Register AuthRepository
   serviceLocator.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(
