@@ -100,8 +100,9 @@ lib/src/
 
 ### Models & Serialization
 
-- **Manual JSON** — no codegen. Response: `factory fromJson(Map<String, dynamic>)`. Request: `toJson()`.
+- **Manual JSON by default.** Response: `factory fromJson(Map<String, dynamic>)`. Request: `toJson()`. The current DTOs are small, so hand-written serialization is preferred — it avoids a `build_runner` step and matches the Equatable-not-Freezed BLoC convention.
 - Models in `data/model/`, entities in `domain/entity/` (shared entities in `shared/`).
+- **When to reach for Freezed / json_serializable** (already in `pubspec.yaml`): use it only when a *data-layer* model genuinely needs `copyWith`, value equality, immutability, sealed/union variants, or has enough fields/nesting that manual JSON becomes error-prone. Don't convert trivial DTOs just because the tooling exists. When you do: keep it confined to `data/model/` (never import `freezed_annotation` into a domain entity — domain stays pure Dart), preserve exact JSON keys with `@JsonKey(name:)`, retain `toEntity()`/`fromEntity()` via a `const Model._()` private constructor, and run `dart run build_runner build --delete-conflicting-outputs`.
 
 ### Error Handling
 
