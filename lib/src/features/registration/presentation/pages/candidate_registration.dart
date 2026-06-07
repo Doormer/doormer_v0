@@ -4,7 +4,6 @@ import 'package:doormer/src/core/theme/app_colors.dart';
 import 'package:doormer/src/core/theme/app_text_styles.dart';
 import 'package:doormer/src/features/registration/domain/entity/candidate_details.dart';
 import 'package:doormer/src/features/registration/domain/entity/candidate_preference.dart';
-import 'package:doormer/src/features/registration/presentation/bloc/document_upload/registration_document_bloc.dart';
 import 'package:doormer/src/features/registration/presentation/bloc/registration/registration_bloc.dart';
 import 'package:doormer/src/features/registration/presentation/widget/category_selection_card.dart';
 import 'package:doormer/src/features/registration/utils/priority_multi_select_menu_controller.dart';
@@ -47,10 +46,9 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
 
   // Local state to update the UI accordingly.
   bool isDocumentUploaded = false;
-  bool showDocumentError = false;
-  String? documentErrorMessage;
   bool isFormValid = false;
   String? uploadedFileName;
+  Uint8List? cvBytes;
 
   @override
   void initState() {
@@ -106,7 +104,7 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
     });
   }
 
-  /// Handles file selection and triggers the Upload event for the document.
+  /// Handles CV file selection and stores the selected file in local state.
   Future<void> _pickFile(BuildContext context) async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -119,19 +117,11 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
       String fileName = result.files.first.name;
       if (!context.mounted) return;
 
-      // Dispatch the Upload event to the RegistrationDocumentBloc.
-      context.read<RegistrationDocumentBloc>().add(
-            UploadRegistrationDocument(
-              fileName: fileName,
-              fileBytes: fileBytes,
-            ),
-          );
-      // Update local state to reflect file upload and store file name.
+      // Store the selected CV (bytes + name) in local state.
       setState(() {
         isDocumentUploaded = true;
-        showDocumentError = false;
-        documentErrorMessage = null;
         uploadedFileName = fileName;
+        cvBytes = fileBytes;
       });
       _validateForm();
     }
@@ -139,16 +129,9 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<RegistrationBloc>(
-          create: (_) => serviceLocator<RegistrationBloc>()
-            ..add(const LoadRegistrationOptionsEvent()),
-        ),
-        BlocProvider<RegistrationDocumentBloc>(
-          create: (_) => RegistrationDocumentBloc(),
-        ),
-      ],
+    return BlocProvider<RegistrationBloc>(
+      create: (_) => serviceLocator<RegistrationBloc>()
+        ..add(const LoadRegistrationOptionsEvent()),
       child: BlocConsumer<RegistrationBloc, RegistrationState>(
         listener: (context, state) {
           if (state is RegistrationSuccess) {
@@ -322,12 +305,8 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
                               ),
                               onPressed: isFormValid
                                   ? () {
-                                      final docState = context
-                                          .read<RegistrationDocumentBloc>()
-                                          .state;
                                       if (_formKey.currentState!.validate() &&
-                                          docState
-                                              is RegistrationDocumentUploaded) {
+                                          cvBytes != null) {
                                         final candidateDetails =
                                             CandidateDetails(
                                           firstName: firstNameController.text,
@@ -355,8 +334,8 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
                                                   candidateDetails,
                                               candidatePreference:
                                                   candidatePreference,
-                                              cvBytes: docState.fileBytes,
-                                              cvFileName: docState.fileName,
+                                              cvBytes: cvBytes!,
+                                              cvFileName: uploadedFileName!,
                                             ));
                                       } else {
                                         ScaffoldMessenger.of(context)

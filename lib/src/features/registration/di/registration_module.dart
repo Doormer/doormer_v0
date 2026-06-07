@@ -4,7 +4,6 @@ import 'package:doormer/src/features/registration/data/datasource/registration_r
 import 'package:doormer/src/features/registration/data/repository/registration_repository_impl.dart';
 import 'package:doormer/src/features/registration/domain/repository/registration_repository.dart';
 import 'package:doormer/src/features/registration/domain/usecase/registration_usecase.dart';
-import 'package:doormer/src/features/registration/presentation/bloc/document_upload/registration_document_bloc.dart';
 import 'package:doormer/src/features/registration/presentation/bloc/registration/registration_bloc.dart';
 import 'package:get_it/get_it.dart';
 
@@ -38,9 +37,5 @@ void initRegisterModule() {
     () => RegistrationBloc(
       registrationUseCase: serviceLocator<RegistrationUseCase>(),
     ),
-  );
-
-  serviceLocator.registerFactory<RegistrationDocumentBloc>(
-    () => RegistrationDocumentBloc(),
   );
 }

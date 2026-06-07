@@ -59,7 +59,7 @@ lib/src/
 - **Domain layer is pure Dart** — no Flutter or third-party package imports. Repositories are abstract interfaces here. `core/errors/failure.dart` is pure Dart and safe to reference from any layer. `dart:` core libraries (e.g. `dart:typed_data` for `Uint8List`) are allowed.
 - **BLoCs depend on UseCases only** — never on repositories or datasources directly.
 - **Features never import each other.** Cross-feature state and entities go through `shared/` (e.g., `GlobalSessionBloc`, the `User` entity in `shared/user/entity/`). Do not duplicate shared entities inside a feature's `domain/entity/`.
-- **Model ↔ Entity conversion**: response models expose `toEntity()`, request models use `factory fromEntity()`.
+- **Model ↔ Entity conversion**: response models parse with `fromJson()` and expose `toEntity()`; request models build via `factory fromEntity()` and serialize with `toJson()`. A model used in both directions may expose all four.
 
 ## Key Patterns
 
@@ -85,7 +85,7 @@ lib/src/
 
 ### Dependency Injection (GetIt)
 
-- Central setup: `core/di/service_locator.dart` → calls each feature's `init<Feature>Module()`.
+- Central setup: `core/di/service_locator.dart` → calls each feature's `init<Feature>Module()` (actual names: `initAuthModule()`, `initRegisterModule()` — registration abbreviates to "Register").
 - **factory** for BLoCs (each page needs a fresh instance with clean state).
 - **lazySingleton** for repos, usecases, datasources, and services (stateless — one instance is enough).
 - **singleton** (eager) for app-wide BLoCs (e.g. `GlobalSessionBloc`) and platform services (e.g. `TokenStorage`) that must exist before any lazy resolution occurs.
@@ -131,7 +131,7 @@ try {
 
 ### Routing (GoRouter)
 
-- Routes: `core/routes/app_router.dart` + `web_router.dart`. Uses `PathUrlStrategy` (no hash).
+- Routes: `core/routes/app_router.dart` + `web_router.dart` (`AppRouter` delegates to `WebRouter.router`). `PathUrlStrategy` (no hash) is set in `main.dart` via `setUrlStrategy()`, not in the router files.
 - Session expiry → redirect to `/auth` via `BlocListener<GlobalSessionBloc>` in `main.dart`.
 
 ## Conventions
@@ -145,7 +145,7 @@ try {
 
 1. Create `lib/src/features/<name>/` with `di/`, `data/`, `domain/`, `presentation/` subdirs.
 2. Define abstract repository in `domain/repository/`.
-3. Create entities (`domain/entity/`) and models (`data/model/`) with conversion methods.
+3. Create entities (`domain/entity/`) and models (`data/model/`) with conversion methods. Reuse a `shared/` entity instead of creating your own when one fits (e.g. auth reuses the `User` entity from `shared/user/entity/` and has no `domain/entity/` of its own).
 4. Implement datasources (`data/datasource/` — remote for API, local for cache).
 5. Implement repository in `data/repository/`.
 6. Create use cases in `domain/usecase/`.
