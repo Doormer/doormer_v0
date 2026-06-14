@@ -13,7 +13,7 @@ class MultiSelectDialog extends StatefulWidget {
   final Color circularAvatarTextColor;
 
   const MultiSelectDialog({
-    Key? key,
+    super.key,
     required this.options,
     required this.initialSelected,
     this.maxSelection = 3,
@@ -21,7 +21,7 @@ class MultiSelectDialog extends StatefulWidget {
     this.buttonColor = AppColors.primary,
     this.badgeColor = AppColors.primary,
     this.circularAvatarTextColor = AppColors.surface,
-  }) : super(key: key);
+  });
 
   @override
   MultiSelectDialogState createState() => MultiSelectDialogState();

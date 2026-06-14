@@ -28,7 +28,7 @@ class CategorySelectionCard extends StatefulWidget {
   final double buttonHeight;
 
   const CategorySelectionCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.description,
     required this.options,
@@ -39,7 +39,7 @@ class CategorySelectionCard extends StatefulWidget {
     this.borderColor = Colors.grey,
     this.borderThickness = 1,
     this.buttonHeight = 40.0,
-  }) : super(key: key);
+  });
 
   @override
   CategorySelectionCardState createState() => CategorySelectionCardState();

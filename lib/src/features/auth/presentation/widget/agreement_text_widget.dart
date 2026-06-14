@@ -4,7 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 class AgreementTextWidget extends StatelessWidget {
-  const AgreementTextWidget({Key? key}) : super(key: key);
+  const AgreementTextWidget({super.key});
 
   void _showTermsSheet(BuildContext context) {
     showModalBottomSheet(

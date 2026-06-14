@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class RegistrationCompletePage extends StatelessWidget {
-  const RegistrationCompletePage({Key? key}) : super(key: key);
+  const RegistrationCompletePage({super.key});
 
   Future<void> _launchSurvey() async {
     final Uri url = Uri.parse(AppConfig.surveyURL);

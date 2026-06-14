@@ -1,5 +1,8 @@
 import 'package:doormer/src/features/auth/presentation/pages/login_page.dart';
 import 'package:doormer/src/features/auth/presentation/pages/signup_page.dart';
+import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
+import 'package:doormer/src/features/questions/presentation/pages/question_solution_handoff_page.dart';
 import 'package:doormer/src/features/registration/presentation/pages/candidate_registration.dart';
 import 'package:doormer/src/features/registration/presentation/pages/registration_complete_page.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
@@ -34,6 +37,20 @@ class WebRouter {
               path: 'registration-complete',
               builder: (context, state) => const RegistrationCompletePage()),
         ],
+      ),
+      GoRoute(
+        path: '/questions/photo',
+        builder: (context, state) => const AskByPhotoPage(),
+      ),
+      GoRoute(
+        path: '/questions/:questionId/solution',
+        builder: (context, state) {
+          final extra = state.extra;
+          return QuestionSolutionHandoffPage(
+            questionId: state.pathParameters['questionId'] ?? '',
+            solvedState: extra is AskByPhotoSolved ? extra : null,
+          );
+        },
       ),
     ],
     errorBuilder: (context, state) {
