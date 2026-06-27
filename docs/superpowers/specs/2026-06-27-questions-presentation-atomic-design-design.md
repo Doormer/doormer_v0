@@ -68,11 +68,11 @@ lib/src/features/questions/presentation/
   atoms/
     viewfinder_corners_atom.dart      # ViewfinderCornersAtom (questions-specific decorative atom)
   molecules/
+    ask_by_photo_header_molecule.dart # AskByPhotoHeaderMolecule (was _Header — title + supporting text)
     photo_preview_molecule.dart       # PhotoPreviewMolecule  (was _PreviewFrame + _EmptyPreview)
     photo_action_row_molecule.dart    # PhotoActionRowMolecule (choose/retake + clear)
     status_action_row_molecule.dart   # StatusActionRowMolecule (retake + type-instead)
   organisms/
-    ask_by_photo_header_organism.dart # AskByPhotoHeaderOrganism (was _Header)
     photo_upload_panel_organism.dart  # PhotoUploadPanelOrganism (was _UploadPanel)
     solve_status_panel_organism.dart  # SolveStatusPanelOrganism (was _StatusPanel)
   templates/
@@ -88,9 +88,10 @@ lib/src/features/questions/presentation/
 
 ### Layer placement rationale
 
-- **`AppButtonAtom` and `SurfaceCardAtom` are shared** — both are generic and purpose-agnostic, reused across both panels and the handoff card, and reusable by future features. They live in `shared/design/atomic/atoms/`. The surface card removes the bordered-`BoxDecoration` that is currently copy-pasted in **three** places (upload panel, status panel, handoff card) — eliminating it is the same DRY win as the button atom (issue #1).
-- **`ViewfinderCornersAtom` is questions-local** — it is purely decorative and meaningless outside the photo viewfinder, so it is a feature-local atom, not a shared one. It is composed of four mirrored corner brackets built by a private helper; because those corners are not independently reusable, it stays a single **atom** rather than a molecule of corner-atoms (issue #4 — deliberate call).
-- The **state → copy mapping** lives in `mapper/solve_status_presenter.dart`, not inside the page. `SolveStatusContent` is a plain value object and `solveStatusContentFor(AskByPhotoState)` is a pure function (the old `_contentFor` switch). This keeps the page lean and the ~6 title/body strings out of widget code (issue #5).
+- **`AppButtonAtom` and `SurfaceCardAtom` are shared** — both are generic and purpose-agnostic, reused across both panels and the handoff card, and reusable by future features. They live in `shared/design/atomic/atoms/`. The surface card removes the bordered-`BoxDecoration` that is currently copy-pasted in **three** places (upload panel, status panel, handoff card) — eliminating it is the same DRY win as the button atom (issue #1). `SurfaceCardAtom` is a **pure visual primitive**: it only applies the surface treatment (color/border/radius/padding) to an arbitrary `child`. It must never bake in semantic structure (title, body, action slots, content rules); the moment it would, it becomes a molecule. This guardrail comes out of the three-model review.
+- **`AskByPhotoHeaderMolecule` is a molecule, not an organism** — it is a title + supporting-text pair functioning as one intro unit. All three review models (Gemini 3.1 Pro, GPT-5.5, Opus 4.8) independently flagged that a two-`Text` block is too simple to be an organism (Frost: organisms are "relatively complex... distinct sections"); a heading group maps to an HTML `<hgroup>`, i.e. a molecule. It lives in `molecules/`.
+- **`ViewfinderCornersAtom` is questions-local** — it is purely decorative and meaningless outside the photo viewfinder, so it is a feature-local atom, not a shared one. It stays an **atom** by Frost's *decomposability* test: it is a single indivisible decorative overlay with no independently-named sub-components (the four brackets are produced by a private `_corner` helper, not standalone widgets). Note: the canonical atom test is decomposability — "can't be broken down further without ceasing to be functional" — **not** reusability (an earlier draft justified this by reusability, which is actually a *molecule* property; corrected per the three-model review).
+- The **state → copy mapping** lives in `mapper/solve_status_presenter.dart`, not inside a widget. `SolveStatusContent` is a plain value object and `solveStatusContentFor(AskByPhotoState)` is a pure function (the old `_contentFor` switch). It is **page-invoked only**: the `AskByPhotoPage` calls it and passes the resolved `SolveStatusContent` down as a prop. No organism, molecule, or template may import the mapper — doing so would smuggle page-level content/variation decisions into a presentational layer (Frost: state-driven content variations belong at the Pages level). This keeps the page lean and the ~6 title/body strings out of widget code (issue #5).
 
 ## Component Contracts
 
@@ -130,7 +131,10 @@ class SurfaceCardAtom extends StatelessWidget {
 }
 ```
 
-Renders `Container(decoration: BoxDecoration(color: AppColors.surface, border: Border.all(color: AppColors.borders), borderRadius: BorderRadius.circular(radius)))`. The two photo panels use the defaults (`padding: 22.w`, `radius: 18.r`). The handoff card passes `padding: EdgeInsets.all(24.w), radius: 16.r` to preserve its current spacing and corner exactly (cross-validation finding #3).
+Renders `Container(decoration: BoxDecoration(color: AppColors.surface, border: Border.all(color: AppColors.borders), borderRadius: BorderRadius.circular(radius)))`. The two photo panels use the defaults (`padding: 22.w`, `radius: 18.r`). The handoff card passes `padding: EdgeInsets.all(24.w), radius: 16.r` to preserve its current spacing and corner exactly (cross-validation finding #3). **Constraint (atomic-design guardrail):** this atom takes only a `child` and styling params — it must not gain `title`/`subtitle`/`actions`/named content slots. If a future need wants a structured card, build a *molecule* that composes `SurfaceCardAtom`, do not extend the atom.
+
+### `AskByPhotoHeaderMolecule`
+Move of `_Header` — a heading + supporting-text pair, no params (static copy via `AppTextStyles`). Classified as a **molecule** (not an organism): per the three-model review it is a simple title/subtitle group, the `<hgroup>` equivalent, below the complexity bar for an organism.
 
 ### `ViewfinderCornersAtom` (local atom)
 Pure move of `_ViewfinderCorners` — no API, decorative overlay.
@@ -171,10 +175,7 @@ class SolveStatusContent {
 /// Pure function — the old _contentFor switch. Maps a bloc state to display copy.
 SolveStatusContent solveStatusContentFor(AskByPhotoState state);
 ```
-Keeping this a pure function (rather than a widget method or page-inlined switch) makes the ~6 outcome strings unit-testable without any widget, and keeps both the page and the status organism free of copy.
-
-### `AskByPhotoHeaderOrganism`
-Pure move of `_Header`. No params (static copy from `AppTextStyles`).
+Keeping this a pure function (rather than a widget method or page-inlined switch) makes the ~6 outcome strings unit-testable without any widget, and keeps both the page and the status organism free of copy. **Page-invoked only** — no widget layer imports this mapper.
 
 ### `PhotoUploadPanelOrganism`
 ```dart
@@ -215,7 +216,9 @@ AskByPhotoTemplate({
   required VoidCallback onTypeInstead,
 })
 ```
-Owns the `Scaffold` + `SafeArea` + `SingleChildScrollView` + `ConstrainedBox` + the `LayoutBuilder` responsive 1col/2col arrangement (was `_AskByPhotoContent`). **It composes the organisms itself** from the data passed in — it is not a generic slot container, so the `AskByPhoto` name stays honest and the template matches the referenced article's data-driven template layer (issue #3). It holds no bloc and no `flutter_bloc` import; all dynamic values arrive as constructor args.
+Owns the `Scaffold` + `SafeArea` + `SingleChildScrollView` + `ConstrainedBox` + the `LayoutBuilder` responsive 1col/2col arrangement (was `_AskByPhotoContent`). **It composes the organisms itself** (`AskByPhotoHeaderMolecule`, `PhotoUploadPanelOrganism`, `SolveStatusPanelOrganism`) from the data passed in — it is not a generic slot container, so the `AskByPhoto` name stays honest and the template matches the referenced article's data-driven template layer (issue #3). It holds no bloc and no `flutter_bloc` import; all dynamic values arrive as constructor args.
+
+**Atomic-design guardrail (from the three-model review):** the template *receives already-resolved data and callbacks* but **never derives or chooses content** — no state inspection, no `solveStatusContentFor` call, no mapping. The page resolves all content (including the `statusContent` variation) and injects it; the template only arranges structure. This is the code-level realization of Frost's "template = content structure, page = real content + variations." Two of three reviewers (GPT-5.5, Opus 4.8) judged the data-driven template faithful given this guardrail; the dissent (Gemini, preferring `Widget` slots) is noted but the data-driven choice was the user's explicit decision in issue #3.
 
 ### `SolutionHandoffTemplate`
 ```dart
@@ -246,8 +249,8 @@ AskByPhotoBloc state ──┐
     wires event callbacks)
                        │ plain data + callbacks
                        ▼
-            AskByPhotoTemplate (layout + composes organisms)
-            ├── AskByPhotoHeaderOrganism
+            AskByPhotoTemplate (layout only — composes the widgets below)
+            ├── AskByPhotoHeaderMolecule
             ├── PhotoUploadPanelOrganism ── SurfaceCardAtom
             │     ├── PhotoPreviewMolecule ── ViewfinderCornersAtom
             │     └── PhotoActionRowMolecule ── AppButtonAtom ×N
@@ -282,9 +285,9 @@ No automated tests exist in the repo. Verification is:
 1. Add the `accent` token (alias `uploadButton`) in `AppColors`.
 2. Add shared atoms: `AppButtonAtom`, `SurfaceCardAtom`. Add local `ViewfinderCornersAtom`.
 3. Add the mapper `solve_status_presenter.dart` (`SolveStatusContent` + `solveStatusContentFor`).
-4. Build molecules (`PhotoPreviewMolecule`, `PhotoActionRowMolecule`, `StatusActionRowMolecule`).
-5. Build organisms consuming molecules/atoms.
-6. Build templates (data-driven; compose organisms).
+4. Build molecules (`AskByPhotoHeaderMolecule`, `PhotoPreviewMolecule`, `PhotoActionRowMolecule`, `StatusActionRowMolecule`).
+5. Build organisms (`PhotoUploadPanelOrganism`, `SolveStatusPanelOrganism`) consuming molecules/atoms.
+6. Build templates (data-driven; arrange the header molecule + organisms; no content derivation).
 7. Rewrite the two pages to derive plain data + `statusContent` and pass them to the templates; delete the old inline `_*` widget classes.
 8. `flutter analyze`; manual smoke test.
 
