@@ -27,5 +27,6 @@ class AppColors {
   static Color focusedBorders = Colors.black54;
 
   // Buttons
-  static const Color uploadButton = Colors.deepOrangeAccent;
+  static const Color accent = Colors.deepOrangeAccent; // semantic token consumed by shared atoms
+  static const Color uploadButton = accent; // plain alias — still used by the registration feature
 }
