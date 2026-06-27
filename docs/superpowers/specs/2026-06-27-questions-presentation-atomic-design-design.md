@@ -75,8 +75,11 @@ lib/src/features/questions/presentation/
   organisms/
     photo_upload_panel_organism.dart  # PhotoUploadPanelOrganism (was _UploadPanel)
     solve_status_panel_organism.dart  # SolveStatusPanelOrganism (was _StatusPanel)
+  params/
+    photo_upload_panel_params.dart    # PhotoUploadPanelParams (data + callbacks for the upload organism)
+    solve_status_panel_params.dart    # SolveStatusPanelParams (content + callbacks for the status organism)
   templates/
-    ask_by_photo_template.dart        # AskByPhotoTemplate (data-driven: builds organisms, owns responsive layout)
+    ask_by_photo_template.dart        # AskByPhotoTemplate (param-driven: builds organisms, owns responsive layout)
     solution_handoff_template.dart    # SolutionHandoffTemplate (was the handoff page body)
   mapper/
     solve_status_presenter.dart       # SolveStatusContent + solveStatusContentFor(state) (was _StatusContent + _contentFor)
@@ -92,6 +95,7 @@ lib/src/features/questions/presentation/
 - **`AskByPhotoHeaderMolecule` is a molecule, not an organism** — it is a title + supporting-text pair functioning as one intro unit. All three review models (Gemini 3.1 Pro, GPT-5.5, Opus 4.8) independently flagged that a two-`Text` block is too simple to be an organism (Frost: organisms are "relatively complex... distinct sections"); a heading group maps to an HTML `<hgroup>`, i.e. a molecule. It lives in `molecules/`.
 - **`ViewfinderCornersAtom` is questions-local** — it is purely decorative and meaningless outside the photo viewfinder, so it is a feature-local atom, not a shared one. It stays an **atom** by Frost's *decomposability* test: it is a single indivisible decorative overlay with no independently-named sub-components (the four brackets are produced by a private `_corner` helper, not standalone widgets). Note: the canonical atom test is decomposability — "can't be broken down further without ceasing to be functional" — **not** reusability (an earlier draft justified this by reusability, which is actually a *molecule* property; corrected per the three-model review).
 - The **state → copy mapping** lives in `mapper/solve_status_presenter.dart`, not inside a widget. `SolveStatusContent` is a plain value object and `solveStatusContentFor(AskByPhotoState)` is a pure function (the old `_contentFor` switch). It is **page-invoked only**: the `AskByPhotoPage` calls it and passes the resolved `SolveStatusContent` down as a prop. No organism, molecule, or template may import the mapper — doing so would smuggle page-level content/variation decisions into a presentational layer (Frost: state-driven content variations belong at the Pages level). This keeps the page lean and the ~6 title/body strings out of widget code (issue #5).
+- **Parameter Objects group each organism's inputs** — the referenced article adds a "sub-layer to contain all parameters related to the template... [to] separate the attributes by responsibility." We adopt this **Parameter Object** pattern at the organism/template boundary, where the argument lists are largest. `PhotoUploadPanelParams` (6 fields) and `SolveStatusPanelParams` (3 fields) each bundle one organism's data + callbacks into a named value object in `params/`. The page constructs the params from bloc state; the template receives the two params and forwards each whole to its organism (`PhotoUploadPanelOrganism(params:)`, `SolveStatusPanelOrganism(params:)`). This shrinks the template's constructor from 9 flat arguments to 2 grouped ones and removes per-field re-plumbing. **Scope of the pattern (deliberate):** params are applied **only** at the organism/template layer. Atoms (`AppButtonAtom`, `SurfaceCardAtom`) and molecules keep flat constructors — they have 1–4 args and a param object there would be over-engineering. The params are **plain value holders, not `Equatable`**: they carry `VoidCallback`s, which compare by reference, so structural equality buys nothing. The pattern is purely about readability/responsibility-grouping, not rebuild optimisation.
 
 ## Component Contracts
 
@@ -177,48 +181,52 @@ SolveStatusContent solveStatusContentFor(AskByPhotoState state);
 ```
 Keeping this a pure function (rather than a widget method or page-inlined switch) makes the ~6 outcome strings unit-testable without any widget, and keeps both the page and the status organism free of copy. **Page-invoked only** — no widget layer imports this mapper.
 
+### Parameter Objects (`params/`)
+Two plain value holders group each organism's inputs (article's "parameters sub-layer"). Not `Equatable` (they hold `VoidCallback`s).
+```dart
+// photo_upload_panel_params.dart
+class PhotoUploadPanelParams {
+  final Uint8List? imageBytes;
+  final String? fileName;
+  final bool isLoading;
+  final VoidCallback onPickPhoto;
+  final VoidCallback onSubmit;
+  final VoidCallback onClear;
+  const PhotoUploadPanelParams({ this.imageBytes, this.fileName, required this.isLoading,
+    required this.onPickPhoto, required this.onSubmit, required this.onClear });
+}
+
+// solve_status_panel_params.dart
+class SolveStatusPanelParams {
+  final SolveStatusContent content;   // already resolved by the page via the mapper
+  final VoidCallback onRetake;
+  final VoidCallback onTypeInstead;
+  const SolveStatusPanelParams({ required this.content, required this.onRetake, required this.onTypeInstead });
+}
+```
+
 ### `PhotoUploadPanelOrganism`
 ```dart
-PhotoUploadPanelOrganism({
-  Uint8List? imageBytes,
-  String? fileName,
-  required bool isLoading,
-  required VoidCallback onPickPhoto,
-  required VoidCallback onSubmit,
-  required VoidCallback onClear,
-})
+PhotoUploadPanelOrganism({ required PhotoUploadPanelParams params })
 ```
-`SurfaceCardAtom` + "Photo input" title + `PhotoPreviewMolecule` + filename + `PhotoActionRowMolecule` + submit `AppButtonAtom(accent, expand)`. **No bloc access** — takes plain data instead of `AskByPhotoPhotoSelected?`.
+`SurfaceCardAtom` + "Photo input" title + `PhotoPreviewMolecule` + filename + `PhotoActionRowMolecule` + submit `AppButtonAtom(accent, expand)`. Reads everything from `params`. **No bloc access** — takes plain data instead of `AskByPhotoPhotoSelected?`.
 
 ### `SolveStatusPanelOrganism`
 ```dart
-SolveStatusPanelOrganism({
-  required SolveStatusContent content,
-  required VoidCallback onRetake,
-  required VoidCallback onTypeInstead,
-})
+SolveStatusPanelOrganism({ required SolveStatusPanelParams params })
 ```
-`SurfaceCardAtom` rendering `content.title` / `content.body` and, when `content.showActions`, a `StatusActionRowMolecule`. The state → `SolveStatusContent` mapping is done by the `solveStatusContentFor` mapper (called in the page), so the organism stays presentational and bloc-free.
+`SurfaceCardAtom` rendering `params.content.title` / `params.content.body` and, when `params.content.showActions`, a `StatusActionRowMolecule`. The state → `SolveStatusContent` mapping is done by the `solveStatusContentFor` mapper (called in the page), so the organism stays presentational and bloc-free.
 
-### `AskByPhotoTemplate` (data-driven)
+### `AskByPhotoTemplate` (param-driven)
 ```dart
 AskByPhotoTemplate({
-  // upload panel data + callbacks
-  Uint8List? imageBytes,
-  String? fileName,
-  required bool isLoading,
-  required VoidCallback onPickPhoto,
-  required VoidCallback onSubmit,
-  required VoidCallback onClear,
-  // status panel data + callbacks
-  required SolveStatusContent statusContent,
-  required VoidCallback onRetake,
-  required VoidCallback onTypeInstead,
+  required PhotoUploadPanelParams uploadParams,
+  required SolveStatusPanelParams statusParams,
 })
 ```
-Owns the `Scaffold` + `SafeArea` + `SingleChildScrollView` + `ConstrainedBox` + the `LayoutBuilder` responsive 1col/2col arrangement (was `_AskByPhotoContent`). **It composes the organisms itself** (`AskByPhotoHeaderMolecule`, `PhotoUploadPanelOrganism`, `SolveStatusPanelOrganism`) from the data passed in — it is not a generic slot container, so the `AskByPhoto` name stays honest and the template matches the referenced article's data-driven template layer (issue #3). It holds no bloc and no `flutter_bloc` import; all dynamic values arrive as constructor args.
+Owns the `Scaffold` + `SafeArea` + `SingleChildScrollView` + `ConstrainedBox` + the `LayoutBuilder` responsive 1col/2col arrangement (was `_AskByPhotoContent`). **It composes the organisms itself** (`AskByPhotoHeaderMolecule`, `PhotoUploadPanelOrganism(params: uploadParams)`, `SolveStatusPanelOrganism(params: statusParams)`) — it is not a generic slot container, so the `AskByPhoto` name stays honest and the template matches the referenced article's param-driven template layer (issue #3). It holds no bloc and no `flutter_bloc` import; all dynamic values arrive inside the two param objects.
 
-**Atomic-design guardrail (from the three-model review):** the template *receives already-resolved data and callbacks* but **never derives or chooses content** — no state inspection, no `solveStatusContentFor` call, no mapping. The page resolves all content (including the `statusContent` variation) and injects it; the template only arranges structure. This is the code-level realization of Frost's "template = content structure, page = real content + variations." Two of three reviewers (GPT-5.5, Opus 4.8) judged the data-driven template faithful given this guardrail; the dissent (Gemini, preferring `Widget` slots) is noted but the data-driven choice was the user's explicit decision in issue #3.
+**Atomic-design guardrail (from the three-model review):** the template *receives already-resolved params* but **never derives or chooses content** — no state inspection, no `solveStatusContentFor` call, no mapping. The page resolves all content (including the `statusContent` variation, packed into `statusParams`) and injects it; the template only arranges structure. This is the code-level realization of Frost's "template = content structure, page = real content + variations." Two of three reviewers (GPT-5.5, Opus 4.8) judged the param-driven template faithful given this guardrail; the dissent (Gemini, preferring `Widget` slots) is noted but the param-driven choice was the user's explicit decision in issue #3 and the article's own pattern.
 
 ### `SolutionHandoffTemplate`
 ```dart
@@ -232,8 +240,8 @@ The handoff card layout (built on `SurfaceCardAtom`), fed plain primitives inste
 - Provides the bloc (`BlocProvider` + `serviceLocator<AskByPhotoBloc>()`) — unchanged.
 - `BlocConsumer`:
   - **listener**: toast handling + `GoRouter` navigation on `AskByPhotoSolved` — unchanged.
-  - **builder**: derive plain values from state (`imageBytes`, `fileName`, `isLoading`) and compute `statusContent` via `solveStatusContentFor(state)` (the mapper), then pass data + callbacks to `AskByPhotoTemplate` (the template composes the organisms itself).
-- Keeps `_pickPhoto` file-picker logic and event dispatch (`onPickPhoto`, `onSubmit`, `onClear`, `onRetake`, `onTypeInstead`) — the page wires callbacks to `context.read<AskByPhotoBloc>().add(...)`.
+  - **builder**: derive plain values from state (`imageBytes`, `fileName`, `isLoading`) and compute `statusContent` via `solveStatusContentFor(state)` (the mapper), pack them into a `PhotoUploadPanelParams` and a `SolveStatusPanelParams`, then pass those two params to `AskByPhotoTemplate` (the template composes the organisms itself).
+- Keeps `_pickPhoto` file-picker logic and event dispatch (`onPickPhoto`, `onSubmit`, `onClear`, `onRetake`, `onTypeInstead`) — the page wires callbacks to `context.read<AskByPhotoBloc>().add(...)` inside the param objects.
 
 ### `QuestionSolutionHandoffPage`
 - Maps `solvedState` → `SolutionHandoffTemplate(questionId:, stepCount: solvedState?.solution.steps.length)`.
@@ -246,15 +254,16 @@ AskByPhotoBloc state ──┐
             AskByPhotoPage.builder
    (derives imageBytes/fileName/isLoading,
     computes statusContent = solveStatusContentFor(state),
-    wires event callbacks)
-                       │ plain data + callbacks
+    wires event callbacks,
+    packs them into PhotoUploadPanelParams + SolveStatusPanelParams)
+                       │ two param objects
                        ▼
             AskByPhotoTemplate (layout only — composes the widgets below)
             ├── AskByPhotoHeaderMolecule
-            ├── PhotoUploadPanelOrganism ── SurfaceCardAtom
+            ├── PhotoUploadPanelOrganism(params: uploadParams) ── SurfaceCardAtom
             │     ├── PhotoPreviewMolecule ── ViewfinderCornersAtom
             │     └── PhotoActionRowMolecule ── AppButtonAtom ×N
-            └── SolveStatusPanelOrganism ── SurfaceCardAtom
+            └── SolveStatusPanelOrganism(params: statusParams) ── SurfaceCardAtom
                   └── StatusActionRowMolecule ── AppButtonAtom ×2
 ```
 
@@ -286,9 +295,9 @@ No automated tests exist in the repo. Verification is:
 2. Add shared atoms: `AppButtonAtom`, `SurfaceCardAtom`. Add local `ViewfinderCornersAtom`.
 3. Add the mapper `solve_status_presenter.dart` (`SolveStatusContent` + `solveStatusContentFor`).
 4. Build molecules (`AskByPhotoHeaderMolecule`, `PhotoPreviewMolecule`, `PhotoActionRowMolecule`, `StatusActionRowMolecule`).
-5. Build organisms (`PhotoUploadPanelOrganism`, `SolveStatusPanelOrganism`) consuming molecules/atoms.
-6. Build templates (data-driven; arrange the header molecule + organisms; no content derivation).
-7. Rewrite the two pages to derive plain data + `statusContent` and pass them to the templates; delete the old inline `_*` widget classes.
+5. Add param objects (`PhotoUploadPanelParams`, `SolveStatusPanelParams`) and build organisms (`PhotoUploadPanelOrganism`, `SolveStatusPanelOrganism`) consuming the params + molecules/atoms.
+6. Build templates (param-driven; arrange the header molecule + organisms; no content derivation).
+7. Rewrite the two pages to derive plain data + `statusContent`, pack them into the param objects, and pass those to the templates; delete the old inline `_*` widget classes.
 8. `flutter analyze`; manual smoke test.
 
 Router and DI files are untouched (pages keep their class names and constructors).
