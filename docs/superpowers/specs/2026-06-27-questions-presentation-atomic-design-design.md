@@ -8,7 +8,7 @@
 
 The questions feature's presentation layer is structurally flat and monolithic:
 
-- `ask_by_photo_page.dart` is **577 lines** holding **9 widget classes** (`_AskByPhotoContent`, `_Header`, `_UploadPanel`, `_PreviewFrame`, `_EmptyPreview`, `_ViewfinderCorners`, `_StatusPanel`, plus the `_StatusContent` data holder) inside one file. Layout, presentation, and bloc wiring are tangled together.
+- `ask_by_photo_page.dart` is **577 lines** holding **8 widget classes** (`_AskByPhotoContent`, `_Header`, `_UploadPanel`, `_PreviewFrame`, `_EmptyPreview`, `_ViewfinderCorners`, `_StatusPanel`) plus the `_StatusContent` plain data holder, inside one file. Layout, presentation, and bloc wiring are tangled together.
 - `question_solution_handoff_page.dart` mixes layout with page concerns.
 - Button styling (filled / accent / outlined, padding, radius, loading spinner) is **copy-pasted** across the upload panel and status panel.
 - Nothing below the page is testable without instantiating the bloc, because the widgets read the bloc via `context.read` internally.
@@ -42,15 +42,27 @@ We want to reorganise this into an **Atomic Design** hierarchy (Brad Frost: Toke
 
 Files are `snake_case.dart` per repo convention; the folder conveys the layer and the suffix reinforces it in code.
 
-## Tokens (unchanged)
+## Tokens
 
 The existing `core/theme/AppColors` and `core/theme/AppTextStyles` **are** the token layer. Atoms consume them. We do not create `SectionTitleAtom` / `BodyTextAtom` wrappers — that would be redundant indirection over `AppTextStyles`.
+
+**One token change (issue #2 — shared atom must not leak a feature-named token):**
+The accent button currently maps to `AppColors.uploadButton` (`= Colors.deepOrangeAccent`). A purpose-agnostic *shared* atom must not reference a token literally named `uploadButton`. We introduce a semantic alias:
+
+```dart
+// core/theme/app_colors.dart
+static const Color accent = Colors.deepOrangeAccent;   // semantic token consumed by shared atoms
+static const Color uploadButton = accent;              // plain alias — still used by the registration feature
+```
+
+`AppButtonAtom`'s `accent` variant references `AppColors.accent`. `uploadButton` remains a normal (non-deprecated) alias because the registration feature still uses that name; no deprecation warnings are introduced. The viewfinder corner color also migrates to `AppColors.accent`.
 
 ## Target Structure
 
 ```
 lib/src/shared/design/atomic/atoms/
   app_button_atom.dart          # AppButtonAtom
+  surface_card_atom.dart        # SurfaceCardAtom (bordered/rounded panel surface)
 
 lib/src/features/questions/presentation/
   atoms/
@@ -59,14 +71,15 @@ lib/src/features/questions/presentation/
     photo_preview_molecule.dart       # PhotoPreviewMolecule  (was _PreviewFrame + _EmptyPreview)
     photo_action_row_molecule.dart    # PhotoActionRowMolecule (choose/retake + clear)
     status_action_row_molecule.dart   # StatusActionRowMolecule (retake + type-instead)
-    solve_status_content.dart         # SolveStatusContent (the title/body/showActions value object, was _StatusContent)
   organisms/
     ask_by_photo_header_organism.dart # AskByPhotoHeaderOrganism (was _Header)
     photo_upload_panel_organism.dart  # PhotoUploadPanelOrganism (was _UploadPanel)
-    solve_status_panel_organism.dart  # SolveStatusPanelOrganism (was _StatusPanel + _contentFor mapping)
+    solve_status_panel_organism.dart  # SolveStatusPanelOrganism (was _StatusPanel)
   templates/
-    ask_by_photo_template.dart        # AskByPhotoTemplate (was _AskByPhotoContent: responsive 1col/2col)
+    ask_by_photo_template.dart        # AskByPhotoTemplate (data-driven: builds organisms, owns responsive layout)
     solution_handoff_template.dart    # SolutionHandoffTemplate (was the handoff page body)
+  mapper/
+    solve_status_presenter.dart       # SolveStatusContent + solveStatusContentFor(state) (was _StatusContent + _contentFor)
   pages/
     ask_by_photo_page.dart            # AskByPhotoPage (bloc provider/consumer/events only)
     question_solution_handoff_page.dart # QuestionSolutionHandoffPage (maps route data → template)
@@ -75,9 +88,9 @@ lib/src/features/questions/presentation/
 
 ### Layer placement rationale
 
-- **`AppButtonAtom` is shared** — generic, purpose-agnostic, reused across both panels and reusable by future features. Lives in `shared/design/atomic/atoms/`.
-- **`ViewfinderCornersAtom` is questions-local** — it is purely decorative and meaningless outside the photo viewfinder, so it is a feature-local atom, not a shared one.
-- The `SolveStatusContent` value object (formerly `_StatusContent`) lives under `molecules/` as a plain data holder used by the status organism. It is not a widget.
+- **`AppButtonAtom` and `SurfaceCardAtom` are shared** — both are generic and purpose-agnostic, reused across both panels and the handoff card, and reusable by future features. They live in `shared/design/atomic/atoms/`. The surface card removes the bordered-`BoxDecoration` that is currently copy-pasted in **three** places (upload panel, status panel, handoff card) — eliminating it is the same DRY win as the button atom (issue #1).
+- **`ViewfinderCornersAtom` is questions-local** — it is purely decorative and meaningless outside the photo viewfinder, so it is a feature-local atom, not a shared one. It is composed of four mirrored corner brackets built by a private helper; because those corners are not independently reusable, it stays a single **atom** rather than a molecule of corner-atoms (issue #4 — deliberate call).
+- The **state → copy mapping** lives in `mapper/solve_status_presenter.dart`, not inside the page. `SolveStatusContent` is a plain value object and `solveStatusContentFor(AskByPhotoState)` is a pure function (the old `_contentFor` switch). This keeps the page lean and the ~6 title/body strings out of widget code (issue #5).
 
 ## Component Contracts
 
@@ -95,14 +108,29 @@ class AppButtonAtom extends StatelessWidget {
   final IconData? icon;              // optional leading icon
   final bool isLoading;              // shows spinner, absorbs the old inline CircularProgressIndicator
   final bool expand;                 // full-width (double.infinity) when true
+  final Color? borderColor;          // outlined only; defaults to AppColors.borders
 }
 ```
 
 - `filled` → `AppColors.primary` / `onPrimary` (the "Choose photo", "Retake" buttons).
-- `accent` → `AppColors.uploadButton` / `onPrimary` (the "Submit to solver" button).
-- `outlined` → transparent with `AppColors.borders`/`focusedBorders` side, `AppColors.primary` foreground (the "Clear", "Type instead" buttons).
+- `accent` → `AppColors.accent` / `onPrimary` (the "Submit to solver" button).
+- `outlined` → transparent with `AppColors.primary` foreground and a `borderColor` side (the "Clear", "Type instead" buttons). **The two current outlined buttons use different borders** — "Clear" uses `AppColors.borders` (current L284) and "Type instead" uses `AppColors.focusedBorders` (current L493). The `borderColor` param preserves both exactly; callers pass the matching color (cross-validation finding #1).
 - `isLoading` renders the sized `CircularProgressIndicator` exactly as today.
-- Consistent padding/radius become the atom's defaults (the **light polish**): one radius (`8.r`), consistent vertical padding.
+- **Padding is standardised** to a single vertical value (`14.h`) as part of the light polish (option B). The current buttons vary slightly (`14.h` choose/clear, `15.h` submit, `13.h` status actions); normalising them to `14.h` is an accepted, deliberate polish change — this is the *only* spacing change in scope and is called out explicitly so it is not mistaken for a regression (cross-validation finding #2). Radius stays `8.r`.
+
+### `SurfaceCardAtom` (shared atom)
+
+Collapses the bordered-surface container duplicated across the upload panel, status panel, and handoff card.
+
+```dart
+class SurfaceCardAtom extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry? padding;   // default EdgeInsets.all(22.w)
+  final double radius;                 // default 18.r
+}
+```
+
+Renders `Container(decoration: BoxDecoration(color: AppColors.surface, border: Border.all(color: AppColors.borders), borderRadius: BorderRadius.circular(radius)))`. The two photo panels use the defaults (`padding: 22.w`, `radius: 18.r`). The handoff card passes `padding: EdgeInsets.all(24.w), radius: 16.r` to preserve its current spacing and corner exactly (cross-validation finding #3).
 
 ### `ViewfinderCornersAtom` (local atom)
 Pure move of `_ViewfinderCorners` — no API, decorative overlay.
@@ -122,15 +150,16 @@ PhotoActionRowMolecule({
   VoidCallback? onClear,
 })
 ```
-Renders the choose/retake `AppButtonAtom(filled)` + conditional clear `AppButtonAtom(outlined)`.
+Renders the choose/retake `AppButtonAtom(filled)` + conditional clear `AppButtonAtom(outlined, borderColor: AppColors.borders)`.
 
 ### `StatusActionRowMolecule`
 ```dart
 StatusActionRowMolecule({ required VoidCallback onRetake, required VoidCallback onTypeInstead })
 ```
-Two `AppButtonAtom`s (filled + outlined).
+Retake `AppButtonAtom(filled)` + type-instead `AppButtonAtom(outlined, borderColor: AppColors.focusedBorders)`.
 
-### `SolveStatusContent` (value object)
+### `SolveStatusContent` + `solveStatusContentFor` (mapper, not a widget)
+Lives in `mapper/solve_status_presenter.dart`. Pure presentation logic, no Flutter widgets.
 ```dart
 class SolveStatusContent {
   final String title;
@@ -138,7 +167,11 @@ class SolveStatusContent {
   final bool showActions;
   const SolveStatusContent({ required this.title, required this.body, required this.showActions });
 }
+
+/// Pure function — the old _contentFor switch. Maps a bloc state to display copy.
+SolveStatusContent solveStatusContentFor(AskByPhotoState state);
 ```
+Keeping this a pure function (rather than a widget method or page-inlined switch) makes the ~6 outcome strings unit-testable without any widget, and keeps both the page and the status organism free of copy.
 
 ### `AskByPhotoHeaderOrganism`
 Pure move of `_Header`. No params (static copy from `AppTextStyles`).
@@ -154,7 +187,7 @@ PhotoUploadPanelOrganism({
   required VoidCallback onClear,
 })
 ```
-Surface container + "Photo input" title + `PhotoPreviewMolecule` + filename + `PhotoActionRowMolecule` + submit `AppButtonAtom(accent, expand)`. **No bloc access** — takes plain data instead of `AskByPhotoPhotoSelected?`.
+`SurfaceCardAtom` + "Photo input" title + `PhotoPreviewMolecule` + filename + `PhotoActionRowMolecule` + submit `AppButtonAtom(accent, expand)`. **No bloc access** — takes plain data instead of `AskByPhotoPhotoSelected?`.
 
 ### `SolveStatusPanelOrganism`
 ```dart
@@ -164,23 +197,31 @@ SolveStatusPanelOrganism({
   required VoidCallback onTypeInstead,
 })
 ```
-Surface container rendering `content.title` / `content.body` and, when `content.showActions`, a `StatusActionRowMolecule`. The **state → `SolveStatusContent` mapping** (the old `_contentFor` switch) moves to the **page**, so the organism stays presentational and bloc-free.
+`SurfaceCardAtom` rendering `content.title` / `content.body` and, when `content.showActions`, a `StatusActionRowMolecule`. The state → `SolveStatusContent` mapping is done by the `solveStatusContentFor` mapper (called in the page), so the organism stays presentational and bloc-free.
 
-### `AskByPhotoTemplate`
+### `AskByPhotoTemplate` (data-driven)
 ```dart
 AskByPhotoTemplate({
-  required Widget header,
-  required Widget uploadPanel,
-  required Widget statusPanel,
+  // upload panel data + callbacks
+  Uint8List? imageBytes,
+  String? fileName,
+  required bool isLoading,
+  required VoidCallback onPickPhoto,
+  required VoidCallback onSubmit,
+  required VoidCallback onClear,
+  // status panel data + callbacks
+  required SolveStatusContent statusContent,
+  required VoidCallback onRetake,
+  required VoidCallback onTypeInstead,
 })
 ```
-Owns the `Scaffold` + `SafeArea` + `SingleChildScrollView` + `ConstrainedBox` + the `LayoutBuilder` responsive 1col/2col arrangement (was `_AskByPhotoContent`). Pure layout, no data, no bloc. Receives already-built organisms.
+Owns the `Scaffold` + `SafeArea` + `SingleChildScrollView` + `ConstrainedBox` + the `LayoutBuilder` responsive 1col/2col arrangement (was `_AskByPhotoContent`). **It composes the organisms itself** from the data passed in — it is not a generic slot container, so the `AskByPhoto` name stays honest and the template matches the referenced article's data-driven template layer (issue #3). It holds no bloc and no `flutter_bloc` import; all dynamic values arrive as constructor args.
 
 ### `SolutionHandoffTemplate`
 ```dart
 SolutionHandoffTemplate({ required String questionId, int? stepCount })
 ```
-The handoff card layout, fed plain primitives instead of the `AskByPhotoSolved` state object.
+The handoff card layout (built on `SurfaceCardAtom`), fed plain primitives instead of the `AskByPhotoSolved` state object.
 
 ## Page Responsibilities (the only bloc-aware layer)
 
@@ -188,7 +229,7 @@ The handoff card layout, fed plain primitives instead of the `AskByPhotoSolved` 
 - Provides the bloc (`BlocProvider` + `serviceLocator<AskByPhotoBloc>()`) — unchanged.
 - `BlocConsumer`:
   - **listener**: toast handling + `GoRouter` navigation on `AskByPhotoSolved` — unchanged.
-  - **builder**: derive plain values from state (`imageBytes`, `fileName`, `isLoading`) and the `SolveStatusContent` (moving `_contentFor` here), then build the three organisms and hand them to `AskByPhotoTemplate`.
+  - **builder**: derive plain values from state (`imageBytes`, `fileName`, `isLoading`) and compute `statusContent` via `solveStatusContentFor(state)` (the mapper), then pass data + callbacks to `AskByPhotoTemplate` (the template composes the organisms itself).
 - Keeps `_pickPhoto` file-picker logic and event dispatch (`onPickPhoto`, `onSubmit`, `onClear`, `onRetake`, `onTypeInstead`) — the page wires callbacks to `context.read<AskByPhotoBloc>().add(...)`.
 
 ### `QuestionSolutionHandoffPage`
@@ -200,29 +241,30 @@ The handoff card layout, fed plain primitives instead of the `AskByPhotoSolved` 
 AskByPhotoBloc state ──┐
                        ▼
             AskByPhotoPage.builder
-   (derives imageBytes/fileName/isLoading + SolveStatusContent,
+   (derives imageBytes/fileName/isLoading,
+    computes statusContent = solveStatusContentFor(state),
     wires event callbacks)
                        │ plain data + callbacks
                        ▼
-            AskByPhotoTemplate (layout)
+            AskByPhotoTemplate (layout + composes organisms)
             ├── AskByPhotoHeaderOrganism
-            ├── PhotoUploadPanelOrganism
+            ├── PhotoUploadPanelOrganism ── SurfaceCardAtom
             │     ├── PhotoPreviewMolecule ── ViewfinderCornersAtom
             │     └── PhotoActionRowMolecule ── AppButtonAtom ×N
-            └── SolveStatusPanelOrganism
+            └── SolveStatusPanelOrganism ── SurfaceCardAtom
                   └── StatusActionRowMolecule ── AppButtonAtom ×2
 ```
 
-No widget below `Page` imports `flutter_bloc` or the bloc. This is the key testability win: organisms/molecules/atoms can be widget-tested with plain constructor args.
+No widget below `Page` imports `flutter_bloc` or the bloc, and the `solveStatusContentFor` mapper is a pure function. This is the key testability win: organisms/molecules/atoms can be widget-tested with plain constructor args, and the status copy is unit-testable without any widget.
 
 ## Light Visual Polish (option B)
 
 Limited to what the atoms naturally standardise:
 
-- **One button radius and padding** across all buttons (currently `8.r` everywhere already, but variant-by-variant duplicated — now centralised).
-- **Consistent surface treatment**: organisms reuse the same border/radius via the existing surface container pattern (kept inline in each organism; no separate surface atom needed since it's two property sets).
+- **One button radius and padding** across all buttons (currently `8.r` everywhere already, but variant-by-variant duplicated — now centralised in `AppButtonAtom`).
+- **Consistent surface treatment**: the bordered/rounded panel is centralised in `SurfaceCardAtom` and reused by both panels and the handoff card, removing three copies of the same `BoxDecoration`.
 - Loading spinner standardised inside `AppButtonAtom`.
-- No colour, copy, spacing-scale, or layout changes beyond the above.
+- No colour, copy, or layout changes. The **only** spacing change is normalising button vertical padding to `14.h` (see `AppButtonAtom`); surface paddings are preserved exactly via `SurfaceCardAtom` params. (The `uploadButton`→`accent` token rename is a no-op visually — same `deepOrangeAccent` value.)
 
 ## Error Handling
 
@@ -237,16 +279,19 @@ No automated tests exist in the repo. Verification is:
 
 ## Migration / Sequencing
 
-1. Add `AppButtonAtom` (shared) + `ViewfinderCornersAtom` (local).
-2. Build molecules (`PhotoPreviewMolecule`, `PhotoActionRowMolecule`, `StatusActionRowMolecule`, `SolveStatusContent`).
-3. Build organisms consuming molecules/atoms.
-4. Build templates.
-5. Rewrite the two pages to map bloc state → organisms via the templates; delete the old inline `_*` widget classes.
-6. `flutter analyze`; manual smoke test.
+1. Add the `accent` token (alias `uploadButton`) in `AppColors`.
+2. Add shared atoms: `AppButtonAtom`, `SurfaceCardAtom`. Add local `ViewfinderCornersAtom`.
+3. Add the mapper `solve_status_presenter.dart` (`SolveStatusContent` + `solveStatusContentFor`).
+4. Build molecules (`PhotoPreviewMolecule`, `PhotoActionRowMolecule`, `StatusActionRowMolecule`).
+5. Build organisms consuming molecules/atoms.
+6. Build templates (data-driven; compose organisms).
+7. Rewrite the two pages to derive plain data + `statusContent` and pass them to the templates; delete the old inline `_*` widget classes.
+8. `flutter analyze`; manual smoke test.
 
 Router and DI files are untouched (pages keep their class names and constructors).
 
 ## Risks
 
 - **`AskByPhotoSolved` coupling in the router**: unchanged — the router still passes the state object as `extra`; only the page→template boundary is decoupled. Acceptable for this scope.
-- **Shared-folder precedent**: `shared/design/atomic/` is a new top-level seam. It is intentionally minimal (one atom) to avoid speculative generality; future generic atoms graduate here.
+- **Shared-folder precedent**: `shared/design/atomic/` is a new top-level seam. It is intentionally minimal (two atoms: button + surface card) to avoid speculative generality; future generic atoms graduate here.
+- **Token alias**: a new semantic `accent` token is added and `uploadButton` becomes a plain alias of it. `uploadButton` is also used by the registration feature, so it is **not** deprecated — both names resolve to the same `deepOrangeAccent` value and no warnings are introduced. Only the questions feature's usages migrate to `accent`.
