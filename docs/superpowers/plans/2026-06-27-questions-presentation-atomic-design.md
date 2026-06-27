@@ -536,14 +536,14 @@ class PhotoActionRowMolecule extends StatelessWidget {
   final bool hasPhoto;
   final bool isLoading;
   final VoidCallback onPick;
-  final VoidCallback? onClear;
+  final VoidCallback onClear;
 
   const PhotoActionRowMolecule({
     super.key,
     required this.hasPhoto,
     required this.isLoading,
     required this.onPick,
-    this.onClear,
+    required this.onClear,
   });
 
   @override
