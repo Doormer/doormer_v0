@@ -134,6 +134,26 @@ try {
 - Routes: `core/routes/app_router.dart` + `web_router.dart` (`AppRouter` delegates to `WebRouter.router`). `PathUrlStrategy` (no hash) is set in `main.dart` via `setUrlStrategy()`, not in the router files.
 - Session expiry → redirect to `/auth` via `BlocListener<GlobalSessionBloc>` in `main.dart`.
 
+## Atomic Design (presentation layer)
+
+Decompose a feature's screens into a layered widget hierarchy instead of one monolithic page. Apply it when a page grows past a simple form/list; don't force it on trivial screens. The `questions` feature is the reference implementation (`features/questions/presentation/`).
+
+### The layers — dependencies point strictly downward
+
+`page → template → organism → molecule → atom`. A layer may only compose layers below it; never sideways or upward.
+
+- **Atoms** — smallest reusable widgets (button, card, icon decoration), no feature knowledge. Generic ones live in `lib/src/shared/design/atomic/atoms/` (e.g. `AppButtonAtom`, `SurfaceCardAtom`); atoms tied to one feature live in `features/<f>/presentation/atoms/`.
+- **Molecules** — small compositions of atoms + static layout (`features/<f>/presentation/molecules/`). Receive plain data + callbacks via constructor params. No bloc.
+- **Organisms** — larger sections composed of molecules/atoms (`organisms/`). Group their inputs into a **Parameter Object** in `params/` (the `xxxParams` pattern). Params are **plain holders, NOT `Equatable`** — they carry `VoidCallback`s, which compare by reference.
+- **Templates** — arrange organisms into the page layout (`Scaffold`, responsive `LayoutBuilder`) in `templates/`. Receive ready-made param objects / primitives only. **No content derivation, no bloc.**
+- **Pages** — the ONLY layer that touches `flutter_bloc` (`pages/`). Own `BlocProvider`/`BlocConsumer`, resolve display copy via a pure presenter in `mapper/`, pack the param objects, and delegate rendering to the template.
+
+### Enforce these
+
+- **No `flutter_bloc` or bloc-state imports below the page** — atoms, molecules, organisms, templates, and params stay bloc-free. The `mapper/` presenter is the only non-page unit allowed to import the bloc, and only for state *types*; its mapping function is **page-invoked only**.
+- **Static chrome copy may be hardcoded** in a molecule/organism (titles, button labels like `Clear`/`Retake`). **State- or data-driven text must flow in** via params / the mapper — never hardcode it below the page.
+- **Naming**: suffix classes `XxxAtom` / `XxxMolecule` / `XxxOrganism` / `XxxTemplate` / `XxxParams`; files `snake_case.dart`. Theming and sizing rules (`AppColors`/`AppTextStyles`, ScreenUtil) apply as everywhere else.
+
 ## Conventions
 
 - **File naming**: `snake_case.dart`. Web-specific widgets use `_web` suffix.
@@ -149,6 +169,6 @@ try {
 4. Implement datasources (`data/datasource/` — remote for API, local for cache).
 5. Implement repository in `data/repository/`.
 6. Create use cases in `domain/usecase/`.
-7. Create BLoC with events/states in `presentation/bloc/`.
+7. Create BLoC with events/states in `presentation/bloc/`. For non-trivial screens, structure the widgets with **Atomic Design** (see that section) — atoms/molecules/organisms/templates with a thin bloc-aware page.
 8. Add DI module in `di/<name>_module.dart`, register in `service_locator.dart`.
 9. Add routes in `core/routes/`.
