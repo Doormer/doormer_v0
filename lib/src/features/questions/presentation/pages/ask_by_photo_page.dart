@@ -102,30 +102,34 @@ class AskByPhotoPage extends StatelessWidget {
               state is AskByPhotoPhotoSelected ? state : null;
           final isLoading = state is AskByPhotoLoading;
 
-          return AskByPhotoTemplate(
-            uploadParams: PhotoUploadPanelParams(
-              imageBytes: selected?.imageBytes,
-              fileName: selected?.fileName,
-              isLoading: isLoading,
-              onPickPhoto: () => _pickPhoto(context),
-              onSubmit: () => context
-                  .read<AskByPhotoBloc>()
-                  .add(const AskByPhotoSubmitted()),
-              onClear: () => context
-                  .read<AskByPhotoBloc>()
-                  .add(const AskByPhotoClearRequested()),
-            ),
-            statusParams: SolveStatusPanelParams(
-              content: solveStatusContentFor(state),
-              onRetake: () {
-                context
-                    .read<AskByPhotoBloc>()
-                    .add(const AskByPhotoClearRequested());
-                _pickPhoto(context);
-              },
-              onTypeInstead: () => context
-                  .read<AskByPhotoBloc>()
-                  .add(const AskByPhotoTypeInsteadRequested()),
+          return Scaffold(
+            backgroundColor: const Color(0xFF6E3FD7),
+
+            body:  AskByPhotoTemplate(
+                uploadParams: PhotoUploadPanelParams(
+                  imageBytes: selected?.imageBytes,
+                  fileName: selected?.fileName,
+                  isLoading: isLoading,
+                  onPickPhoto: () => _pickPhoto(context),
+                  onSubmit: () => context
+                      .read<AskByPhotoBloc>()
+                      .add(const AskByPhotoSubmitted()),
+                  onClear: () => context
+                      .read<AskByPhotoBloc>()
+                      .add(const AskByPhotoClearRequested()),
+                ),
+                statusParams: SolveStatusPanelParams(
+                  content: solveStatusContentFor(state),
+                  onRetake: () {
+                    context
+                        .read<AskByPhotoBloc>()
+                        .add(const AskByPhotoClearRequested());
+                    _pickPhoto(context);
+                  },
+                  onTypeInstead: () => context
+                      .read<AskByPhotoBloc>()
+                      .add(const AskByPhotoTypeInsteadRequested()),
+                ),
             ),
           );
         },

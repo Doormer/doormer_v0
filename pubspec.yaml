@@ -45,6 +45,7 @@ dependencies:
   toastification:
   url_launcher:
   bloc: ^8.1.4
+  google_fonts: ^6.3.0
 
 dev_dependencies:
   flutter_test:

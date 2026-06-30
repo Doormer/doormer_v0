@@ -26,9 +26,12 @@ class AppButtonAtom extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final padding = EdgeInsets.symmetric(vertical: 14.h);
+    final padding = EdgeInsets.symmetric(
+      horizontal: 18.w,
+      vertical: 14.h,
+    );
     final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8.r),
+      borderRadius: BorderRadius.circular(20.r),
     );
 
     final Widget content = isLoading
@@ -69,8 +72,8 @@ class AppButtonAtom extends StatelessWidget {
           ? AppColors.accent
           : AppColors.primary;
       final style = ElevatedButton.styleFrom(
-        backgroundColor: backgroundColor,
-        foregroundColor: AppColors.onPrimary,
+        backgroundColor: const Color(0xE6B4EF2B),
+        foregroundColor: Colors.black,
         padding: padding,
         shape: shape,
       );

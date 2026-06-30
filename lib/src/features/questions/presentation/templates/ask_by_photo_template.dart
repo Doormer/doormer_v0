@@ -6,6 +6,7 @@ import 'package:doormer/src/features/questions/presentation/params/photo_upload_
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 
 class AskByPhotoTemplate extends StatelessWidget {
   final PhotoUploadPanelParams uploadParams;
@@ -20,50 +21,66 @@ class AskByPhotoTemplate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFF6E3FD7),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 32.h),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: 980.w),
+        child: Stack(
+  children: [
+    Positioned(
+      top: 60.h,
+      right: -30.w,
+      child: Opacity(
+        opacity: 0.12,
+        child: Image.asset(
+          'assets/images/starter_bg_person.png',
+          width: 240.w,
+        ),
+      ),
+    ),
+
+            Center(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   const AskByPhotoHeaderMolecule(),
-                  SizedBox(height: 28.h),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isWide = constraints.maxWidth >= 720.w;
-                      final uploadPanel =
-                          PhotoUploadPanelOrganism(params: uploadParams);
-                      final statusPanel =
-                          SolveStatusPanelOrganism(params: statusParams);
-
-                      if (!isWide) {
-                        return Column(
-                          children: [
-                            uploadPanel,
-                            SizedBox(height: 20.h),
-                            statusPanel,
-                          ],
-                        );
-                      }
-
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(flex: 5, child: uploadPanel),
-                          SizedBox(width: 24.w),
-                          Expanded(flex: 4, child: statusPanel),
-                        ],
-                      );
-                    },
+                  SizedBox(height: 24.h),
+                  AppButtonAtom(
+                    label: 'UPLOAD & SOLVE',
+                    icon: Icons.camera_alt,
+                    onPressed: uploadParams.isLoading
+                        ? null
+                        : uploadParams.onPickPhoto,
                   ),
                 ],
               ),
             ),
-          ),
+
+            Positioned(
+              left: 20.w,
+              right: 20.w,
+              bottom: 20.h,
+              child: Container(
+                height: 74.h,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF9B7BDD),
+                  borderRadius: BorderRadius.circular(40.r),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: const [
+                    Icon(Icons.copy, size: 30, color: Colors.black),
+                    Icon(Icons.smart_toy_outlined, size: 30, color: Colors.black),
+                    Icon(
+                      Icons.camera_alt_outlined,
+                      size: 36,
+                      color: Color(0xE6B4EF2B),
+                    ),
+                    Icon(Icons.chat_bubble_outline, size: 30, color: Colors.black),
+                    Icon(Icons.person_outline, size: 32, color: Colors.black),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
