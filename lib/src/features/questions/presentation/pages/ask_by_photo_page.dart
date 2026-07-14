@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:toastification/toastification.dart';
+import 'camera_page.dart';
 
 class AskByPhotoPage extends StatelessWidget {
   const AskByPhotoPage({super.key});
@@ -58,7 +59,44 @@ class AskByPhotoPage extends StatelessWidget {
           );
     }
   }
+Future<void> _showPhotoSourceOptions(BuildContext context) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    builder: (sheetContext) {
+      return SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Open camera'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _openCamera(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from gallery'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _pickPhoto(context);
+              },
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
 
+Future<void> _openCamera(BuildContext context) async {
+  await Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => const CameraPage(),
+    ),
+  );
+}
   @override
   Widget build(BuildContext context) {
     return BlocProvider<AskByPhotoBloc>(
@@ -110,7 +148,7 @@ class AskByPhotoPage extends StatelessWidget {
                   imageBytes: selected?.imageBytes,
                   fileName: selected?.fileName,
                   isLoading: isLoading,
-                  onPickPhoto: () => _pickPhoto(context),
+                  onPickPhoto: () => _showPhotoSourceOptions(context),
                   onSubmit: () => context
                       .read<AskByPhotoBloc>()
                       .add(const AskByPhotoSubmitted()),

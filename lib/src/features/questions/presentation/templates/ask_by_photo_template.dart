@@ -36,7 +36,56 @@ class AskByPhotoTemplate extends StatelessWidget {
         ),
       ),
     ),
-
+Positioned(
+  top: 24.h,
+  left: 24.w,
+  child: Container(
+    width: 240.w,
+    padding: EdgeInsets.symmetric(
+      horizontal: 16.w,
+      vertical: 14.h,
+    ),
+    decoration: BoxDecoration(
+      color: const Color(0xFF3B236B),
+      borderRadius: BorderRadius.circular(12.r),
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 34.w,
+          height: 34.w,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Color(0xFFE8E8E8),
+          ),
+        ),
+        SizedBox(width: 12.w),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'LV.xx',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              'Characters collected: 12/50',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 10.sp,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  ),
+),
             Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -66,16 +115,43 @@ class AskByPhotoTemplate extends StatelessWidget {
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: const [
-                    Icon(Icons.copy, size: 30, color: Colors.black),
-                    Icon(Icons.smart_toy_outlined, size: 30, color: Colors.black),
-                    Icon(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.copy, size: 30, color: Colors.black),
+                      onPressed: (){
+                        print('Cloc');
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.smart_toy_outlined, size: 30, color: Colors.black),
+                      onPressed: (){
+                        print('AI chat');
+                      }
+                    ),
+                    IconButton(
+                      icon: const  Icon(
                       Icons.camera_alt_outlined,
                       size: 36,
                       color: Color(0xE6B4EF2B),
                     ),
-                    Icon(Icons.chat_bubble_outline, size: 30, color: Colors.black),
-                    Icon(Icons.person_outline, size: 32, color: Colors.black),
+                    onPressed:(){
+                      print('Upload');
+                      },
+                    ),
+          
+                    IconButton(
+                      icon: const Icon(Icons.chat_bubble_outline, size: 30, color: Colors.black),
+                      onPressed: (){
+                        print('chat');
+                      }
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.person_outline, size: 32, color: Colors.black),
+                      onPressed:(){
+                        print('profile');
+                      }
+                      )
+                    
                   ],
                 ),
               ),

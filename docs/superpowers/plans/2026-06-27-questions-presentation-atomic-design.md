@@ -1292,6 +1292,7 @@ class AskByPhotoPage extends StatelessWidget {
 }
 ```
 
+
 - [ ] **Step 2: Verify**
 
 Run: `flutter analyze lib/src/features/questions`
