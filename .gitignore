@@ -155,3 +155,4 @@ app.*.symbols
 
 # Superpowers brainstorming artifacts
 .superpowers/
+docs/

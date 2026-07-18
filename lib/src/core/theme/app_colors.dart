@@ -14,6 +14,10 @@ class AppColors {
   static const Color onSurface = Color(0xFF000000);
   static const Color onError = Color(0xFFFFFFFF);
 
+  // Questions
+  static const Color userStatusSurface = Color(0xFF3B236B);
+  static const Color userStatusAvatarPlaceholder = Color(0xFFE8E8E8);
+
   // Bottom Navigation
   static const Color selectedIcon = Color.fromARGB(255, 0, 0, 0);
   static const Color unselectedIcon = Color.fromARGB(255, 0, 0, 0);
