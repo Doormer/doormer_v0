@@ -1,4 +1,3 @@
-import 'package:doormer/src/core/theme/app_colors.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -28,7 +27,6 @@ class StatusActionRowMolecule extends StatelessWidget {
           child: AppButtonAtom(
             label: 'Type instead',
             variant: AppButtonVariant.outlined,
-            borderColor: AppColors.focusedBorders,
             onPressed: onTypeInstead,
           ),
         ),

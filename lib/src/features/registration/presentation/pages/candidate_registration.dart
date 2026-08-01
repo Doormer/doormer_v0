@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 import 'package:doormer/src/core/di/service_locator.dart';
-import 'package:doormer/src/core/theme/app_colors.dart';
-import 'package:doormer/src/core/theme/app_text_styles.dart';
+import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:doormer/src/features/registration/domain/entity/candidate_details.dart';
 import 'package:doormer/src/features/registration/domain/entity/candidate_preference.dart';
 import 'package:doormer/src/features/registration/presentation/bloc/registration/registration_bloc.dart';
@@ -22,10 +21,8 @@ class CandidateRegistrationPage extends StatefulWidget {
 }
 
 class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
-  // Unified configuration for border appearance.
-  static const Color unifiedBorderColor = Colors.grey;
+  // Unified border thickness and button height constants (border color resolved from theme).
   static const double unifiedBorderThickness = 1.0;
-  // Unified configuration for button height.
   static const double unifiedButtonHeight = 35.0;
 
   // Shared configuration for multi-select menus.
@@ -150,11 +147,12 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
             );
           } else if (state is RegistrationOptionsLoaded) {
             final options = state.options;
+            final cs = context.colorScheme;
+            final tt = context.textTheme;
             return Scaffold(
               body: SingleChildScrollView(
                 padding: const EdgeInsets.all(16.0),
                 child: Center(
-                  // Limit the maximum width to avoid stretching on large screens.
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 600),
                     child: Form(
@@ -162,21 +160,18 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Candidate Information Section
-                          const Text(
+                          Text(
                             'Enter Information',
-                            style: TextStyle(
-                                fontSize: 20, fontWeight: FontWeight.bold),
+                            style: tt.titleLarge,
                           ),
                           const SizedBox(height: 24),
-                          // Passing unified border config to the text fields.
                           CustomTextFieldWeb(
                             label: 'First Name',
                             controller: firstNameController,
                             validator: (value) => value!.isEmpty
                                 ? 'First name is required'
                                 : null,
-                            borderColor: unifiedBorderColor,
+                            borderColor: cs.outlineVariant,
                             borderThickness: unifiedBorderThickness,
                           ),
                           const SizedBox(height: 16),
@@ -185,7 +180,7 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
                             controller: lastNameController,
                             validator: (value) =>
                                 value!.isEmpty ? 'Last name is required' : null,
-                            borderColor: unifiedBorderColor,
+                            borderColor: cs.outlineVariant,
                             borderThickness: unifiedBorderThickness,
                           ),
                           const SizedBox(height: 24),
@@ -194,20 +189,20 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
                             controller: phoneNumberController,
                             keyboardType: TextInputType.phone,
                             validator: _validateNZPhoneNumber,
-                            borderColor: unifiedBorderColor,
+                            borderColor: cs.outlineVariant,
                             borderThickness: unifiedBorderThickness,
                           ),
                           const SizedBox(height: 24),
-                          const Text(
+                          Text(
                             'Upload CV (PDF) *Required',
-                            style: AppTextStyles.bodyMedium,
+                            style: tt.bodyMedium,
                           ),
                           if (uploadedFileName != null)
                             Padding(
                               padding: const EdgeInsets.only(top: 8.0),
                               child: Text(
                                 'Uploaded: $uploadedFileName',
-                                style: AppTextStyles.bodySmall,
+                                style: tt.bodySmall,
                               ),
                             ),
                           const SizedBox(height: 8),
@@ -218,29 +213,25 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
                             ),
                             width: double.infinity,
                             height: unifiedButtonHeight,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.uploadButton,
+                            child: FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: cs.tertiary,
+                                foregroundColor: cs.onTertiary,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(4.0),
                                 ),
                               ),
                               onPressed: () => _pickFile(context),
-                              child: const Text(
-                                'Upload CV',
-                                style: AppTextStyles.buttonText,
-                              ),
+                              child: const Text('Upload CV'),
                             ),
                           ),
                           const SizedBox(height: 32),
-                          // CategorySelectionCard widgets with unified border config
-                          // and unified button height.
                           CategorySelectionCard(
                             title: 'Roles',
                             description: 'Choose your top 3 roles',
                             options: List<String>.from(options['Role'] ?? []),
                             controller: _priority1Controller,
-                            borderColor: unifiedBorderColor,
+                            borderColor: cs.outlineVariant,
                             borderThickness: unifiedBorderThickness,
                             buttonHeight: unifiedButtonHeight,
                           ),
@@ -251,7 +242,7 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
                             options:
                                 List<String>.from(options['Industry'] ?? []),
                             controller: _priority2Controller,
-                            borderColor: unifiedBorderColor,
+                            borderColor: cs.outlineVariant,
                             borderThickness: unifiedBorderThickness,
                             buttonHeight: unifiedButtonHeight,
                           ),
@@ -259,10 +250,10 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
                           CategorySelectionCard(
                             title: 'Company Size',
                             description: 'Choose up to 3 company sizes',
-                            options:
-                                List<String>.from(options['CompanySize'] ?? []),
+                            options: List<String>.from(
+                                options['CompanySize'] ?? []),
                             controller: _priority3Controller,
-                            borderColor: unifiedBorderColor,
+                            borderColor: cs.outlineVariant,
                             borderThickness: unifiedBorderThickness,
                             buttonHeight: unifiedButtonHeight,
                           ),
@@ -270,10 +261,10 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
                           CategorySelectionCard(
                             title: 'Expectations',
                             description: 'Choose your top 3 expectations',
-                            options:
-                                List<String>.from(options['Expectation'] ?? []),
+                            options: List<String>.from(
+                                options['Expectation'] ?? []),
                             controller: _priority4Controller,
-                            borderColor: unifiedBorderColor,
+                            borderColor: cs.outlineVariant,
                             borderThickness: unifiedBorderThickness,
                             buttonHeight: unifiedButtonHeight,
                           ),
@@ -284,12 +275,11 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
                             options:
                                 List<String>.from(options['Culture'] ?? []),
                             controller: _priority5Controller,
-                            borderColor: unifiedBorderColor,
+                            borderColor: cs.outlineVariant,
                             borderThickness: unifiedBorderThickness,
                             buttonHeight: unifiedButtonHeight,
                           ),
                           const SizedBox(height: 32),
-                          // Submit Button
                           Container(
                             margin: EdgeInsets.symmetric(
                               horizontal:
@@ -297,12 +287,7 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
                             ),
                             width: double.infinity,
                             height: unifiedButtonHeight,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: isFormValid
-                                    ? AppColors.primary
-                                    : Colors.grey,
-                              ),
+                            child: FilledButton(
                               onPressed: isFormValid
                                   ? () {
                                       if (_formKey.currentState!.validate() &&
@@ -347,8 +332,7 @@ class _CandidateRegistrationPageState extends State<CandidateRegistrationPage> {
                                       }
                                     }
                                   : null,
-                              child: const Text('Submit',
-                                  style: AppTextStyles.buttonText),
+                              child: const Text('Submit'),
                             ),
                           ),
                         ],

@@ -145,12 +145,13 @@ Decompose a feature's screens into a layered widget hierarchy instead of one mon
 - **Atoms** — smallest reusable widgets (button, card, icon decoration), no feature knowledge. Generic ones live in `lib/src/shared/design/atomic/atoms/` (e.g. `AppButtonAtom`, `SurfaceCardAtom`); atoms tied to one feature live in `features/<f>/presentation/atoms/`.
 - **Molecules** — small compositions of atoms + static layout (`features/<f>/presentation/molecules/`). Receive plain data + callbacks via constructor params. No bloc.
 - **Organisms** — larger sections composed of molecules/atoms (`organisms/`). Group their inputs into a **Parameter Object** in `params/` (the `xxxParams` pattern). Params are **plain holders, NOT `Equatable`** — they carry `VoidCallback`s, which compare by reference.
-- **Templates** — arrange organisms into the page layout (`Scaffold`, responsive `LayoutBuilder`) in `templates/`. Receive ready-made param objects / primitives only. **No content derivation, no bloc.**
+- **Templates** — arrange organisms into the page layout (`Scaffold`, responsive `LayoutBuilder`) in `templates/`. A template owns the screen's single `Scaffold`, including its background color and other page chrome. Receive ready-made param objects / primitives only. **No content derivation, no bloc.**
 - **Pages** — the ONLY layer that touches `flutter_bloc` (`pages/`). Own `BlocProvider`/`BlocConsumer`, resolve display copy via a pure presenter in `mapper/`, pack the param objects, and delegate rendering to the template.
 
 ### Enforce these
 
 - **No `flutter_bloc` or bloc-state imports below the page** — atoms, molecules, organisms, templates, and params stay bloc-free. The `mapper/` presenter is the only non-page unit allowed to import the bloc, and only for state *types*; its mapping function is **page-invoked only**.
+- **Do not nest page and template scaffolds.** A page that delegates to a template returns that template directly; it must not wrap the template in another `Scaffold`.
 - **Static chrome copy may be hardcoded** in a molecule/organism (titles, button labels like `Clear`/`Retake`). **State- or data-driven text must flow in** via params / the mapper — never hardcode it below the page.
 - **Naming**: suffix classes `XxxAtom` / `XxxMolecule` / `XxxOrganism` / `XxxTemplate` / `XxxParams`; files `snake_case.dart`. Theming and sizing rules (`AppColors`/`AppTextStyles`, ScreenUtil) apply as everywhere else.
 

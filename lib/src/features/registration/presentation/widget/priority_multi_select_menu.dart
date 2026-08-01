@@ -1,5 +1,4 @@
-import 'package:doormer/src/core/theme/app_colors.dart';
-import 'package:doormer/src/core/theme/app_text_styles.dart';
+import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:doormer/src/features/registration/presentation/widget/priority_multi_select_bottom_sheet.dart';
 import 'package:doormer/src/features/registration/utils/priority_multi_select_menu_controller.dart';
 import 'package:flutter/material.dart';
@@ -10,12 +9,16 @@ class PriorityMultiSelectMenu extends StatefulWidget {
   final int maxSelection;
   final String dialogTitle;
   final String hintText;
-  final Color mainColor;
-  final Color buttonColor;
-  final Color badgeColor;
-  final Color circularAvatarTextColor;
+  /// Unused internally; kept for API compatibility. Defaults null.
+  final Color? mainColor;
+  /// Defaults to [ColorScheme.primary] when null.
+  final Color? buttonColor;
+  /// Defaults to [ColorScheme.primaryContainer] when null.
+  final Color? badgeColor;
+  /// Defaults to [ColorScheme.onPrimaryContainer] when null.
+  final Color? circularAvatarTextColor;
   final ValueChanged<List<String>>? onSelectionChanged;
-  final MultiSelectController? controller; // New controller parameter
+  final MultiSelectController? controller;
 
   const PriorityMultiSelectMenu({
     super.key,
@@ -24,10 +27,10 @@ class PriorityMultiSelectMenu extends StatefulWidget {
     this.maxSelection = 3,
     this.dialogTitle = 'Select options',
     this.hintText = 'Select options',
-    this.mainColor = Colors.white,
-    this.buttonColor = Colors.blue,
-    this.badgeColor = Colors.blue,
-    this.circularAvatarTextColor = Colors.white,
+    this.mainColor,
+    this.buttonColor,
+    this.badgeColor,
+    this.circularAvatarTextColor,
     this.onSelectionChanged,
   });
 
@@ -62,29 +65,31 @@ class PriorityMultiSelectMenuState extends State<PriorityMultiSelectMenu> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colorScheme;
+    final tt = context.textTheme;
     return GestureDetector(
       onTap: _openMultiSelectBottomSheet,
-      child: _buildDropdownContainer(),
+      child: _buildDropdownContainer(cs: cs, tt: tt),
     );
   }
 
-  // Updated UI to match the TextFormField look and adjust text styles.
-  Widget _buildDropdownContainer() {
+  Widget _buildDropdownContainer({
+    required ColorScheme cs,
+    required TextTheme tt,
+  }) {
+    final normalBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8.0),
+      borderSide: BorderSide(color: cs.outlineVariant),
+    );
     return InputDecorator(
       decoration: InputDecoration(
         filled: true,
-        fillColor: AppColors.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8.0),
-          borderSide: BorderSide(color: AppColors.borders),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8.0),
-          borderSide: BorderSide(color: AppColors.borders),
-        ),
+        fillColor: cs.surfaceContainerLowest,
+        border: normalBorder,
+        enabledBorder: normalBorder,
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
-          borderSide: BorderSide(color: AppColors.borders, width: 2.0),
+          borderSide: BorderSide(color: cs.primary, width: 2.0),
         ),
       ),
       child: Row(
@@ -95,7 +100,7 @@ class PriorityMultiSelectMenuState extends State<PriorityMultiSelectMenu> {
                 ? Text(
                     widget.hintText,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.hintText,
+                    style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
                   )
                 : RichText(
                     overflow: TextOverflow.ellipsis,
@@ -103,16 +108,14 @@ class PriorityMultiSelectMenuState extends State<PriorityMultiSelectMenu> {
                       children: selectedItems.asMap().entries.map((entry) {
                         return TextSpan(
                           text: '${entry.key + 1}. ',
-                          style:
-                              AppTextStyles.selectedText, // Style for numbering
+                          style: tt.bodyMedium,
                           children: [
                             TextSpan(
                               text: entry.value +
                                   (entry.key < selectedItems.length - 1
                                       ? ', '
                                       : ''),
-                              style: AppTextStyles
-                                  .selectedText, // Style for selected text
+                              style: tt.bodyMedium,
                             ),
                           ],
                         );
@@ -120,10 +123,7 @@ class PriorityMultiSelectMenuState extends State<PriorityMultiSelectMenu> {
                     ),
                   ),
           ),
-          const Icon(
-            Icons.keyboard_arrow_down,
-            color: AppColors.hintIcon,
-          ),
+          Icon(Icons.keyboard_arrow_down, color: cs.onSurfaceVariant),
         ],
       ),
     );
@@ -137,14 +137,15 @@ class PriorityMultiSelectMenuState extends State<PriorityMultiSelectMenu> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (BuildContext context) {
+        final surface = Theme.of(context).colorScheme.surface;
         return FractionallySizedBox(
-          widthFactor:
-              1.0, // Ensures the bottom sheet spans the full window width.
+          widthFactor: 1.0,
           child: Container(
             height: MediaQuery.of(context).size.height * 0.75,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            decoration: BoxDecoration(
+              color: surface,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: MultiSelectBottomSheet(
               options: widget.options,
@@ -154,7 +155,6 @@ class PriorityMultiSelectMenuState extends State<PriorityMultiSelectMenu> {
               buttonColor: widget.buttonColor,
               badgeColor: widget.badgeColor,
               circularAvatarTextColor: widget.circularAvatarTextColor,
-              // Listener to update as selection changes inside the bottom sheet.
               onSelectionChanged: (updatedSelection) {
                 setState(() {
                   selectedItems = updatedSelection;
@@ -162,9 +162,7 @@ class PriorityMultiSelectMenuState extends State<PriorityMultiSelectMenu> {
                 if (widget.controller != null) {
                   widget.controller!.value = updatedSelection;
                 }
-                if (widget.onSelectionChanged != null) {
-                  widget.onSelectionChanged!(updatedSelection);
-                }
+                widget.onSelectionChanged?.call(updatedSelection);
               },
             ),
           ),
@@ -173,17 +171,13 @@ class PriorityMultiSelectMenuState extends State<PriorityMultiSelectMenu> {
     );
 
     if (result != null) {
-      // When the bottom sheet is dismissed with a final result,
-      // update the local state, controller, and notify listeners.
       setState(() {
         selectedItems = result;
       });
       if (widget.controller != null) {
         widget.controller!.value = result;
       }
-      if (widget.onSelectionChanged != null) {
-        widget.onSelectionChanged!(result);
-      }
+      widget.onSelectionChanged?.call(result);
     }
   }
 }

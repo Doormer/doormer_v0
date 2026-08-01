@@ -1,4 +1,3 @@
-import 'package:doormer/src/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 
 class MultiSelectBottomSheet extends StatefulWidget {
@@ -6,9 +5,12 @@ class MultiSelectBottomSheet extends StatefulWidget {
   final List<String> initialSelected;
   final int maxSelection;
   final String dialogTitle;
-  final Color buttonColor;
-  final Color badgeColor;
-  final Color circularAvatarTextColor;
+  /// Defaults to [ColorScheme.primary] when null.
+  final Color? buttonColor;
+  /// Defaults to [ColorScheme.primaryContainer] when null.
+  final Color? badgeColor;
+  /// Defaults to [ColorScheme.onPrimaryContainer] when null.
+  final Color? circularAvatarTextColor;
   final ValueChanged<List<String>>? onSelectionChanged;
 
   const MultiSelectBottomSheet({
@@ -17,9 +19,9 @@ class MultiSelectBottomSheet extends StatefulWidget {
     required this.initialSelected,
     this.maxSelection = 3,
     this.dialogTitle = 'Select options',
-    this.buttonColor = Colors.blue,
-    this.badgeColor = Colors.blue,
-    this.circularAvatarTextColor = Colors.white,
+    this.buttonColor,
+    this.badgeColor,
+    this.circularAvatarTextColor,
     this.onSelectionChanged,
   });
 
@@ -38,39 +40,42 @@ class MultiSelectBottomSheetState extends State<MultiSelectBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final resolvedBadgeColor = widget.badgeColor ?? cs.primaryContainer;
+    final resolvedAvatarTextColor =
+        widget.circularAvatarTextColor ?? cs.onPrimaryContainer;
+    final resolvedButtonColor = widget.buttonColor ?? cs.primary;
     return Container(
-      width: double.infinity, // Ensures full width.
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SafeArea(
         child: Padding(
-          // Adjust padding for any viewInsets (e.g., keyboard).
           padding: MediaQuery.of(context).viewInsets,
           child: Column(
             children: [
-              // Header with title and a close icon.
               Padding(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 16.0, vertical: 16.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Text(widget.dialogTitle, style: AppTextStyles.titleMedium),
-                    // The close icon dismisses the bottom sheet.
-                    // IconButton(
-                    //   icon: const Icon(Icons.close),
-                    //   onPressed: () => Navigator.pop(context, tempSelected),
-                    // ),
+                    Text(widget.dialogTitle, style: tt.titleMedium),
                   ],
                 ),
               ),
               const Divider(),
-              // Options list.
               Expanded(
                 child: ListView(
-                  children: _buildOptionsList(),
+                  children: _buildOptionsList(
+                    tt: tt,
+                    badgeColor: resolvedBadgeColor,
+                    avatarTextColor: resolvedAvatarTextColor,
+                    buttonColor: resolvedButtonColor,
+                  ),
                 ),
               ),
             ],
@@ -80,28 +85,39 @@ class MultiSelectBottomSheetState extends State<MultiSelectBottomSheet> {
     );
   }
 
-  List<Widget> _buildOptionsList() {
+  List<Widget> _buildOptionsList({
+    required TextTheme tt,
+    required Color badgeColor,
+    required Color avatarTextColor,
+    required Color buttonColor,
+  }) {
     return widget.options.map((option) {
       final int selectedIndex = tempSelected.indexOf(option);
       return ListTile(
-        title: Text(option),
-        trailing:
-            selectedIndex != -1 ? _buildSelectionBadge(selectedIndex) : null,
+        title: Text(option, style: tt.bodyMedium),
+        trailing: selectedIndex != -1
+            ? _buildSelectionBadge(
+                selectedIndex,
+                badgeColor: badgeColor,
+                avatarTextColor: avatarTextColor,
+              )
+            : null,
         onTap: () => _toggleOption(option, selectedIndex),
       );
     }).toList();
   }
 
-  Widget _buildSelectionBadge(int selectedIndex) {
+  Widget _buildSelectionBadge(
+    int selectedIndex, {
+    required Color badgeColor,
+    required Color avatarTextColor,
+  }) {
     return CircleAvatar(
-      backgroundColor: widget.badgeColor,
+      backgroundColor: badgeColor,
       radius: 14,
       child: Text(
         '${selectedIndex + 1}',
-        style: TextStyle(
-          color: widget.circularAvatarTextColor,
-          fontSize: 12,
-        ),
+        style: TextStyle(color: avatarTextColor, fontSize: 12),
       ),
     );
   }

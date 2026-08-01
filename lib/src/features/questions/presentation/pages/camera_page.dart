@@ -63,6 +63,16 @@ class _CameraPageState extends State<CameraPage> {
           ),
         ),
       );
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'An unexpected error occurred: $error',
+          ),
+        ),
+      );
     }
   }
 
@@ -145,8 +155,7 @@ class _CameraPageState extends State<CameraPage> {
         onPressed: _takePicture,
         child: const Icon(Icons.camera_alt),
       ),
-      floatingActionButtonLocation:
-          FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }

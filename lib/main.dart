@@ -1,6 +1,6 @@
 import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/routes/app_router.dart';
-import 'package:doormer/src/core/theme/app_colors.dart';
+import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/shared/sessions/bloc/global_session_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -48,13 +48,10 @@ class MyApp extends StatelessWidget {
                   },
                   child: MaterialApp.router(
                     debugShowCheckedModeBanner: false,
-                    theme: ThemeData(
-                      fontFamily: 'Helvetica',
-                      useMaterial3: true,
-                      scaffoldBackgroundColor: AppColors.background,
-                    ),
-                    routerConfig:
-                        AppRouter.router, // Use AppRouter as the router
+                    theme: AppTheme.light,
+                    darkTheme: AppTheme.dark,
+                    themeMode: AppTheme.themeMode,
+                    routerConfig: AppRouter.router,
                   ),
                 );
               },

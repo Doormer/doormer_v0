@@ -143,45 +143,43 @@ class AskByPhotoPage extends StatelessWidget {
           final selected = state is AskByPhotoPhotoSelected ? state : null;
           final isLoading = state is AskByPhotoLoading;
 
-          return Scaffold(
-            backgroundColor: const Color(0xFF6E3FD7),
-            body: AskByPhotoTemplate(
-              userStatusParams: const UserStatusParams(
-                levelLabel: 'LV.xx',
-                collectedCount: 12,
-                totalCount: 50,
-              ),
-              uploadParams: PhotoUploadPanelParams(
-                imageBytes: selected?.imageBytes,
-                fileName: selected?.fileName,
-                isLoading: isLoading,
-                onPickPhoto: () => _showPhotoSourceOptions(context),
-                onSubmit: () => context
+          return AskByPhotoTemplate(
+            userStatusParams: const UserStatusParams(
+              levelLabel: 'LV.xx',
+              collectedCount: 12,
+              totalCount: 50,
+            ),
+            uploadParams: PhotoUploadPanelParams(
+              imageBytes: selected?.imageBytes,
+              fileName: selected?.fileName,
+              isLoading: isLoading,
+              onPickPhoto: () => _showPhotoSourceOptions(context),
+              onSubmit: () => context
+                  .read<AskByPhotoBloc>()
+                  .add(const AskByPhotoSubmitted()),
+              onClear: () => context
+                  .read<AskByPhotoBloc>()
+                  .add(const AskByPhotoClearRequested()),
+            ),
+            statusParams: SolveStatusPanelParams(
+              content: solveStatusContentFor(state),
+              onRetake: () {
+                context
                     .read<AskByPhotoBloc>()
-                    .add(const AskByPhotoSubmitted()),
-                onClear: () => context
-                    .read<AskByPhotoBloc>()
-                    .add(const AskByPhotoClearRequested()),
-              ),
-              statusParams: SolveStatusPanelParams(
-                content: solveStatusContentFor(state),
-                onRetake: () {
-                  context
-                      .read<AskByPhotoBloc>()
-                      .add(const AskByPhotoClearRequested());
-                  _pickPhoto(context);
-                },
-                onTypeInstead: () => context
-                    .read<AskByPhotoBloc>()
-                    .add(const AskByPhotoTypeInsteadRequested()),
-              ),
-              bottomBarParams: BottomActionBarParams(
-                onCopy: () => AppLogger.info('Cloc'),
-                onAiChat: () => AppLogger.info('AI chat'),
-                onUpload: () => AppLogger.info('Upload'),
-                onChat: () => AppLogger.info('chat'),
-                onProfile: () => AppLogger.info('profile'),
-              ),
+                    .add(const AskByPhotoClearRequested());
+                _pickPhoto(context);
+              },
+              onTypeInstead: () => context
+                  .read<AskByPhotoBloc>()
+                  .add(const AskByPhotoTypeInsteadRequested()),
+            ),
+            bottomBarParams: BottomActionBarParams(
+              selectedIndex: 2,
+              onCopy: () => AppLogger.info('Saved questions'),
+              onAiChat: () => AppLogger.info('AI chat'),
+              onUpload: () => _showPhotoSourceOptions(context),
+              onChat: () => AppLogger.info('Discussions'),
+              onProfile: () => AppLogger.info('Profile'),
             ),
           );
         },

@@ -1,4 +1,4 @@
-import 'package:doormer/src/core/theme/app_colors.dart';
+import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -9,15 +9,16 @@ class ViewfinderCornersAtom extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        _corner(top: 12.h, left: 12.w),
-        _corner(top: 12.h, right: 12.w, flipX: true),
-        _corner(bottom: 12.h, left: 12.w, flipY: true),
-        _corner(bottom: 12.h, right: 12.w, flipX: true, flipY: true),
+        _corner(context, top: 12.h, left: 12.w),
+        _corner(context, top: 12.h, right: 12.w, flipX: true),
+        _corner(context, bottom: 12.h, left: 12.w, flipY: true),
+        _corner(context, bottom: 12.h, right: 12.w, flipX: true, flipY: true),
       ],
     );
   }
 
-  Widget _corner({
+  Widget _corner(
+    BuildContext context, {
     double? top,
     double? right,
     double? bottom,
@@ -25,6 +26,7 @@ class ViewfinderCornersAtom extends StatelessWidget {
     bool flipX = false,
     bool flipY = false,
   }) {
+    final color = context.colorScheme.tertiary;
     return Positioned(
       top: top,
       right: right,
@@ -40,14 +42,14 @@ class ViewfinderCornersAtom extends StatelessWidget {
               bottom: flipY ? 0 : null,
               left: 0,
               right: 0,
-              child: Container(height: 3.h, color: AppColors.accent),
+              child: Container(height: 3.h, color: color),
             ),
             Positioned(
               top: 0,
               bottom: 0,
               left: flipX ? null : 0,
               right: flipX ? 0 : null,
-              child: Container(width: 3.w, color: AppColors.accent),
+              child: Container(width: 3.w, color: color),
             ),
           ],
         ),

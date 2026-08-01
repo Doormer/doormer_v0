@@ -1,4 +1,5 @@
 import 'package:doormer/src/core/config/app_config.dart';
+import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
@@ -16,6 +17,8 @@ class RegistrationCompletePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colorScheme;
+
     return Scaffold(
       body: Center(
         child: Padding(
@@ -23,7 +26,7 @@ class RegistrationCompletePage extends StatelessWidget {
           child: RichText(
             textAlign: TextAlign.center,
             text: TextSpan(
-              style: const TextStyle(fontSize: 18, color: Colors.black),
+              style: TextStyle(fontSize: 18, color: cs.onSurface),
               children: [
                 const TextSpan(
                   text: "Registration complete.\n\n",
@@ -60,12 +63,12 @@ class RegistrationCompletePage extends StatelessWidget {
                     fontSize: 16,
                   ),
                   text:
-                      "We’d appreciate it if you could take a moment to complete a short survey (1–2 minutes) to help us improve your experience.\n\n ",
+                      "We'd appreciate it if you could take a moment to complete a short survey (1–2 minutes) to help us improve your experience.\n\n ",
                 ),
                 TextSpan(
                   text: "Take our survey",
-                  style: const TextStyle(
-                    color: Colors.blueAccent,
+                  style: TextStyle(
+                    color: cs.primary,
                     fontSize: 16,
                     decoration: TextDecoration.underline,
                   ),

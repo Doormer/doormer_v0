@@ -11,6 +11,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:doormer/src/core/di/service_locator.dart';
+import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
@@ -120,6 +121,7 @@ void main() {
         designSize: const Size(360, 690),
         builder: (_, __) => MaterialApp.router(
           debugShowCheckedModeBanner: false,
+          theme: AppTheme.light,
           routerConfig: buildRouter(),
         ),
       ),
@@ -165,6 +167,40 @@ void main() {
     expect(submitButton(tester).onPressed, isNull);
   });
 
+  testWidgets('Solve navigation action opens photo source options',
+      (tester) async {
+    repository = _FakeQuestionsRepository(
+      outcome: _outcome(PhotoQuestionSolveStatus.solved),
+    );
+    registerBloc();
+    await pumpPage(tester);
+
+    await tester.tap(find.byIcon(Icons.document_scanner_outlined));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Open camera'), findsOneWidget);
+    expect(find.text('Choose from gallery'), findsOneWidget);
+  });
+
+  testWidgets('template owns one primary scaffold with onPrimary header text',
+      (tester) async {
+    repository = _FakeQuestionsRepository(
+      outcome: _outcome(PhotoQuestionSolveStatus.solved),
+    );
+    registerBloc();
+    await pumpPage(tester);
+
+    expect(find.byType(Scaffold), findsOneWidget);
+
+    final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
+    final colorScheme =
+        Theme.of(tester.element(find.byType(Scaffold))).colorScheme;
+    expect(scaffold.backgroundColor, colorScheme.primary);
+
+    final uploadHeading = tester.widget<Text>(find.text('Upload a photo'));
+    expect(uploadHeading.style?.color, colorScheme.onPrimary);
+  });
+
   testWidgets('selecting a photo shows the preview and enables submit',
       (tester) async {
     repository = _FakeQuestionsRepository(
@@ -182,7 +218,8 @@ void main() {
     expect(submitButton(tester).onPressed, isNotNull);
   });
 
-  testWidgets('submitting a solved photo shows loading then hands off to the '
+  testWidgets(
+      'submitting a solved photo shows loading then hands off to the '
       'solution route', (tester) async {
     final pending = Completer<PhotoQuestionSolveOutcome>();
     repository = _FakeQuestionsRepository(pending: pending);
@@ -229,7 +266,8 @@ void main() {
     await tester.tap(find.widgetWithText(ElevatedButton, 'Submit to solver'));
     await tester.pump(); // dispatch AskByPhotoSubmitted
     await tester.pump(); // Loading
-    await tester.pump(const Duration(milliseconds: 50)); // use case future resolves
+    await tester
+        .pump(const Duration(milliseconds: 50)); // use case future resolves
     await tester.pump(); // BlocConsumer rebuilds into the Unreadable state
 
     expect(repository.callCount, 1);

@@ -1,4 +1,4 @@
-import 'package:doormer/src/core/theme/app_colors.dart';
+import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -26,6 +26,8 @@ class AppButtonAtom extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colorScheme;
+
     final padding = EdgeInsets.symmetric(
       horizontal: 18.w,
       vertical: 14.h,
@@ -34,13 +36,22 @@ class AppButtonAtom extends StatelessWidget {
       borderRadius: BorderRadius.circular(20.r),
     );
 
+    final Color spinnerColor;
+    if (variant == AppButtonVariant.outlined) {
+      spinnerColor = cs.primary;
+    } else if (variant == AppButtonVariant.accent) {
+      spinnerColor = cs.onTertiary;
+    } else {
+      spinnerColor = cs.onPrimary;
+    }
+
     final Widget content = isLoading
         ? SizedBox(
             height: 20.h,
             width: 20.w,
             child: CircularProgressIndicator(
               strokeWidth: 2.w,
-              color: AppColors.onPrimary,
+              color: spinnerColor,
             ),
           )
         : Text(label);
@@ -50,8 +61,8 @@ class AppButtonAtom extends StatelessWidget {
     Widget button;
     if (variant == AppButtonVariant.outlined) {
       final style = OutlinedButton.styleFrom(
-        foregroundColor: AppColors.primary,
-        side: BorderSide(color: borderColor ?? AppColors.borders),
+        foregroundColor: cs.primary,
+        side: BorderSide(color: borderColor ?? cs.outlineVariant),
         padding: padding,
         shape: shape,
       );
@@ -67,23 +78,39 @@ class AppButtonAtom extends StatelessWidget {
               icon: Icon(icon),
               label: content,
             );
-    } else {
-      final backgroundColor = variant == AppButtonVariant.accent
-          ? AppColors.accent
-          : AppColors.primary;
-      final style = ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xE6B4EF2B),
-        foregroundColor: Colors.black,
+    } else if (variant == AppButtonVariant.accent) {
+      final style = FilledButton.styleFrom(
+        backgroundColor: cs.tertiary,
+        foregroundColor: cs.onTertiary,
         padding: padding,
         shape: shape,
       );
       button = icon == null
-          ? ElevatedButton(
+          ? FilledButton(
               onPressed: effectiveOnPressed,
               style: style,
               child: content,
             )
-          : ElevatedButton.icon(
+          : FilledButton.icon(
+              onPressed: effectiveOnPressed,
+              style: style,
+              icon: Icon(icon),
+              label: content,
+            );
+    } else {
+      final style = FilledButton.styleFrom(
+        backgroundColor: cs.primary,
+        foregroundColor: cs.onPrimary,
+        padding: padding,
+        shape: shape,
+      );
+      button = icon == null
+          ? FilledButton(
+              onPressed: effectiveOnPressed,
+              style: style,
+              child: content,
+            )
+          : FilledButton.icon(
               onPressed: effectiveOnPressed,
               style: style,
               icon: Icon(icon),

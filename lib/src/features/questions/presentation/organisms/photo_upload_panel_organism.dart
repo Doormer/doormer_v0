@@ -1,4 +1,4 @@
-import 'package:doormer/src/core/theme/app_text_styles.dart';
+import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/photo_action_row_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/photo_preview_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
@@ -14,6 +14,7 @@ class PhotoUploadPanelOrganism extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tt = context.textTheme;
     final hasPhoto = params.imageBytes != null;
     final name = params.fileName;
 
@@ -23,7 +24,7 @@ class PhotoUploadPanelOrganism extends StatelessWidget {
         children: [
           Text(
             'Photo input',
-            style: AppTextStyles.titleLarge.copyWith(fontSize: 20.sp),
+            style: tt.titleLarge?.copyWith(fontSize: 20.sp),
           ),
           SizedBox(height: 16.h),
           PhotoPreviewMolecule(imageBytes: params.imageBytes),
@@ -31,7 +32,7 @@ class PhotoUploadPanelOrganism extends StatelessWidget {
             SizedBox(height: 12.h),
             Text(
               name,
-              style: AppTextStyles.bodySmall.copyWith(fontSize: 12.sp),
+              style: tt.bodySmall?.copyWith(fontSize: 12.sp),
             ),
           ],
           SizedBox(height: 22.h),

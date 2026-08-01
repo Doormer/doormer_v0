@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:doormer/src/core/theme/app_colors.dart';
-import 'package:doormer/src/core/theme/app_text_styles.dart';
 
 /// Dialog for selecting multiple options.
 class MultiSelectDialog extends StatefulWidget {
@@ -8,9 +6,12 @@ class MultiSelectDialog extends StatefulWidget {
   final List<String> initialSelected;
   final int maxSelection;
   final String dialogTitle;
-  final Color buttonColor;
-  final Color badgeColor;
-  final Color circularAvatarTextColor;
+  /// Defaults to [ColorScheme.primary] when null.
+  final Color? buttonColor;
+  /// Defaults to [ColorScheme.primaryContainer] when null.
+  final Color? badgeColor;
+  /// Defaults to [ColorScheme.onPrimaryContainer] when null.
+  final Color? circularAvatarTextColor;
 
   const MultiSelectDialog({
     super.key,
@@ -18,9 +19,9 @@ class MultiSelectDialog extends StatefulWidget {
     required this.initialSelected,
     this.maxSelection = 3,
     this.dialogTitle = 'Select options',
-    this.buttonColor = AppColors.primary,
-    this.badgeColor = AppColors.primary,
-    this.circularAvatarTextColor = AppColors.surface,
+    this.buttonColor,
+    this.badgeColor,
+    this.circularAvatarTextColor,
   });
 
   @override
@@ -39,59 +40,73 @@ class MultiSelectDialogState extends State<MultiSelectDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final resolvedButtonColor = widget.buttonColor ?? cs.primary;
+    final resolvedBadgeColor = widget.badgeColor ?? cs.primaryContainer;
+    final resolvedAvatarTextColor =
+        widget.circularAvatarTextColor ?? cs.onPrimaryContainer;
     return LayoutBuilder(
       builder: (context, constraints) {
         final double dialogWidth = constraints.maxWidth * 0.8 > _maxDialogWidth
             ? _maxDialogWidth
             : constraints.maxWidth * 0.8;
         return AlertDialog(
-          backgroundColor: AppColors.background,
+          backgroundColor: cs.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(4.0),
           ),
-          title: Text(
-            widget.dialogTitle,
-            style: AppTextStyles.bodyLarge,
-          ),
+          title: Text(widget.dialogTitle, style: tt.titleMedium),
           content: SizedBox(
             width: dialogWidth,
             child: SingleChildScrollView(
               child: ListBody(
-                children: _buildOptionsList(),
+                children: _buildOptionsList(
+                  tt: tt,
+                  badgeColor: resolvedBadgeColor,
+                  avatarTextColor: resolvedAvatarTextColor,
+                ),
               ),
             ),
           ),
-          actions: _buildDialogActions(),
+          actions: _buildDialogActions(buttonColor: resolvedButtonColor),
         );
       },
     );
   }
 
-  List<Widget> _buildOptionsList() {
+  List<Widget> _buildOptionsList({
+    required TextTheme tt,
+    required Color badgeColor,
+    required Color avatarTextColor,
+  }) {
     return widget.options.map((option) {
       final int selectedIndex = tempSelected.indexOf(option);
       return ListTile(
-        title: Text(
-          option,
-          style: AppTextStyles.bodyMedium,
-        ),
-        trailing:
-            selectedIndex != -1 ? _buildSelectionBadge(selectedIndex) : null,
+        title: Text(option, style: tt.bodyMedium),
+        trailing: selectedIndex != -1
+            ? _buildSelectionBadge(
+                selectedIndex,
+                badgeColor: badgeColor,
+                avatarTextColor: avatarTextColor,
+              )
+            : null,
         onTap: () => _toggleOption(option, selectedIndex),
       );
     }).toList();
   }
 
-  Widget _buildSelectionBadge(int selectedIndex) {
+  Widget _buildSelectionBadge(
+    int selectedIndex, {
+    required Color badgeColor,
+    required Color avatarTextColor,
+  }) {
     return CircleAvatar(
-      backgroundColor: widget.badgeColor,
+      backgroundColor: badgeColor,
       radius: 14,
       child: Text(
         '${selectedIndex + 1}',
-        style: TextStyle(
-          color: widget.circularAvatarTextColor,
-          fontSize: 12,
-        ),
+        style: TextStyle(color: avatarTextColor, fontSize: 12),
       ),
     );
   }
@@ -106,15 +121,15 @@ class MultiSelectDialogState extends State<MultiSelectDialog> {
     });
   }
 
-  List<Widget> _buildDialogActions() {
+  List<Widget> _buildDialogActions({required Color buttonColor}) {
     return [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: Text('Cancel', style: TextStyle(color: widget.buttonColor)),
+        child: Text('Cancel', style: TextStyle(color: buttonColor)),
       ),
       TextButton(
         onPressed: () => Navigator.pop(context, tempSelected),
-        child: Text('OK', style: TextStyle(color: widget.buttonColor)),
+        child: Text('OK', style: TextStyle(color: buttonColor)),
       ),
     ];
   }

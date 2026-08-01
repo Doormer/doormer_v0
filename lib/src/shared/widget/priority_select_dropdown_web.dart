@@ -1,3 +1,4 @@
+import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 
@@ -32,6 +33,8 @@ class _MultiSelectDropdownState extends State<MultiSelectDropdown> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colorScheme;
+
     return Scaffold(
       appBar: AppBar(title: const Text("Priority Multi-Select")),
       body: Center(
@@ -50,14 +53,14 @@ class _MultiSelectDropdownState extends State<MultiSelectDropdown> {
                     if (index != -1)
                       CircleAvatar(
                         radius: 12,
-                        backgroundColor: Colors.blue,
+                        backgroundColor: cs.primary,
                         child: Text(
                           (index + 1).toString(),
-                          style: const TextStyle(color: Colors.white),
+                          style: TextStyle(color: cs.onPrimary),
                         ),
                       ),
                     if (index == -1)
-                      const Icon(Icons.circle_outlined, color: Colors.grey),
+                      Icon(Icons.circle_outlined, color: cs.onSurfaceVariant),
                   ],
                 ),
                 onTap: () => toggleSelection(item),

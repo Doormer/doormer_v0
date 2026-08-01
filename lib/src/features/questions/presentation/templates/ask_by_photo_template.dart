@@ -1,6 +1,6 @@
+import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/ask_by_photo_header_molecule.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/user_status_molecule.dart';
-import 'package:doormer/src/features/questions/presentation/organisms/bottom_action_bar_organism.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/bottom_action_bar_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
@@ -26,7 +26,7 @@ class AskByPhotoTemplate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF6E3FD7),
+      backgroundColor: context.colorScheme.primary,
       body: SafeArea(
         child: Stack(
           children: [
@@ -34,18 +34,18 @@ class AskByPhotoTemplate extends StatelessWidget {
               top: 60.h,
               right: -30.w,
               child: Opacity(
-                opacity: 0.12,
+                opacity: 0.7,
                 child: Image.asset(
                   'assets/images/starter_bg_person.png',
                   width: 240.w,
                 ),
               ),
             ),
-            Positioned(
-              top: 24.h,
-              left: 24.w,
-              child: UserStatusMolecule(params: userStatusParams),
-            ),
+            // Positioned(
+            //   top: 24.h,
+            //   left: 24.w,
+            //   child: UserStatusMolecule(params: userStatusParams),
+            // ),
             Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -55,6 +55,7 @@ class AskByPhotoTemplate extends StatelessWidget {
                   AppButtonAtom(
                     label: 'UPLOAD & SOLVE',
                     icon: Icons.camera_alt,
+                    variant: AppButtonVariant.accent,
                     onPressed: uploadParams.isLoading
                         ? null
                         : uploadParams.onPickPhoto,
@@ -66,7 +67,7 @@ class AskByPhotoTemplate extends StatelessWidget {
               left: 20.w,
               right: 20.w,
               bottom: 20.h,
-              child: BottomActionBarOrganism(params: bottomBarParams),
+              child: NavigationBarOrganism(params: bottomBarParams),
             ),
           ],
         ),
