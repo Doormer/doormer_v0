@@ -7,4 +7,6 @@ abstract class QuestionsRepository {
     required Uint8List imageBytes,
     required String contentType,
   });
+
+  Future<PhotoQuestionSolveOutcome> loadSampleSolution();
 }

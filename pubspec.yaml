@@ -74,4 +74,5 @@ flutter:
     - assets/
     - assets/images/
     - assets/mock/mock_login_response.json
+    - assets/mock/mock_question_response.json
     - assets/candidate_registration_options/candidate_registration_options.json

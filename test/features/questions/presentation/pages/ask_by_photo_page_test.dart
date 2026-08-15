@@ -42,6 +42,11 @@ class _FakeQuestionsRepository implements QuestionsRepository {
     }
     return outcome!;
   }
+
+  @override
+  Future<PhotoQuestionSolveOutcome> loadSampleSolution() {
+    throw UnimplementedError();
+  }
 }
 
 PhotoQuestionSolveOutcome _outcome(PhotoQuestionSolveStatus status) {
