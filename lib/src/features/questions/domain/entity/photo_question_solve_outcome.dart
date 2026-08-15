@@ -94,8 +94,9 @@ class VisualSolutionSegment extends SolutionSegment {
   });
 
   /// Reserves layout before the remote image loads. 1.5 matches the payload's
-  /// 1600x1067 renders and is the fallback when the server omits geometry.
-  double get aspectRatio => height == 0 ? 1.5 : width / height;
+  /// 1600x1067 renders and is the fallback when the server omits geometry or
+  /// either dimension is zero.
+  double get aspectRatio => (width <= 0 || height <= 0) ? 1.5 : width / height;
 }
 
 class FinalAnswer {

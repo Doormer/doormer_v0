@@ -17,6 +17,19 @@ void main() {
       expect(visual.aspectRatio, closeTo(1.4995, 0.001));
     });
 
+    test('falls back to 1.5 when width is zero', () {
+      const visual = VisualSolutionSegment(
+        mediaType: 'image/png',
+        url: 'https://example.test/diagram.png',
+        width: 0,
+        height: 400,
+        caption: '',
+        alt: '',
+      );
+
+      expect(visual.aspectRatio, 1.5);
+    });
+
     test('falls back to 1.5 when height is zero', () {
       const visual = VisualSolutionSegment(
         mediaType: 'image/png',

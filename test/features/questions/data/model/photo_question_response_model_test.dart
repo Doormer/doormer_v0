@@ -146,6 +146,22 @@ void main() {
       expect((body.single as TextSolutionSegment).value, 'This still renders.');
     });
 
+    test('throws FormatException for a solved payload with an empty steps list',
+        () {
+      expect(
+        () => PhotoQuestionResponseModel.fromJson({
+          'status': 'solved',
+          'question_id': 'q_empty',
+          'solution': {
+            'schema_version': '1.0',
+            'steps': [],
+            'final_answer': {'body': []},
+          },
+        }),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
     test('parses the bundled schema 3.0 mock asset end to end', () {
       final raw = File('assets/mock/mock_question_response.json').readAsStringSync();
       final json = jsonDecode(raw) as Map<String, dynamic>;

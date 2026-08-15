@@ -102,6 +102,72 @@ void main() {
     );
   });
 
+  testWidgets(
+      'resets failure state when the visual changes to a different URL',
+      (tester) async {
+    const visual1 = VisualSolutionSegment(
+      mediaType: 'image/png',
+      url: 'https://example.test/step1.png',
+      width: 1600,
+      height: 1067,
+      caption: 'Caption for step one.',
+      alt: 'Step one diagram.',
+    );
+    const visual2 = VisualSolutionSegment(
+      mediaType: 'image/png',
+      url: 'https://example.test/step2.png',
+      width: 1600,
+      height: 1067,
+      caption: 'Caption for step two.',
+      alt: 'Step two diagram.',
+    );
+
+    const widgetKey = ValueKey<int>(1);
+
+    Widget buildWith({
+      required VisualSolutionSegment visual,
+      required DiagramImageProviderBuilder builder,
+    }) {
+      return ScreenUtilInit(
+        designSize: const Size(360, 690),
+        builder: (_, __) => MaterialApp(
+          theme: AppTheme.dark,
+          home: Scaffold(
+            body: SizedBox(
+              width: 358,
+              child: DiagramFigureMolecule(
+                key: widgetKey,
+                visual: visual,
+                onEnlarge: () {},
+                imageProviderBuilder: builder,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // First: failing provider → figure collapses.
+    await tester.pumpWidget(
+      buildWith(visual: visual1, builder: (_) => _FailingImageProvider()),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byKey(const Key('diagram_figure')), findsNothing,
+        reason: 'figure must collapse after load failure');
+
+    // Second: same key position, different URL, succeeding provider → renders.
+    await tester.pumpWidget(
+      buildWith(
+          visual: visual2, builder: (_) => MemoryImage(_pngBytes)),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const Key('diagram_figure')), findsOneWidget,
+        reason: 'figure must appear again after visual URL changes');
+  });
+
   testWidgets('tapping the figure requests enlargement', (tester) async {
     var enlarged = 0;
 

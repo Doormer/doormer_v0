@@ -80,14 +80,20 @@ class SolutionDocumentModel {
       throw const FormatException('Solution document missing final_answer');
     }
 
+    final steps = stepsJson is List
+        ? stepsJson
+            .whereType<Map<String, dynamic>>()
+            .map(SolutionStepModel.fromJson)
+            .toList(growable: false)
+        : const <SolutionStepModel>[];
+
+    if (steps.isEmpty) {
+      throw const FormatException('Solution document has no steps');
+    }
+
     return SolutionDocumentModel(
       schemaVersion: json['schema_version']?.toString() ?? '',
-      steps: stepsJson is List
-          ? stepsJson
-              .whereType<Map<String, dynamic>>()
-              .map(SolutionStepModel.fromJson)
-              .toList(growable: false)
-          : const [],
+      steps: steps,
       finalAnswer: FinalAnswerModel.fromJson(finalAnswerJson),
       approach: SolutionSectionModel.fromJson(json['approach']),
       verification: SolutionSectionModel.fromJson(json['verification']),

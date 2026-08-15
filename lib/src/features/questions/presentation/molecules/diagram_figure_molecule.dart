@@ -26,6 +26,14 @@ class DiagramFigureMolecule extends StatefulWidget {
 class _DiagramFigureMoleculeState extends State<DiagramFigureMolecule> {
   bool _failed = false;
 
+  @override
+  void didUpdateWidget(covariant DiagramFigureMolecule oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.visual.url != widget.visual.url) {
+      setState(() => _failed = false);
+    }
+  }
+
   void _onFailed() {
     if (!mounted || _failed) return;
     setState(() => _failed = true);

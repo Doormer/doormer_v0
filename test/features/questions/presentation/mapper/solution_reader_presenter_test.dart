@@ -152,5 +152,6 @@ void main() {
         reason: 'vault must not be revealed on a non-last step');
     expect(content.ctaEnabled, isTrue,
         reason: 'CTA must remain enabled on a non-last step');
+    expect(content.ctaLabel, 'Next step');
   });
 }

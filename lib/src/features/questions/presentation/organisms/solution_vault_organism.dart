@@ -98,6 +98,8 @@ class SolutionVaultOrganism extends StatelessWidget {
             Expanded(
               child: Text(
                 lockedLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: tt.labelLarge?.copyWith(
                   fontSize: 12.sp,
                   fontWeight: FontWeight.w500,

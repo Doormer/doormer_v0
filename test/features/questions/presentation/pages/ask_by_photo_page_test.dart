@@ -21,6 +21,7 @@ import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bl
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
 import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
+import 'package:doormer/src/features/questions/presentation/templates/solution_reader_template.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -258,6 +259,7 @@ void main() {
     await tester.pump(); // BlocProvider dispatches SolutionReaderStarted and rebuilds
 
     expect(find.byType(QuestionSolutionPage), findsOneWidget);
+    expect(find.byType(SolutionReaderTemplate), findsOneWidget);
   });
 
   testWidgets('an unreadable outcome renders the recovery panel in place',
