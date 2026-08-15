@@ -16,9 +16,11 @@ import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
-import 'package:doormer/src/features/questions/presentation/pages/question_solution_handoff_page.dart';
+import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -87,6 +89,11 @@ void main() {
       submitPhotoQuestionUseCase: SubmitPhotoQuestionUseCase(repository),
     );
     serviceLocator.registerFactory<AskByPhotoBloc>(() => bloc);
+    serviceLocator.registerFactory<SolutionReaderBloc>(
+      () => SolutionReaderBloc(
+        loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
+      ),
+    );
   }
 
   tearDown(() async {
@@ -105,7 +112,7 @@ void main() {
           path: '/questions/:questionId/solution',
           builder: (context, state) {
             final extra = state.extra;
-            return QuestionSolutionHandoffPage(
+            return QuestionSolutionPage(
               questionId: state.pathParameters['questionId'] ?? '',
               solvedState: extra is AskByPhotoSolved ? extra : null,
             );
@@ -248,11 +255,9 @@ void main() {
     pending.complete(_outcome(PhotoQuestionSolveStatus.solved));
     await tester.pump(); // Solved state -> listener fires GoRouter.go
     await tester.pump(const Duration(seconds: 1)); // route transition settles
+    await tester.pump(); // BlocProvider dispatches SolutionReaderStarted and rebuilds
 
-    expect(find.byType(QuestionSolutionHandoffPage), findsOneWidget);
-    expect(find.text('Solution ready'), findsOneWidget);
-    expect(find.text('Question ID: q_solved'), findsOneWidget);
-    expect(find.text('Steps received: 1'), findsOneWidget);
+    expect(find.byType(QuestionSolutionPage), findsOneWidget);
   });
 
   testWidgets('an unreadable outcome renders the recovery panel in place',
@@ -276,7 +281,7 @@ void main() {
     await tester.pump(); // BlocConsumer rebuilds into the Unreadable state
 
     expect(repository.callCount, 1);
-    expect(find.byType(QuestionSolutionHandoffPage), findsNothing);
+    expect(find.byType(QuestionSolutionPage), findsNothing);
     expect(find.text('We could not read it'), findsOneWidget);
     expect(find.widgetWithText(ElevatedButton, 'Retake'), findsOneWidget);
     expect(find.widgetWithText(OutlinedButton, 'Type instead'), findsOneWidget);
