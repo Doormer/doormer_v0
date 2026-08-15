@@ -4,11 +4,13 @@ class PhotoQuestionResponseModel {
   final PhotoQuestionSolveStatus status;
   final String questionId;
   final SolutionDocumentModel? solution;
+  final String note;
 
   const PhotoQuestionResponseModel({
     required this.status,
     required this.questionId,
     required this.solution,
+    this.note = '',
   });
 
   factory PhotoQuestionResponseModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class PhotoQuestionResponseModel {
       status: status,
       questionId: json['question_id']?.toString() ?? '',
       solution: solution,
+      note: json['note']?.toString() ?? '',
     );
   }
 
@@ -34,6 +37,7 @@ class PhotoQuestionResponseModel {
       status: status,
       questionId: questionId,
       solution: solution?.toEntity(),
+      note: note,
     );
   }
 
@@ -57,11 +61,15 @@ class SolutionDocumentModel {
   final String schemaVersion;
   final List<SolutionStepModel> steps;
   final FinalAnswerModel finalAnswer;
+  final SolutionSectionModel approach;
+  final SolutionSectionModel verification;
 
   const SolutionDocumentModel({
     required this.schemaVersion,
     required this.steps,
     required this.finalAnswer,
+    this.approach = const SolutionSectionModel(body: []),
+    this.verification = const SolutionSectionModel(body: []),
   });
 
   factory SolutionDocumentModel.fromJson(Map<String, dynamic> json) {
@@ -81,6 +89,8 @@ class SolutionDocumentModel {
               .toList(growable: false)
           : const [],
       finalAnswer: FinalAnswerModel.fromJson(finalAnswerJson),
+      approach: SolutionSectionModel.fromJson(json['approach']),
+      verification: SolutionSectionModel.fromJson(json['verification']),
     );
   }
 
@@ -89,6 +99,26 @@ class SolutionDocumentModel {
       schemaVersion: schemaVersion,
       steps: steps.map((step) => step.toEntity()).toList(growable: false),
       finalAnswer: finalAnswer.toEntity(),
+      approach: approach.toEntity(),
+      verification: verification.toEntity(),
+    );
+  }
+}
+
+class SolutionSectionModel {
+  final List<SolutionSegmentModel> body;
+
+  const SolutionSectionModel({required this.body});
+
+  factory SolutionSectionModel.fromJson(dynamic json) {
+    return SolutionSectionModel(
+      body: json is Map<String, dynamic> ? _parseBody(json['body']) : const [],
+    );
+  }
+
+  SolutionSection toEntity() {
+    return SolutionSection(
+      body: body.map((segment) => segment.toEntity()).toList(growable: false),
     );
   }
 }
@@ -96,16 +126,19 @@ class SolutionDocumentModel {
 class SolutionStepModel {
   final String title;
   final List<SolutionSegmentModel> body;
+  final List<SolutionSegmentModel> rationale;
 
   const SolutionStepModel({
     required this.title,
     required this.body,
+    this.rationale = const [],
   });
 
   factory SolutionStepModel.fromJson(Map<String, dynamic> json) {
     return SolutionStepModel(
       title: json['title']?.toString() ?? '',
       body: _parseBody(json['body']),
+      rationale: _parseBody(json['rationale']),
     );
   }
 
@@ -113,6 +146,8 @@ class SolutionStepModel {
     return SolutionStep(
       title: title,
       body: body.map((segment) => segment.toEntity()).toList(growable: false),
+      rationale:
+          rationale.map((segment) => segment.toEntity()).toList(growable: false),
     );
   }
 }
@@ -136,7 +171,9 @@ class FinalAnswerModel {
 abstract class SolutionSegmentModel {
   const SolutionSegmentModel();
 
-  factory SolutionSegmentModel.fromJson(Map<String, dynamic> json) {
+  /// Returns `null` for segment types this build does not know about, so a
+  /// forward-compatible payload degrades to a missing block, not a dead page.
+  static SolutionSegmentModel? tryParse(Map<String, dynamic> json) {
     switch (json['type']?.toString()) {
       case 'text':
         return TextSolutionSegmentModel(
@@ -147,8 +184,17 @@ abstract class SolutionSegmentModel {
           latex: json['latex']?.toString() ?? '',
           alt: json['alt']?.toString() ?? '',
         );
+      case 'visual':
+        return VisualSolutionSegmentModel(
+          mediaType: json['media_type']?.toString() ?? '',
+          url: json['url']?.toString() ?? '',
+          width: _parseDimension(json['width']),
+          height: _parseDimension(json['height']),
+          caption: json['caption']?.toString() ?? '',
+          alt: json['alt']?.toString() ?? '',
+        );
       default:
-        throw FormatException('Unknown solution segment type: ${json['type']}');
+        return null;
     }
   }
 
@@ -177,6 +223,40 @@ class MathSolutionSegmentModel extends SolutionSegmentModel {
   MathSolutionSegment toEntity() => MathSolutionSegment(latex: latex, alt: alt);
 }
 
+class VisualSolutionSegmentModel extends SolutionSegmentModel {
+  final String mediaType;
+  final String url;
+  final int width;
+  final int height;
+  final String caption;
+  final String alt;
+
+  const VisualSolutionSegmentModel({
+    required this.mediaType,
+    required this.url,
+    required this.width,
+    required this.height,
+    required this.caption,
+    required this.alt,
+  });
+
+  @override
+  VisualSolutionSegment toEntity() => VisualSolutionSegment(
+        mediaType: mediaType,
+        url: url,
+        width: width,
+        height: height,
+        caption: caption,
+        alt: alt,
+      );
+}
+
+int _parseDimension(dynamic value) {
+  if (value is int) return value;
+  if (value is num) return value.round();
+  return int.tryParse(value?.toString() ?? '') ?? 0;
+}
+
 List<SolutionSegmentModel> _parseBody(dynamic bodyJson) {
   if (bodyJson is! List) {
     return const [];
@@ -184,6 +264,7 @@ List<SolutionSegmentModel> _parseBody(dynamic bodyJson) {
 
   return bodyJson
       .whereType<Map<String, dynamic>>()
-      .map(SolutionSegmentModel.fromJson)
+      .map(SolutionSegmentModel.tryParse)
+      .whereType<SolutionSegmentModel>()
       .toList(growable: false);
 }
