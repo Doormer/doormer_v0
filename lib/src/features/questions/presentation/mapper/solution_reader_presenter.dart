@@ -169,6 +169,9 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
           shape: SolutionTrailNodeShape.marker,
           travelTo:
               onBriefing ? null : SolutionTrailMolecule.briefingPosition,
+          // Students rarely think to go back to the plan, so once they have
+          // left it, it says it is still there.
+          invites: !onBriefing,
         ),
       for (var i = 0; i < stepCount; i++)
         SolutionTrailNode(

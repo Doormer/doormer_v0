@@ -48,6 +48,7 @@ Widget _pump(
 
 void main() {
   _chainTests();
+  _inviteRingTests();
   testWidgets('renders one node per step with a tick on completed steps',
       (tester) async {
     await tester.pumpWidget(_pump(_nodes(3, 1)));
@@ -361,6 +362,57 @@ void _chainTests() {
 
       expect(_chains(tester), 0,
           reason: 'the briefing was never locked, so it was never chained');
+    });
+  });
+}
+
+void _inviteRingTests() {
+  group('the invite ring', () {
+    testWidgets('rings a few times on a node that asks to be gone back to',
+        (tester) async {
+      await tester.pumpWidget(_pump([
+        const SolutionTrailNode(
+          displayNumber: 0,
+          state: SolutionTrailNodeState.done,
+          shape: SolutionTrailNodeShape.marker,
+          icon: Icons.flag_rounded,
+          semanticsLabel: 'The plan',
+          travelTo: -1,
+          invites: true,
+        ),
+        ..._nodes(2, 0),
+      ], motion: true));
+      // The controller starts in a post-frame callback, so the first pump only
+      // schedules it. Sampling now would read the zeroth tick.
+      await tester.pump();
+
+      var rang = false;
+      for (var i = 0; i < 80; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+        if (find.byKey(const Key('trail_invite_ring')).evaluate().isNotEmpty) {
+          rang = true;
+        }
+      }
+      expect(rang, isTrue,
+          reason: 'students never think to reopen the plan unless it says it '
+              'is still there');
+
+      // Hanging here is the failure: an endless ring makes every screen with a
+      // trail untestable.
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('trail_invite_ring')), findsNothing,
+          reason: 'an invitation that never stops stops being an invitation');
+    });
+
+    testWidgets('stays quiet on a node that does not ask', (tester) async {
+      await tester.pumpWidget(_pump(_nodes(3, 1), motion: true));
+      await tester.pump();
+
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(find.byKey(const Key('trail_invite_ring')), findsNothing);
+      }
+      await tester.pumpAndSettle();
     });
   });
 }

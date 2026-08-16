@@ -8,6 +8,7 @@ import 'package:doormer/src/features/questions/presentation/atoms/diagram_atom.d
 import 'package:doormer/src/features/questions/presentation/mapper/solution_segment_order.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/segment_list_molecule.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/dashed_border_atom.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/idle_beat_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -238,50 +239,50 @@ class _SolutionVaultOrganismState extends State<SolutionVaultOrganism>
 
   Widget _revealedVault() {
     return Container(
-        key: const Key('vault_revealed'),
-        width: double.infinity,
-        margin: EdgeInsets.only(top: 12.h),
-        padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 16.h),
-        decoration: BoxDecoration(
-          color: QuestPalette.mint.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(18.r),
-          border: Border.all(color: QuestPalette.mint, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: QuestPalette.mint.withValues(alpha: 0.22),
-              blurRadius: 26,
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.lock_open_rounded,
-                    size: 15.sp, color: QuestPalette.mint),
-                SizedBox(width: 6.w),
-                Text(
-                  'CRACKED IT',
-                  style: TextStyle(
-                    fontSize: 10.sp,
-                    letterSpacing: 1.8,
-                    fontWeight: FontWeight.w700,
-                    color: QuestPalette.mint,
-                  ),
+      key: const Key('vault_revealed'),
+      width: double.infinity,
+      margin: EdgeInsets.only(top: 12.h),
+      padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 16.h),
+      decoration: BoxDecoration(
+        color: QuestPalette.mint.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(color: QuestPalette.mint, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: QuestPalette.mint.withValues(alpha: 0.22),
+            blurRadius: 26,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lock_open_rounded,
+                  size: 15.sp, color: QuestPalette.mint),
+              SizedBox(width: 6.w),
+              Text(
+                'CRACKED IT',
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  letterSpacing: 1.8,
+                  fontWeight: FontWeight.w700,
+                  color: QuestPalette.mint,
                 ),
-              ],
-            ),
-            SizedBox(height: 8.h),
-            SegmentListMolecule(
-              segments: widget.answerBody,
-              onEnlargeVisual: widget.onEnlargeVisual,
-              imageProviderBuilder: widget.imageProviderBuilder,
-              emphasised: true,
-            ),
-          ],
-        ),
-      );
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          SegmentListMolecule(
+            segments: widget.answerBody,
+            onEnlargeVisual: widget.onEnlargeVisual,
+            imageProviderBuilder: widget.imageProviderBuilder,
+            emphasised: true,
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _shutVault() {
@@ -314,10 +315,26 @@ class _SolutionVaultOrganismState extends State<SolutionVaultOrganism>
             ),
             child: Row(
               children: [
-                Icon(
-                  widget.unlockable ? Icons.lock_open_rounded : Icons.lock_rounded,
-                  size: 15.sp,
-                  color: widget.unlockable ? QuestPalette.amber : QuestPalette.dim,
+                IdleBeatAtom(
+                  period: const Duration(milliseconds: 2400),
+                  beats: 4,
+                  child: Icon(
+                    widget.unlockable
+                        ? Icons.lock_open_rounded
+                        : Icons.lock_rounded,
+                    size: 15.sp,
+                    color: widget.unlockable
+                        ? QuestPalette.amber
+                        : QuestPalette.dim,
+                  ),
+                  builder: (context, phase, child) {
+                    // The lock strains upward against what is holding it.
+                    final lift = (1 - math.cos(phase * 2 * math.pi)) / 2;
+                    return Transform.translate(
+                      offset: Offset(0, -4 * lift),
+                      child: child,
+                    );
+                  },
                 ),
                 SizedBox(width: 9.w),
                 Expanded(
@@ -329,8 +346,9 @@ class _SolutionVaultOrganismState extends State<SolutionVaultOrganism>
                       fontFamily: kDisplayFont,
                       fontSize: 12.sp,
                       fontWeight: FontWeight.w500,
-                      color:
-                          widget.unlockable ? QuestPalette.amber : QuestPalette.dim,
+                      color: widget.unlockable
+                          ? QuestPalette.amber
+                          : QuestPalette.dim,
                     ),
                   ),
                 ),

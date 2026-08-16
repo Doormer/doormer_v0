@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:doormer/src/core/motion/motion_policy.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/idle_beat_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -40,6 +41,11 @@ class SolutionTrailNode {
   /// was never locked, so it was never chained.
   final int? chainsBroken;
 
+  /// Whether this node should ring a few times to say it can be returned to.
+  /// The plan at the head of the trail is the one thing students never think
+  /// to go back to, so it is the one thing that asks.
+  final bool invites;
+
   const SolutionTrailNode({
     required this.displayNumber,
     required this.state,
@@ -48,6 +54,7 @@ class SolutionTrailNode {
     this.shape = SolutionTrailNodeShape.step,
     this.travelTo,
     this.chainsBroken,
+    this.invites = false,
   });
 }
 
@@ -90,8 +97,8 @@ class _SolutionTrailMoleculeState extends State<SolutionTrailMolecule> {
   bool _moreLeft = false;
   bool _moreRight = false;
 
-  int get _currentIndex => widget.nodes
-      .indexWhere((n) => n.state == SolutionTrailNodeState.current);
+  int get _currentIndex =>
+      widget.nodes.indexWhere((n) => n.state == SolutionTrailNodeState.current);
 
   @override
   void initState() {
@@ -314,6 +321,10 @@ class _TrailNode extends StatelessWidget {
       child: _content(foreground),
     );
 
+    if (node.invites) {
+      dot = _InviteRing(size: size, marker: isMarker, child: dot);
+    }
+
     final chainsBroken = node.chainsBroken;
     if (chainsBroken != null) {
       dot = _VaultChains(size: size, broken: chainsBroken, child: dot);
@@ -366,6 +377,66 @@ class _TrailNode extends StatelessWidget {
         fontWeight: FontWeight.w700,
         color: foreground,
       ),
+    );
+  }
+}
+
+/// A ring that breathes outward a few times, saying the node underneath can be
+/// gone back to.
+class _InviteRing extends StatelessWidget {
+  final double size;
+  final bool marker;
+  final Widget child;
+
+  const _InviteRing({
+    required this.size,
+    required this.marker,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IdleBeatAtom(
+      period: const Duration(milliseconds: 3400),
+      beats: 3,
+      child: child,
+      builder: (context, phase, child) {
+        // Out and gone, then back to the start: the ring leaves rather than
+        // fading where it stands.
+        final out = (1 - math.cos(phase * 2 * math.pi)) / 2;
+        return Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.center,
+          children: [
+            child!,
+            if (out > 0)
+              Positioned(
+                left: -6,
+                right: -6,
+                top: -6,
+                bottom: -6,
+                child: IgnorePointer(
+                  child: Transform.scale(
+                    scale: 1 + 0.16 * out,
+                    child: DecoratedBox(
+                      key: const Key('trail_invite_ring'),
+                      decoration: BoxDecoration(
+                        shape: marker ? BoxShape.rectangle : BoxShape.circle,
+                        borderRadius:
+                            marker ? BorderRadius.circular(size * 0.42) : null,
+                        border: Border.all(
+                          color: QuestPalette.violet
+                              .withValues(alpha: 0.5 * (1 - out)),
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -483,9 +554,8 @@ class _VaultChainsState extends State<_VaultChains>
     // lets go.
     final strained = (t / 0.3).clamp(0.0, 1.0);
     final flung = ((t - 0.3) / 0.7).clamp(0.0, 1.0);
-    final angle = t == 0
-        ? baseAngle
-        : _lerp(_lerp(baseAngle, -29, strained), -72, flung);
+    final angle =
+        t == 0 ? baseAngle : _lerp(_lerp(baseAngle, -29, strained), -72, flung);
     final offset = Offset.lerp(baseOffset, const Offset(14, 20), flung)!;
     final stretch = _lerp(_lerp(1, 1.08, strained), 0.5, flung);
     return Transform.translate(
@@ -650,7 +720,8 @@ class _CurrentNodeHaloState extends State<_CurrentNodeHalo>
               builder: (context, _) {
                 // A whole number of cycles, so the halo lands back on its
                 // resting glow rather than stopping mid-pulse.
-                final t = (1 - math.cos(2 * math.pi * _beats * _beat.value)) / 2;
+                final t =
+                    (1 - math.cos(2 * math.pi * _beats * _beat.value)) / 2;
                 return DecoratedBox(
                   decoration: BoxDecoration(
                     borderRadius: radius,
@@ -661,8 +732,8 @@ class _CurrentNodeHaloState extends State<_CurrentNodeHalo>
                         spreadRadius: 3 + 7 * t,
                       ),
                       BoxShadow(
-                        color:
-                            QuestPalette.pink.withValues(alpha: 0.55 + 0.25 * t),
+                        color: QuestPalette.pink
+                            .withValues(alpha: 0.55 + 0.25 * t),
                         blurRadius: 20 + 12 * t,
                       ),
                     ],

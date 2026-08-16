@@ -44,6 +44,7 @@ Widget _pump({
 
 void main() {
   _unlockChainTests();
+  _lockBobTests();
   _readyStateTests();
   testWidgets('shows the locked strip with the supplied label before the end',
       (tester) async {
@@ -332,6 +333,41 @@ void _unlockChainTests() {
 
       expect(find.byKey(const Key('vault_locked')), findsOneWidget);
       expect(find.byKey(const Key('vault_confetti')), findsNothing);
+      await tester.pumpAndSettle();
+    });
+  });
+}
+
+void _lockBobTests() {
+  group('the shut vault', () {
+    testWidgets('strains its lock a few times, then holds still',
+        (tester) async {
+      await tester.pumpWidget(_pump(
+        revealed: false,
+        unlockable: false,
+        motion: true,
+      ));
+      // The controller starts in a post-frame callback, so the first pump only
+      // schedules it. Sampling now would read the zeroth tick.
+      await tester.pump();
+
+      var lifted = 0.0;
+      for (var i = 0; i < 100; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+        final y = tester
+            .widgetList<Transform>(find.ancestor(
+              of: find.byIcon(Icons.lock_rounded),
+              matching: find.byType(Transform),
+            ))
+            .fold<double>(0, (acc, t) => acc + t.transform.getTranslation().y);
+        if (y < lifted) lifted = y;
+      }
+      expect(lifted, lessThan(-1),
+          reason: 'a lock that never moves is scenery; one that strains is '
+              'something holding back a thing the student wants');
+
+      // Hanging here is the failure: an endless bob makes every screen with a
+      // vault untestable.
       await tester.pumpAndSettle();
     });
   });

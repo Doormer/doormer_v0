@@ -75,6 +75,7 @@ class QuestHudOrganism extends StatelessWidget {
             StatPillAtom(
               key: const Key('hud_streak'),
               icon: Icons.local_fire_department_rounded,
+              alive: true,
               label: params.streakLabel,
               accent: QuestPalette.amber,
             ),
