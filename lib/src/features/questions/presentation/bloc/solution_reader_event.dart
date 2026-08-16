@@ -13,10 +13,15 @@ abstract class SolutionReaderEvent extends Equatable {
 class SolutionReaderStarted extends SolutionReaderEvent {
   final SolutionDocument? document;
 
-  const SolutionReaderStarted({this.document});
+  /// Solver commentary handed over alongside [document]. Ignored when
+  /// [document] is null, because the sample path reads the note off the
+  /// outcome it loads.
+  final String note;
+
+  const SolutionReaderStarted({this.document, this.note = ''});
 
   @override
-  List<Object?> get props => [document];
+  List<Object?> get props => [document, note];
 }
 
 class SolutionReaderAdvanced extends SolutionReaderEvent {

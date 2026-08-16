@@ -43,10 +43,14 @@ class _FakeQuestionsRepository implements QuestionsRepository {
   }
 }
 
-PhotoQuestionSolveOutcome _outcome(PhotoQuestionSolveStatus status) {
+PhotoQuestionSolveOutcome _outcome(
+  PhotoQuestionSolveStatus status, {
+  String note = '',
+}) {
   return PhotoQuestionSolveOutcome(
     status: status,
     questionId: 'q_${status.name}',
+    note: note,
     solution: status == PhotoQuestionSolveStatus.solved
         ? const SolutionDocument(
             schemaVersion: '1.0',
@@ -74,6 +78,30 @@ void main() {
   setUpAll(AppLogger.disable);
 
   final validBytes = Uint8List.fromList([1, 2, 3]);
+
+  blocTest<AskByPhotoBloc, AskByPhotoState>(
+    'carries the solver note across the solve handoff',
+    build: () => _blocFor(_FakeQuestionsRepository(
+      outcome: _outcome(
+        PhotoQuestionSolveStatus.solved,
+        note: 'The rectangle width is derived, not printed.',
+      ),
+    )),
+    seed: () => AskByPhotoPhotoSelected(
+      imageBytes: validBytes,
+      fileName: 'problem.jpg',
+      mimeType: 'image/jpeg',
+    ),
+    act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+    expect: () => [
+      AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.jpg'),
+      isA<AskByPhotoSolved>().having(
+        (state) => state.note,
+        'note',
+        'The rectangle width is derived, not printed.',
+      ),
+    ],
+  );
 
   blocTest<AskByPhotoBloc, AskByPhotoState>(
     'emits Solved with question id and solution for solved outcome',

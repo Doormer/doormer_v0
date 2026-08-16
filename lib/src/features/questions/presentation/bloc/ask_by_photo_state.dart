@@ -43,13 +43,19 @@ class AskByPhotoSolved extends AskByPhotoState {
   final String questionId;
   final SolutionDocument solution;
 
+  /// Solver commentary that travels with the document. Kept here because the
+  /// reader is opened from this state, and dropping it here would make the
+  /// note unreachable on the solve path.
+  final String note;
+
   const AskByPhotoSolved({
     required this.questionId,
     required this.solution,
+    this.note = '',
   });
 
   @override
-  List<Object?> get props => [questionId, solution];
+  List<Object?> get props => [questionId, solution, note];
 }
 
 /// A solve that ended without a solution, holding on to the photo that

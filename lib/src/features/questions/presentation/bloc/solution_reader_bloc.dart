@@ -26,7 +26,11 @@ class SolutionReaderBloc extends Bloc<SolutionReaderEvent, SolutionReaderState> 
   ) async {
     final handedOver = event.document;
     if (handedOver != null) {
-      emit(SolutionReaderReady(document: handedOver));
+      emit(SolutionReaderReady(
+        document: handedOver,
+        onBriefing: handedOver.approach.body.isNotEmpty,
+        note: event.note,
+      ));
       return;
     }
 
@@ -38,7 +42,11 @@ class SolutionReaderBloc extends Bloc<SolutionReaderEvent, SolutionReaderState> 
         emit(const SolutionReaderError('This question has no solution yet.'));
         return;
       }
-      emit(SolutionReaderReady(document: solution));
+      emit(SolutionReaderReady(
+        document: solution,
+        onBriefing: solution.approach.body.isNotEmpty,
+        note: outcome.note,
+      ));
     } on Failure catch (f, stackTrace) {
       emit(SolutionReaderError(f.message));
       AppLogger.error('Solution reader load failed',
@@ -55,7 +63,17 @@ class SolutionReaderBloc extends Bloc<SolutionReaderEvent, SolutionReaderState> 
     Emitter<SolutionReaderState> emit,
   ) {
     final current = state;
-    if (current is! SolutionReaderReady || current.isLastStep) {
+    if (current is! SolutionReaderReady) {
+      return;
+    }
+    // The briefing check must come before isLastStep. In a one-step solution
+    // isLastStep is already true at stepIndex 0, so testing it first would
+    // strand the student on the briefing forever.
+    if (current.onBriefing) {
+      emit(current.copyWith(onBriefing: false, rationaleVisible: false));
+      return;
+    }
+    if (current.isLastStep) {
       return;
     }
     emit(current.copyWith(
@@ -69,7 +87,14 @@ class SolutionReaderBloc extends Bloc<SolutionReaderEvent, SolutionReaderState> 
     Emitter<SolutionReaderState> emit,
   ) {
     final current = state;
-    if (current is! SolutionReaderReady || current.isFirstStep) {
+    if (current is! SolutionReaderReady || current.onBriefing) {
+      return;
+    }
+    if (current.isFirstStep) {
+      if (!current.hasBriefing) {
+        return;
+      }
+      emit(current.copyWith(onBriefing: true, rationaleVisible: false));
       return;
     }
     emit(current.copyWith(
@@ -83,7 +108,7 @@ class SolutionReaderBloc extends Bloc<SolutionReaderEvent, SolutionReaderState> 
     Emitter<SolutionReaderState> emit,
   ) {
     final current = state;
-    if (current is! SolutionReaderReady) return;
+    if (current is! SolutionReaderReady || current.onBriefing) return;
     emit(current.copyWith(rationaleVisible: !current.rationaleVisible));
   }
 
@@ -92,7 +117,11 @@ class SolutionReaderBloc extends Bloc<SolutionReaderEvent, SolutionReaderState> 
     Emitter<SolutionReaderState> emit,
   ) {
     final current = state;
+    // onBriefing is checked because a one-step solution is on its last step
+    // while the briefing is still showing; without it the answer could be
+    // revealed before a single step is read.
     if (current is! SolutionReaderReady ||
+        current.onBriefing ||
         !current.isLastStep ||
         current.answerRevealed) {
       return;

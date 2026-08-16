@@ -21,34 +21,48 @@ class SolutionReaderReady extends SolutionReaderState {
   final bool rationaleVisible;
   final bool answerRevealed;
 
+  /// The briefing is a mode, not an index. [stepIndex] keeps meaning "index
+  /// into document.steps" while this is true, so [isLastStep] — and every
+  /// vault-unlock rule built on it — is unaffected by the briefing existing.
+  final bool onBriefing;
+
+  final String note;
+
   const SolutionReaderReady({
     required this.document,
     this.stepIndex = 0,
     this.rationaleVisible = false,
     this.answerRevealed = false,
+    this.onBriefing = false,
+    this.note = '',
   });
 
   bool get isFirstStep => stepIndex == 0;
 
   bool get isLastStep => stepIndex >= document.steps.length - 1;
 
+  bool get hasBriefing => document.approach.body.isNotEmpty;
+
   SolutionReaderReady copyWith({
     int? stepIndex,
     bool? rationaleVisible,
     bool? answerRevealed,
+    bool? onBriefing,
   }) {
     return SolutionReaderReady(
       document: document,
       stepIndex: stepIndex ?? this.stepIndex,
       rationaleVisible: rationaleVisible ?? this.rationaleVisible,
       answerRevealed: answerRevealed ?? this.answerRevealed,
+      onBriefing: onBriefing ?? this.onBriefing,
+      note: note,
     );
   }
 
   /// [document] is a plain domain entity, so it compares by identity here.
   @override
   List<Object?> get props =>
-      [document, stepIndex, rationaleVisible, answerRevealed];
+      [document, stepIndex, rationaleVisible, answerRevealed, onBriefing, note];
 }
 
 class SolutionReaderError extends SolutionReaderState {

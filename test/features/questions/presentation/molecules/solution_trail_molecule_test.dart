@@ -62,4 +62,44 @@ void main() {
       );
     }
   });
+
+  testWidgets('renders an icon instead of a number when the node carries one',
+      (tester) async {
+    await tester.pumpWidget(_pump(const [
+      SolutionTrailNode(
+        displayNumber: 0,
+        state: SolutionTrailNodeState.current,
+        semanticsLabel: 'The plan',
+        icon: Icons.flag_outlined,
+      ),
+      SolutionTrailNode(
+        displayNumber: 1,
+        state: SolutionTrailNodeState.upcoming,
+        semanticsLabel: 'Step 1',
+      ),
+    ]));
+    await tester.pump();
+
+    expect(find.byIcon(Icons.flag_outlined), findsOneWidget);
+    expect(find.text('0'), findsNothing,
+        reason: 'a briefing node has no step number to show');
+    expect(find.text('1'), findsOneWidget,
+        reason: 'step numbering must not shift because of the briefing node');
+  });
+
+  testWidgets('an icon node still shows the tick once it is done',
+      (tester) async {
+    await tester.pumpWidget(_pump(const [
+      SolutionTrailNode(
+        displayNumber: 0,
+        state: SolutionTrailNodeState.done,
+        semanticsLabel: 'The plan',
+        icon: Icons.flag_outlined,
+      ),
+    ]));
+    await tester.pump();
+
+    expect(find.byIcon(Icons.check), findsOneWidget);
+    expect(find.byIcon(Icons.flag_outlined), findsNothing);
+  });
 }

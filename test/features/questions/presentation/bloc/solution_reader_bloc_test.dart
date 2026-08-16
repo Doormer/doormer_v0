@@ -22,6 +22,41 @@ const _document = SolutionDocument(
   ]),
 );
 
+/// Same shape as [_document] but carrying an approach, so the reader opens on
+/// a briefing.
+const _briefedDocument = SolutionDocument(
+  schemaVersion: '3.0',
+  steps: [
+    SolutionStep(title: 'One', body: [], rationale: [
+      TextSolutionSegment('because'),
+    ]),
+    SolutionStep(title: 'Two', body: []),
+    SolutionStep(title: 'Three', body: []),
+  ],
+  finalAnswer: FinalAnswer(body: [
+    MathSolutionSegment(latex: r'\boxed{160}', alt: '160'),
+  ]),
+  approach: SolutionSection(body: [
+    TextSolutionSegment('Use the road angle, then the width.'),
+  ]),
+);
+
+/// A single-step document with a briefing. This is the only shape that exposes
+/// the two isLastStep guards: at stepIndex 0 the reader is simultaneously on
+/// the briefing and on the last step.
+const _oneStepBriefedDocument = SolutionDocument(
+  schemaVersion: '3.0',
+  steps: [
+    SolutionStep(title: 'Only', body: []),
+  ],
+  finalAnswer: FinalAnswer(body: [
+    MathSolutionSegment(latex: r'\boxed{160}', alt: '160'),
+  ]),
+  approach: SolutionSection(body: [
+    TextSolutionSegment('One move is enough.'),
+  ]),
+);
+
 class _StubRepository implements QuestionsRepository {
   final PhotoQuestionSolveOutcome? outcome;
   final Failure? failure;
@@ -181,6 +216,128 @@ void main() {
           stepIndex: 2,
           answerRevealed: true,
         ),
+      ],
+    );
+  });
+
+  group('briefing', () {
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'opens on the briefing when the document carries an approach',
+      build: _bloc,
+      act: (bloc) =>
+          bloc.add(const SolutionReaderStarted(document: _briefedDocument)),
+      expect: () => const [
+        SolutionReaderReady(document: _briefedDocument, onBriefing: true),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'opens on step one when the document has no approach',
+      build: _bloc,
+      act: (bloc) => bloc.add(const SolutionReaderStarted(document: _document)),
+      expect: () => const [
+        SolutionReaderReady(document: _document),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'leaves the briefing without consuming a step',
+      build: _bloc,
+      seed: () => const SolutionReaderReady(
+        document: _briefedDocument,
+        onBriefing: true,
+      ),
+      act: (bloc) => bloc.add(const SolutionReaderAdvanced()),
+      expect: () => const [
+        SolutionReaderReady(document: _briefedDocument),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'goes back from step one to the briefing',
+      build: _bloc,
+      seed: () => const SolutionReaderReady(document: _briefedDocument),
+      act: (bloc) => bloc.add(const SolutionReaderWentBack()),
+      expect: () => const [
+        SolutionReaderReady(document: _briefedDocument, onBriefing: true),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'does not go back past the briefing',
+      build: _bloc,
+      seed: () => const SolutionReaderReady(
+        document: _briefedDocument,
+        onBriefing: true,
+      ),
+      act: (bloc) => bloc.add(const SolutionReaderWentBack()),
+      expect: () => const <SolutionReaderState>[],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'ignores the rationale toggle while on the briefing',
+      build: _bloc,
+      seed: () => const SolutionReaderReady(
+        document: _briefedDocument,
+        onBriefing: true,
+      ),
+      act: (bloc) => bloc.add(const SolutionReaderRationaleToggled()),
+      expect: () => const <SolutionReaderState>[],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'advances off the briefing even when the only step is also the last',
+      build: _bloc,
+      seed: () => const SolutionReaderReady(
+        document: _oneStepBriefedDocument,
+        onBriefing: true,
+      ),
+      act: (bloc) => bloc.add(const SolutionReaderAdvanced()),
+      expect: () => const [
+        SolutionReaderReady(document: _oneStepBriefedDocument),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'cannot reveal the answer from the briefing of a one-step solution',
+      build: _bloc,
+      seed: () => const SolutionReaderReady(
+        document: _oneStepBriefedDocument,
+        onBriefing: true,
+      ),
+      act: (bloc) => bloc.add(const SolutionReaderAnswerRevealed()),
+      expect: () => const <SolutionReaderState>[],
+    );
+  });
+
+  group('note', () {
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'keeps the note handed over from a solve',
+      build: _bloc,
+      act: (bloc) => bloc.add(const SolutionReaderStarted(
+        document: _document,
+        note: 'The width is derived.',
+      )),
+      expect: () => const [
+        SolutionReaderReady(document: _document, note: 'The width is derived.'),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'keeps the note loaded from the sample',
+      build: () => _bloc(
+        outcome: const PhotoQuestionSolveOutcome(
+          status: PhotoQuestionSolveStatus.solved,
+          questionId: '57',
+          solution: _document,
+          note: 'The width is derived.',
+        ),
+      ),
+      act: (bloc) => bloc.add(const SolutionReaderStarted()),
+      expect: () => [
+        isA<SolutionReaderLoading>(),
+        isA<SolutionReaderReady>()
+            .having((s) => s.note, 'note', 'The width is derived.'),
       ],
     );
   });

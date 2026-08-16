@@ -9,10 +9,16 @@ class SolutionTrailNode {
   final SolutionTrailNodeState state;
   final String semanticsLabel;
 
+  /// Drawn instead of [displayNumber] on a node that is not a numbered step,
+  /// such as the briefing at the head of the trail. Step nodes leave this null
+  /// so their numbering never shifts.
+  final IconData? icon;
+
   const SolutionTrailNode({
     required this.displayNumber,
     required this.state,
     required this.semanticsLabel,
+    this.icon,
   });
 }
 
@@ -107,16 +113,27 @@ class _TrailNode extends StatelessWidget {
           shape: BoxShape.circle,
           border: Border.all(color: border, width: 2),
         ),
-        child: node.state == SolutionTrailNodeState.done
-            ? Icon(Icons.check, size: 16.sp, color: foreground)
-            : Text(
-                '${node.displayNumber}',
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w700,
-                  color: foreground,
-                ),
-              ),
+        child: _content(foreground),
+      ),
+    );
+  }
+
+  /// A done node always reads as a tick, icon or not, so a passed briefing
+  /// looks like every other completed node.
+  Widget _content(Color foreground) {
+    if (node.state == SolutionTrailNodeState.done) {
+      return Icon(Icons.check, size: 16.sp, color: foreground);
+    }
+    final icon = node.icon;
+    if (icon != null) {
+      return Icon(icon, size: 16.sp, color: foreground);
+    }
+    return Text(
+      '${node.displayNumber}',
+      style: TextStyle(
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w700,
+        color: foreground,
       ),
     );
   }
