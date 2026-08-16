@@ -265,6 +265,20 @@ void main() {
     expect(find.text('Solving your photo'), findsOneWidget);
     expect(repository.callCount, 1);
 
+    // The submitted photo must stay on screen for the whole solve. Regression
+    // guard: AskByPhotoLoading used to drop the selection, so the preview
+    // collapsed back to the "pick a file" placeholder while the status panel
+    // underneath still claimed to be solving that very photo.
+    expect(find.text('algebra.png'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(PhotoPreviewMolecule),
+        matching: find.byType(Image),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('JPEG or PNG · max 10 MB'), findsNothing);
+
     pending.complete(_outcome(PhotoQuestionSolveStatus.solved));
     await tester.pump(); // Solved state -> listener fires GoRouter.go
     await tester.pump(const Duration(seconds: 1)); // route transition settles

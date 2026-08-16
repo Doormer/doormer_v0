@@ -38,9 +38,14 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
     Emitter<AskByPhotoState> emit,
   ) async {
     final selectedState = state;
-    emit(const AskByPhotoLoading());
+    final selected =
+        selectedState is AskByPhotoPhotoSelected ? selectedState : null;
+    emit(AskByPhotoLoading(
+      imageBytes: selected?.imageBytes,
+      fileName: selected?.fileName,
+    ));
 
-    if (selectedState is! AskByPhotoPhotoSelected) {
+    if (selected == null) {
       emit(const AskByPhotoValidationError(
         'Please choose a JPEG or PNG photo before submitting.',
       ));
@@ -49,9 +54,9 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
 
     try {
       final outcome = await submitPhotoQuestionUseCase(
-        imageBytes: selectedState.imageBytes,
-        fileName: selectedState.fileName,
-        mimeType: selectedState.mimeType,
+        imageBytes: selected.imageBytes,
+        fileName: selected.fileName,
+        mimeType: selected.mimeType,
       );
       _emitOutcome(outcome, emit);
     } on ValidationFailure catch (f, stackTrace) {

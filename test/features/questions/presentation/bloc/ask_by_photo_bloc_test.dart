@@ -87,7 +87,7 @@ void main() {
     ),
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
-      const AskByPhotoLoading(),
+      AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.jpg'),
       isA<AskByPhotoSolved>()
           .having((state) => state.questionId, 'questionId', 'q_solved')
           .having(
@@ -107,7 +107,7 @@ void main() {
     ),
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
-      const AskByPhotoLoading(),
+      AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.png'),
       const AskByPhotoUnreadable(questionId: 'q_unreadable'),
     ],
   );
@@ -124,7 +124,7 @@ void main() {
     ),
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
-      const AskByPhotoLoading(),
+      AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.png'),
       const AskByPhotoNotAQuestion(questionId: 'q_notAQuestion'),
     ],
   );
@@ -141,7 +141,7 @@ void main() {
     ),
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
-      const AskByPhotoLoading(),
+      AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.png'),
       const AskByPhotoTimeout(questionId: 'q_timeout'),
     ],
   );
@@ -158,7 +158,7 @@ void main() {
     ),
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
-      const AskByPhotoLoading(),
+      AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.heic'),
       const AskByPhotoValidationError(
         "HEIC isn't supported — please use JPEG or PNG.",
       ),
@@ -182,8 +182,41 @@ void main() {
     ),
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
-      const AskByPhotoLoading(),
+      AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.jpg'),
       const AskByPhotoNetworkError('We could not reach the solver. Try again.'),
+    ],
+  );
+
+  blocTest<AskByPhotoBloc, AskByPhotoState>(
+    'carries the selected photo into Loading so the preview survives the solve',
+    build: () => _blocFor(_FakeQuestionsRepository(
+      outcome: _outcome(PhotoQuestionSolveStatus.solved),
+    )),
+    seed: () => AskByPhotoPhotoSelected(
+      imageBytes: validBytes,
+      fileName: 'problem.jpg',
+      mimeType: 'image/jpeg',
+    ),
+    act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+    expect: () => [
+      isA<AskByPhotoLoading>()
+          .having((state) => state.imageBytes, 'imageBytes', validBytes)
+          .having((state) => state.fileName, 'fileName', 'problem.jpg'),
+      isA<AskByPhotoSolved>(),
+    ],
+  );
+
+  blocTest<AskByPhotoBloc, AskByPhotoState>(
+    'Loading carries no photo when submitting without a selection',
+    build: () => _blocFor(_FakeQuestionsRepository(
+      outcome: _outcome(PhotoQuestionSolveStatus.solved),
+    )),
+    act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+    expect: () => [
+      const AskByPhotoLoading(),
+      const AskByPhotoValidationError(
+        'Please choose a JPEG or PNG photo before submitting.',
+      ),
     ],
   );
 
@@ -203,7 +236,12 @@ void main() {
     bloc.add(const AskByPhotoSubmitted());
     await Future<void>.delayed(Duration.zero);
 
-    expect(emittedStates, contains(const AskByPhotoLoading()));
+    expect(
+      emittedStates,
+      contains(
+        AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.jpg'),
+      ),
+    );
     expect(completer.isCompleted, isFalse);
 
     completer.complete(_outcome(PhotoQuestionSolveStatus.timeout));

@@ -166,7 +166,8 @@ class AskByPhotoPage extends StatelessWidget {
         },
         builder: (context, state) {
           final selected = state is AskByPhotoPhotoSelected ? state : null;
-          final isLoading = state is AskByPhotoLoading;
+          final loading = state is AskByPhotoLoading ? state : null;
+          final isLoading = loading != null;
 
           return AskByPhotoTemplate(
             userStatusParams: const UserStatusParams(
@@ -175,8 +176,8 @@ class AskByPhotoPage extends StatelessWidget {
               totalCount: 50,
             ),
             uploadParams: PhotoUploadPanelParams(
-              imageBytes: selected?.imageBytes,
-              fileName: selected?.fileName,
+              imageBytes: selected?.imageBytes ?? loading?.imageBytes,
+              fileName: selected?.fileName ?? loading?.fileName,
               isLoading: isLoading,
               onPickPhoto: () => _showPhotoSourceOptions(context),
               onSubmit: () => context

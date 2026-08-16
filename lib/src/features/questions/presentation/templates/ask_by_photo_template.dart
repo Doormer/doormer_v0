@@ -34,7 +34,12 @@ class AskByPhotoTemplate extends StatelessWidget {
     // state keeps the single-CTA design. They mount as soon as there is
     // something to act on: a picked photo, an in-flight solve, or a recoverable
     // failure. Without them onSubmit is unreachable and the solve flow dead-ends.
-    final showUploadPanel = hasPhoto || isLoading;
+    //
+    // The upload panel is gated on `hasPhoto` alone, never on `isLoading`: with
+    // no bytes it renders a "choose a file" placeholder, which would contradict
+    // the status panel claiming to solve that photo. The loading state carries
+    // the photo, so `hasPhoto` stays true for the whole solve.
+    final showUploadPanel = hasPhoto;
     final showStatusPanel = statusParams.content.showActions || isLoading;
     final showPanels = showUploadPanel || showStatusPanel;
 

@@ -27,7 +27,16 @@ class AskByPhotoPhotoSelected extends AskByPhotoState {
 }
 
 class AskByPhotoLoading extends AskByPhotoState {
-  const AskByPhotoLoading();
+  /// The photo being solved, carried through so the preview stays on screen for
+  /// the whole in-flight solve instead of collapsing to the empty placeholder.
+  /// Null only when a submit is dispatched with nothing selected.
+  final Uint8List? imageBytes;
+  final String? fileName;
+
+  const AskByPhotoLoading({this.imageBytes, this.fileName});
+
+  @override
+  List<Object?> get props => [imageBytes, fileName];
 }
 
 class AskByPhotoSolved extends AskByPhotoState {
