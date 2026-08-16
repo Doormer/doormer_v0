@@ -437,4 +437,38 @@ void main() {
       expect(find.widgetWithText(AppButtonAtom, 'Retake'), findsOneWidget);
     });
   });
+
+  testWidgets('the Solve action does not open a picker mid-solve',
+      (tester) async {
+    // The upload panel already refuses to re-pick while a solve is running.
+    // The nav bar used to stay live, so a photo picked mid-flight replaced the
+    // preview and then the earlier photo's solution arrived and routed away -
+    // the student ends up reading a solution for a photo they just replaced.
+    final pending = Completer<PhotoQuestionSolveOutcome>();
+    repository = _FakeQuestionsRepository(pending: pending);
+    registerBloc();
+    await pumpPage(tester);
+
+    await selectPhoto(tester);
+    await tester.ensureVisible(
+      find.widgetWithText(FilledButton, 'Submit to solver'),
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.byIcon(Icons.document_scanner_outlined));
+    // Not pumpAndSettle: the submit button's spinner animates for as long as
+    // the solve runs, so nothing settles until it finishes.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Open camera'), findsNothing);
+    expect(find.text('Choose from gallery'), findsNothing);
+
+    pending.complete(_outcome(PhotoQuestionSolveStatus.solved));
+    await tester.pump();
+    await tester.pump();
+    await drainToasts(tester);
+  });
 }

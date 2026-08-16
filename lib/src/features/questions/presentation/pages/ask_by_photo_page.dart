@@ -63,7 +63,25 @@ class AskByPhotoPage extends StatelessWidget {
     }
   }
 
-  Future<void> _showPhotoSourceOptions(BuildContext context) async {
+  /// Opens the camera/gallery chooser, unless a solve is already running.
+  ///
+  /// The upload panel disables its own pick button during a solve; without the
+  /// same guard here the nav bar could swap the photo mid-flight, and the
+  /// earlier photo's solution would then arrive and route the student to a
+  /// solution for a photo they had just replaced.
+  Future<void> _showPhotoSourceOptions(
+    BuildContext context, {
+    bool isSolving = false,
+  }) async {
+    if (isSolving) {
+      CustomToast.show(
+        context,
+        message: 'Still solving your last photo. One moment.',
+        type: ToastificationType.info,
+      );
+      return;
+    }
+
     await showModalBottomSheet<void>(
       context: context,
       builder: (sheetContext) {
@@ -209,7 +227,8 @@ class AskByPhotoPage extends StatelessWidget {
               selectedIndex: 2,
               onCopy: () => AppLogger.info('Saved questions'),
               onAiChat: () => AppLogger.info('AI chat'),
-              onUpload: () => _showPhotoSourceOptions(context),
+              onUpload: () =>
+                  _showPhotoSourceOptions(context, isSolving: isLoading),
               onChat: () => AppLogger.info('Discussions'),
               onProfile: () => AppLogger.info('Profile'),
             ),
