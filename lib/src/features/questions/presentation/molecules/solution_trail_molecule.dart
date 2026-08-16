@@ -308,6 +308,14 @@ class _TrailNode extends StatelessWidget {
       child: _content(foreground),
     );
 
+    if (isMarker) {
+      dot = _VaultChains(
+        size: size,
+        cracked: node.state == SolutionTrailNodeState.done,
+        child: dot,
+      );
+    }
+
     if (isCurrent) {
       dot = _CurrentNodeHalo(size: size, marker: isMarker, child: dot);
     }
@@ -357,6 +365,131 @@ class _TrailNode extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Three short bars strapped across the vault marker. They do not fade when
+/// the vault opens — they snap and are flung off, because the student broke
+/// them.
+class _VaultChains extends StatefulWidget {
+  final double size;
+  final bool cracked;
+  final Widget child;
+
+  const _VaultChains({
+    required this.size,
+    required this.cracked,
+    required this.child,
+  });
+
+  @override
+  State<_VaultChains> createState() => _VaultChainsState();
+}
+
+class _VaultChainsState extends State<_VaultChains>
+    with SingleTickerProviderStateMixin {
+  /// Base pose of each bar: angle in degrees, then offset in 38px node units.
+  static const List<(double, Offset)> _bars = [
+    (38, Offset(-13, -11)),
+    (-38, Offset(13, -11)),
+    (0, Offset(0, 15)),
+  ];
+
+  late final AnimationController _snap;
+
+  /// A vault that was already open when the trail was built never had chains,
+  /// so there is nothing to snap.
+  late bool _worn = !widget.cracked;
+
+  @override
+  void initState() {
+    super.initState();
+    _snap = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 550),
+    );
+  }
+
+  @override
+  void didUpdateWidget(_VaultChains oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.cracked == oldWidget.cracked) return;
+    if (!widget.cracked) {
+      // Travelling back re-locks the vault, so the chains are simply back on.
+      _snap.stop();
+      setState(() => _worn = true);
+      return;
+    }
+    if (!_worn) return;
+    if (!MotionPolicy.of(context)) {
+      setState(() => _worn = false);
+      return;
+    }
+    _snap.forward(from: 0).whenCompleteOrCancel(() {
+      if (mounted && widget.cracked) setState(() => _worn = false);
+    });
+  }
+
+  @override
+  void dispose() {
+    _snap.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_worn) return widget.child;
+    final unit = widget.size / 38;
+    return AnimatedBuilder(
+      animation: _snap,
+      builder: (context, child) {
+        final t = _snap.value;
+        return Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.center,
+          children: [
+            child!,
+            for (final bar in _bars) _bar(bar.$1, bar.$2, t, unit),
+          ],
+        );
+      },
+      child: widget.child,
+    );
+  }
+
+  Widget _bar(double baseAngle, Offset baseOffset, double t, double unit) {
+    // Braces first, then the break: the bar strains against its anchor before
+    // it lets go.
+    final strained = (t / 0.3).clamp(0.0, 1.0);
+    final flung = ((t - 0.3) / 0.7).clamp(0.0, 1.0);
+    final angle = t == 0
+        ? baseAngle
+        : _lerp(_lerp(baseAngle, -29, strained), -72, flung);
+    final offset = Offset.lerp(baseOffset, const Offset(14, 20), flung)!;
+    final stretch = _lerp(_lerp(1, 1.08, strained), 0.5, flung);
+    return Transform.translate(
+      offset: offset * unit,
+      child: Transform.rotate(
+        angle: angle * math.pi / 180,
+        child: Transform.scale(
+          scaleX: stretch,
+          scaleY: 1,
+          child: Opacity(
+            opacity: (1 - flung) * 0.75,
+            child: Container(
+              width: 15 * unit,
+              height: 3 * unit,
+              decoration: BoxDecoration(
+                color: QuestPalette.dim,
+                borderRadius: BorderRadius.circular(2 * unit),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  double _lerp(double a, double b, double t) => a + (b - a) * t;
 }
 
 class _TrailConnector extends StatelessWidget {

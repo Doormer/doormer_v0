@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:doormer/src/core/motion/motion_policy.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/xp_pellet_atom.dart';
@@ -48,6 +50,15 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
   final ScrollController _scrollController = ScrollController();
 
   /// Locates the vault so revealing the answer can bring it into view.
+  /// The lock resists before it gives. Revealing on the press makes the answer
+  /// feel handed over; a moment of refusal makes it feel taken. It lives here,
+  /// not in the vault, so the whole page turns over on the same beat — the
+  /// working, the button and the answer all belong to one moment.
+  static const Duration _resistFor = Duration(milliseconds: 450);
+
+  Timer? _resistTimer;
+  bool _resisting = false;
+
   final GlobalKey _vaultKey = GlobalKey();
 
   /// The pellet's two ends, and the box it flies across.
@@ -212,8 +223,23 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
     );
   }
 
+  void _requestReveal() {
+    if (_resisting || widget.params.content.answerRevealed) return;
+    if (!MotionPolicy.of(context)) {
+      widget.params.onRevealAnswer();
+      return;
+    }
+    setState(() => _resisting = true);
+    _resistTimer = Timer(_resistFor, () {
+      if (!mounted) return;
+      setState(() => _resisting = false);
+      widget.params.onRevealAnswer();
+    });
+  }
+
   @override
   void dispose() {
+    _resistTimer?.cancel();
     _flight.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -312,7 +338,8 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
                             unlockable: content.isLastStep,
                             lockedLabel: content.vaultLockedLabel,
                             answerBody: content.answerBody,
-                            onReveal: params.onRevealAnswer,
+                            resisting: _resisting,
+                            onReveal: _requestReveal,
                             onEnlargeVisual: params.onEnlargeVisual,
                             imageProviderBuilder: params.imageProviderBuilder,
                           ),
@@ -326,7 +353,7 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
                 ),
               ),
             ),
-            _CtaBar(params: params),
+            _CtaBar(params: params, onRequestReveal: _requestReveal),
           ],
           ),
             ),
@@ -402,7 +429,11 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
 class _CtaBar extends StatelessWidget {
   final SolutionReaderParams params;
 
-  const _CtaBar({required this.params});
+  /// Reveal goes through the page rather than straight to the bloc, so the
+  /// lock gets its moment of refusal first.
+  final VoidCallback onRequestReveal;
+
+  const _CtaBar({required this.params, required this.onRequestReveal});
 
   @override
   Widget build(BuildContext context) {
@@ -451,7 +482,7 @@ class _CtaBar extends StatelessWidget {
                   edge: edge,
                   onPressed: content.ctaEnabled
                       ? (content.isLastStep
-                          ? params.onRevealAnswer
+                          ? onRequestReveal
                           : params.onNext)
                       : null,
                 ),

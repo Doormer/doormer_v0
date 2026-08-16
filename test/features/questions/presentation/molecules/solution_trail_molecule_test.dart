@@ -1,5 +1,6 @@
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/solution_trail_molecule.dart';
+import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -46,6 +47,7 @@ Widget _pump(
 }
 
 void main() {
+  _chainTests();
   testWidgets('renders one node per step with a tick on completed steps',
       (tester) async {
     await tester.pumpWidget(_pump(_nodes(3, 1)));
@@ -239,5 +241,94 @@ void _edgeTests() {
 
     expect(find.byType(ShaderMask), findsOneWidget,
         reason: 'a trail that continues past the edge must not look finished');
+  });
+}
+
+SolutionTrailNode _vaultNode(SolutionTrailNodeState state) => SolutionTrailNode(
+      displayNumber: 0,
+      state: state,
+      shape: SolutionTrailNodeShape.marker,
+      icon: Icons.lock_rounded,
+      semanticsLabel: 'Final answer',
+    );
+
+List<SolutionTrailNode> _withVault(SolutionTrailNodeState vaultState) => [
+      ..._nodes(2, 1),
+      _vaultNode(vaultState),
+    ];
+
+int _chains(WidgetTester tester) => tester
+    .widgetList<Container>(find.byType(Container))
+    .where((c) {
+      final d = c.decoration;
+      return d is BoxDecoration && d.color == QuestPalette.dim;
+    })
+    .length;
+
+void _chainTests() {
+  group('the vault chains', () {
+    testWidgets('strap the vault shut while it is locked', (tester) async {
+      await tester.pumpWidget(_pump(_withVault(SolutionTrailNodeState.ready)));
+      await tester.pumpAndSettle();
+
+      expect(_chains(tester), 3,
+          reason: 'a vault with nothing holding it shut is just a button');
+    });
+
+    testWidgets('are still flying part-way through the snap', (tester) async {
+      await tester.pumpWidget(_pump(
+        _withVault(SolutionTrailNodeState.ready),
+        motion: true,
+      ));
+      await tester.pump();
+
+      await tester.pumpWidget(_pump(
+        _withVault(SolutionTrailNodeState.done),
+        motion: true,
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(_chains(tester), 3,
+          reason: 'chains that vanish on the tap were never broken, they were '
+              'switched off');
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('are gone once the vault is open', (tester) async {
+      await tester.pumpWidget(_pump(
+        _withVault(SolutionTrailNodeState.ready),
+        motion: true,
+      ));
+      await tester.pump();
+
+      await tester.pumpWidget(_pump(
+        _withVault(SolutionTrailNodeState.done),
+        motion: true,
+      ));
+      await tester.pumpAndSettle();
+
+      expect(_chains(tester), 0);
+    });
+
+    testWidgets('never existed on a vault that was open from the start',
+        (tester) async {
+      await tester.pumpWidget(_pump(_withVault(SolutionTrailNodeState.done)));
+      await tester.pumpAndSettle();
+
+      expect(_chains(tester), 0,
+          reason: 'returning to a solved question should not re-stage the '
+              'moment it was solved');
+    });
+
+    testWidgets('go straight away under reduced motion', (tester) async {
+      await tester.pumpWidget(_pump(_withVault(SolutionTrailNodeState.ready)));
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(_pump(_withVault(SolutionTrailNodeState.done)));
+      await tester.pump();
+
+      expect(_chains(tester), 0);
+    });
   });
 }

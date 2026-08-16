@@ -103,13 +103,14 @@ SolutionReaderParams _params(
   SolutionReaderReady state, {
   VoidCallback? onNext,
   VoidCallback? onBack,
+  VoidCallback? onRevealAnswer,
 }) {
   return SolutionReaderParams(
     content: solutionReaderContent(state),
     onNext: onNext ?? () {},
     onBack: onBack ?? () {},
     onToggleRationale: () {},
-    onRevealAnswer: () {},
+    onRevealAnswer: onRevealAnswer ?? () {},
     onTravelTo: (_) {},
     onEnlargeVisual: (_) {},
   );
@@ -117,6 +118,7 @@ SolutionReaderParams _params(
 
 void main() {
   _xpFlightTests();
+  _revealResistTests();
   testWidgets('owns exactly one Scaffold and pins the trail and the CTA',
       (tester) async {
     await tester.pumpWidget(
@@ -507,6 +509,84 @@ void _xpFlightTests() {
       expect(find.text('120 XP'), findsOneWidget,
           reason: 'the total is derived from where the student is, so going '
               'back gives it back');
+    });
+  });
+}
+
+void _revealResistTests() {
+  group('revealing the answer', () {
+    testWidgets('holds the whole page shut while the lock refuses',
+        (tester) async {
+      var revealed = 0;
+      await tester.pumpWidget(_pump(
+        _params(_atStep(2), onRevealAnswer: () => revealed++),
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('solution_cta')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      expect(revealed, 0,
+          reason: 'the answer must not be handed over on the press; the page '
+              'turns over on one beat, after the lock gives');
+      expect(find.byKey(const Key('vault_locked')), findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(revealed, 1);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('rattles the vault during the refusal', (tester) async {
+      await tester.pumpWidget(_pump(_params(_atStep(2))));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('solution_cta')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 220));
+
+      final shifted = tester
+          .widgetList<Transform>(find.ancestor(
+            of: find.byKey(const Key('vault_locked')),
+            matching: find.byType(Transform),
+          ))
+          .fold<double>(0, (acc, t) => acc + t.transform.getTranslation().x);
+      expect(shifted.abs(), greaterThan(1));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('reveals immediately under reduced motion', (tester) async {
+      var revealed = 0;
+      await tester.pumpWidget(_pump(
+        _params(_atStep(2), onRevealAnswer: () => revealed++),
+        motion: false,
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('solution_cta')));
+      await tester.pump();
+
+      expect(revealed, 1,
+          reason: 'the answer is not allowed to wait on an animation that '
+              'never runs');
+    });
+
+    testWidgets('a second press during the refusal does not reveal twice',
+        (tester) async {
+      var revealed = 0;
+      await tester.pumpWidget(_pump(
+        _params(_atStep(2), onRevealAnswer: () => revealed++),
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('solution_cta')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(find.byKey(const Key('solution_cta')));
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(revealed, 1);
+      await tester.pumpAndSettle();
     });
   });
 }
