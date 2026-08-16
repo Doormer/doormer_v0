@@ -247,6 +247,7 @@ void main() {
               onBack: () {},
               onToggleRationale: () {},
               onRevealAnswer: () {},
+              onTravelTo: (_) {},
               onEnlargeVisual: (_) {},
             ),
           ),

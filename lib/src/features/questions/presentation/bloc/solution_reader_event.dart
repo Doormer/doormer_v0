@@ -32,6 +32,22 @@ class SolutionReaderWentBack extends SolutionReaderEvent {
   const SolutionReaderWentBack();
 }
 
+/// Returns to a place the student has already been, by tapping its node.
+///
+/// [position] is a zero-based step index, or [briefing] for the plan at the
+/// head of the trail. Travel is backwards only: the trail is a record of
+/// ground covered, not a way to skip the working.
+class SolutionReaderTravelled extends SolutionReaderEvent {
+  static const int briefing = -1;
+
+  final int position;
+
+  const SolutionReaderTravelled(this.position);
+
+  @override
+  List<Object?> get props => [position];
+}
+
 class SolutionReaderRationaleToggled extends SolutionReaderEvent {
   const SolutionReaderRationaleToggled();
 }

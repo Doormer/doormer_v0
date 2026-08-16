@@ -9,6 +9,7 @@ import 'package:doormer/src/features/questions/presentation/params/solution_read
 import 'package:doormer/src/features/questions/presentation/templates/solution_reader_template.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 /// The only layer that touches flutter_bloc.
 class QuestionSolutionPage extends StatelessWidget {
@@ -33,15 +34,20 @@ class QuestionSolutionPage extends StatelessWidget {
         builder: (context, state) {
           if (state is SolutionReaderReady) {
             final bloc = context.read<SolutionReaderBloc>();
+            final content = solutionReaderContent(state);
             return SolutionReaderTemplate(
               params: SolutionReaderParams(
-                content: solutionReaderContent(state),
-                onNext: () => bloc.add(const SolutionReaderAdvanced()),
+                content: content,
+                onNext: () => content.answerRevealed
+                    ? context.go('/questions/photo')
+                    : bloc.add(const SolutionReaderAdvanced()),
                 onBack: () => bloc.add(const SolutionReaderWentBack()),
                 onToggleRationale: () =>
                     bloc.add(const SolutionReaderRationaleToggled()),
                 onRevealAnswer: () =>
                     bloc.add(const SolutionReaderAnswerRevealed()),
+                onTravelTo: (position) =>
+                    bloc.add(SolutionReaderTravelled(position)),
                 onEnlargeVisual: (visual) => _openEnlarge(context, visual),
               ),
             );

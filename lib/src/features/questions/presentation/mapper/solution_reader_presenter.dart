@@ -124,7 +124,10 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
       (onBriefing ? 0 : _xpBankedBefore(state.stepIndex, stepCount));
 
   return SolutionReaderContent(
-    levelLabel: 'LEVEL ${state.stepIndex + 1}',
+    // "of N" is load-bearing: the number alone says where the student is, but
+    // not how much is left. Seeing "3 of 3" is what makes the last step feel
+    // like the last step.
+    levelLabel: 'LEVEL ${state.stepIndex + 1} OF $stepCount',
     stepTitle: step.title,
     body: diagramFirstOrder(step.body),
     rationale: diagramFirstOrder(step.rationale),
@@ -141,6 +144,8 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
           semanticsLabel: 'The plan',
           icon: Icons.flag_rounded,
           shape: SolutionTrailNodeShape.marker,
+          travelTo:
+              onBriefing ? null : SolutionTrailMolecule.briefingPosition,
         ),
       for (var i = 0; i < stepCount; i++)
         SolutionTrailNode(
@@ -151,6 +156,7 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
                   ? SolutionTrailNodeState.done
                   : SolutionTrailNodeState.current,
           semanticsLabel: 'Step ${i + 1}: ${steps[i].title}',
+          travelTo: !onBriefing && i < state.stepIndex ? i : null,
         ),
       // The vault closes the trail so the destination is visible from step
       // one. Amber the moment it can be opened, mint once it is.
@@ -174,11 +180,13 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
     ctaLabel: onBriefing
         ? 'Start solving'
         : answerRevealed
-            ? 'Solved'
+            ? 'Ask another question'
             : isLastStep
                 ? 'Reveal answer'
                 : 'Next step',
-    ctaEnabled: !answerRevealed,
+    // A finished page is not a dead end. Once the answer is out the button
+    // stops being "you are done" and becomes the way to the next question.
+    ctaEnabled: true,
     canGoBack: onBriefing ? false : (!state.isFirstStep || hasBriefing),
     isLastStep: isLastStep,
     onBriefing: onBriefing,

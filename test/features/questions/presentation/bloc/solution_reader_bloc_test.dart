@@ -159,6 +159,74 @@ void main() {
     );
   });
 
+  group('travel', () {
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'returns to a step already read',
+      build: _bloc,
+      seed: () => const SolutionReaderReady(
+        document: _document,
+        stepIndex: 2,
+        rationaleVisible: true,
+      ),
+      act: (bloc) => bloc.add(const SolutionReaderTravelled(0)),
+      expect: () => const [
+        SolutionReaderReady(document: _document),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'refuses to travel forward',
+      build: _bloc,
+      seed: () => const SolutionReaderReady(document: _document),
+      act: (bloc) => bloc.add(const SolutionReaderTravelled(2)),
+      expect: () => const <SolutionReaderState>[],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'refuses to travel to where it already is',
+      build: _bloc,
+      seed: () => const SolutionReaderReady(document: _document, stepIndex: 1),
+      act: (bloc) => bloc.add(const SolutionReaderTravelled(1)),
+      expect: () => const <SolutionReaderState>[],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'returns to the briefing',
+      build: _bloc,
+      seed: () =>
+          const SolutionReaderReady(document: _briefedDocument, stepIndex: 2),
+      act: (bloc) => bloc
+          .add(const SolutionReaderTravelled(SolutionReaderTravelled.briefing)),
+      expect: () => const [
+        SolutionReaderReady(
+          document: _briefedDocument,
+          stepIndex: 2,
+          onBriefing: true,
+        ),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'has no briefing to return to when the document carries no approach',
+      build: _bloc,
+      seed: () => const SolutionReaderReady(document: _document, stepIndex: 1),
+      act: (bloc) => bloc
+          .add(const SolutionReaderTravelled(SolutionReaderTravelled.briefing)),
+      expect: () => const <SolutionReaderState>[],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'refuses to leave the briefing by travelling forward to a step',
+      build: _bloc,
+      seed: () => const SolutionReaderReady(
+        document: _briefedDocument,
+        onBriefing: true,
+      ),
+      act: (bloc) => bloc.add(const SolutionReaderTravelled(0)),
+      expect: () => const <SolutionReaderState>[],
+    );
+  });
+
   group('navigation', () {
     blocTest<SolutionReaderBloc, SolutionReaderState>(
       'advances to the next step and re-hides the rationale',

@@ -66,12 +66,17 @@ const _oneStepBriefedDocument = SolutionDocument(
 );
 
 void main() {
-  test('labels the level without a total', () {
+  test('labels the level with its total', () {
     final content = solutionReaderContent(
       const SolutionReaderReady(document: _document, stepIndex: 1),
     );
 
-    expect(content.levelLabel, 'LEVEL 2');
+    expect(
+      content.levelLabel,
+      'LEVEL 2 OF 3',
+      reason: 'the index alone says where the student is but not how much is '
+          'left; the total is what makes a last step feel like one',
+    );
     expect(content.stepTitle, 'Scale the width');
   });
 
@@ -156,7 +161,8 @@ void main() {
     );
   });
 
-  test('changes the CTA at the end and retires it once revealed', () {
+  test('changes the CTA at the end and offers the next question once revealed',
+      () {
     final middle =
         solutionReaderContent(const SolutionReaderReady(document: _document));
     final last = solutionReaderContent(
@@ -175,8 +181,13 @@ void main() {
     expect(middle.canGoBack, isFalse);
     expect(last.ctaLabel, 'Reveal answer');
     expect(last.canGoBack, isTrue);
-    expect(revealed.ctaLabel, 'Solved');
-    expect(revealed.ctaEnabled, isFalse);
+    expect(
+      revealed.ctaLabel,
+      'Ask another question',
+      reason: 'a finished page is not a dead end; the button becomes the way '
+          'onward rather than a label saying the student is done',
+    );
+    expect(revealed.ctaEnabled, isTrue);
     expect(revealed.answerBody.single.segment, isA<MathSolutionSegment>());
   });
 

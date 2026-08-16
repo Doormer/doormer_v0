@@ -81,6 +81,7 @@ SolutionReaderParams _params(
     onBack: onBack ?? () {},
     onToggleRationale: () {},
     onRevealAnswer: () {},
+    onTravelTo: (_) {},
     onEnlargeVisual: (_) {},
   );
 }

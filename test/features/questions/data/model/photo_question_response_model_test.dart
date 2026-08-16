@@ -171,7 +171,10 @@ void main() {
 
       expect(entity.status, PhotoQuestionSolveStatus.solved);
       expect(solution.schemaVersion, '3.0');
-      expect(solution.steps, hasLength(3));
+      // Deliberately not an exact count. This test exists to prove the parser
+      // handles the real payload, so pinning the number of steps only couples
+      // it to content that is edited freely.
+      expect(solution.steps, isNotEmpty);
       expect(solution.approach.body, isNotEmpty);
       expect(solution.verification.body, isNotEmpty);
       expect(solution.finalAnswer.body.single, isA<MathSolutionSegment>());

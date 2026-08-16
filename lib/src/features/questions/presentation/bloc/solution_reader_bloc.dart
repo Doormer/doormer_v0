@@ -21,6 +21,7 @@ class SolutionReaderBloc extends Bloc<SolutionReaderEvent, SolutionReaderState> 
     on<SolutionReaderStarted>(_onStarted);
     on<SolutionReaderAdvanced>(_onAdvanced);
     on<SolutionReaderWentBack>(_onWentBack);
+    on<SolutionReaderTravelled>(_onTravelled);
     on<SolutionReaderRationaleToggled>(_onRationaleToggled);
     on<SolutionReaderAnswerRevealed>(_onAnswerRevealed);
   }
@@ -125,6 +126,33 @@ class SolutionReaderBloc extends Bloc<SolutionReaderEvent, SolutionReaderState> 
     }
     emit(current.copyWith(
       stepIndex: current.stepIndex - 1,
+      rationaleVisible: false,
+    ));
+  }
+
+  /// Travel is backwards only, so the trail stays a record of ground covered
+  /// rather than a way around the working.
+  void _onTravelled(
+    SolutionReaderTravelled event,
+    Emitter<SolutionReaderState> emit,
+  ) {
+    final current = state;
+    if (current is! SolutionReaderReady) return;
+
+    final here = current.onBriefing
+        ? SolutionReaderTravelled.briefing
+        : current.stepIndex;
+    final there = event.position;
+    if (there >= here || there < SolutionReaderTravelled.briefing) return;
+
+    if (there == SolutionReaderTravelled.briefing) {
+      if (!current.hasBriefing) return;
+      emit(current.copyWith(onBriefing: true, rationaleVisible: false));
+      return;
+    }
+    emit(current.copyWith(
+      onBriefing: false,
+      stepIndex: there,
       rationaleVisible: false,
     ));
   }

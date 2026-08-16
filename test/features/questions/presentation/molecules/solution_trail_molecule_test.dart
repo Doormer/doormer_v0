@@ -15,19 +15,30 @@ List<SolutionTrailNode> _nodes(int count, int currentIndex) {
                 ? SolutionTrailNodeState.current
                 : SolutionTrailNodeState.upcoming,
         semanticsLabel: 'Step ${i + 1}',
+        travelTo: i < currentIndex ? i : null,
       ),
   ];
 }
 
-Widget _pump(List<SolutionTrailNode> nodes, {double width = 358}) {
+Widget _pump(
+  List<SolutionTrailNode> nodes, {
+  double width = 358,
+  void Function(int position)? onNodeTap,
+  bool motion = false,
+}) {
   return ScreenUtilInit(
     designSize: const Size(360, 690),
     builder: (_, __) => MaterialApp(
       theme: AppTheme.dark,
-      home: Scaffold(
-        body: SizedBox(
-          width: width,
-          child: SolutionTrailMolecule(nodes: nodes),
+      home: MediaQuery(
+        // The current node beats forever, so tests opt into motion only when
+        // they are measuring it -- otherwise every pump would wait on a loop.
+        data: MediaQueryData(disableAnimations: !motion),
+        child: Scaffold(
+          body: SizedBox(
+            width: width,
+            child: SolutionTrailMolecule(nodes: nodes, onNodeTap: onNodeTap),
+          ),
         ),
       ),
     ),
@@ -114,5 +125,119 @@ void main() {
     expect(find.byIcon(Icons.check_rounded), findsOneWidget);
     expect(find.text('1'), findsNothing,
         reason: 'a read step shows that it is read, not its number');
+  });
+
+  group('travel', _travelTests);
+  group('panning', _panTests);
+  group('edges', _edgeTests);
+}
+
+void _travelTests() {
+  testWidgets('tapping a step already read travels back to it', (tester) async {
+    final travelled = <int>[];
+    await tester.pumpWidget(
+      _pump(_nodes(4, 2), onNodeTap: travelled.add),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('trail_node_tap_0')));
+    await tester.pump();
+
+    expect(travelled, [0]);
+  });
+
+  testWidgets('the road ahead is not tappable', (tester) async {
+    final travelled = <int>[];
+    await tester.pumpWidget(
+      _pump(_nodes(4, 1), onNodeTap: travelled.add),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const Key('trail_node_tap_2')), findsNothing);
+    expect(find.byKey(const Key('trail_node_tap_1')), findsNothing,
+        reason: 'the step being read is not somewhere to travel to');
+  });
+
+  testWidgets('a node with no travel target stays inert even when done',
+      (tester) async {
+    final travelled = <int>[];
+    await tester.pumpWidget(_pump(
+      const [
+        SolutionTrailNode(
+          displayNumber: 0,
+          state: SolutionTrailNodeState.done,
+          semanticsLabel: 'The answer',
+          icon: Icons.lock_open_rounded,
+          shape: SolutionTrailNodeShape.marker,
+        ),
+      ],
+      onNodeTap: travelled.add,
+    ));
+    await tester.pump();
+
+    expect(find.byKey(const Key('trail_node_tap_0')), findsNothing);
+  });
+}
+
+void _panTests() {
+  testWidgets('brings the current node back into view when it moves past the end',
+      (tester) async {
+    await tester.pumpWidget(_pump(_nodes(12, 0), width: 300));
+    await tester.pump();
+
+    final controller = tester
+        .widget<SingleChildScrollView>(
+            find.byKey(const Key('solution_trail_scroll')))
+        .controller!;
+    expect(controller.offset, 0);
+
+    await tester.pumpWidget(_pump(_nodes(12, 9), width: 300));
+    await tester.pump();
+    await tester.pump();
+
+    expect(controller.offset, greaterThan(0),
+        reason: 'a current node past the fold must be panned into view');
+
+    final nodeCentre = tester.getCenter(find.byKey(const Key('trail_node_9'))).dx;
+    final stripCentre =
+        tester.getCenter(find.byKey(const Key('solution_trail_scroll'))).dx;
+    expect((nodeCentre - stripCentre).abs(), lessThan(40),
+        reason: 'the current node lands near the middle of the strip');
+  });
+
+  testWidgets('does not scroll when the whole trail already fits',
+      (tester) async {
+    await tester.pumpWidget(_pump(_nodes(3, 0), width: 358));
+    await tester.pump();
+
+    await tester.pumpWidget(_pump(_nodes(3, 2), width: 358));
+    await tester.pump();
+    await tester.pump();
+
+    final controller = tester
+        .widget<SingleChildScrollView>(
+            find.byKey(const Key('solution_trail_scroll')))
+        .controller!;
+    expect(controller.offset, 0);
+  });
+}
+
+void _edgeTests() {
+  testWidgets('leaves both edges hard when the whole trail fits',
+      (tester) async {
+    await tester.pumpWidget(_pump(_nodes(3, 0), width: 358));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(ShaderMask), findsNothing);
+  });
+
+  testWidgets('fades the end the trail runs off', (tester) async {
+    await tester.pumpWidget(_pump(_nodes(12, 0), width: 300));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(ShaderMask), findsOneWidget,
+        reason: 'a trail that continues past the edge must not look finished');
   });
 }

@@ -107,7 +107,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('solution_briefing')), findsNothing);
-    expect(find.text('LEVEL 1'), findsOneWidget);
+    expect(find.textContaining('LEVEL 1'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('solution_back')));
     await tester.pumpAndSettle();
@@ -158,7 +158,7 @@ void main() {
         .position;
 
     expect(position.pixels, 0);
-    expect(tester.getTopLeft(find.text('LEVEL 1')).dy, greaterThanOrEqualTo(0),
+    expect(tester.getTopLeft(find.textContaining('LEVEL 1')).dy, greaterThanOrEqualTo(0),
         reason: 'the step heading must not start scrolled off the top');
   });
 }

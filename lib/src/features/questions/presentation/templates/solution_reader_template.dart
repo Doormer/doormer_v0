@@ -113,7 +113,10 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate> {
             ),
             Padding(
               padding: EdgeInsets.fromLTRB(16.w, 2.h, 16.w, 0),
-              child: SolutionTrailMolecule(nodes: content.trail),
+              child: SolutionTrailMolecule(
+                nodes: content.trail,
+                onNodeTap: widget.params.onTravelTo,
+              ),
             ),
             Expanded(
               child: SingleChildScrollView(
