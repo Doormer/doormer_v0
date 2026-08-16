@@ -10,6 +10,7 @@ import 'package:doormer/src/features/questions/presentation/params/solution_brie
 import 'package:doormer/src/features/questions/presentation/params/solution_reader_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solution_step_params.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/quest_backdrop.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/card_pop_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -132,31 +133,42 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: content.onBriefing
                       ? [
-                          SolutionBriefingOrganism(
-                            params: SolutionBriefingParams(
-                              title: content.briefingTitle,
-                              body: content.briefingBody,
-                              note: content.note,
-                              onEnlargeVisual: params.onEnlargeVisual,
-                              imageProviderBuilder: params.imageProviderBuilder,
+                          // Keyed by screen so the card pops and its contents
+                          // rise again on every move, rather than the words
+                          // silently changing inside a frame that never moved.
+                          CardPopAtom(
+                            key: ValueKey<String>(_screenId),
+                            child: SolutionBriefingOrganism(
+                              params: SolutionBriefingParams(
+                                title: content.briefingTitle,
+                                body: content.briefingBody,
+                                note: content.note,
+                                onEnlargeVisual: params.onEnlargeVisual,
+                                imageProviderBuilder:
+                                    params.imageProviderBuilder,
+                              ),
                             ),
                           ),
                         ]
                       : [
-                          SolutionStepOrganism(
-                            params: SolutionStepParams(
-                              levelLabel: content.levelLabel,
-                              stepTitle: content.stepTitle,
-                              body: content.body,
-                              rationale: content.rationale,
-                              hasRationale: content.hasRationale,
-                              rationaleVisible: content.rationaleVisible,
-                              rationaleToggleLabel:
-                                  content.rationaleToggleLabel,
-                              xpLabel: content.stepXpLabel,
-                              onToggleRationale: params.onToggleRationale,
-                              onEnlargeVisual: params.onEnlargeVisual,
-                              imageProviderBuilder: params.imageProviderBuilder,
+                          CardPopAtom(
+                            key: ValueKey<String>(_screenId),
+                            child: SolutionStepOrganism(
+                              params: SolutionStepParams(
+                                levelLabel: content.levelLabel,
+                                stepTitle: content.stepTitle,
+                                body: content.body,
+                                rationale: content.rationale,
+                                hasRationale: content.hasRationale,
+                                rationaleVisible: content.rationaleVisible,
+                                rationaleToggleLabel:
+                                    content.rationaleToggleLabel,
+                                xpLabel: content.stepXpLabel,
+                                onToggleRationale: params.onToggleRationale,
+                                onEnlargeVisual: params.onEnlargeVisual,
+                                imageProviderBuilder:
+                                    params.imageProviderBuilder,
+                              ),
                             ),
                           ),
                           SolutionVaultOrganism(

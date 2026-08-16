@@ -4,6 +4,7 @@ import 'package:doormer/src/features/questions/presentation/atoms/xp_sticker_ato
 import 'package:doormer/src/features/questions/presentation/molecules/rationale_reveal_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/segment_list_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/params/solution_step_params.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/rise_in_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -24,44 +25,60 @@ class SolutionStepOrganism extends StatelessWidget {
           : XpStickerAtom(label: params.xpLabel),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        // Kicker, then heading, then body: the card arrives in the order it
+        // wants reading.
         children: [
-          Text(
-            params.levelLabel,
-            key: const Key('step_level_label'),
-            style: TextStyle(
-              fontSize: 10.sp,
-              letterSpacing: 1.8,
-              fontWeight: FontWeight.w700,
-              color: QuestPalette.pink,
+          RiseInAtom(
+            order: 0,
+            child: Text(
+              params.levelLabel,
+              key: const Key('step_level_label'),
+              style: TextStyle(
+                fontSize: 10.sp,
+                letterSpacing: 1.8,
+                fontWeight: FontWeight.w700,
+                color: QuestPalette.pink,
+              ),
             ),
           ),
           SizedBox(height: 6.h),
-          Text(
-            params.stepTitle,
-            key: const Key('step_title'),
-            style: TextStyle(
-              fontFamily: kDisplayFont,
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w600,
-              height: 1.25,
-              color: QuestPalette.cream,
+          RiseInAtom(
+            order: 1,
+            child: Text(
+              params.stepTitle,
+              key: const Key('step_title'),
+              style: TextStyle(
+                fontFamily: kDisplayFont,
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w600,
+                height: 1.25,
+                color: QuestPalette.cream,
+              ),
             ),
           ),
           SizedBox(height: 12.h),
-          SegmentListMolecule(
-            segments: params.body,
-            onEnlargeVisual: params.onEnlargeVisual,
-            imageProviderBuilder: params.imageProviderBuilder,
-          ),
-          if (params.hasRationale)
-            RationaleRevealMolecule(
-              toggleLabel: params.rationaleToggleLabel,
-              visible: params.rationaleVisible,
-              onToggle: params.onToggleRationale,
-              body: params.rationale,
-              onEnlargeVisual: params.onEnlargeVisual,
-              imageProviderBuilder: params.imageProviderBuilder,
+          RiseInAtom(
+            order: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SegmentListMolecule(
+                  segments: params.body,
+                  onEnlargeVisual: params.onEnlargeVisual,
+                  imageProviderBuilder: params.imageProviderBuilder,
+                ),
+                if (params.hasRationale)
+                  RationaleRevealMolecule(
+                    toggleLabel: params.rationaleToggleLabel,
+                    visible: params.rationaleVisible,
+                    onToggle: params.onToggleRationale,
+                    body: params.rationale,
+                    onEnlargeVisual: params.onEnlargeVisual,
+                    imageProviderBuilder: params.imageProviderBuilder,
+                  ),
+              ],
             ),
+          ),
         ],
       ),
     );
