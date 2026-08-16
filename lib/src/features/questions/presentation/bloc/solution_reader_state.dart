@@ -68,8 +68,7 @@ class SolutionReaderReady extends SolutionReaderState {
 
   /// [document] is a plain domain entity, so it compares by identity here.
   @override
-  List<Object?> get props =>
-      [
+  List<Object?> get props => [
         document,
         stepIndex,
         rationaleVisible,

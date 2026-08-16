@@ -6,7 +6,6 @@ import 'package:doormer/src/features/questions/presentation/atoms/xp_pellet_atom
 import 'package:doormer/src/features/questions/presentation/molecules/solution_trail_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/quest_hud_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solution_briefing_organism.dart';
-import 'package:doormer/src/features/questions/presentation/organisms/solution_check_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solution_step_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solution_vault_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/quest_hud_params.dart';
@@ -188,8 +187,7 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
   void didUpdateWidget(SolutionReaderTemplate oldWidget) {
     super.didUpdateWidget(oldWidget);
     final previous = oldWidget.params.content;
-    final previousId =
-        previous.onBriefing ? 'briefing' : previous.levelLabel;
+    final previousId = previous.onBriefing ? 'briefing' : previous.levelLabel;
     final movedOn = previousId != _screenId;
     if (movedOn) {
       // Geometry is only true once the new step has laid out.
@@ -205,8 +203,8 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
     // The answer is the payoff of the whole page, and it sits below the fold:
     // revealing it changed only the trail marker and the button, so the tap
     // read as having done nothing. Bring the vault to the student instead.
-    final revealedNow = !previous.answerRevealed &&
-        widget.params.content.answerRevealed;
+    final revealedNow =
+        !previous.answerRevealed && widget.params.content.answerRevealed;
     if (revealedNow) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _showVault());
     }
@@ -257,105 +255,105 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
           key: _stageKey,
           children: [
             SafeArea(
-          child: Column(
-          children: [
-            QuestHudOrganism(
-              params: QuestHudParams(
-                topic: content.topic,
-                questionTitle: content.questionTitle,
-                // The banked total, not the live one: while a pellet is in
-                // flight the counter has not been paid yet, and a number that
-                // updates before the reward arrives makes the flight a lie.
-                xpLabel: _bankedXpLabel,
-                streakLabel: content.streakLabel,
-                xpKey: _chipKey,
-                xpTrigger: _landings,
+              child: Column(
+                children: [
+                  QuestHudOrganism(
+                    params: QuestHudParams(
+                      topic: content.topic,
+                      questionTitle: content.questionTitle,
+                      // The banked total, not the live one: while a pellet is in
+                      // flight the counter has not been paid yet, and a number that
+                      // updates before the reward arrives makes the flight a lie.
+                      xpLabel: _bankedXpLabel,
+                      streakLabel: content.streakLabel,
+                      xpKey: _chipKey,
+                      xpTrigger: _landings,
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(16.w, 2.h, 16.w, 0),
+                    child: SolutionTrailMolecule(
+                      nodes: content.trail,
+                      onNodeTap: widget.params.onTravelTo,
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      key: const Key('solution_scroll'),
+                      controller: _scrollController,
+                      padding: EdgeInsets.fromLTRB(
+                        16.w,
+                        _stickerHeadroom.h,
+                        16.w,
+                        16.h,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: content.onBriefing
+                            ? [
+                                // Keyed by screen so the card pops and its contents
+                                // rise again on every move, rather than the words
+                                // silently changing inside a frame that never moved.
+                                CardPopAtom(
+                                  key: ValueKey<String>(_screenId),
+                                  child: SolutionBriefingOrganism(
+                                    params: SolutionBriefingParams(
+                                      title: content.briefingTitle,
+                                      body: content.briefingBody,
+                                      note: content.note,
+                                      onEnlargeVisual: params.onEnlargeVisual,
+                                      imageProviderBuilder:
+                                          params.imageProviderBuilder,
+                                    ),
+                                  ),
+                                ),
+                              ]
+                            : [
+                                CardPopAtom(
+                                  key: ValueKey<String>(_screenId),
+                                  child: SolutionStepOrganism(
+                                    params: SolutionStepParams(
+                                      levelLabel: content.levelLabel,
+                                      stepTitle: content.stepTitle,
+                                      body: content.body,
+                                      rationale: content.rationale,
+                                      hasRationale: content.hasRationale,
+                                      rationaleVisible:
+                                          content.rationaleVisible,
+                                      rationaleToggleLabel:
+                                          content.rationaleToggleLabel,
+                                      xpLabel: content.stepXpLabel,
+                                      xpStickerKey: _stickerKey,
+                                      onToggleRationale:
+                                          params.onToggleRationale,
+                                      onEnlargeVisual: params.onEnlargeVisual,
+                                      imageProviderBuilder:
+                                          params.imageProviderBuilder,
+                                    ),
+                                  ),
+                                ),
+                                SolutionVaultOrganism(
+                                  key: _vaultKey,
+                                  revealed: content.answerRevealed,
+                                  unlockable: content.isLastStep,
+                                  lockedLabel: content.vaultLockedLabel,
+                                  solvedLabel: content.vaultSolvedLabel,
+                                  checkTitle: content.checkTitle,
+                                  checkBody: content.checkBody,
+                                  answerBody: content.answerBody,
+                                  resisting: _resisting,
+                                  onReveal: _requestReveal,
+                                  onEnlargeVisual: params.onEnlargeVisual,
+                                  imageProviderBuilder:
+                                      params.imageProviderBuilder,
+                                ),
+                              ],
+                      ),
+                    ),
+                  ),
+                  _CtaBar(params: params, onRequestReveal: _requestReveal),
+                ],
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 2.h, 16.w, 0),
-              child: SolutionTrailMolecule(
-                nodes: content.trail,
-                onNodeTap: widget.params.onTravelTo,
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                key: const Key('solution_scroll'),
-                controller: _scrollController,
-                padding: EdgeInsets.fromLTRB(
-                  16.w,
-                  _stickerHeadroom.h,
-                  16.w,
-                  16.h,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: content.onBriefing
-                      ? [
-                          // Keyed by screen so the card pops and its contents
-                          // rise again on every move, rather than the words
-                          // silently changing inside a frame that never moved.
-                          CardPopAtom(
-                            key: ValueKey<String>(_screenId),
-                            child: SolutionBriefingOrganism(
-                              params: SolutionBriefingParams(
-                                title: content.briefingTitle,
-                                body: content.briefingBody,
-                                note: content.note,
-                                onEnlargeVisual: params.onEnlargeVisual,
-                                imageProviderBuilder:
-                                    params.imageProviderBuilder,
-                              ),
-                            ),
-                          ),
-                        ]
-                      : [
-                          CardPopAtom(
-                            key: ValueKey<String>(_screenId),
-                            child: SolutionStepOrganism(
-                              params: SolutionStepParams(
-                                levelLabel: content.levelLabel,
-                                stepTitle: content.stepTitle,
-                                body: content.body,
-                                rationale: content.rationale,
-                                hasRationale: content.hasRationale,
-                                rationaleVisible: content.rationaleVisible,
-                                rationaleToggleLabel:
-                                    content.rationaleToggleLabel,
-                                xpLabel: content.stepXpLabel,
-                                xpStickerKey: _stickerKey,
-                                onToggleRationale: params.onToggleRationale,
-                                onEnlargeVisual: params.onEnlargeVisual,
-                                imageProviderBuilder:
-                                    params.imageProviderBuilder,
-                              ),
-                            ),
-                          ),
-                          SolutionVaultOrganism(
-                            key: _vaultKey,
-                            revealed: content.answerRevealed,
-                            unlockable: content.isLastStep,
-                            lockedLabel: content.vaultLockedLabel,
-                            answerBody: content.answerBody,
-                            resisting: _resisting,
-                            onReveal: _requestReveal,
-                            onEnlargeVisual: params.onEnlargeVisual,
-                            imageProviderBuilder: params.imageProviderBuilder,
-                          ),
-                          SolutionCheckOrganism(
-                            title: content.checkTitle,
-                            body: content.checkBody,
-                            onEnlargeVisual: params.onEnlargeVisual,
-                            imageProviderBuilder: params.imageProviderBuilder,
-                          ),
-                        ],
-                ),
-              ),
-            ),
-            _CtaBar(params: params, onRequestReveal: _requestReveal),
-          ],
-          ),
             ),
             if (_pelletAmount != null) _buildPellet(),
           ],
@@ -481,9 +479,7 @@ class _CtaBar extends StatelessWidget {
                   accent: accent,
                   edge: edge,
                   onPressed: content.ctaEnabled
-                      ? (content.isLastStep
-                          ? onRequestReveal
-                          : params.onNext)
+                      ? (content.isLastStep ? onRequestReveal : params.onNext)
                       : null,
                 ),
               ),

@@ -7,6 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+final _check = diagramFirstOrder(const [
+  TextSolutionSegment('Both routes give the same figure.'),
+]);
+
 final _answer = diagramFirstOrder(const [
   TextSolutionSegment('The paved area is 160 square metres.'),
 ]);
@@ -31,6 +35,9 @@ Widget _pump({
             unlockable: unlockable,
             resisting: resisting,
             lockedLabel: 'Answer unlocks after step 3',
+            solvedLabel: 'You solved it in 3 steps',
+            checkTitle: 'Check it',
+            checkBody: _check,
             answerBody: _answer,
             onReveal: onReveal ?? () {},
             onEnlargeVisual: (_) {},
@@ -42,7 +49,36 @@ Widget _pump({
   );
 }
 
+void _openedVaultTests() {
+  group('the opened vault', () {
+    testWidgets('says what the student just did', (tester) async {
+      await tester.pumpWidget(_pump(revealed: true, unlockable: true));
+      await tester.pumpAndSettle();
+
+      expect(find.text('You solved it in 3 steps'), findsOneWidget);
+    });
+
+    testWidgets('keeps the working with the answer, folded away',
+        (tester) async {
+      await tester.pumpWidget(_pump(revealed: true, unlockable: true));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('vault_revealed')),
+          matching: find.byKey(const Key('solution_check')),
+        ),
+        findsOneWidget,
+        reason: 'the working backs up the answer, so it belongs with it',
+      );
+      expect(find.text('Both routes give the same figure.'), findsNothing);
+    });
+  });
+}
+
 void main() {
+  _openedVaultTests();
+
   _unlockChainTests();
   _lockBobTests();
   _readyStateTests();

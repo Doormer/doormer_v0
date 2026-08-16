@@ -29,6 +29,7 @@ class SolutionReaderContent {
   /// Solver caveat shown on the briefing. Empty when there is none.
   final String note;
 
+  final String vaultSolvedLabel;
   final String checkTitle;
 
   /// Standing bar copy. XP and streak are empty until the mock standing loads.
@@ -70,6 +71,7 @@ class SolutionReaderContent {
     required this.briefingTitle,
     required this.briefingBody,
     required this.note,
+    required this.vaultSolvedLabel,
     required this.checkTitle,
     required this.checkBody,
     required this.topic,
@@ -167,8 +169,7 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
           semanticsLabel: 'The plan',
           icon: Icons.flag_rounded,
           shape: SolutionTrailNodeShape.marker,
-          travelTo:
-              onBriefing ? null : SolutionTrailMolecule.briefingPosition,
+          travelTo: onBriefing ? null : SolutionTrailMolecule.briefingPosition,
           // Students rarely think to go back to the plan, so once they have
           // left it, it says it is still there.
           invites: !onBriefing,
@@ -224,6 +225,8 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
     briefingTitle: 'The plan',
     briefingBody: diagramFirstOrder(state.document.approach.body),
     note: state.note,
+    vaultSolvedLabel: 'You solved it in $stepCount '
+        '${stepCount == 1 ? 'step' : 'steps'}',
     checkTitle: 'Check it',
     checkBody: answerRevealed
         ? diagramFirstOrder(state.document.verification.body)

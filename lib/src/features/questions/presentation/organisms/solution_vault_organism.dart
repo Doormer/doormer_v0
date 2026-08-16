@@ -7,6 +7,7 @@ import 'package:doormer/src/features/questions/presentation/atoms/confetti_atom.
 import 'package:doormer/src/features/questions/presentation/atoms/diagram_atom.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_segment_order.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/segment_list_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/molecules/solution_check_molecule.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/dashed_border_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/idle_beat_atom.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +27,11 @@ class SolutionVaultOrganism extends StatefulWidget {
   /// long that lasts — the page does, so everything turns over together.
   final bool resisting;
   final String lockedLabel;
+
+  /// What the student is told they just did, once it is open.
+  final String solvedLabel;
+  final String checkTitle;
+  final List<OrderedSegment> checkBody;
   final List<OrderedSegment> answerBody;
   final VoidCallback onReveal;
   final void Function(VisualSolutionSegment visual) onEnlargeVisual;
@@ -37,6 +43,9 @@ class SolutionVaultOrganism extends StatefulWidget {
     required this.unlockable,
     this.resisting = false,
     required this.lockedLabel,
+    required this.solvedLabel,
+    required this.checkTitle,
+    required this.checkBody,
     required this.answerBody,
     required this.onReveal,
     required this.onEnlargeVisual,
@@ -273,12 +282,28 @@ class _SolutionVaultOrganismState extends State<SolutionVaultOrganism>
               ),
             ],
           ),
-          SizedBox(height: 8.h),
+          SizedBox(height: 2.h),
+          Text(
+            widget.solvedLabel,
+            key: const Key('vault_solved_label'),
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w500,
+              color: QuestPalette.dim,
+            ),
+          ),
+          SizedBox(height: 6.h),
           SegmentListMolecule(
             segments: widget.answerBody,
             onEnlargeVisual: widget.onEnlargeVisual,
             imageProviderBuilder: widget.imageProviderBuilder,
             emphasised: true,
+          ),
+          SolutionCheckMolecule(
+            title: widget.checkTitle,
+            body: widget.checkBody,
+            onEnlargeVisual: widget.onEnlargeVisual,
+            imageProviderBuilder: widget.imageProviderBuilder,
           ),
         ],
       ),

@@ -1,6 +1,7 @@
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
+import 'package:doormer/src/features/questions/presentation/atoms/solution_text_atom.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_reader_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/solution_trail_molecule.dart';
@@ -235,13 +236,19 @@ void main() {
       ))));
       await tester.pump();
 
-      expect(find.byKey(const Key('solution_check')), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('vault_revealed')),
+          matching: find.byKey(const Key('solution_check')),
+        ),
+        findsOneWidget,
+        reason: 'the working is part of the payoff, not a card after it',
+      );
 
-      final vaultY =
-          tester.getTopLeft(find.byKey(const Key('vault_revealed'))).dy;
+      final answerY = tester.getTopLeft(find.byType(SolutionTextAtom).last).dy;
       final checkY =
           tester.getTopLeft(find.byKey(const Key('solution_check'))).dy;
-      expect(checkY, greaterThan(vaultY),
+      expect(checkY, greaterThan(answerY),
           reason: 'the check reads after the answer, not before it');
     });
 

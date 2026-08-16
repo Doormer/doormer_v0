@@ -54,8 +54,7 @@ class AccentWellAtom extends StatelessWidget {
                 child: ColoredBox(color: accent),
               ),
               Padding(
-                padding: padding ??
-                    EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 10.h),
+                padding: padding ?? EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 10.h),
                 child: child,
               ),
             ],

@@ -10,7 +10,8 @@ import 'package:equatable/equatable.dart';
 part 'solution_reader_event.dart';
 part 'solution_reader_state.dart';
 
-class SolutionReaderBloc extends Bloc<SolutionReaderEvent, SolutionReaderState> {
+class SolutionReaderBloc
+    extends Bloc<SolutionReaderEvent, SolutionReaderState> {
   final LoadSampleSolutionUseCase loadSampleSolutionUseCase;
   final LoadQuestProfileUseCase loadQuestProfileUseCase;
 

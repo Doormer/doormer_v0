@@ -221,6 +221,32 @@ void main() {
     expect(revealed.answerBody.single.segment, isA<MathSolutionSegment>());
   });
 
+  test('tells the student what they just did, counting properly', () {
+    expect(
+      solutionReaderContent(
+        const SolutionReaderReady(
+          document: _document,
+          stepIndex: 2,
+          answerRevealed: true,
+        ),
+      ).vaultSolvedLabel,
+      'You solved it in 3 steps',
+    );
+
+    const oneStep = SolutionDocument(
+      schemaVersion: '3.0',
+      steps: [SolutionStep(title: 'Only step', body: [])],
+      finalAnswer: FinalAnswer(body: []),
+    );
+    expect(
+      solutionReaderContent(
+        const SolutionReaderReady(document: oneStep, answerRevealed: true),
+      ).vaultSolvedLabel,
+      'You solved it in 1 step',
+      reason: 'a single step is not "1 steps"',
+    );
+  });
+
   test('counts the level the same way the trail does', () {
     // The kicker names the whole journey, as the approved design does, so it
     // must agree with the trail rather than tell a second, different story
