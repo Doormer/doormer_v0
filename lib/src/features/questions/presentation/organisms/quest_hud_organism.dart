@@ -1,5 +1,6 @@
 import 'package:doormer/src/features/questions/presentation/atoms/stat_pill_atom.dart';
 import 'package:doormer/src/features/questions/presentation/params/quest_hud_params.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/punch_atom.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:doormer/src/core/theme/quest_palette.dart';
@@ -58,11 +59,15 @@ class QuestHudOrganism extends StatelessWidget {
           ),
           if (params.xpLabel.isNotEmpty) ...[
             SizedBox(width: 8.w),
-            StatPillAtom(
-              key: const Key('hud_xp'),
-              icon: Icons.bolt_rounded,
-              label: params.xpLabel,
-              accent: QuestPalette.mint,
+            PunchAtom(
+              trigger: params.xpTrigger,
+              child: StatPillAtom(
+                key: const Key('hud_xp'),
+                iconKey: params.xpKey,
+                icon: Icons.bolt_rounded,
+                label: params.xpLabel,
+                accent: QuestPalette.mint,
+              ),
             ),
           ],
           if (params.streakLabel.isNotEmpty) ...[

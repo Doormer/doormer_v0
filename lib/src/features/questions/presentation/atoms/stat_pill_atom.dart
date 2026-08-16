@@ -8,12 +8,17 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// stake. Nothing else on the page may use those two for anything else.
 class StatPillAtom extends StatelessWidget {
   final IconData icon;
+
+  /// Marks the icon so something can be aimed at the pill's emblem rather than
+  /// at the pill's centre, which drifts as the label's digits grow.
+  final Key? iconKey;
   final String label;
   final Color accent;
 
   const StatPillAtom({
     super.key,
     required this.icon,
+    this.iconKey,
     required this.label,
     required this.accent,
   });
@@ -30,7 +35,7 @@ class StatPillAtom extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12.sp, color: accent),
+          Icon(icon, key: iconKey, size: 12.sp, color: accent),
           SizedBox(width: 4.w),
           Text(
             label,

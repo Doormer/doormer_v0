@@ -22,7 +22,10 @@ class SolutionStepOrganism extends StatelessWidget {
     return QuestCardAtom(
       sticker: params.xpLabel.isEmpty
           ? null
-          : XpStickerAtom(label: params.xpLabel),
+          : XpStickerAtom(
+              key: params.xpStickerKey,
+              label: params.xpLabel,
+            ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         // Kicker, then heading, then body: the card arrives in the order it

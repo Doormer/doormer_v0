@@ -1,4 +1,6 @@
+import 'package:doormer/src/core/motion/motion_policy.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
+import 'package:doormer/src/features/questions/presentation/atoms/xp_pellet_atom.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/solution_trail_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/quest_hud_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solution_briefing_organism.dart';
@@ -35,7 +37,8 @@ class SolutionReaderTemplate extends StatefulWidget {
   State<SolutionReaderTemplate> createState() => _SolutionReaderTemplateState();
 }
 
-class _SolutionReaderTemplateState extends State<SolutionReaderTemplate> {
+class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
+    with SingleTickerProviderStateMixin {
   /// Headroom inside the scroll view for the XP sticker, which is positioned
   /// 9px above the card's top edge and so sits outside it. With a zero top
   /// padding the viewport clipped the sticker in half — the tag read as a torn
@@ -47,6 +50,41 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate> {
   /// Locates the vault so revealing the answer can bring it into view.
   final GlobalKey _vaultKey = GlobalKey();
 
+  /// The pellet's two ends, and the box it flies across.
+  final GlobalKey _stickerKey = GlobalKey();
+  final GlobalKey _chipKey = GlobalKey();
+  final GlobalKey _stageKey = GlobalKey();
+
+  /// 190ms of nothing, then 640ms of flight. The wait lets the new card finish
+  /// arriving — a pellet launched into a card still popping in reads as part of
+  /// the card rather than as a reward leaving it.
+  static const double _flightLead = 190 / 830;
+
+  late final AnimationController _flight = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 830),
+  );
+
+  /// What the counter is *showing*, which lags the truth while a pellet is on
+  /// its way. Held as the presenter's own pair so this never formats copy.
+  String _bankedXpLabel = '';
+  int _bankedXp = 0;
+
+  /// The pellet in flight: what it carries and where it is going. Null between
+  /// flights.
+  int? _pelletAmount;
+  Offset _pelletFrom = Offset.zero;
+  Offset _pelletTo = Offset.zero;
+
+  /// What a pellet in flight is going to bank when it lands. Held apart from
+  /// the live content so a flight that is overtaken still commits the number it
+  /// set out with.
+  String? _pendingXpLabel;
+  int? _pendingXp;
+
+  /// Bumped every time XP lands, to punch the counter.
+  int _landings = 0;
+
   /// Identifies which screen is showing. The level label already encodes the
   /// step, so this changes on exactly the transitions that should start at the
   /// top, and not on a rationale or answer toggle.
@@ -56,12 +94,99 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    // Arriving with a standing already earned is not an award. Whatever the
+    // first frame says is simply what the student walked in carrying.
+    _bankedXpLabel = widget.params.content.xpLabel;
+    _bankedXp = widget.params.content.xpTotal;
+    _flight.addStatusListener((status) {
+      if (status == AnimationStatus.completed) _landXp();
+    });
+  }
+
+  /// Commits the number. This is the guaranteed path: every route that starts a
+  /// pellet ends here, including the one where no pellet ever flew.
+  ///
+  /// Never keep the total inside the animation. The pellet is decoration — it
+  /// does not run under reduced motion, and another award can cut it short —
+  /// but the counter must arrive at the truth either way.
+  void _landXp() {
+    if (!mounted) return;
+    _flight.stop();
+    final label = _pendingXpLabel ?? widget.params.content.xpLabel;
+    final total = _pendingXp ?? widget.params.content.xpTotal;
+    setState(() {
+      _pelletAmount = null;
+      _pendingXpLabel = null;
+      _pendingXp = null;
+      _bankedXpLabel = label;
+      _bankedXp = total;
+      _landings++;
+    });
+  }
+
+  /// Sends what a step just banked from its sticker to the counter.
+  ///
+  /// The pellet carries the difference actually banked, not the sticker's own
+  /// text: the sticker shows the reward for the step now on screen, which is
+  /// the next one. Reading it would send "+15" while the counter climbed 10.
+  void _awardXp() {
+    // A second award mid-flight commits the first. Skipping ahead may cost the
+    // student the animation, but it must never cost them the XP.
+    if (_pendingXp != null) _landXp();
+
+    final content = widget.params.content;
+    final delta = content.xpTotal - _bankedXp;
+
+    if (delta <= 0 || !MotionPolicy.of(context)) {
+      _pendingXpLabel = content.xpLabel;
+      _pendingXp = content.xpTotal;
+      _landXp();
+      return;
+    }
+
+    final stage = _stageKey.currentContext?.findRenderObject();
+    final sticker = _stickerKey.currentContext?.findRenderObject();
+    final chip = _chipKey.currentContext?.findRenderObject();
+    _pendingXpLabel = content.xpLabel;
+    _pendingXp = content.xpTotal;
+
+    if (stage is! RenderBox ||
+        sticker is! RenderBox ||
+        chip is! RenderBox ||
+        !stage.hasSize ||
+        !sticker.hasSize ||
+        !chip.hasSize) {
+      _landXp();
+      return;
+    }
+
+    Offset centreIn(RenderBox box) =>
+        stage.globalToLocal(box.localToGlobal(box.size.center(Offset.zero)));
+
+    setState(() {
+      _pelletAmount = delta;
+      _pelletFrom = centreIn(sticker);
+      _pelletTo = centreIn(chip);
+    });
+    _flight.forward(from: 0);
+  }
+
+  @override
   void didUpdateWidget(SolutionReaderTemplate oldWidget) {
     super.didUpdateWidget(oldWidget);
     final previous = oldWidget.params.content;
     final previousId =
         previous.onBriefing ? 'briefing' : previous.levelLabel;
-    if (previousId != _screenId && _scrollController.hasClients) {
+    final movedOn = previousId != _screenId;
+    if (movedOn) {
+      // Geometry is only true once the new step has laid out.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _awardXp();
+      });
+    }
+    if (movedOn && _scrollController.hasClients) {
       _scrollController.jumpTo(0);
       return;
     }
@@ -89,6 +214,7 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate> {
 
   @override
   void dispose() {
+    _flight.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -101,15 +227,23 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate> {
     return Scaffold(
       backgroundColor: QuestPalette.night,
       body: QuestBackdrop(
-        child: SafeArea(
+        child: Stack(
+          key: _stageKey,
+          children: [
+            SafeArea(
           child: Column(
           children: [
             QuestHudOrganism(
               params: QuestHudParams(
                 topic: content.topic,
                 questionTitle: content.questionTitle,
-                xpLabel: content.xpLabel,
+                // The banked total, not the live one: while a pellet is in
+                // flight the counter has not been paid yet, and a number that
+                // updates before the reward arrives makes the flight a lie.
+                xpLabel: _bankedXpLabel,
                 streakLabel: content.streakLabel,
+                xpKey: _chipKey,
+                xpTrigger: _landings,
               ),
             ),
             Padding(
@@ -164,6 +298,7 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate> {
                                 rationaleToggleLabel:
                                     content.rationaleToggleLabel,
                                 xpLabel: content.stepXpLabel,
+                                xpStickerKey: _stickerKey,
                                 onToggleRationale: params.onToggleRationale,
                                 onEnlargeVisual: params.onEnlargeVisual,
                                 imageProviderBuilder:
@@ -194,7 +329,64 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate> {
             _CtaBar(params: params),
           ],
           ),
+            ),
+            if (_pelletAmount != null) _buildPellet(),
+          ],
         ),
+      ),
+    );
+  }
+
+  /// The pellet's arc: out past the midpoint, rising, then shrinking into the
+  /// counter. A straight fade would say the XP evaporated; the arc says it was
+  /// carried somewhere and put away.
+  Widget _buildPellet() {
+    return AnimatedBuilder(
+      animation: _flight,
+      builder: (context, child) {
+        final t =
+            ((_flight.value - _flightLead) / (1 - _flightLead)).clamp(0.0, 1.0);
+        if (t == 0 || t >= 1) return const SizedBox.shrink();
+
+        final e = const Cubic(.5, -0.2, .4, 1).transform(t);
+        final d = _pelletTo - _pelletFrom;
+        // Two legs, matching the keyframe at 60%: most of the distance is
+        // covered while the pellet is still full size, then it drops into the
+        // pill.
+        final Offset at;
+        final double scale;
+        final double opacity;
+        if (e <= 0.6) {
+          final k = e / 0.6;
+          at = Offset(d.dx * 0.55 * k, d.dy * 0.55 * k - 16 * k);
+          scale = 1 - 0.14 * k;
+          opacity = 1;
+        } else {
+          final k = (e - 0.6) / 0.4;
+          at = Offset.lerp(
+            Offset(d.dx * 0.55, d.dy * 0.55 - 16),
+            d,
+            k,
+          )!;
+          scale = 0.86 - 0.52 * k;
+          opacity = 1 - k;
+        }
+
+        return Positioned(
+          left: _pelletFrom.dx + at.dx,
+          top: _pelletFrom.dy + at.dy,
+          child: FractionalTranslation(
+            translation: const Offset(-0.5, -0.5),
+            child: Opacity(
+              opacity: opacity.clamp(0.0, 1.0),
+              child: Transform.scale(scale: scale, child: child),
+            ),
+          ),
+        );
+      },
+      child: IgnorePointer(
+        key: const Key('xp_pellet'),
+        child: XpPelletAtom(amount: _pelletAmount ?? 0),
       ),
     );
   }

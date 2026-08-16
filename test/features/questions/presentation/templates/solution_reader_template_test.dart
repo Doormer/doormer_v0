@@ -1,5 +1,6 @@
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
+import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_reader_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/solution_trail_molecule.dart';
@@ -60,15 +61,43 @@ const _tallBriefedDocument = SolutionDocument(
   ]),
 );
 
-Widget _pump(SolutionReaderParams params) {
+Widget _pump(SolutionReaderParams params, {bool motion = true}) {
   return ScreenUtilInit(
     designSize: const Size(360, 690),
     builder: (_, __) => MaterialApp(
       theme: AppTheme.dark,
-      home: SolutionReaderTemplate(params: params),
+      home: MediaQuery(
+        data: MediaQueryData(disableAnimations: !motion),
+        child: SolutionReaderTemplate(params: params),
+      ),
     ),
   );
 }
+
+/// A three-step run with a standing already banked, so every move pays a
+/// different amount and the counter has somewhere to climb from.
+const _paidDocument = SolutionDocument(
+  schemaVersion: '3.0',
+  steps: [
+    SolutionStep(title: 'Find the road slope', body: []),
+    SolutionStep(title: 'Scale the width', body: []),
+    SolutionStep(title: 'Multiply out', body: []),
+  ],
+  finalAnswer: FinalAnswer(body: [TextSolutionSegment('160')]),
+);
+
+const _profile = QuestProfile(
+  bankedXp: 120,
+  streakDays: 4,
+  topic: 'Geometry - Area',
+  questionTitle: 'Road through a field',
+);
+
+SolutionReaderReady _atStep(int index) => SolutionReaderReady(
+      document: _paidDocument,
+      stepIndex: index,
+      profile: _profile,
+    );
 
 SolutionReaderParams _params(
   SolutionReaderReady state, {
@@ -87,6 +116,7 @@ SolutionReaderParams _params(
 }
 
 void main() {
+  _xpFlightTests();
   testWidgets('owns exactly one Scaffold and pins the trail and the CTA',
       (tester) async {
     await tester.pumpWidget(
@@ -379,6 +409,104 @@ void main() {
         reason: 'the answer is the payoff of the page and must not stay off '
             'screen when the student asks for it',
       );
+    });
+  });
+}
+
+void _xpFlightTests() {
+  group('XP flight', () {
+    testWidgets('holds the counter until the reward actually arrives',
+        (tester) async {
+      await tester.pumpWidget(_pump(_params(_atStep(0))));
+      await tester.pumpAndSettle();
+      expect(find.text('120 XP'), findsOneWidget);
+
+      await tester.pumpWidget(_pump(_params(_atStep(1))));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byKey(const Key('xp_pellet')), findsOneWidget);
+      expect(find.text('120 XP'), findsOneWidget,
+          reason: 'a counter that pays before the pellet lands makes the '
+              'flight a lie');
+
+      await tester.pumpAndSettle();
+      expect(find.text('130 XP'), findsOneWidget);
+      expect(find.byKey(const Key('xp_pellet')), findsNothing);
+    });
+
+    testWidgets('the pellet carries what was banked, not the next reward',
+        (tester) async {
+      await tester.pumpWidget(_pump(_params(_atStep(0))));
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(_pump(_params(_atStep(1))));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('+15 XP'), findsOneWidget,
+          reason: 'the sticker advertises the step now on screen');
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('xp_pellet')),
+          matching: find.text('+10 XP'),
+        ),
+        findsOneWidget,
+        reason: 'reading the sticker would pay a pellet of 15 while the '
+            'counter climbed 10',
+      );
+
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('lands the number with no pellet under reduced motion',
+        (tester) async {
+      await tester.pumpWidget(_pump(_params(_atStep(0)), motion: false));
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(_pump(_params(_atStep(1)), motion: false));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byKey(const Key('xp_pellet')), findsNothing);
+      expect(find.text('130 XP'), findsOneWidget,
+          reason: 'the pellet is decoration; the total is not');
+    });
+
+    testWidgets('banks the first award when a second overtakes it',
+        (tester) async {
+      await tester.pumpWidget(_pump(_params(_atStep(0))));
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(_pump(_params(_atStep(1))));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('120 XP'), findsOneWidget);
+
+      await tester.pumpWidget(_pump(_params(_atStep(2))));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('130 XP'), findsOneWidget,
+          reason: 'skipping ahead may cost the animation, never the XP');
+
+      await tester.pumpAndSettle();
+      expect(find.text('145 XP'), findsOneWidget);
+    });
+
+    testWidgets('travelling back never pays again', (tester) async {
+      await tester.pumpWidget(_pump(_params(_atStep(2))));
+      await tester.pumpAndSettle();
+      expect(find.text('145 XP'), findsOneWidget);
+
+      await tester.pumpWidget(_pump(_params(_atStep(0))));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byKey(const Key('xp_pellet')), findsNothing);
+      expect(find.text('120 XP'), findsOneWidget,
+          reason: 'the total is derived from where the student is, so going '
+              'back gives it back');
     });
   });
 }

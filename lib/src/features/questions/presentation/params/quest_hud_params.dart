@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+
 /// Plain holder for the standing bar. Carries no callbacks today, but stays a
 /// params object so the HUD's signature does not change when it gains one.
 class QuestHudParams {
@@ -9,10 +11,18 @@ class QuestHudParams {
   final String xpLabel;
   final String streakLabel;
 
+  /// Locates the XP pill so a pellet can be aimed at it.
+  final Key? xpKey;
+
+  /// Changes when XP lands, so the pill can react to being paid.
+  final Object? xpTrigger;
+
   const QuestHudParams({
     required this.topic,
     required this.questionTitle,
     required this.xpLabel,
     required this.streakLabel,
+    this.xpKey,
+    this.xpTrigger,
   });
 }

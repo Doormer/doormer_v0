@@ -35,6 +35,11 @@ class SolutionReaderContent {
   final String topic;
   final String questionTitle;
   final String xpLabel;
+
+  /// The number behind [xpLabel]. The counter lags the label while the pellet
+  /// is in flight, and it needs the two as a pair to know what has landed and
+  /// what is still on its way.
+  final int xpTotal;
   final String streakLabel;
 
   /// What this step is worth, as it appears on the card sticker. Empty on the
@@ -70,6 +75,7 @@ class SolutionReaderContent {
     required this.topic,
     required this.questionTitle,
     required this.xpLabel,
+    required this.xpTotal,
     required this.streakLabel,
     required this.stepXpLabel,
   });
@@ -200,6 +206,7 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
     topic: profile?.topic ?? '',
     questionTitle: profile?.questionTitle ?? '',
     xpLabel: profile == null ? '' : '$earnedXp XP',
+    xpTotal: earnedXp,
     streakLabel: profile == null ? '' : '${profile.streakDays}-day',
     stepXpLabel:
         onBriefing ? '' : '+${stepXpValue(state.stepIndex, stepCount)} XP',
