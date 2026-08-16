@@ -25,7 +25,10 @@ class QuestionSolutionPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider<SolutionReaderBloc>(
       create: (_) => serviceLocator<SolutionReaderBloc>()
-        ..add(SolutionReaderStarted(document: solvedState?.solution)),
+        ..add(SolutionReaderStarted(
+          document: solvedState?.solution,
+          note: solvedState?.note ?? '',
+        )),
       child: BlocBuilder<SolutionReaderBloc, SolutionReaderState>(
         builder: (context, state) {
           if (state is SolutionReaderReady) {

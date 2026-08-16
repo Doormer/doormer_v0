@@ -1,7 +1,10 @@
 import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/solution_trail_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/solution_briefing_organism.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/solution_check_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solution_step_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solution_vault_organism.dart';
+import 'package:doormer/src/features/questions/presentation/params/solution_briefing_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solution_reader_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solution_step_params.dart';
 import 'package:flutter/material.dart';
@@ -38,31 +41,50 @@ class SolutionReaderTemplate extends StatelessWidget {
                 padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SolutionStepOrganism(
-                      params: SolutionStepParams(
-                        levelLabel: content.levelLabel,
-                        stepTitle: content.stepTitle,
-                        body: content.body,
-                        rationale: content.rationale,
-                        hasRationale: content.hasRationale,
-                        rationaleVisible: content.rationaleVisible,
-                        rationaleToggleLabel: content.rationaleToggleLabel,
-                        onToggleRationale: params.onToggleRationale,
-                        onEnlargeVisual: params.onEnlargeVisual,
-                        imageProviderBuilder: params.imageProviderBuilder,
-                      ),
-                    ),
-                    SolutionVaultOrganism(
-                      revealed: content.answerRevealed,
-                      unlockable: content.isLastStep,
-                      lockedLabel: content.vaultLockedLabel,
-                      answerBody: content.answerBody,
-                      onReveal: params.onRevealAnswer,
-                      onEnlargeVisual: params.onEnlargeVisual,
-                      imageProviderBuilder: params.imageProviderBuilder,
-                    ),
-                  ],
+                  children: content.onBriefing
+                      ? [
+                          SolutionBriefingOrganism(
+                            params: SolutionBriefingParams(
+                              title: content.briefingTitle,
+                              body: content.briefingBody,
+                              note: content.note,
+                              onEnlargeVisual: params.onEnlargeVisual,
+                              imageProviderBuilder: params.imageProviderBuilder,
+                            ),
+                          ),
+                        ]
+                      : [
+                          SolutionStepOrganism(
+                            params: SolutionStepParams(
+                              levelLabel: content.levelLabel,
+                              stepTitle: content.stepTitle,
+                              body: content.body,
+                              rationale: content.rationale,
+                              hasRationale: content.hasRationale,
+                              rationaleVisible: content.rationaleVisible,
+                              rationaleToggleLabel:
+                                  content.rationaleToggleLabel,
+                              onToggleRationale: params.onToggleRationale,
+                              onEnlargeVisual: params.onEnlargeVisual,
+                              imageProviderBuilder: params.imageProviderBuilder,
+                            ),
+                          ),
+                          SolutionVaultOrganism(
+                            revealed: content.answerRevealed,
+                            unlockable: content.isLastStep,
+                            lockedLabel: content.vaultLockedLabel,
+                            answerBody: content.answerBody,
+                            onReveal: params.onRevealAnswer,
+                            onEnlargeVisual: params.onEnlargeVisual,
+                            imageProviderBuilder: params.imageProviderBuilder,
+                          ),
+                          SolutionCheckOrganism(
+                            title: content.checkTitle,
+                            body: content.checkBody,
+                            onEnlargeVisual: params.onEnlargeVisual,
+                            imageProviderBuilder: params.imageProviderBuilder,
+                          ),
+                        ],
                 ),
               ),
             ),

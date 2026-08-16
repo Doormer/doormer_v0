@@ -23,6 +23,23 @@ const _document = SolutionDocument(
   ]),
 );
 
+const _briefedDocument = SolutionDocument(
+  schemaVersion: '3.0',
+  steps: [
+    SolutionStep(title: 'Find the road slope', body: []),
+    SolutionStep(title: 'Scale the width', body: []),
+  ],
+  finalAnswer: FinalAnswer(body: [
+    TextSolutionSegment('The paved area is 160 square metres.'),
+  ]),
+  approach: SolutionSection(body: [
+    TextSolutionSegment('Use the road angle, then the width.'),
+  ]),
+  verification: SolutionSection(body: [
+    TextSolutionSegment('Both routes give 160.'),
+  ]),
+);
+
 Widget _pump(SolutionReaderParams params) {
   return ScreenUtilInit(
     designSize: const Size(360, 690),
@@ -110,5 +127,78 @@ void main() {
     await tester.pump();
 
     expect(find.text('Reveal answer'), findsOneWidget);
+  });
+
+  group('bookends', () {
+    testWidgets('shows the briefing instead of the step card and the vault',
+        (tester) async {
+      await tester.pumpWidget(_pump(_params(const SolutionReaderReady(
+        document: _briefedDocument,
+        onBriefing: true,
+      ))));
+      await tester.pump();
+
+      expect(find.byKey(const Key('solution_briefing')), findsOneWidget);
+      expect(find.byType(SolutionStepOrganism), findsNothing);
+      expect(find.byKey(const Key('vault_locked')), findsNothing);
+      expect(find.text('Start solving'), findsOneWidget);
+    });
+
+    testWidgets('the briefing CTA advances rather than revealing',
+        (tester) async {
+      var next = 0;
+      await tester.pumpWidget(_pump(_params(
+        const SolutionReaderReady(
+          document: _briefedDocument,
+          onBriefing: true,
+        ),
+        onNext: () => next++,
+      )));
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('solution_cta')));
+      await tester.pump();
+
+      expect(next, 1);
+    });
+
+    testWidgets('returns to the step card once the briefing is passed',
+        (tester) async {
+      await tester.pumpWidget(
+        _pump(_params(const SolutionReaderReady(document: _briefedDocument))),
+      );
+      await tester.pump();
+
+      expect(find.byKey(const Key('solution_briefing')), findsNothing);
+      expect(find.byType(SolutionStepOrganism), findsOneWidget);
+    });
+
+    testWidgets('puts the check below the vault once the answer is revealed',
+        (tester) async {
+      await tester.pumpWidget(_pump(_params(const SolutionReaderReady(
+        document: _briefedDocument,
+        stepIndex: 1,
+        answerRevealed: true,
+      ))));
+      await tester.pump();
+
+      expect(find.byKey(const Key('solution_check')), findsOneWidget);
+
+      final vaultY =
+          tester.getTopLeft(find.byKey(const Key('vault_revealed'))).dy;
+      final checkY =
+          tester.getTopLeft(find.byKey(const Key('solution_check'))).dy;
+      expect(checkY, greaterThan(vaultY),
+          reason: 'the check reads after the answer, not before it');
+    });
+
+    testWidgets('hides the check until the answer is revealed', (tester) async {
+      await tester.pumpWidget(_pump(_params(
+        const SolutionReaderReady(document: _briefedDocument, stepIndex: 1),
+      )));
+      await tester.pump();
+
+      expect(find.byKey(const Key('solution_check')), findsNothing);
+    });
   });
 }

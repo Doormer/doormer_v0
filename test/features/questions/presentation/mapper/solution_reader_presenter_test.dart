@@ -32,6 +32,38 @@ const _document = SolutionDocument(
   ]),
 );
 
+const _briefedDocument = SolutionDocument(
+  schemaVersion: '3.0',
+  steps: [
+    SolutionStep(title: 'Find the road slope', body: []),
+    SolutionStep(title: 'Scale the width', body: []),
+  ],
+  finalAnswer: FinalAnswer(body: [
+    MathSolutionSegment(latex: r'\boxed{160}', alt: '160'),
+  ]),
+  approach: SolutionSection(body: [
+    TextSolutionSegment('Use the road angle, then the width.'),
+  ]),
+  verification: SolutionSection(body: [
+    TextSolutionSegment('Both routes give 160.'),
+  ]),
+);
+
+/// One step plus a briefing: at stepIndex 0 the reader is on the briefing and
+/// on the last step at the same time.
+const _oneStepBriefedDocument = SolutionDocument(
+  schemaVersion: '3.0',
+  steps: [
+    SolutionStep(title: 'Only', body: []),
+  ],
+  finalAnswer: FinalAnswer(body: [
+    MathSolutionSegment(latex: r'\boxed{160}', alt: '160'),
+  ]),
+  approach: SolutionSection(body: [
+    TextSolutionSegment('One move is enough.'),
+  ]),
+);
+
 void main() {
   test('labels the level without a total', () {
     final content = solutionReaderContent(
@@ -153,5 +185,123 @@ void main() {
     expect(content.ctaEnabled, isTrue,
         reason: 'CTA must remain enabled on a non-last step');
     expect(content.ctaLabel, 'Next step');
+  });
+
+  group('briefing', () {
+    test('hands the approach body and the note to the briefing screen', () {
+      final content = solutionReaderContent(const SolutionReaderReady(
+        document: _briefedDocument,
+        onBriefing: true,
+        note: 'The width is derived.',
+      ));
+
+      expect(content.onBriefing, isTrue);
+      expect(content.briefingTitle, 'The plan');
+      expect(
+        (content.briefingBody.single.segment as TextSolutionSegment).value,
+        'Use the road angle, then the width.',
+      );
+      expect(content.note, 'The width is derived.');
+    });
+
+    test('calls the briefing CTA Start solving and disables going back', () {
+      final content = solutionReaderContent(const SolutionReaderReady(
+        document: _briefedDocument,
+        onBriefing: true,
+      ));
+
+      expect(content.ctaLabel, 'Start solving');
+      expect(content.ctaEnabled, isTrue);
+      expect(content.canGoBack, isFalse);
+    });
+
+    test('lets step one go back to the briefing', () {
+      final withBriefing =
+          solutionReaderContent(const SolutionReaderReady(document: _briefedDocument));
+      final withoutBriefing =
+          solutionReaderContent(const SolutionReaderReady(document: _document));
+
+      expect(withBriefing.canGoBack, isTrue);
+      expect(withoutBriefing.canGoBack, isFalse);
+    });
+
+    test('heads the trail with a flagged node and keeps step numbering', () {
+      final content = solutionReaderContent(const SolutionReaderReady(
+        document: _briefedDocument,
+        onBriefing: true,
+      ));
+
+      expect(content.trail, hasLength(3));
+      expect(content.trail.first.icon, isNotNull);
+      expect(content.trail.first.state, SolutionTrailNodeState.current);
+      expect(content.trail.first.semanticsLabel, 'The plan');
+      expect(content.trail[1].displayNumber, 1,
+          reason: 'the briefing must not shift step numbering');
+      expect(content.trail[1].state, SolutionTrailNodeState.upcoming);
+    });
+
+    test('marks the briefing done once the student is on a step', () {
+      final content =
+          solutionReaderContent(const SolutionReaderReady(document: _briefedDocument));
+
+      expect(content.trail.first.state, SolutionTrailNodeState.done);
+      expect(content.trail[1].state, SolutionTrailNodeState.current);
+    });
+
+    test('omits the trail head entirely when there is no approach', () {
+      final content =
+          solutionReaderContent(const SolutionReaderReady(document: _document));
+
+      expect(content.trail, hasLength(3));
+      expect(content.trail.every((n) => n.icon == null), isTrue);
+      expect(content.onBriefing, isFalse);
+    });
+
+    test('does not report the last step while the briefing is showing', () {
+      final content = solutionReaderContent(const SolutionReaderReady(
+        document: _oneStepBriefedDocument,
+        onBriefing: true,
+      ));
+
+      expect(content.isLastStep, isFalse,
+          reason: 'the CTA would otherwise reveal the answer from the briefing');
+      expect(content.ctaLabel, 'Start solving');
+      expect(content.answerRevealed, isFalse);
+    });
+  });
+
+  group('check', () {
+    test('withholds the verification until the answer is revealed', () {
+      final beforeReveal = solutionReaderContent(
+        const SolutionReaderReady(document: _briefedDocument, stepIndex: 1),
+      );
+
+      expect(beforeReveal.checkBody, isEmpty,
+          reason: 'a check read before the answer is just another step');
+    });
+
+    test('releases the verification with the answer', () {
+      final revealed = solutionReaderContent(const SolutionReaderReady(
+        document: _briefedDocument,
+        stepIndex: 1,
+        answerRevealed: true,
+      ));
+
+      expect(revealed.checkTitle, 'Check it');
+      expect(
+        (revealed.checkBody.single.segment as TextSolutionSegment).value,
+        'Both routes give 160.',
+      );
+    });
+
+    test('stays empty when the document carries no verification', () {
+      final revealed = solutionReaderContent(const SolutionReaderReady(
+        document: _document,
+        stepIndex: 2,
+        answerRevealed: true,
+      ));
+
+      expect(revealed.checkBody, isEmpty);
+    });
   });
 }
