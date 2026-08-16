@@ -35,6 +35,11 @@ class SolutionTrailNode {
   /// the vault, which is a destination rather than a stop.
   final int? travelTo;
 
+  /// How many of the three chains strapped across this node have already been
+  /// broken. Null on every node that is not the vault — the briefing marker
+  /// was never locked, so it was never chained.
+  final int? chainsBroken;
+
   const SolutionTrailNode({
     required this.displayNumber,
     required this.state,
@@ -42,6 +47,7 @@ class SolutionTrailNode {
     this.icon,
     this.shape = SolutionTrailNodeShape.step,
     this.travelTo,
+    this.chainsBroken,
   });
 }
 
@@ -308,12 +314,9 @@ class _TrailNode extends StatelessWidget {
       child: _content(foreground),
     );
 
-    if (isMarker) {
-      dot = _VaultChains(
-        size: size,
-        cracked: node.state == SolutionTrailNodeState.done,
-        child: dot,
-      );
+    final chainsBroken = node.chainsBroken;
+    if (chainsBroken != null) {
+      dot = _VaultChains(size: size, broken: chainsBroken, child: dot);
     }
 
     if (isCurrent) {
@@ -367,17 +370,21 @@ class _TrailNode extends StatelessWidget {
   }
 }
 
-/// Three short bars strapped across the vault marker. They do not fade when
-/// the vault opens — they snap and are flung off, because the student broke
-/// them.
+/// Three short bars strapped across the vault marker.
+///
+/// They break one at a time as the working is done, so the student can see the
+/// answer coming loose. A chain does not fade when it goes — it snaps and is
+/// flung off, because it was broken rather than switched off.
 class _VaultChains extends StatefulWidget {
+  static const int count = 3;
+
   final double size;
-  final bool cracked;
+  final int broken;
   final Widget child;
 
   const _VaultChains({
     required this.size,
-    required this.cracked,
+    required this.broken,
     required this.child,
   });
 
@@ -396,9 +403,10 @@ class _VaultChainsState extends State<_VaultChains>
 
   late final AnimationController _snap;
 
-  /// A vault that was already open when the trail was built never had chains,
-  /// so there is nothing to snap.
-  late bool _worn = !widget.cracked;
+  /// Chains already gone when this trail was drawn. Arriving at a part-solved
+  /// question should not replay the breaking of chains broken long ago.
+  late int _gone = widget.broken;
+  Set<int> _snapping = const {};
 
   @override
   void initState() {
@@ -412,20 +420,30 @@ class _VaultChainsState extends State<_VaultChains>
   @override
   void didUpdateWidget(_VaultChains oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.cracked == oldWidget.cracked) return;
-    if (!widget.cracked) {
-      // Travelling back re-locks the vault, so the chains are simply back on.
+    if (widget.broken == oldWidget.broken) return;
+    if (widget.broken < _gone) {
+      // Travelling back puts the chains on again; there is nothing to watch.
       _snap.stop();
-      setState(() => _worn = true);
+      setState(() {
+        _gone = widget.broken;
+        _snapping = const {};
+      });
       return;
     }
-    if (!_worn) return;
     if (!MotionPolicy.of(context)) {
-      setState(() => _worn = false);
+      setState(() => _gone = widget.broken);
       return;
     }
+    final target = widget.broken;
+    setState(() {
+      _snapping = {for (var i = _gone; i < target; i++) i};
+    });
     _snap.forward(from: 0).whenCompleteOrCancel(() {
-      if (mounted && widget.cracked) setState(() => _worn = false);
+      if (!mounted || widget.broken != target) return;
+      setState(() {
+        _gone = target;
+        _snapping = const {};
+      });
     });
   }
 
@@ -437,7 +455,7 @@ class _VaultChainsState extends State<_VaultChains>
 
   @override
   Widget build(BuildContext context) {
-    if (!_worn) return widget.child;
+    if (_gone >= _VaultChains.count && _snapping.isEmpty) return widget.child;
     final unit = widget.size / 38;
     return AnimatedBuilder(
       animation: _snap,
@@ -448,7 +466,11 @@ class _VaultChainsState extends State<_VaultChains>
           alignment: Alignment.center,
           children: [
             child!,
-            for (final bar in _bars) _bar(bar.$1, bar.$2, t, unit),
+            for (var i = 0; i < _VaultChains.count; i++)
+              if (_snapping.contains(i))
+                _bar(_bars[i].$1, _bars[i].$2, t, unit)
+              else if (i >= _gone)
+                _bar(_bars[i].$1, _bars[i].$2, 0, unit),
           ],
         );
       },
@@ -457,8 +479,8 @@ class _VaultChainsState extends State<_VaultChains>
   }
 
   Widget _bar(double baseAngle, Offset baseOffset, double t, double unit) {
-    // Braces first, then the break: the bar strains against its anchor before
-    // it lets go.
+    // Strain first, then the break: the bar pulls against its anchor before it
+    // lets go.
     final strained = (t / 0.3).clamp(0.0, 1.0);
     final flung = ((t - 0.3) / 0.7).clamp(0.0, 1.0);
     final angle = t == 0

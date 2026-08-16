@@ -93,6 +93,23 @@ int stepXpValue(int index, int stepCount) {
 }
 
 /// XP banked by reading every step before [index].
+/// The vault is strapped with three chains and the working breaks them. Tying
+/// them to progress rather than to the unlock means the student watches the
+/// answer come loose as they work, instead of only at the end.
+///
+/// The epsilon absorbs float error: two thirds of the way through a four-step
+/// question must break the second chain, not hover just under it.
+int _chainsBroken({
+  required bool onBriefing,
+  required int stepIndex,
+  required int stepCount,
+}) {
+  if (onBriefing) return 0;
+  if (stepCount <= 1) return 3;
+  final progress = stepIndex / (stepCount - 1);
+  return (progress * 3 + 0.0001).floor().clamp(0, 3);
+}
+
 int _xpBankedBefore(int index, int stepCount) {
   var total = 0;
   for (var i = 0; i < index; i++) {
@@ -176,6 +193,11 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
         semanticsLabel: answerRevealed ? 'The answer' : 'The answer, locked',
         icon: answerRevealed ? Icons.lock_open_rounded : Icons.lock_rounded,
         shape: SolutionTrailNodeShape.marker,
+        chainsBroken: _chainsBroken(
+          onBriefing: onBriefing,
+          stepIndex: state.stepIndex,
+          stepCount: stepCount,
+        ),
       ),
     ],
     answerRevealed: answerRevealed,

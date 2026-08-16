@@ -244,17 +244,18 @@ void _edgeTests() {
   });
 }
 
-SolutionTrailNode _vaultNode(SolutionTrailNodeState state) => SolutionTrailNode(
+SolutionTrailNode _vaultNode(int broken) => SolutionTrailNode(
       displayNumber: 0,
-      state: state,
+      state: SolutionTrailNodeState.upcoming,
       shape: SolutionTrailNodeShape.marker,
       icon: Icons.lock_rounded,
       semanticsLabel: 'Final answer',
+      chainsBroken: broken,
     );
 
-List<SolutionTrailNode> _withVault(SolutionTrailNodeState vaultState) => [
+List<SolutionTrailNode> _withVault(int broken) => [
       ..._nodes(2, 1),
-      _vaultNode(vaultState),
+      _vaultNode(broken),
     ];
 
 int _chains(WidgetTester tester) => tester
@@ -267,68 +268,99 @@ int _chains(WidgetTester tester) => tester
 
 void _chainTests() {
   group('the vault chains', () {
-    testWidgets('strap the vault shut while it is locked', (tester) async {
-      await tester.pumpWidget(_pump(_withVault(SolutionTrailNodeState.ready)));
+    testWidgets('strap the vault shut before any working is done',
+        (tester) async {
+      await tester.pumpWidget(_pump(_withVault(0)));
       await tester.pumpAndSettle();
 
       expect(_chains(tester), 3,
           reason: 'a vault with nothing holding it shut is just a button');
     });
 
-    testWidgets('are still flying part-way through the snap', (tester) async {
-      await tester.pumpWidget(_pump(
-        _withVault(SolutionTrailNodeState.ready),
-        motion: true,
-      ));
-      await tester.pump();
+    testWidgets('break one at a time as the working is done', (tester) async {
+      await tester.pumpWidget(_pump(_withVault(0), motion: true));
+      await tester.pumpAndSettle();
 
-      await tester.pumpWidget(_pump(
-        _withVault(SolutionTrailNodeState.done),
-        motion: true,
-      ));
+      await tester.pumpWidget(_pump(_withVault(1), motion: true));
+      await tester.pumpAndSettle();
+      expect(_chains(tester), 2,
+          reason: 'the chains are the working made visible; all three going '
+              'at once would tie them to the button instead');
+
+      await tester.pumpWidget(_pump(_withVault(2), motion: true));
+      await tester.pumpAndSettle();
+      expect(_chains(tester), 1);
+    });
+
+    testWidgets('are still flying part-way through a snap', (tester) async {
+      await tester.pumpWidget(_pump(_withVault(0), motion: true));
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(_pump(_withVault(1), motion: true));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(_chains(tester), 3,
-          reason: 'chains that vanish on the tap were never broken, they were '
-              'switched off');
+          reason: 'a chain that vanishes on the step change was never broken, '
+              'it was switched off');
       await tester.pumpAndSettle();
     });
 
-    testWidgets('are gone once the vault is open', (tester) async {
-      await tester.pumpWidget(_pump(
-        _withVault(SolutionTrailNodeState.ready),
-        motion: true,
-      ));
-      await tester.pump();
-
-      await tester.pumpWidget(_pump(
-        _withVault(SolutionTrailNodeState.done),
-        motion: true,
-      ));
+    testWidgets('are all gone once the working is finished', (tester) async {
+      await tester.pumpWidget(_pump(_withVault(3)));
       await tester.pumpAndSettle();
 
       expect(_chains(tester), 0);
     });
 
-    testWidgets('never existed on a vault that was open from the start',
+    testWidgets('do not replay on a question that was already part-solved',
         (tester) async {
-      await tester.pumpWidget(_pump(_withVault(SolutionTrailNodeState.done)));
+      await tester.pumpWidget(_pump(_withVault(2), motion: true));
+      await tester.pump();
+
+      expect(_chains(tester), 1,
+          reason: 'returning to a part-solved question should not re-stage '
+              'work the student did yesterday');
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('go back on when the student travels back', (tester) async {
+      await tester.pumpWidget(_pump(_withVault(2), motion: true));
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(_pump(_withVault(1), motion: true));
+      await tester.pump();
+
+      expect(_chains(tester), 2);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('break without ceremony under reduced motion', (tester) async {
+      await tester.pumpWidget(_pump(_withVault(0)));
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(_pump(_withVault(3)));
+      await tester.pump();
+
+      expect(_chains(tester), 0);
+    });
+
+    testWidgets('never appear on a marker that was never locked',
+        (tester) async {
+      await tester.pumpWidget(_pump([
+        const SolutionTrailNode(
+          displayNumber: 0,
+          state: SolutionTrailNodeState.current,
+          shape: SolutionTrailNodeShape.marker,
+          icon: Icons.flag_rounded,
+          semanticsLabel: 'The plan',
+        ),
+        ..._nodes(2, 0),
+      ]));
       await tester.pumpAndSettle();
 
       expect(_chains(tester), 0,
-          reason: 'returning to a solved question should not re-stage the '
-              'moment it was solved');
-    });
-
-    testWidgets('go straight away under reduced motion', (tester) async {
-      await tester.pumpWidget(_pump(_withVault(SolutionTrailNodeState.ready)));
-      await tester.pumpAndSettle();
-
-      await tester.pumpWidget(_pump(_withVault(SolutionTrailNodeState.done)));
-      await tester.pump();
-
-      expect(_chains(tester), 0);
+          reason: 'the briefing was never locked, so it was never chained');
     });
   });
 }

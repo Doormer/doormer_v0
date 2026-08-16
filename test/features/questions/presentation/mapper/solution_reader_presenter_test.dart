@@ -120,6 +120,36 @@ void main() {
     expect(content.trail.first.semanticsLabel, 'Step 1: Find the road slope');
   });
 
+  test('breaks a vault chain for every third of the working done', () {
+    int chains(int stepIndex) => solutionReaderContent(
+          SolutionReaderReady(document: _document, stepIndex: stepIndex),
+        ).trail.last.chainsBroken!;
+
+    // Three steps, so each step arrived at is a third of the road.
+    expect(chains(0), 0, reason: 'nothing is loose before any work is done');
+    expect(chains(1), 1);
+    expect(chains(2), 3,
+        reason: 'reaching the last step means the working is finished, so '
+            'nothing is still holding the vault shut');
+  });
+
+  test('leaves the vault fully chained while the student reads the plan', () {
+    final content = solutionReaderContent(
+      const SolutionReaderReady(document: _briefedDocument, onBriefing: true),
+    );
+
+    expect(content.trail.last.chainsBroken, 0);
+  });
+
+  test('never chains the briefing marker', () {
+    final content = solutionReaderContent(
+      const SolutionReaderReady(document: _briefedDocument, onBriefing: true),
+    );
+
+    expect(content.trail.first.chainsBroken, isNull,
+        reason: 'the briefing was never locked, so it was never chained');
+  });
+
   test('closes the trail with the vault, amber only once it can be opened', () {
     final middle = solutionReaderContent(
       const SolutionReaderReady(document: _document, stepIndex: 1),
