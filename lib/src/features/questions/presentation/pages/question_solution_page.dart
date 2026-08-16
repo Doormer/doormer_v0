@@ -79,8 +79,12 @@ class QuestionSolutionPage extends StatelessWidget {
   void _openEnlarge(BuildContext context, VisualSolutionSegment visual) {
     Navigator.of(context).push<void>(
       PageRouteBuilder<void>(
-        opaque: true,
+        // The sheet paints its own opaque backdrop as it fades in, so the
+        // route below must stay painted underneath — an opaque route would be
+        // swapped in whole and there would be nothing to fade over.
+        opaque: false,
         barrierDismissible: false,
+        transitionDuration: DiagramEnlargeOrganism.cardRise,
         pageBuilder: (routeContext, _, __) => DiagramEnlargeOrganism(
           visual: visual,
           onClose: () => Navigator.of(routeContext).pop(),
