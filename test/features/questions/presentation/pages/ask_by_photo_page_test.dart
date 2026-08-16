@@ -19,6 +19,7 @@ import 'package:doormer/src/features/questions/domain/usecase/submit_photo_quest
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/molecules/photo_preview_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
 import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
 import 'package:doormer/src/features/questions/presentation/templates/solution_reader_template.dart';
@@ -159,13 +160,13 @@ void main() {
     await tester.pump();
   }
 
-  ElevatedButton submitButton(WidgetTester tester) {
-    return tester.widget<ElevatedButton>(
-      find.widgetWithText(ElevatedButton, 'Submit to solver'),
+  FilledButton submitButton(WidgetTester tester) {
+    return tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Submit to solver'),
     );
   }
 
-  testWidgets('renders the initial empty state with submit disabled',
+  testWidgets('renders the idle hero state with no solver panels',
       (tester) async {
     repository = _FakeQuestionsRepository(
       outcome: _outcome(PhotoQuestionSolveStatus.solved),
@@ -173,11 +174,14 @@ void main() {
     registerBloc();
     await pumpPage(tester);
 
-    expect(find.text('Ask by Photo'), findsOneWidget);
-    expect(find.text('Choose photo'), findsOneWidget);
-    expect(find.text('JPEG or PNG · max 10 MB'), findsOneWidget);
-    expect(find.text('Ready when the page is readable'), findsOneWidget);
-    expect(submitButton(tester).onPressed, isNull);
+    // The idle landing screen is a single-CTA hero: the upload and status
+    // panels stay unmounted until there is a photo, a solve in flight, or a
+    // recoverable failure.
+    expect(find.text('Ready to solve?'), findsOneWidget);
+    expect(find.text('Upload a photo'), findsOneWidget);
+    expect(find.text('UPLOAD & SOLVE'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Submit to solver'), findsNothing);
+    expect(find.text('Ready when the page is readable'), findsNothing);
   });
 
   testWidgets('Solve navigation action opens photo source options',
@@ -227,7 +231,15 @@ void main() {
     expect(find.text('algebra.png'), findsOneWidget);
     expect(find.text('Retake'), findsOneWidget);
     expect(find.text('Clear'), findsOneWidget);
-    expect(find.byType(Image), findsOneWidget);
+    // Scoped to the preview: the template also paints a decorative background
+    // Image.asset, so a bare byType(Image) finder matches two widgets.
+    expect(
+      find.descendant(
+        of: find.byType(PhotoPreviewMolecule),
+        matching: find.byType(Image),
+      ),
+      findsOneWidget,
+    );
     expect(submitButton(tester).onPressed, isNotNull);
   });
 
@@ -242,9 +254,9 @@ void main() {
     await selectPhoto(tester);
 
     await tester.ensureVisible(
-      find.widgetWithText(ElevatedButton, 'Submit to solver'),
+      find.widgetWithText(FilledButton, 'Submit to solver'),
     );
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Submit to solver'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
     await tester.pump(); // dispatch AskByPhotoSubmitted
     await tester.pump(); // BlocConsumer rebuilds into the Loading state
 
@@ -256,7 +268,8 @@ void main() {
     pending.complete(_outcome(PhotoQuestionSolveStatus.solved));
     await tester.pump(); // Solved state -> listener fires GoRouter.go
     await tester.pump(const Duration(seconds: 1)); // route transition settles
-    await tester.pump(); // BlocProvider dispatches SolutionReaderStarted and rebuilds
+    await tester
+        .pump(); // BlocProvider dispatches SolutionReaderStarted and rebuilds
 
     expect(find.byType(QuestionSolutionPage), findsOneWidget);
     expect(find.byType(SolutionReaderTemplate), findsOneWidget);
@@ -273,9 +286,9 @@ void main() {
     await selectPhoto(tester);
 
     await tester.ensureVisible(
-      find.widgetWithText(ElevatedButton, 'Submit to solver'),
+      find.widgetWithText(FilledButton, 'Submit to solver'),
     );
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Submit to solver'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
     await tester.pump(); // dispatch AskByPhotoSubmitted
     await tester.pump(); // Loading
     await tester
@@ -285,7 +298,7 @@ void main() {
     expect(repository.callCount, 1);
     expect(find.byType(QuestionSolutionPage), findsNothing);
     expect(find.text('We could not read it'), findsOneWidget);
-    expect(find.widgetWithText(ElevatedButton, 'Retake'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Retake'), findsOneWidget);
     expect(find.widgetWithText(OutlinedButton, 'Type instead'), findsOneWidget);
   });
 }

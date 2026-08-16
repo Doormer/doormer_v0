@@ -1,3 +1,4 @@
+import 'package:camera/camera.dart' show XFile;
 import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
@@ -94,11 +95,35 @@ class AskByPhotoPage extends StatelessWidget {
   }
 
   Future<void> _openCamera(BuildContext context) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
+    final capture = await Navigator.of(context).push<XFile>(
+      MaterialPageRoute<XFile>(
         builder: (_) => const CameraPage(),
       ),
     );
+
+    if (!context.mounted || capture == null) return;
+
+    try {
+      final bytes = await capture.readAsBytes();
+      if (!context.mounted) return;
+
+      context.read<AskByPhotoBloc>().add(
+            AskByPhotoPhotoPicked(
+              imageBytes: bytes,
+              fileName: capture.name,
+              mimeType: capture.mimeType,
+            ),
+          );
+    } catch (e, stackTrace) {
+      AppLogger.error('Camera capture failed',
+          error: e, stackTrace: stackTrace);
+      if (!context.mounted) return;
+      context.read<AskByPhotoBloc>().add(
+            const AskByPhotoPickUnavailable(
+              'We could not read that photo. Please try again.',
+            ),
+          );
+    }
   }
 
   @override

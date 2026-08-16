@@ -13,8 +13,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets(
-      'composes user status and bottom actions while preserving the upload CTA',
+  testWidgets('keeps the nav bar and upload CTA on the idle hero screen',
       (tester) async {
     var pickCount = 0;
     var submitCount = 0;
@@ -62,8 +61,10 @@ void main() {
       ),
     );
 
-    expect(find.byType(UserStatusMolecule), findsOneWidget);
-    expect(find.text('Characters collected: 12/50'), findsOneWidget);
+    // UserStatusMolecule is currently commented out of AskByPhotoTemplate (see
+    // c670849). Asserted as absent so that restoring it is a deliberate change
+    // that trips this test rather than a silent one.
+    expect(find.byType(UserStatusMolecule), findsNothing);
     expect(find.byType(NavigationBarOrganism), findsOneWidget);
 
     await tester.tap(find.text('UPLOAD & SOLVE'));

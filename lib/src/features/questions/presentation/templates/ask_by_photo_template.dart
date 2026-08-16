@@ -1,6 +1,8 @@
 import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/ask_by_photo_header_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/navigation_bar_organism.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/photo_upload_panel_organism.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/solve_status_panel_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/bottom_action_bar_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
@@ -25,6 +27,17 @@ class AskByPhotoTemplate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasPhoto = uploadParams.imageBytes != null;
+    final isLoading = uploadParams.isLoading;
+
+    // The solver panels stay hidden on the idle hero screen so the landing
+    // state keeps the single-CTA design. They mount as soon as there is
+    // something to act on: a picked photo, an in-flight solve, or a recoverable
+    // failure. Without them onSubmit is unreachable and the solve flow dead-ends.
+    final showUploadPanel = hasPhoto || isLoading;
+    final showStatusPanel = statusParams.content.showActions || isLoading;
+    final showPanels = showUploadPanel || showStatusPanel;
+
     return Scaffold(
       backgroundColor: context.colorScheme.primary,
       body: SafeArea(
@@ -46,23 +59,11 @@ class AskByPhotoTemplate extends StatelessWidget {
             //   left: 24.w,
             //   child: UserStatusMolecule(params: userStatusParams),
             // ),
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const AskByPhotoHeaderMolecule(),
-                  SizedBox(height: 24.h),
-                  AppButtonAtom(
-                    label: 'UPLOAD & SOLVE',
-                    icon: Icons.camera_alt,
-                    variant: AppButtonVariant.accent,
-                    onPressed: uploadParams.isLoading
-                        ? null
-                        : uploadParams.onPickPhoto,
-                  ),
-                ],
-              ),
-            ),
+            if (showPanels)
+              Positioned.fill(
+                  child: _buildSolvePanels(showUploadPanel, showStatusPanel))
+            else
+              _buildHero(),
             Positioned(
               left: 20.w,
               right: 20.w,
@@ -71,6 +72,42 @@ class AskByPhotoTemplate extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHero() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const AskByPhotoHeaderMolecule(),
+          SizedBox(height: 24.h),
+          AppButtonAtom(
+            label: 'UPLOAD & SOLVE',
+            icon: Icons.camera_alt,
+            variant: AppButtonVariant.accent,
+            onPressed: uploadParams.isLoading ? null : uploadParams.onPickPhoto,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSolvePanels(bool showUploadPanel, bool showStatusPanel) {
+    return SingleChildScrollView(
+      // Bottom padding clears the pinned navigation bar.
+      padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 120.h),
+      child: Column(
+        children: [
+          const AskByPhotoHeaderMolecule(),
+          SizedBox(height: 24.h),
+          if (showUploadPanel) ...[
+            PhotoUploadPanelOrganism(params: uploadParams),
+            SizedBox(height: 16.h),
+          ],
+          if (showStatusPanel) SolveStatusPanelOrganism(params: statusParams),
+        ],
       ),
     );
   }
