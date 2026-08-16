@@ -44,13 +44,22 @@ abstract final class AppLayout {
 ///    at exactly the clamped scale, which is the only lever it offers for
 ///    bounding growth.
 ///
-/// Configuring happens through [ScreenUtil.configure] rather than by nesting a
-/// `ScreenUtilInit`, because that widget resolves its own metrics from
-/// `View.of(context)` and so cannot be pointed at a narrowed column. Its
-/// `useInheritedMediaQuery` flag reads like the escape hatch for this but is
-/// declared and never used. Calling `configure` from `build` mirrors what
-/// `ScreenUtilInit` does internally, and depending on [MediaQuery] here means
-/// a window resize re-runs it.
+/// Configuring runs through [ScreenUtilInit] rather than a bare
+/// [ScreenUtil.configure] call because the package keeps its metrics in a
+/// global singleton rather than in the widget tree. Reconfiguring alone leaves
+/// everything already mounted painting at the stale scale, since widgets read
+/// `.w`/`.sp` imperatively and so never subscribe to the change.
+/// `ScreenUtilInit` observes window metrics and walks its subtree marking
+/// widgets dirty, which is what makes a resize or a rotation take effect.
+///
+/// It resolves those metrics from `View.of(context)`, so it always measures the
+/// whole window and cannot be pointed at the narrowed column - its
+/// `useInheritedMediaQuery` flag reads like the escape hatch for that but is
+/// declared and never used. The design size compensates: handing it
+/// `windowWidth / desiredScale` makes `scaleWidth` resolve to exactly the
+/// clamped scale, which is the only lever the package offers for bounding
+/// growth. Nothing in the app reads `ScreenUtil().screenWidth`, `.sw` or `.sh`,
+/// so the singleton still describing the window is inert.
 ///
 /// On any viewport narrower than [AppLayout.maxContentWidth] - every phone -
 /// this resolves to the previous behaviour exactly: full width, design size
@@ -70,23 +79,11 @@ class ResponsiveAppShell extends StatelessWidget {
       size: Size(contentWidth, window.height),
     );
 
-    ScreenUtil.configure(
-      data: contentQuery,
-      designSize: Size(
-        contentWidth / _scaleFor(contentWidth, AppLayout.designSize.width),
-        window.height / _scaleFor(window.height, AppLayout.designSize.height),
-      ),
-      // Load-bearing. `splitScreenMode` floors the height at 700px, which would
-      // desynchronise the vertical scale from the clamp on short windows.
-      splitScreenMode: false,
-      // Both of these must be passed on every call, not just the first:
-      // `configure` resolves an omitted argument by reading the corresponding
-      // `late` field back off the singleton, which throws before anything has
-      // initialised it. `minTextAdapt` is inert regardless, because
-      // `fontSizeResolver` overrides it - which is why setting that flag alone
-      // had never done anything here.
-      minTextAdapt: false,
-      fontSizeResolver: FontSizeResolvers.width,
+    // Derived from the window, but scaled by the column: the width the user
+    // actually gets is what should decide how big things look.
+    final designSize = Size(
+      window.width / _scaleFor(contentWidth, AppLayout.designSize.width),
+      window.height / _scaleFor(window.height, AppLayout.designSize.height),
     );
 
     return ColoredBox(
@@ -94,7 +91,18 @@ class ResponsiveAppShell extends StatelessWidget {
       child: Center(
         child: SizedBox(
           width: contentWidth,
-          child: MediaQuery(data: contentQuery, child: child),
+          child: ScreenUtilInit(
+            designSize: designSize,
+            // Load-bearing. `splitScreenMode` floors the height at 700px, which
+            // would desynchronise the vertical scale from the clamp on short
+            // windows. `minTextAdapt` is inert either way because
+            // `fontSizeResolver` overrides it - which is why setting that flag
+            // alone had never done anything here.
+            splitScreenMode: false,
+            minTextAdapt: false,
+            fontSizeResolver: FontSizeResolvers.width,
+            builder: (_, __) => MediaQuery(data: contentQuery, child: child),
+          ),
         ),
       ),
     );
