@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:doormer/src/core/motion/motion_policy.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/xp_pellet_atom.dart';
+import 'package:doormer/src/features/questions/presentation/mapper/solution_reader_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/solution_trail_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/molecules/swipe_hint_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/quest_hud_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solution_briefing_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solution_step_organism.dart';
@@ -45,6 +47,9 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
   /// padding the viewport clipped the sticker in half — the tag read as a torn
   /// mint strip rather than a reward.
   static const double _stickerHeadroom = 14;
+
+  /// Below this a sideways drag is browsing, not a decision.
+  static const double _swipeVelocity = 320;
 
   final ScrollController _scrollController = ScrollController();
 
@@ -221,6 +226,20 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
     );
   }
 
+  /// A decisive flick sideways moves between steps, the way the hint says it
+  /// does. A slow drag is ignored: only a deliberate throw counts.
+  void _swipe(DragEndDetails details, SolutionReaderContent content) {
+    final v = details.primaryVelocity ?? 0;
+    if (v.abs() < _swipeVelocity) return;
+    if (v < 0) {
+      if (!content.ctaEnabled) return;
+      content.isLastStep ? _requestReveal() : widget.params.onNext();
+    } else {
+      if (!content.canGoBack) return;
+      widget.params.onBack();
+    }
+  }
+
   void _requestReveal() {
     if (_resisting || widget.params.content.answerRevealed) return;
     if (!MotionPolicy.of(context)) {
@@ -266,6 +285,7 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
                       // updates before the reward arrives makes the flight a lie.
                       xpLabel: _bankedXpLabel,
                       streakLabel: content.streakLabel,
+                      streakAtStake: content.streakAtStake,
                       xpKey: _chipKey,
                       xpTrigger: _landings,
                     ),
@@ -278,76 +298,81 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
                     ),
                   ),
                   Expanded(
-                    child: SingleChildScrollView(
-                      key: const Key('solution_scroll'),
-                      controller: _scrollController,
-                      padding: EdgeInsets.fromLTRB(
-                        16.w,
-                        _stickerHeadroom.h,
-                        16.w,
-                        16.h,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: content.onBriefing
-                            ? [
-                                // Keyed by screen so the card pops and its contents
-                                // rise again on every move, rather than the words
-                                // silently changing inside a frame that never moved.
-                                CardPopAtom(
-                                  key: ValueKey<String>(_screenId),
-                                  child: SolutionBriefingOrganism(
-                                    params: SolutionBriefingParams(
-                                      title: content.briefingTitle,
-                                      body: content.briefingBody,
-                                      note: content.note,
-                                      onEnlargeVisual: params.onEnlargeVisual,
-                                      imageProviderBuilder:
-                                          params.imageProviderBuilder,
+                    child: GestureDetector(
+                      // Horizontal only: reading up and down must never cost
+                      // the student their place.
+                      onHorizontalDragEnd: (d) => _swipe(d, content),
+                      child: SingleChildScrollView(
+                        key: const Key('solution_scroll'),
+                        controller: _scrollController,
+                        padding: EdgeInsets.fromLTRB(
+                          16.w,
+                          _stickerHeadroom.h,
+                          16.w,
+                          16.h,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: content.onBriefing
+                              ? [
+                                  // Keyed by screen so the card pops and its contents
+                                  // rise again on every move, rather than the words
+                                  // silently changing inside a frame that never moved.
+                                  CardPopAtom(
+                                    key: ValueKey<String>(_screenId),
+                                    child: SolutionBriefingOrganism(
+                                      params: SolutionBriefingParams(
+                                        title: content.briefingTitle,
+                                        body: content.briefingBody,
+                                        note: content.note,
+                                        onEnlargeVisual: params.onEnlargeVisual,
+                                        imageProviderBuilder:
+                                            params.imageProviderBuilder,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ]
-                            : [
-                                CardPopAtom(
-                                  key: ValueKey<String>(_screenId),
-                                  child: SolutionStepOrganism(
-                                    params: SolutionStepParams(
-                                      levelLabel: content.levelLabel,
-                                      stepTitle: content.stepTitle,
-                                      body: content.body,
-                                      rationale: content.rationale,
-                                      hasRationale: content.hasRationale,
-                                      rationaleVisible:
-                                          content.rationaleVisible,
-                                      rationaleToggleLabel:
-                                          content.rationaleToggleLabel,
-                                      xpLabel: content.stepXpLabel,
-                                      xpStickerKey: _stickerKey,
-                                      onToggleRationale:
-                                          params.onToggleRationale,
-                                      onEnlargeVisual: params.onEnlargeVisual,
-                                      imageProviderBuilder:
-                                          params.imageProviderBuilder,
+                                ]
+                              : [
+                                  CardPopAtom(
+                                    key: ValueKey<String>(_screenId),
+                                    child: SolutionStepOrganism(
+                                      params: SolutionStepParams(
+                                        levelLabel: content.levelLabel,
+                                        stepTitle: content.stepTitle,
+                                        body: content.body,
+                                        rationale: content.rationale,
+                                        hasRationale: content.hasRationale,
+                                        rationaleVisible:
+                                            content.rationaleVisible,
+                                        rationaleToggleLabel:
+                                            content.rationaleToggleLabel,
+                                        xpLabel: content.stepXpLabel,
+                                        xpStickerKey: _stickerKey,
+                                        onToggleRationale:
+                                            params.onToggleRationale,
+                                        onEnlargeVisual: params.onEnlargeVisual,
+                                        imageProviderBuilder:
+                                            params.imageProviderBuilder,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                SolutionVaultOrganism(
-                                  key: _vaultKey,
-                                  revealed: content.answerRevealed,
-                                  unlockable: content.isLastStep,
-                                  lockedLabel: content.vaultLockedLabel,
-                                  solvedLabel: content.vaultSolvedLabel,
-                                  checkTitle: content.checkTitle,
-                                  checkBody: content.checkBody,
-                                  answerBody: content.answerBody,
-                                  resisting: _resisting,
-                                  onReveal: _requestReveal,
-                                  onEnlargeVisual: params.onEnlargeVisual,
-                                  imageProviderBuilder:
-                                      params.imageProviderBuilder,
-                                ),
-                              ],
+                                  SolutionVaultOrganism(
+                                    key: _vaultKey,
+                                    revealed: content.answerRevealed,
+                                    unlockable: content.isLastStep,
+                                    lockedLabel: content.vaultLockedLabel,
+                                    solvedLabel: content.vaultSolvedLabel,
+                                    checkTitle: content.checkTitle,
+                                    checkBody: content.checkBody,
+                                    answerBody: content.answerBody,
+                                    resisting: _resisting,
+                                    onReveal: _requestReveal,
+                                    onEnlargeVisual: params.onEnlargeVisual,
+                                    imageProviderBuilder:
+                                        params.imageProviderBuilder,
+                                  ),
+                                ],
+                        ),
                       ),
                     ),
                   ),
@@ -443,6 +468,7 @@ class _CtaBar extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        SwipeHintMolecule(used: content.hasMoved),
         IgnorePointer(
           child: Container(
             height: 26.h,

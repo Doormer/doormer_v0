@@ -76,6 +76,7 @@ class QuestHudOrganism extends StatelessWidget {
               key: const Key('hud_streak'),
               icon: Icons.local_fire_department_rounded,
               alive: true,
+              atStake: params.streakAtStake,
               label: params.streakLabel,
               accent: QuestPalette.amber,
             ),

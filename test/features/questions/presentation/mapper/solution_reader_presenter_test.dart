@@ -221,6 +221,17 @@ void main() {
     expect(revealed.answerBody.single.segment, isA<MathSolutionSegment>());
   });
 
+  test('puts the streak at stake only on the step that decides it', () {
+    bool atStake(int index) => solutionReaderContent(
+          SolutionReaderReady(document: _document, stepIndex: index),
+        ).streakAtStake;
+
+    expect(atStake(0), isFalse);
+    expect(atStake(1), isFalse);
+    expect(atStake(2), isTrue,
+        reason: 'the last step is the one that can lose the day');
+  });
+
   test('tells the student what they just did, counting properly', () {
     expect(
       solutionReaderContent(

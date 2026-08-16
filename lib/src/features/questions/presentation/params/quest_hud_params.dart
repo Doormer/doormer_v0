@@ -11,6 +11,9 @@ class QuestHudParams {
   final String xpLabel;
   final String streakLabel;
 
+  /// Marks the streak as losable right now, so the pill can say so once.
+  final bool streakAtStake;
+
   /// Locates the XP pill so a pellet can be aimed at it.
   final Key? xpKey;
 
@@ -22,6 +25,7 @@ class QuestHudParams {
     required this.questionTitle,
     required this.xpLabel,
     required this.streakLabel,
+    this.streakAtStake = false,
     this.xpKey,
     this.xpTrigger,
   });

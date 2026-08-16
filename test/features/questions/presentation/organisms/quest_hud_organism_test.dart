@@ -1,4 +1,5 @@
 import 'package:doormer/src/core/theme/app_theme.dart';
+import 'package:doormer/src/features/questions/presentation/atoms/stat_pill_atom.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/quest_hud_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/quest_hud_params.dart';
 import 'package:flutter/material.dart';
@@ -61,5 +62,26 @@ void main() {
     await tester.pump();
 
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('hands the stake down to the streak pill', (tester) async {
+    await tester.pumpWidget(_pump(const QuestHudParams(
+      topic: 'Geometry',
+      questionTitle: 'Road through a field',
+      xpLabel: '205 XP',
+      streakLabel: '3-day',
+      streakAtStake: true,
+    )));
+    await tester.pump();
+
+    expect(
+      tester.widget<StatPillAtom>(find.byKey(const Key('hud_streak'))).atStake,
+      isTrue,
+    );
+    expect(
+      tester.widget<StatPillAtom>(find.byKey(const Key('hud_xp'))).atStake,
+      isFalse,
+      reason: 'banked XP cannot be lost, so it is never at stake',
+    );
   });
 }

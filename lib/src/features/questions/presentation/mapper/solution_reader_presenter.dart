@@ -19,6 +19,10 @@ class SolutionReaderContent {
   final String ctaLabel;
   final bool ctaEnabled;
   final bool canGoBack;
+
+  /// True once the student has left the first screen. Anything that was only
+  /// explaining how to get started has been answered by then.
+  final bool hasMoved;
   final bool isLastStep;
 
   /// True while the orientation screen is showing, before step one.
@@ -43,6 +47,11 @@ class SolutionReaderContent {
   final int xpTotal;
   final String streakLabel;
 
+  /// True once the student is on the step that decides the day. The streak is
+  /// the only thing on the page that can go backwards, and it is worth saying
+  /// so at the moment it becomes true rather than leaving it to a colour.
+  final bool streakAtStake;
+
   /// What this step is worth, as it appears on the card sticker. Empty on the
   /// briefing and on the vault — you are not paid for arriving.
   final String stepXpLabel;
@@ -66,6 +75,7 @@ class SolutionReaderContent {
     required this.ctaLabel,
     required this.ctaEnabled,
     required this.canGoBack,
+    required this.hasMoved,
     required this.isLastStep,
     required this.onBriefing,
     required this.briefingTitle,
@@ -79,6 +89,7 @@ class SolutionReaderContent {
     required this.xpLabel,
     required this.xpTotal,
     required this.streakLabel,
+    required this.streakAtStake,
     required this.stepXpLabel,
   });
 }
@@ -220,6 +231,7 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
     // stops being "you are done" and becomes the way to the next question.
     ctaEnabled: true,
     canGoBack: onBriefing ? false : (!state.isFirstStep || hasBriefing),
+    hasMoved: !onBriefing && !state.isFirstStep,
     isLastStep: isLastStep,
     onBriefing: onBriefing,
     briefingTitle: 'The plan',
@@ -236,6 +248,7 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
     xpLabel: profile == null ? '' : '$earnedXp XP',
     xpTotal: earnedXp,
     streakLabel: profile == null ? '' : '${profile.streakDays}-day',
+    streakAtStake: !onBriefing && state.isLastStep,
     stepXpLabel:
         onBriefing ? '' : '+${stepXpValue(state.stepIndex, stepCount)} XP',
   );

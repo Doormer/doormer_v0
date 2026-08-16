@@ -25,6 +25,67 @@ const _document = SolutionDocument(
   ]),
 );
 
+/// A step with more working than fits on a phone, so the reader must scroll.
+const _longDocument = SolutionDocument(
+  schemaVersion: '3.0',
+  steps: [
+    SolutionStep(title: 'Find the road slope', body: [
+      TextSolutionSegment(
+          'Working line 1, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 2, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 3, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 4, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 5, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 6, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 7, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 8, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 9, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 10, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 11, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 12, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 13, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 14, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 15, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 16, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 17, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 18, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 19, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 20, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 21, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 22, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 23, long enough that the reader has somewhere to go.'),
+      TextSolutionSegment(
+          'Working line 24, long enough that the reader has somewhere to go.'),
+    ]),
+    SolutionStep(title: 'Scale the width', body: []),
+  ],
+  finalAnswer: FinalAnswer(body: [
+    TextSolutionSegment('The paved area is 160 square metres.'),
+  ]),
+);
+
 const _briefedDocument = SolutionDocument(
   schemaVersion: '3.0',
   steps: [
@@ -48,17 +109,20 @@ const _tallBriefedDocument = SolutionDocument(
   schemaVersion: '3.0',
   steps: [
     SolutionStep(title: 'Find the road slope', body: [
-      TextSolutionSegment('The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. '),
+      TextSolutionSegment(
+          'The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. '),
     ]),
     SolutionStep(title: 'Scale the width', body: [
-      TextSolutionSegment('The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. '),
+      TextSolutionSegment(
+          'The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. '),
     ]),
   ],
   finalAnswer: FinalAnswer(body: [
     TextSolutionSegment('The paved area is 160 square metres.'),
   ]),
   approach: SolutionSection(body: [
-    TextSolutionSegment('The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. '),
+    TextSolutionSegment(
+        'The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. '),
   ]),
 );
 
@@ -134,9 +198,11 @@ void main() {
 
     final trailY = tester.getTopLeft(find.byType(SolutionTrailMolecule)).dy;
     final ctaY = tester.getTopLeft(find.byKey(const Key('solution_cta'))).dy;
-    final scrollY = tester.getTopLeft(find.byKey(const Key('solution_scroll'))).dy;
+    final scrollY =
+        tester.getTopLeft(find.byKey(const Key('solution_scroll'))).dy;
 
-    expect(trailY, lessThan(scrollY), reason: 'the trail sits above the scroll');
+    expect(trailY, lessThan(scrollY),
+        reason: 'the trail sits above the scroll');
     expect(ctaY, greaterThan(scrollY), reason: 'the CTA sits below the scroll');
   });
 
@@ -356,8 +422,7 @@ void main() {
   });
 
   group('the escaping XP sticker', () {
-    testWidgets('is not clipped by the top of the scroll view',
-        (tester) async {
+    testWidgets('is not clipped by the top of the scroll view', (tester) async {
       tester.view.physicalSize = const Size(360, 690);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -594,6 +659,133 @@ void _revealResistTests() {
 
       expect(revealed, 1);
       await tester.pumpAndSettle();
+    });
+  });
+
+  group('swiping between steps', () {
+    Future<void> flick(WidgetTester tester, double dx) async {
+      await tester.fling(
+        find.byKey(const Key('solution_scroll')),
+        Offset(dx, 0),
+        800,
+      );
+      await tester.pump();
+    }
+
+    testWidgets('a left flick goes on to the next step', (tester) async {
+      var next = 0;
+      await tester.pumpWidget(_pump(_params(
+        const SolutionReaderReady(document: _document, stepIndex: 0),
+        onNext: () => next++,
+      )));
+      await tester.pump();
+
+      await flick(tester, -300);
+      expect(next, 1);
+    });
+
+    testWidgets('a right flick goes back', (tester) async {
+      var back = 0;
+      await tester.pumpWidget(_pump(_params(
+        const SolutionReaderReady(document: _document, stepIndex: 1),
+        onBack: () => back++,
+      )));
+      await tester.pump();
+
+      await flick(tester, 300);
+      expect(back, 1);
+    });
+
+    testWidgets('will not swipe back off the first step', (tester) async {
+      var back = 0;
+      await tester.pumpWidget(_pump(_params(
+        const SolutionReaderReady(document: _document, stepIndex: 0),
+        onBack: () => back++,
+      )));
+      await tester.pump();
+
+      await flick(tester, 300);
+      expect(back, 0, reason: 'there is nothing behind the first step');
+    });
+
+    testWidgets('a swipe past the last step asks to reveal, once',
+        (tester) async {
+      var next = 0;
+      var revealed = 0;
+      await tester.pumpWidget(_pump(_params(
+        _atStep(2),
+        onNext: () => next++,
+        onRevealAnswer: () => revealed++,
+      )));
+      await tester.pump();
+
+      await flick(tester, -300);
+      expect(next, 0, reason: 'the last step reveals rather than advancing');
+
+      await flick(tester, -300);
+      await tester.pumpAndSettle();
+      expect(revealed, 1,
+          reason: 'swiping again while it resists must not ask twice');
+    });
+
+    testWidgets('a dawdling drag is not a swipe', (tester) async {
+      var next = 0;
+      await tester.pumpWidget(_pump(_params(
+        const SolutionReaderReady(document: _document, stepIndex: 0),
+        onNext: () => next++,
+      )));
+      await tester.pump();
+
+      final gesture = await tester.startGesture(
+          tester.getCenter(find.byKey(const Key('solution_scroll'))));
+      await gesture.moveBy(const Offset(-30, 0));
+      await tester.pump(const Duration(milliseconds: 400));
+      await gesture.up();
+      await tester.pump();
+
+      expect(next, 0, reason: 'a small nudge is not a decision');
+    });
+
+    testWidgets('still lets the student read up and down', (tester) async {
+      var next = 0;
+      var back = 0;
+      await tester.pumpWidget(_pump(_params(
+        const SolutionReaderReady(document: _longDocument, stepIndex: 0),
+        onNext: () => next++,
+        onBack: () => back++,
+      )));
+      await tester.pumpAndSettle();
+
+      final scroll = find.byKey(const Key('solution_scroll'));
+      final before = tester.widget<SingleChildScrollView>(scroll).controller!;
+      final start = before.offset;
+
+      // Deliberately drifting sideways: a thumb scrolling a long step never
+      // travels in a perfectly straight line.
+      await tester.fling(scroll, const Offset(-60, -300), 800);
+      await tester.pumpAndSettle();
+
+      expect(before.offset, greaterThan(start),
+          reason: 'the swipe listener must not swallow the scroll');
+      expect(next, 0);
+      expect(back, 0);
+    });
+
+    testWidgets('the hint retires as soon as the student moves',
+        (tester) async {
+      await tester.pumpWidget(_pump(_params(
+        const SolutionReaderReady(document: _document, stepIndex: 0),
+      )));
+      await tester.pump();
+      expect(find.byKey(const Key('swipe_hint')), findsOneWidget);
+
+      await tester.pumpWidget(_pump(_params(
+        const SolutionReaderReady(document: _document, stepIndex: 1),
+      )));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.byKey(const Key('swipe_hint')), findsNothing,
+          reason: 'it has been answered, so it should stop talking');
     });
   });
 }
