@@ -2,6 +2,7 @@ import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_segment_order.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solution_vault_organism.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/dashed_border_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -80,5 +81,47 @@ void main() {
     await tester.pump();
 
     expect(reveals, 1);
+  });
+
+  group('the border says whether the answer has been earned', () {
+    testWidgets('is broken while the vault is shut but openable',
+        (tester) async {
+      await tester.pumpWidget(_pump(revealed: false, unlockable: true));
+      await tester.pump();
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('vault_locked')),
+          matching: find.byType(DashedBorderAtom),
+        ),
+        findsOneWidget,
+        reason: 'a solid edge would say the answer is already yours',
+      );
+    });
+
+    testWidgets('is solid once the answer is out', (tester) async {
+      await tester.pumpWidget(_pump(revealed: true, unlockable: true));
+      await tester.pump();
+
+      expect(find.byType(DashedBorderAtom), findsNothing);
+
+      final decoration = tester
+          .widget<Container>(find.byKey(const Key('vault_revealed')))
+          .decoration as BoxDecoration;
+
+      expect(decoration.border, isNotNull);
+    });
+
+    testWidgets('is plain while the vault is not yet relevant', (tester) async {
+      await tester.pumpWidget(_pump(revealed: false, unlockable: false));
+      await tester.pump();
+
+      expect(
+        find.byType(DashedBorderAtom),
+        findsNothing,
+        reason: 'a vault the student cannot open yet should recede, not '
+            'advertise itself as openable',
+      );
+    });
   });
 }

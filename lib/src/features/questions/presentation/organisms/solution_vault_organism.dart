@@ -3,11 +3,16 @@ import 'package:doormer/src/features/questions/domain/entity/photo_question_solv
 import 'package:doormer/src/features/questions/presentation/atoms/diagram_atom.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_segment_order.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/segment_list_molecule.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/dashed_border_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// The final-answer vault. A one-line strip while locked so it does not squat
 /// at full size, an unlockable panel on the last step, then the answer itself.
+///
+/// The border style carries the state, not just its colour: the vault is drawn
+/// with a broken edge while it is shut and openable, and only becomes solid
+/// once the answer is out. A solid edge would say the answer is already yours.
 class SolutionVaultOrganism extends StatelessWidget {
   final bool revealed;
   final bool unlockable;
@@ -81,57 +86,71 @@ class SolutionVaultOrganism extends StatelessWidget {
     return GestureDetector(
       key: const Key('vault_locked'),
       onTap: unlockable ? onReveal : null,
-      child: Container(
-        width: double.infinity,
-        margin: EdgeInsets.only(top: 12.h),
-        padding: EdgeInsets.symmetric(horizontal: 13.w, vertical: 11.h),
-        decoration: BoxDecoration(
-          color: unlockable
-              ? QuestPalette.amber.withValues(alpha: 0.14)
-              : Colors.white.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(14.r),
-          border: Border.all(
-            color: unlockable
-                ? QuestPalette.amber
-                : Colors.white.withValues(alpha: 0.16),
-            width: unlockable ? 1.5 : 1,
-          ),
-          boxShadow: unlockable
-              ? [
-                  BoxShadow(
-                    color: QuestPalette.amber.withValues(alpha: 0.24),
-                    blurRadius: 20,
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              unlockable ? Icons.lock_open_rounded : Icons.lock_rounded,
-              size: 15.sp,
-              color: unlockable ? QuestPalette.amber : QuestPalette.dim,
+      child: Padding(
+        padding: EdgeInsets.only(top: 12.h),
+        child: _shutFrame(
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 13.w, vertical: 11.h),
+            decoration: BoxDecoration(
+              color: unlockable
+                  ? QuestPalette.amber.withValues(alpha: 0.14)
+                  : Colors.white.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(14.r),
+              // The openable state draws its edge with DashedBorderAtom.
+              border: unlockable
+                  ? null
+                  : Border.all(color: Colors.white.withValues(alpha: 0.16)),
+              boxShadow: unlockable
+                  ? [
+                      BoxShadow(
+                        color: QuestPalette.amber.withValues(alpha: 0.24),
+                        blurRadius: 20,
+                      ),
+                    ]
+                  : null,
             ),
-            SizedBox(width: 9.w),
-            Expanded(
-              child: Text(
-                lockedLabel,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: kDisplayFont,
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w500,
+            child: Row(
+              children: [
+                Icon(
+                  unlockable ? Icons.lock_open_rounded : Icons.lock_rounded,
+                  size: 15.sp,
                   color: unlockable ? QuestPalette.amber : QuestPalette.dim,
                 ),
-              ),
+                SizedBox(width: 9.w),
+                Expanded(
+                  child: Text(
+                    lockedLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: kDisplayFont,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w500,
+                      color:
+                          unlockable ? QuestPalette.amber : QuestPalette.dim,
+                    ),
+                  ),
+                ),
+                if (unlockable)
+                  Icon(Icons.chevron_right_rounded,
+                      size: 17.sp, color: QuestPalette.amber),
+              ],
             ),
-            if (unlockable)
-              Icon(Icons.chevron_right_rounded,
-                  size: 17.sp, color: QuestPalette.amber),
-          ],
+          ),
         ),
       ),
+    );
+  }
+
+  /// Draws the broken edge on a vault that is shut but openable. A vault that
+  /// is not yet relevant keeps a plain thin edge so it recedes instead.
+  Widget _shutFrame({required Widget child}) {
+    if (!unlockable) return child;
+    return DashedBorderAtom(
+      color: QuestPalette.amber,
+      radius: 14.r,
+      child: child,
     );
   }
 }
