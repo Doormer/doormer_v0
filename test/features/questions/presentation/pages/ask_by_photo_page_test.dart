@@ -315,4 +315,34 @@ void main() {
     expect(find.widgetWithText(FilledButton, 'Retake'), findsOneWidget);
     expect(find.widgetWithText(OutlinedButton, 'Type instead'), findsOneWidget);
   });
+
+  testWidgets('Retake on the recovery panel offers the camera, not just files',
+      (tester) async {
+    repository = _FakeQuestionsRepository(
+      outcome: _outcome(PhotoQuestionSolveStatus.unreadable),
+    );
+    registerBloc();
+    await pumpPage(tester);
+
+    await selectPhoto(tester);
+
+    await tester.ensureVisible(
+      find.widgetWithText(FilledButton, 'Submit to solver'),
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump();
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Retake'));
+    await tester.pumpAndSettle();
+
+    // The recovery copy tells the student to retake the shot, so this button
+    // has to reach the camera. It used to jump straight to the file picker,
+    // which cannot retake anything, while every other photo entry point on the
+    // screen offered both sources.
+    expect(find.text('Open camera'), findsOneWidget);
+    expect(find.text('Choose from gallery'), findsOneWidget);
+  });
 }

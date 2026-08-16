@@ -189,12 +189,11 @@ class AskByPhotoPage extends StatelessWidget {
             ),
             statusParams: SolveStatusPanelParams(
               content: solveStatusContentFor(state),
-              onRetake: () {
-                context
-                    .read<AskByPhotoBloc>()
-                    .add(const AskByPhotoClearRequested());
-                _pickPhoto(context);
-              },
+              // Same chooser as every other photo entry point. The recovery
+              // copy asks the student to retake the shot, so this must be able
+              // to reach the camera; the picked photo replaces the selection
+              // outright, so there is nothing to clear first.
+              onRetake: () => _showPhotoSourceOptions(context),
               onTypeInstead: () => context
                   .read<AskByPhotoBloc>()
                   .add(const AskByPhotoTypeInsteadRequested()),
