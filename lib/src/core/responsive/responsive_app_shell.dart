@@ -37,7 +37,10 @@ abstract final class AppLayout {
 /// Two things happen here, and they have to happen together:
 ///
 ///  * The column is capped at [AppLayout.maxContentWidth] and centred, with the
-///    surrounding window painted in a backdrop colour.
+///    surrounding window painted in the scheme's *lowest* surface. That colour
+///    is chosen to recede: painted in a raised surface instead, the margins
+///    came out lighter than the page and the column read as a panel stuck onto
+///    a board rather than as the page itself.
 ///  * [ScreenUtil] is configured from the *column* rather than the window, with
 ///    the scale clamped. The design size is derived rather than fixed: feeding
 ///    the package `columnWidth / desiredScale` makes its `scaleWidth` come out
@@ -96,7 +99,7 @@ class ResponsiveAppShell extends StatelessWidget {
     );
 
     return ColoredBox(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      color: Theme.of(context).colorScheme.surfaceContainerLowest,
       child: Center(
         child: SizedBox(
           width: contentWidth,

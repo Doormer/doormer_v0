@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'quest_palette.dart';
+
 class AppTextStyles {
   AppTextStyles._();
 
@@ -58,18 +60,30 @@ class AppTextStyles {
   /// colors, so callers must not pass a pre-colored base expecting to preserve
   /// those colors through the merge.
   static TextTheme apply(TextTheme base) => base.copyWith(
-        displayLarge:
-            const TextStyle(fontSize: 36.0, fontWeight: FontWeight.bold),
-        displayMedium:
-            const TextStyle(fontSize: 30.0, fontWeight: FontWeight.w600),
-        headlineLarge:
-            const TextStyle(fontSize: 28.0, fontWeight: FontWeight.bold),
-        headlineMedium:
-            const TextStyle(fontSize: 24.0, fontWeight: FontWeight.w600),
-        titleLarge:
-            const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
-        titleMedium:
-            const TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
+        displayLarge: const TextStyle(
+            fontFamily: kDisplayFont,
+            fontSize: 36.0,
+            fontWeight: FontWeight.w700),
+        displayMedium: const TextStyle(
+            fontFamily: kDisplayFont,
+            fontSize: 30.0,
+            fontWeight: FontWeight.w600),
+        headlineLarge: const TextStyle(
+            fontFamily: kDisplayFont,
+            fontSize: 28.0,
+            fontWeight: FontWeight.w700),
+        headlineMedium: const TextStyle(
+            fontFamily: kDisplayFont,
+            fontSize: 24.0,
+            fontWeight: FontWeight.w600),
+        titleLarge: const TextStyle(
+            fontFamily: kDisplayFont,
+            fontSize: 20.0,
+            fontWeight: FontWeight.w600),
+        titleMedium: const TextStyle(
+            fontFamily: kDisplayFont,
+            fontSize: 16.0,
+            fontWeight: FontWeight.w600),
         bodyLarge: const TextStyle(fontSize: 16.0),
         bodyMedium: const TextStyle(fontSize: 14.0),
         bodySmall: const TextStyle(fontSize: 12.0),

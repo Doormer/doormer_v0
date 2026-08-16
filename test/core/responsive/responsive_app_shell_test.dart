@@ -4,6 +4,7 @@
 // 1440px-wide window rendered 14px body text at 56px and 16px gutters at 64px,
 // while corner radii grew only 1.3x. The numbers below are the contract.
 import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
+import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -127,7 +128,7 @@ void main() {
       expect(radiusScale, closeTo(widthScale, 0.05));
     });
 
-    testWidgets('the window outside the column is painted, not left blank',
+    testWidgets('paints the window outside the column so it recedes',
         (tester) async {
       tester.view.physicalSize = const Size(1440, 900);
       tester.view.devicePixelRatio = 1.0;
@@ -136,6 +137,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          theme: AppTheme.dark,
           home: ResponsiveAppShell(child: Container(color: Colors.red)),
         ),
       );
@@ -152,7 +154,13 @@ void main() {
         tester.element(find.byType(ResponsiveAppShell)),
       ).colorScheme;
 
-      expect(backdrop.color, scheme.surfaceContainerHighest);
+      expect(backdrop.color, scheme.surfaceContainerLowest);
+      expect(
+        backdrop.color.computeLuminance(),
+        lessThanOrEqualTo(scheme.surface.computeLuminance()),
+        reason: 'a surround lighter than the page turns the column into a '
+            'panel stuck on a board',
+      );
     });
   });
 }

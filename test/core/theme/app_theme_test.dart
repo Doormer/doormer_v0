@@ -1,4 +1,5 @@
 import 'package:doormer/src/core/theme/app_theme.dart';
+import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -7,26 +8,32 @@ void main() {
     expect(AppTheme.seedColor, const Color(0xFF6C4DFF));
   });
 
-  test('schemes use the content variant for violet and magenta roles', () {
-    final expectedLight = ColorScheme.fromSeed(
-      seedColor: AppTheme.seedColor,
-      brightness: Brightness.light,
-      dynamicSchemeVariant: DynamicSchemeVariant.content,
-    );
-    final expectedDark = ColorScheme.fromSeed(
+  test('the dark scheme carries the quest accents, which no seed can derive',
+      () {
+    final seeded = ColorScheme.fromSeed(
       seedColor: AppTheme.seedColor,
       brightness: Brightness.dark,
       dynamicSchemeVariant: DynamicSchemeVariant.content,
     );
 
-    expect(AppTheme.light.colorScheme, expectedLight);
-    expect(AppTheme.dark.colorScheme, expectedDark);
-    expect(AppTheme.light.colorScheme.tertiary, const Color(0xFF9B019A));
-    expect(AppTheme.dark.colorScheme.tertiary, const Color(0xFFFFABF3));
+    // The regression this guards: seeding from the violet produces a
+    // violet-family tonal palette, so mint and amber cannot appear in it at
+    // all. Every progress cue in the design is one of those two colours, which
+    // is why the seeded build looked nothing like the approved prototype.
+    expect(AppTheme.dark.colorScheme.tertiary, QuestPalette.mint);
+    expect(AppTheme.dark.colorScheme.secondary, QuestPalette.pink);
+    expect(AppTheme.dark.colorScheme.primary, QuestPalette.violet);
+    expect(AppTheme.dark.colorScheme, isNot(seeded));
+    expect(seeded.tertiary, isNot(QuestPalette.mint));
   });
 
-  test('themeMode is ThemeMode.system', () {
-    expect(AppTheme.themeMode, ThemeMode.system);
+  test('themeMode is dark, because the quest design has no light variant', () {
+    expect(AppTheme.themeMode, ThemeMode.dark);
+  });
+
+  test('both schemes use the bundled reading face', () {
+    expect(AppTheme.dark.textTheme.bodyMedium?.fontFamily, kBodyFont);
+    expect(AppTheme.light.textTheme.bodyMedium?.fontFamily, kBodyFont);
   });
 
   group('AppTheme.light', () {

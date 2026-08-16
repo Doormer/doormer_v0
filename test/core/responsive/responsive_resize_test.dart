@@ -10,7 +10,9 @@ import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
+import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_quest_profile_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
@@ -71,6 +73,14 @@ class _FakeQuestionsRepository implements QuestionsRepository {
   @override
   Future<PhotoQuestionSolveOutcome> loadSampleSolution() =>
       Completer<PhotoQuestionSolveOutcome>().future;
+
+  @override
+  Future<QuestProfile> loadQuestProfile() async => const QuestProfile(
+        bankedXp: 120,
+        streakDays: 3,
+        topic: 'Geometry - Area',
+        questionTitle: 'Road through a field',
+      );
 }
 
 void main() {
@@ -134,6 +144,7 @@ void main() {
     serviceLocator.registerFactory<SolutionReaderBloc>(
       () => SolutionReaderBloc(
         loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
+        loadQuestProfileUseCase: LoadQuestProfileUseCase(repository),
       ),
     );
 
@@ -211,8 +222,9 @@ void main() {
 
     final wideGlyph = nodeGlyph();
     // Not the CTA button: its height comes from the theme, not ScreenUtil.
-    // `_CtaBar`'s own scale-driven part is the 18.sp chevron beside it.
-    Size ctaChevron() => tester.getSize(find.byIcon(Icons.chevron_left));
+    // `_CtaBar`'s own scale-driven part is the chevron on the Back control.
+    Size ctaChevron() =>
+        tester.getSize(find.byIcon(Icons.chevron_left_rounded));
 
     final wideCta = ctaChevron();
 
@@ -228,6 +240,6 @@ void main() {
             'follow the scale down rather than stay at the 1.3x it was first '
             'built with');
     expect(narrowCta.height, lessThan(wideCta.height),
-        reason: '_CtaBar draws its chevron at 18.sp and must follow too');
+        reason: '_CtaBar draws its chevron at 17.sp and must follow too');
   });
 }
