@@ -64,6 +64,15 @@ abstract final class AppLayout {
 /// On any viewport narrower than [AppLayout.maxContentWidth] - every phone -
 /// this resolves to the previous behaviour exactly: full width, design size
 /// untouched.
+///
+/// One consequence of wrapping the Navigator rather than each page: route-level
+/// modals live in the Navigator's own overlay, so a bottom sheet or dialog is
+/// bounded to the column too - which is what keeps it phone-shaped instead of
+/// stretching a short sheet across a 1440px window - but its scrim is bounded
+/// with it. On a wide window the margins beside the column stay undimmed and do
+/// not accept tap-to-dismiss. Pushing the clamp below the Navigator would fix
+/// the scrim at the cost of full-width modals and a per-screen opt-in that new
+/// screens would forget, so the scrim is the side that gives.
 class ResponsiveAppShell extends StatelessWidget {
   final Widget child;
 

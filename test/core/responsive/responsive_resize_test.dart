@@ -15,7 +15,10 @@ import 'package:doormer/src/features/questions/domain/usecase/load_sample_soluti
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/mapper/solution_reader_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
+import 'package:doormer/src/features/questions/presentation/params/solution_reader_params.dart';
+import 'package:doormer/src/features/questions/presentation/templates/solution_reader_template.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -42,6 +45,20 @@ class ScaledProbe extends StatelessWidget {
     );
   }
 }
+
+const _solutionDocument = SolutionDocument(
+  schemaVersion: '3.0',
+  steps: [
+    SolutionStep(
+      title: 'Find the road slope',
+      body: [TextSolutionSegment('Let theta be the angle of the road.')],
+    ),
+    SolutionStep(title: 'Scale the width', body: []),
+  ],
+  finalAnswer: FinalAnswer(
+    body: [TextSolutionSegment('The paved area is 160 square metres.')],
+  ),
+);
 
 class _FakeQuestionsRepository implements QuestionsRepository {
   @override
@@ -148,5 +165,69 @@ void main() {
     expect(narrow.width, lessThan(wide.width),
         reason: 'padding should shrink with the scale rather than stay pinned '
             'to the size it was first built at');
+  });
+
+  // The solution reader is the screen that holds every private widget in the
+  // app that reads ScreenUtil (`_TrailNode`, `_TrailConnector`, `_CtaBar`).
+  // ScreenUtilInit refuses to mark `_`-prefixed elements dirty itself, so these
+  // can only restyle via their public parent rebuilding and replacing them -
+  // which would stop working the day one of them is constructed `const`.
+  testWidgets('private widgets restyle through their parent on a resize',
+      (tester) async {
+    tester.view.devicePixelRatio = 1.0;
+    tester.view.physicalSize = const Size(1440, 900);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SolutionReaderTemplate(
+          params: SolutionReaderParams(
+            content: solutionReaderContent(
+              const SolutionReaderReady(document: _solutionDocument),
+            ),
+            onNext: () {},
+            onBack: () {},
+            onToggleRationale: () {},
+            onRevealAnswer: () {},
+            onEnlargeVisual: (_) {},
+          ),
+        ),
+        builder: (context, child) =>
+            ResponsiveAppShell(child: child ?? const SizedBox.shrink()),
+      ),
+    );
+    await tester.pump();
+
+    // The trail's own box is scale-independent (nodes cap at 44px, the
+    // connector is a hard-coded 18). Its ScreenUtil reads are the glyphs
+    // *inside* each node, so those are what has to be measured.
+    Size nodeGlyph() => tester.getSize(
+          find.descendant(
+            of: find.byKey(const Key('trail_node_1')),
+            matching: find.byType(Text),
+          ),
+        );
+
+    final wideGlyph = nodeGlyph();
+    // Not the CTA button: its height comes from the theme, not ScreenUtil.
+    // `_CtaBar`'s own scale-driven part is the 18.sp chevron beside it.
+    Size ctaChevron() => tester.getSize(find.byIcon(Icons.chevron_left));
+
+    final wideCta = ctaChevron();
+
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pump();
+    await tester.pump();
+
+    final narrowGlyph = nodeGlyph();
+    final narrowCta = ctaChevron();
+
+    expect(narrowGlyph.height, lessThan(wideGlyph.height),
+        reason: '_TrailNode draws its number at 14.sp, so the glyph must '
+            'follow the scale down rather than stay at the 1.3x it was first '
+            'built with');
+    expect(narrowCta.height, lessThan(wideCta.height),
+        reason: '_CtaBar draws its chevron at 18.sp and must follow too');
   });
 }
