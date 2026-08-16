@@ -11,6 +11,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:doormer/src/core/di/service_locator.dart';
+import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
@@ -21,6 +22,7 @@ import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bl
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/photo_preview_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
 import 'package:doormer/src/features/questions/presentation/templates/solution_reader_template.dart';
 import 'package:flutter/material.dart';
@@ -29,11 +31,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 class _FakeQuestionsRepository implements QuestionsRepository {
-  _FakeQuestionsRepository({this.outcome, this.pending});
+  _FakeQuestionsRepository({this.outcome, this.pending, this.failure});
 
   PhotoQuestionSolveOutcome? outcome;
   Completer<PhotoQuestionSolveOutcome>? pending;
+  Failure? failure;
   int callCount = 0;
+  Uint8List? lastBytes;
 
   @override
   Future<PhotoQuestionSolveOutcome> submitPhotoQuestion({
@@ -41,6 +45,10 @@ class _FakeQuestionsRepository implements QuestionsRepository {
     required String contentType,
   }) async {
     callCount++;
+    lastBytes = imageBytes;
+    if (failure != null) {
+      throw failure!;
+    }
     if (pending != null) {
       return pending!.future;
     }
@@ -122,6 +130,14 @@ void main() {
         ),
       ],
     );
+  }
+
+  // Error states raise a toast that auto-closes after 2s. Left running, the
+  // binding fails the test with "A Timer is still pending" once the tree is
+  // disposed, so tests that trigger one drain it before finishing.
+  Future<void> drainToasts(WidgetTester tester) async {
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
   }
 
   Future<void> pumpPage(WidgetTester tester) async {
@@ -312,7 +328,9 @@ void main() {
     expect(repository.callCount, 1);
     expect(find.byType(QuestionSolutionPage), findsNothing);
     expect(find.text('We could not read it'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Retake'), findsOneWidget);
+    // Retake moved up to sit with the photo, which now survives the failure;
+    // the recovery panel keeps only the action the photo panel lacks.
+    expect(find.widgetWithText(AppButtonAtom, 'Retake'), findsOneWidget);
     expect(find.widgetWithText(OutlinedButton, 'Type instead'), findsOneWidget);
   });
 
@@ -335,7 +353,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     await tester.pump();
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Retake'));
+    // The photo now survives the failure, so Retake lives with it in the
+    // upload panel rather than being repeated in the recovery panel below.
+    expect(find.widgetWithText(AppButtonAtom, 'Retake'), findsOneWidget);
+    await tester.tap(find.widgetWithText(AppButtonAtom, 'Retake'));
     await tester.pumpAndSettle();
 
     // The recovery copy tells the student to retake the shot, so this button
@@ -344,5 +365,76 @@ void main() {
     // screen offered both sources.
     expect(find.text('Open camera'), findsOneWidget);
     expect(find.text('Choose from gallery'), findsOneWidget);
+  });
+
+  group('a failed solve does not throw the photo away', () {
+    Future<void> failTheSolve(WidgetTester tester) async {
+      await selectPhoto(tester);
+      await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('the preview survives a network failure and offers Try again',
+        (tester) async {
+      repository =
+          _FakeQuestionsRepository(failure: NetworkFailure('No connection.'));
+      registerBloc();
+      await pumpPage(tester);
+      await failTheSolve(tester);
+
+      expect(find.byType(PhotoPreviewMolecule), findsOneWidget,
+          reason: 'losing the preview here forces the student to find and '
+              'pick the same file over again after a blip');
+      // The retry is the upload panel's own button, relabelled - not a second
+      // control competing with it.
+      expect(find.widgetWithText(AppButtonAtom, 'Try again'), findsOneWidget);
+      expect(find.text('Submit to solver'), findsNothing);
+      expect(find.widgetWithText(AppButtonAtom, 'Retake'), findsOneWidget,
+          reason: 'exactly one Retake: the status panel must not repeat the '
+              'button the upload panel is already showing');
+      await drainToasts(tester);
+    });
+
+    testWidgets('Try again resubmits the same bytes', (tester) async {
+      repository =
+          _FakeQuestionsRepository(failure: NetworkFailure('No connection.'));
+      registerBloc();
+      await pumpPage(tester);
+      await failTheSolve(tester);
+      expect(repository.callCount, 1);
+
+      repository.failure = null;
+      repository.outcome = _outcome(PhotoQuestionSolveStatus.solved);
+
+      await tester.ensureVisible(find.widgetWithText(AppButtonAtom, 'Try again'));
+      await tester.tap(find.widgetWithText(AppButtonAtom, 'Try again'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(repository.callCount, 2);
+      expect(repository.lastBytes, _pngBytes,
+          reason: 'the retry must send the photo already in hand, not an '
+              'empty or re-picked one');
+      await drainToasts(tester);
+    });
+
+    testWidgets('an unreadable photo stays on screen but offers no Try again',
+        (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.unreadable),
+      );
+      registerBloc();
+      await pumpPage(tester);
+      await failTheSolve(tester);
+
+      expect(find.byType(PhotoPreviewMolecule), findsOneWidget,
+          reason: 'the student should see which photo was rejected');
+      expect(find.text('Try again'), findsNothing,
+          reason: 'the same blurry bytes read as blurry every time');
+      expect(find.text('Submit to solver'), findsOneWidget,
+          reason: 'the button stays generic when a resend would not help');
+      expect(find.widgetWithText(AppButtonAtom, 'Retake'), findsOneWidget);
+    });
   });
 }

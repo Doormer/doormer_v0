@@ -108,7 +108,12 @@ void main() {
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
       AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.png'),
-      const AskByPhotoUnreadable(questionId: 'q_unreadable'),
+      AskByPhotoUnreadable(
+        questionId: 'q_unreadable',
+        imageBytes: validBytes,
+        fileName: 'problem.png',
+        mimeType: 'image/png',
+      ),
     ],
   );
 
@@ -125,7 +130,12 @@ void main() {
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
       AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.png'),
-      const AskByPhotoNotAQuestion(questionId: 'q_notAQuestion'),
+      AskByPhotoNotAQuestion(
+        questionId: 'q_notAQuestion',
+        imageBytes: validBytes,
+        fileName: 'problem.png',
+        mimeType: 'image/png',
+      ),
     ],
   );
 
@@ -142,7 +152,12 @@ void main() {
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
       AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.png'),
-      const AskByPhotoTimeout(questionId: 'q_timeout'),
+      AskByPhotoTimeout(
+        questionId: 'q_timeout',
+        imageBytes: validBytes,
+        fileName: 'problem.png',
+        mimeType: 'image/png',
+      ),
     ],
   );
 
@@ -183,7 +198,12 @@ void main() {
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
       AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.jpg'),
-      const AskByPhotoNetworkError('We could not reach the solver. Try again.'),
+      AskByPhotoNetworkError(
+        'We could not reach the solver. Try again.',
+        imageBytes: validBytes,
+        fileName: 'problem.jpg',
+        mimeType: 'image/jpeg',
+      ),
     ],
   );
 
@@ -341,4 +361,162 @@ void main() {
       expect(repository.callCount, 0);
     },
   );
+
+  group('a failed solve keeps the photo', () {
+    // Losing the bytes unmounts the preview and leaves no way back except
+    // finding and picking the same file again. A dropped connection should
+    // cost a tap, not a re-pick.
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'network failure carries the photo through',
+      build: () => _blocFor(_FakeQuestionsRepository(
+        failure: NetworkFailure('No connection.'),
+      )),
+      seed: () => AskByPhotoPhotoSelected(
+        imageBytes: validBytes,
+        fileName: 'problem.jpg',
+        mimeType: 'image/jpeg',
+      ),
+      act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+      skip: 1,
+      expect: () => [
+        isA<AskByPhotoNetworkError>()
+            .having((s) => s.imageBytes, 'imageBytes', validBytes)
+            .having((s) => s.fileName, 'fileName', 'problem.jpg')
+            .having((s) => s.mimeType, 'mimeType', 'image/jpeg')
+            .having((s) => s.isRetryable, 'isRetryable', isTrue),
+      ],
+    );
+
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'a solver timeout carries the photo through and stays retryable',
+      build: () => _blocFor(_FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.timeout),
+      )),
+      seed: () => AskByPhotoPhotoSelected(
+        imageBytes: validBytes,
+        fileName: 'problem.jpg',
+        mimeType: 'image/jpeg',
+      ),
+      act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+      skip: 1,
+      expect: () => [
+        isA<AskByPhotoTimeout>()
+            .having((s) => s.imageBytes, 'imageBytes', validBytes)
+            .having((s) => s.isRetryable, 'isRetryable', isTrue),
+      ],
+    );
+
+    // The bytes survive so the student can see what was rejected, but the
+    // same blurry photo reads as blurry every time - retrying it is a dead
+    // end, so only Retake is offered.
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'an unreadable photo is kept on screen but not retryable',
+      build: () => _blocFor(_FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.unreadable),
+      )),
+      seed: () => AskByPhotoPhotoSelected(
+        imageBytes: validBytes,
+        fileName: 'problem.jpg',
+        mimeType: 'image/jpeg',
+      ),
+      act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+      skip: 1,
+      expect: () => [
+        isA<AskByPhotoUnreadable>()
+            .having((s) => s.imageBytes, 'imageBytes', validBytes)
+            .having((s) => s.questionId, 'questionId', 'q_unreadable')
+            .having((s) => s.isRetryable, 'isRetryable', isFalse),
+      ],
+    );
+
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'a non-question photo is kept on screen but not retryable',
+      build: () => _blocFor(_FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.notAQuestion),
+      )),
+      seed: () => AskByPhotoPhotoSelected(
+        imageBytes: validBytes,
+        fileName: 'problem.jpg',
+        mimeType: 'image/jpeg',
+      ),
+      act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+      skip: 1,
+      expect: () => [
+        isA<AskByPhotoNotAQuestion>()
+            .having((s) => s.imageBytes, 'imageBytes', validBytes)
+            .having((s) => s.isRetryable, 'isRetryable', isFalse),
+      ],
+    );
+  });
+
+  group('retrying after a failure', () {
+    // `_onSubmitted` used to read the photo only out of AskByPhotoPhotoSelected,
+    // so resubmitting from an error state would fall through to the "choose a
+    // photo first" branch and report a validation error over a photo that was
+    // sitting right there.
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'resubmits the same bytes rather than asking for a photo again',
+      build: () => _blocFor(_FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.solved),
+      )),
+      seed: () => AskByPhotoNetworkError(
+        'No connection.',
+        imageBytes: validBytes,
+        fileName: 'problem.jpg',
+        mimeType: 'image/jpeg',
+      ),
+      act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+      expect: () => [
+        AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.jpg'),
+        isA<AskByPhotoSolved>()
+            .having((s) => s.questionId, 'questionId', 'q_solved'),
+      ],
+      verify: (bloc) {
+        final repository = bloc.submitPhotoQuestionUseCase.repository
+            as _FakeQuestionsRepository;
+        expect(repository.callCount, 1);
+        expect(repository.lastBytes, validBytes);
+        expect(repository.lastContentType, 'image/jpeg');
+      },
+    );
+
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'a retry that fails again still keeps the photo',
+      build: () => _blocFor(_FakeQuestionsRepository(
+        failure: NetworkFailure('Still no connection.'),
+      )),
+      seed: () => AskByPhotoNetworkError(
+        'No connection.',
+        imageBytes: validBytes,
+        fileName: 'problem.jpg',
+        mimeType: 'image/jpeg',
+      ),
+      act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+      skip: 1,
+      expect: () => [
+        isA<AskByPhotoNetworkError>()
+            .having((s) => s.imageBytes, 'imageBytes', validBytes)
+            .having((s) => s.isRetryable, 'isRetryable', isTrue),
+      ],
+    );
+
+    // Nothing was ever picked, so there is nothing to retry - this must still
+    // reach the validation branch rather than submitting empty bytes.
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'submitting with no photo at all still reports a validation error',
+      build: () => _blocFor(_FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.solved),
+      )),
+      act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+      expect: () => [
+        const AskByPhotoLoading(),
+        isA<AskByPhotoValidationError>(),
+      ],
+      verify: (bloc) {
+        final repository = bloc.submitPhotoQuestionUseCase.repository
+            as _FakeQuestionsRepository;
+        expect(repository.callCount, 0);
+      },
+    );
+  });
 }

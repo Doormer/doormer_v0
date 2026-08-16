@@ -52,33 +52,85 @@ class AskByPhotoSolved extends AskByPhotoState {
   List<Object?> get props => [questionId, solution];
 }
 
-class AskByPhotoUnreadable extends AskByPhotoState {
-  final String questionId;
+/// A solve that ended without a solution, holding on to the photo that
+/// produced it.
+///
+/// The bytes are kept so the preview stays on screen: a failure should cost a
+/// tap, not force the student to find and pick the same file over again.
+abstract class AskByPhotoSolveFailed extends AskByPhotoState {
+  final Uint8List? imageBytes;
+  final String? fileName;
+  final String? mimeType;
 
-  const AskByPhotoUnreadable({required this.questionId});
+  const AskByPhotoSolveFailed({
+    this.imageBytes,
+    this.fileName,
+    this.mimeType,
+  });
 
-  @override
-  List<Object?> get props => [questionId];
+  /// Whether resubmitting these exact bytes could plausibly succeed.
+  ///
+  /// A blurry photo reads as blurry every time, so offering "Try again" there
+  /// only wastes a round trip; a dropped connection is worth another go.
+  bool get isRetryable;
+
+  bool get hasPhoto => imageBytes != null;
 }
 
-class AskByPhotoNotAQuestion extends AskByPhotoState {
+class AskByPhotoUnreadable extends AskByPhotoSolveFailed {
   final String questionId;
 
-  const AskByPhotoNotAQuestion({required this.questionId});
+  const AskByPhotoUnreadable({
+    required this.questionId,
+    super.imageBytes,
+    super.fileName,
+    super.mimeType,
+  });
 
   @override
-  List<Object?> get props => [questionId];
+  bool get isRetryable => false;
+
+  @override
+  List<Object?> get props => [questionId, imageBytes, fileName, mimeType];
 }
 
-class AskByPhotoTimeout extends AskByPhotoState {
+class AskByPhotoNotAQuestion extends AskByPhotoSolveFailed {
   final String questionId;
 
-  const AskByPhotoTimeout({required this.questionId});
+  const AskByPhotoNotAQuestion({
+    required this.questionId,
+    super.imageBytes,
+    super.fileName,
+    super.mimeType,
+  });
 
   @override
-  List<Object?> get props => [questionId];
+  bool get isRetryable => false;
+
+  @override
+  List<Object?> get props => [questionId, imageBytes, fileName, mimeType];
 }
 
+class AskByPhotoTimeout extends AskByPhotoSolveFailed {
+  final String questionId;
+
+  const AskByPhotoTimeout({
+    required this.questionId,
+    super.imageBytes,
+    super.fileName,
+    super.mimeType,
+  });
+
+  @override
+  bool get isRetryable => true;
+
+  @override
+  List<Object?> get props => [questionId, imageBytes, fileName, mimeType];
+}
+
+/// Not an [AskByPhotoSolveFailed]: this is raised both when the file itself is
+/// wrong and when nothing was picked at all, so there is not always a photo to
+/// hold on to, and resubmitting unchanged bytes cannot help either way.
 class AskByPhotoValidationError extends AskByPhotoState {
   final String message;
 
@@ -88,13 +140,21 @@ class AskByPhotoValidationError extends AskByPhotoState {
   List<Object?> get props => [message];
 }
 
-class AskByPhotoNetworkError extends AskByPhotoState {
+class AskByPhotoNetworkError extends AskByPhotoSolveFailed {
   final String message;
 
-  const AskByPhotoNetworkError(this.message);
+  const AskByPhotoNetworkError(
+    this.message, {
+    super.imageBytes,
+    super.fileName,
+    super.mimeType,
+  });
 
   @override
-  List<Object?> get props => [message];
+  bool get isRetryable => true;
+
+  @override
+  List<Object?> get props => [message, imageBytes, fileName, mimeType];
 }
 
 class AskByPhotoNotice extends AskByPhotoState {

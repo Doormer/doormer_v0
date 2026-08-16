@@ -167,6 +167,9 @@ class AskByPhotoPage extends StatelessWidget {
         builder: (context, state) {
           final selected = state is AskByPhotoPhotoSelected ? state : null;
           final loading = state is AskByPhotoLoading ? state : null;
+          // A failure keeps the bytes so the preview does not collapse the
+          // moment the solve goes wrong.
+          final failed = state is AskByPhotoSolveFailed ? state : null;
           final isLoading = loading != null;
 
           return AskByPhotoTemplate(
@@ -176,9 +179,13 @@ class AskByPhotoPage extends StatelessWidget {
               totalCount: 50,
             ),
             uploadParams: PhotoUploadPanelParams(
-              imageBytes: selected?.imageBytes ?? loading?.imageBytes,
-              fileName: selected?.fileName ?? loading?.fileName,
+              imageBytes: selected?.imageBytes ??
+                  loading?.imageBytes ??
+                  failed?.imageBytes,
+              fileName:
+                  selected?.fileName ?? loading?.fileName ?? failed?.fileName,
               isLoading: isLoading,
+              isRetry: failed?.isRetryable ?? false,
               onPickPhoto: () => _showPhotoSourceOptions(context),
               onSubmit: () => context
                   .read<AskByPhotoBloc>()

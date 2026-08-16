@@ -3,29 +3,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class StatusActionRowMolecule extends StatelessWidget {
-  final VoidCallback onRetake;
+  /// Null when the photo is still on screen and the upload panel is already
+  /// offering Retake directly beneath it.
+  final VoidCallback? onRetake;
   final VoidCallback onTypeInstead;
 
   const StatusActionRowMolecule({
     super.key,
-    required this.onRetake,
+    this.onRetake,
     required this.onTypeInstead,
   });
 
   @override
   Widget build(BuildContext context) {
+    final retake = onRetake;
+
     return Row(
       children: [
-        Expanded(
-          child: AppButtonAtom(
-            label: 'Retake',
-            onPressed: onRetake,
+        if (retake != null) ...[
+          Expanded(
+            child: AppButtonAtom(label: 'Retake', onPressed: retake),
           ),
-        ),
-        SizedBox(width: 12.w),
+          SizedBox(width: 12.w),
+        ],
         Expanded(
           child: AppButtonAtom(
             label: 'Type instead',
+            // Stays secondary even when it is the only button here: the
+            // primary action for a failure is up in the photo panel.
             variant: AppButtonVariant.outlined,
             onPressed: onTypeInstead,
           ),

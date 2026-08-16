@@ -31,7 +31,7 @@ class SolveStatusPanelOrganism extends StatelessWidget {
           if (content.showActions) ...[
             SizedBox(height: 20.h),
             StatusActionRowMolecule(
-              onRetake: params.onRetake,
+              onRetake: content.showRetake ? params.onRetake : null,
               onTypeInstead: params.onTypeInstead,
             ),
           ],

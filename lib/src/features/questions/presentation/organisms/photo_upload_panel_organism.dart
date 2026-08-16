@@ -44,7 +44,9 @@ class PhotoUploadPanelOrganism extends StatelessWidget {
           ),
           SizedBox(height: 12.h),
           AppButtonAtom(
-            label: 'Submit to solver',
+            // The retry lives here rather than in the status panel below:
+            // one button, directly under the photo it will send.
+            label: params.isRetry ? 'Try again' : 'Submit to solver',
             variant: AppButtonVariant.accent,
             expand: true,
             isLoading: params.isLoading,

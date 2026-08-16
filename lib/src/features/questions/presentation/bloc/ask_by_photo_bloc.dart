@@ -37,9 +37,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
     AskByPhotoSubmitted event,
     Emitter<AskByPhotoState> emit,
   ) async {
-    final selectedState = state;
-    final selected =
-        selectedState is AskByPhotoPhotoSelected ? selectedState : null;
+    final selected = _photoInHand();
     emit(AskByPhotoLoading(
       imageBytes: selected?.imageBytes,
       fileName: selected?.fileName,
@@ -58,32 +56,73 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
         fileName: selected.fileName,
         mimeType: selected.mimeType,
       );
-      _emitOutcome(outcome, emit);
+      _emitOutcome(outcome, selected, emit);
     } on ValidationFailure catch (f, stackTrace) {
       emit(AskByPhotoValidationError(f.message));
       AppLogger.error('Photo question validation failed',
           error: f, stackTrace: stackTrace);
     } on Failure catch (f, stackTrace) {
-      emit(AskByPhotoNetworkError(f.message));
+      emit(AskByPhotoNetworkError(
+        f.message,
+        imageBytes: selected.imageBytes,
+        fileName: selected.fileName,
+        mimeType: selected.mimeType,
+      ));
       AppLogger.error('Photo question submission failed',
           error: f, stackTrace: stackTrace);
     } catch (e, stackTrace) {
-      emit(const AskByPhotoNetworkError('An unexpected error occurred'));
+      emit(AskByPhotoNetworkError(
+        'An unexpected error occurred',
+        imageBytes: selected.imageBytes,
+        fileName: selected.fileName,
+        mimeType: selected.mimeType,
+      ));
       AppLogger.error('Photo question unexpected error',
           error: e, stackTrace: stackTrace);
     }
   }
 
+  /// The photo a submit should act on, whether it was just picked or is being
+  /// retried after a failure that kept it.
+  ///
+  /// Reading only [AskByPhotoPhotoSelected] here is what used to make a retry
+  /// report "choose a photo first" over a photo already on screen.
+  _PhotoInHand? _photoInHand() {
+    final current = state;
+    if (current is AskByPhotoPhotoSelected) {
+      return _PhotoInHand(
+        imageBytes: current.imageBytes,
+        fileName: current.fileName,
+        mimeType: current.mimeType,
+      );
+    }
+    if (current is AskByPhotoSolveFailed && current.isRetryable) {
+      final bytes = current.imageBytes;
+      if (bytes != null) {
+        return _PhotoInHand(
+          imageBytes: bytes,
+          fileName: current.fileName ?? 'photo.jpg',
+          mimeType: current.mimeType,
+        );
+      }
+    }
+    return null;
+  }
+
   void _emitOutcome(
     PhotoQuestionSolveOutcome outcome,
+    _PhotoInHand photo,
     Emitter<AskByPhotoState> emit,
   ) {
     switch (outcome.status) {
       case PhotoQuestionSolveStatus.solved:
         final solution = outcome.solution;
         if (solution == null) {
-          emit(const AskByPhotoNetworkError(
+          emit(AskByPhotoNetworkError(
             'We could not read the solver response. Try again.',
+            imageBytes: photo.imageBytes,
+            fileName: photo.fileName,
+            mimeType: photo.mimeType,
           ));
           return;
         }
@@ -92,11 +131,26 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
           solution: solution,
         ));
       case PhotoQuestionSolveStatus.unreadable:
-        emit(AskByPhotoUnreadable(questionId: outcome.questionId));
+        emit(AskByPhotoUnreadable(
+          questionId: outcome.questionId,
+          imageBytes: photo.imageBytes,
+          fileName: photo.fileName,
+          mimeType: photo.mimeType,
+        ));
       case PhotoQuestionSolveStatus.notAQuestion:
-        emit(AskByPhotoNotAQuestion(questionId: outcome.questionId));
+        emit(AskByPhotoNotAQuestion(
+          questionId: outcome.questionId,
+          imageBytes: photo.imageBytes,
+          fileName: photo.fileName,
+          mimeType: photo.mimeType,
+        ));
       case PhotoQuestionSolveStatus.timeout:
-        emit(AskByPhotoTimeout(questionId: outcome.questionId));
+        emit(AskByPhotoTimeout(
+          questionId: outcome.questionId,
+          imageBytes: photo.imageBytes,
+          fileName: photo.fileName,
+          mimeType: photo.mimeType,
+        ));
     }
   }
 
@@ -139,4 +193,18 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
       emit(previousState);
     }
   }
+}
+
+/// The photo a submit is acting on, flattened out of whichever state was
+/// holding it so the submit path does not care where it came from.
+class _PhotoInHand {
+  final Uint8List imageBytes;
+  final String fileName;
+  final String? mimeType;
+
+  const _PhotoInHand({
+    required this.imageBytes,
+    required this.fileName,
+    this.mimeType,
+  });
 }
