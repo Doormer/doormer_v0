@@ -1,4 +1,5 @@
-import 'package:doormer/src/core/theme/app_theme_context.dart';
+import 'package:doormer/src/core/theme/quest_palette.dart';
+import 'package:doormer/src/features/questions/presentation/atoms/quest_card_atom.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/note_caveat_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/segment_list_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/params/solution_briefing_params.dart';
@@ -17,31 +18,35 @@ class SolutionBriefingOrganism extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = context.colorScheme;
-    final tt = context.textTheme;
-
-    return Container(
+    return QuestCardAtom(
       key: const Key('solution_briefing'),
-      width: double.infinity,
-      padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 18.h),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(color: cs.outlineVariant),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'BRIEFING',
+            style: TextStyle(
+              fontSize: 10.sp,
+              letterSpacing: 1.8,
+              fontWeight: FontWeight.w700,
+              color: QuestPalette.pink,
+            ),
+          ),
+          SizedBox(height: 6.h),
           Row(
             children: [
-              Icon(Icons.flag_outlined, size: 16.sp, color: cs.primary),
-              SizedBox(width: 6.w),
-              Text(
-                params.title,
-                style: tt.titleMedium?.copyWith(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w700,
-                  color: cs.onSurface,
+              Icon(Icons.flag_rounded, size: 17.sp, color: QuestPalette.violet),
+              SizedBox(width: 7.w),
+              Expanded(
+                child: Text(
+                  params.title,
+                  style: TextStyle(
+                    fontFamily: kDisplayFont,
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w600,
+                    height: 1.25,
+                    color: QuestPalette.cream,
+                  ),
                 ),
               ),
             ],

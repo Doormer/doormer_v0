@@ -1,4 +1,5 @@
-import 'package:doormer/src/core/theme/app_theme_context.dart';
+import 'package:doormer/src/core/theme/quest_palette.dart';
+import 'package:doormer/src/features/questions/presentation/atoms/accent_well_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -10,10 +11,15 @@ class MathBlockAtom extends StatefulWidget {
   final String latex;
   final String semanticsLabel;
 
+  /// The final answer is set large and mint so it lands as the thing the whole
+  /// page was walking towards, not as one more equation.
+  final bool emphasised;
+
   const MathBlockAtom({
     super.key,
     required this.latex,
     required this.semanticsLabel,
+    this.emphasised = false,
   });
 
   @override
@@ -54,19 +60,16 @@ class _MathBlockAtomState extends State<MathBlockAtom> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = context.colorScheme;
+    const well = AccentWellAtom.wellColor;
+    final inkColor =
+        widget.emphasised ? QuestPalette.mint : QuestPalette.cream;
+    final size = widget.emphasised ? 26.sp : 14.sp;
 
     return Semantics(
       label: widget.semanticsLabel,
-      child: Container(
-        width: double.infinity,
+      child: AccentWellAtom(
+        accent: inkColor,
         margin: EdgeInsets.symmetric(vertical: 8.h),
-        padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 10.h),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(10.r),
-          border: Border(left: BorderSide(color: cs.tertiary, width: 3.w)),
-        ),
         child: Stack(
           children: [
             NotificationListener<ScrollMetricsNotification>(
@@ -83,12 +86,14 @@ class _MathBlockAtomState extends State<MathBlockAtom> {
                   child: Math.tex(
                     widget.latex,
                     textStyle: TextStyle(
-                      fontSize: 14.sp,
-                      color: cs.onSurface,
+                      fontSize: size,
+                      fontWeight:
+                          widget.emphasised ? FontWeight.w700 : null,
+                      color: inkColor,
                     ),
                     onErrorFallback: (error) => Text(
                       widget.latex,
-                      style: TextStyle(fontSize: 13.sp, color: cs.onSurface),
+                      style: TextStyle(fontSize: size, color: inkColor),
                     ),
                   ),
                 ),
@@ -108,8 +113,8 @@ class _MathBlockAtomState extends State<MathBlockAtom> {
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                         colors: [
-                          cs.surfaceContainerHighest.withValues(alpha: 0),
-                          cs.surfaceContainerHighest,
+                          well.withValues(alpha: 0),
+                          well,
                         ],
                       ),
                     ),
@@ -117,7 +122,7 @@ class _MathBlockAtomState extends State<MathBlockAtom> {
                     child: Icon(
                       Icons.chevron_right,
                       size: 16.sp,
-                      color: cs.onSurfaceVariant,
+                      color: inkColor,
                     ),
                   ),
                 ),

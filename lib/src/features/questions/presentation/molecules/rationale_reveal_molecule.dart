@@ -1,4 +1,4 @@
-import 'package:doormer/src/core/theme/app_theme_context.dart';
+import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/diagram_atom.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_segment_order.dart';
@@ -28,9 +28,6 @@ class RationaleRevealMolecule extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = context.colorScheme;
-    final tt = context.textTheme;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -44,20 +41,25 @@ class RationaleRevealMolecule extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.lightbulb_outline, size: 16.sp, color: cs.tertiary),
+                Icon(Icons.help_outline_rounded,
+                    size: 14.sp, color: QuestPalette.pink),
                 SizedBox(width: 6.w),
                 Text(
                   toggleLabel,
-                  style: tt.labelLarge?.copyWith(
-                    fontSize: 13.sp,
-                    color: cs.tertiary,
+                  style: TextStyle(
+                    fontFamily: kDisplayFont,
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                    color: QuestPalette.pink,
                   ),
                 ),
                 SizedBox(width: 4.w),
                 Icon(
-                  visible ? Icons.expand_less : Icons.expand_more,
-                  size: 16.sp,
-                  color: cs.tertiary,
+                  visible
+                      ? Icons.expand_less_rounded
+                      : Icons.expand_more_rounded,
+                  size: 15.sp,
+                  color: QuestPalette.pink,
                 ),
               ],
             ),
@@ -69,8 +71,11 @@ class RationaleRevealMolecule extends StatelessWidget {
             width: double.infinity,
             padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 10.h),
             decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(10.r),
+              color: QuestPalette.pink.withValues(alpha: 0.07),
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(
+                color: QuestPalette.pink.withValues(alpha: 0.3),
+              ),
             ),
             child: SegmentListMolecule(
               segments: body,

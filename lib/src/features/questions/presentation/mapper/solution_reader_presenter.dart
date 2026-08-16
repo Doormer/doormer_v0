@@ -31,6 +31,16 @@ class SolutionReaderContent {
 
   final String checkTitle;
 
+  /// Standing bar copy. XP and streak are empty until the mock standing loads.
+  final String topic;
+  final String questionTitle;
+  final String xpLabel;
+  final String streakLabel;
+
+  /// What this step is worth, as it appears on the card sticker. Empty on the
+  /// briefing and on the vault — you are not paid for arriving.
+  final String stepXpLabel;
+
   /// Empty until the answer is revealed — a check read before the answer is
   /// just another step.
   final List<OrderedSegment> checkBody;
@@ -57,7 +67,32 @@ class SolutionReaderContent {
     required this.note,
     required this.checkTitle,
     required this.checkBody,
+    required this.topic,
+    required this.questionTitle,
+    required this.xpLabel,
+    required this.streakLabel,
+    required this.stepXpLabel,
   });
+}
+
+/// What one step is worth.
+///
+/// Taken from the prototype: the first step is cheap because it is free, the
+/// last is dear because it is the one that gets abandoned. A flat rate makes
+/// the middle of a long solution feel like the same nothing every time.
+int stepXpValue(int index, int stepCount) {
+  if (index == 0) return 10;
+  if (index == stepCount - 1) return 20;
+  return 15;
+}
+
+/// XP banked by reading every step before [index].
+int _xpBankedBefore(int index, int stepCount) {
+  var total = 0;
+  for (var i = 0; i < index; i++) {
+    total += stepXpValue(i, stepCount);
+  }
+  return total;
 }
 
 /// Turns reader state into display copy. Page-invoked only — nothing below the
@@ -82,6 +117,12 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
   // and the CTA stays enabled.
   final bool answerRevealed = isLastStep && state.answerRevealed;
 
+  final profile = state.profile;
+  // XP banks on arrival, not on completion: reaching step 3 means steps 1 and
+  // 2 are read. The briefing banks nothing, so it shows the opening total.
+  final earnedXp = (profile?.bankedXp ?? 0) +
+      (onBriefing ? 0 : _xpBankedBefore(state.stepIndex, stepCount));
+
   return SolutionReaderContent(
     levelLabel: 'LEVEL ${state.stepIndex + 1}',
     stepTitle: step.title,
@@ -98,7 +139,8 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
               ? SolutionTrailNodeState.current
               : SolutionTrailNodeState.done,
           semanticsLabel: 'The plan',
-          icon: Icons.flag_outlined,
+          icon: Icons.flag_rounded,
+          shape: SolutionTrailNodeShape.marker,
         ),
       for (var i = 0; i < stepCount; i++)
         SolutionTrailNode(
@@ -110,6 +152,19 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
                   : SolutionTrailNodeState.current,
           semanticsLabel: 'Step ${i + 1}: ${steps[i].title}',
         ),
+      // The vault closes the trail so the destination is visible from step
+      // one. Amber the moment it can be opened, mint once it is.
+      SolutionTrailNode(
+        displayNumber: 0,
+        state: answerRevealed
+            ? SolutionTrailNodeState.done
+            : isLastStep
+                ? SolutionTrailNodeState.ready
+                : SolutionTrailNodeState.upcoming,
+        semanticsLabel: answerRevealed ? 'The answer' : 'The answer, locked',
+        icon: answerRevealed ? Icons.lock_open_rounded : Icons.lock_rounded,
+        shape: SolutionTrailNodeShape.marker,
+      ),
     ],
     answerRevealed: answerRevealed,
     answerBody: diagramFirstOrder(state.document.finalAnswer.body),
@@ -134,5 +189,11 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
     checkBody: answerRevealed
         ? diagramFirstOrder(state.document.verification.body)
         : const [],
+    topic: profile?.topic ?? '',
+    questionTitle: profile?.questionTitle ?? '',
+    xpLabel: profile == null ? '' : '$earnedXp XP',
+    streakLabel: profile == null ? '' : '${profile.streakDays}-day',
+    stepXpLabel:
+        onBriefing ? '' : '+${stepXpValue(state.stepIndex, stepCount)} XP',
   );
 }

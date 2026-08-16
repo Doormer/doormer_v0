@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
+import 'package:doormer/src/features/questions/presentation/molecules/solution_trail_molecule.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_reader_presenter.dart';
@@ -84,6 +85,9 @@ void main() {
 
     expect(content.ctaLabel, 'Start solving');
     expect(content.trail.first.icon, isNotNull);
-    expect(content.trail, hasLength(outcome.solution!.steps.length + 1));
+    // Briefing, then every step, then the vault: both ends are destinations.
+    expect(content.trail, hasLength(outcome.solution!.steps.length + 2));
+    expect(content.trail.first.shape, SolutionTrailNodeShape.marker);
+    expect(content.trail.last.shape, SolutionTrailNodeShape.marker);
   });
 }

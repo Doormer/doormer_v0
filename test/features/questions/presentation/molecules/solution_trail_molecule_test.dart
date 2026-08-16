@@ -44,7 +44,7 @@ void main() {
     expect(find.byKey(const Key('trail_node_1')), findsOneWidget);
     expect(find.byKey(const Key('trail_node_2')), findsOneWidget);
 
-    expect(find.byIcon(Icons.check), findsOneWidget);
+    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
     expect(find.text('2'), findsOneWidget);
     expect(find.text('3'), findsOneWidget);
   });
@@ -87,19 +87,32 @@ void main() {
         reason: 'step numbering must not shift because of the briefing node');
   });
 
-  testWidgets('an icon node still shows the tick once it is done',
+  testWidgets('a done marker keeps its own icon rather than becoming a tick',
       (tester) async {
     await tester.pumpWidget(_pump(const [
       SolutionTrailNode(
         displayNumber: 0,
         state: SolutionTrailNodeState.done,
         semanticsLabel: 'The plan',
-        icon: Icons.flag_outlined,
+        icon: Icons.flag_rounded,
+        shape: SolutionTrailNodeShape.marker,
       ),
     ]));
     await tester.pump();
 
-    expect(find.byIcon(Icons.check), findsOneWidget);
-    expect(find.byIcon(Icons.flag_outlined), findsNothing);
+    // The two markers are destinations, not stops. A ticked vault would say
+    // "step complete" where it should say "opened", so a marker keeps its
+    // identity and only its colour changes.
+    expect(find.byIcon(Icons.flag_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.check_rounded), findsNothing);
+  });
+
+  testWidgets('a done step still collapses to a tick', (tester) async {
+    await tester.pumpWidget(_pump(_nodes(2, 1)));
+    await tester.pump();
+
+    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    expect(find.text('1'), findsNothing,
+        reason: 'a read step shows that it is read, not its number');
   });
 }

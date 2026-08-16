@@ -1,4 +1,4 @@
-import 'package:doormer/src/core/theme/app_theme_context.dart';
+import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -14,10 +14,11 @@ class SolutionTextAtom extends StatelessWidget {
       padding: EdgeInsets.symmetric(vertical: 4.h),
       child: Text(
         value,
-        style: context.textTheme.bodyMedium?.copyWith(
-          fontSize: 14.sp,
-          height: 1.5,
-          color: context.colorScheme.onSurface,
+        style: TextStyle(
+          fontFamily: kBodyFont,
+          fontSize: 13.5.sp,
+          height: 1.6,
+          color: QuestPalette.body,
         ),
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
+import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_reader_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/solution_trail_molecule.dart';
@@ -102,13 +103,43 @@ void main() {
       const SolutionReaderReady(document: _document, stepIndex: 1),
     );
 
+    // Three steps plus the vault that closes the trail. This document has no
+    // approach, so there is no briefing head.
     expect(content.trail.map((n) => n.state).toList(), const [
       SolutionTrailNodeState.done,
       SolutionTrailNodeState.current,
       SolutionTrailNodeState.upcoming,
+      SolutionTrailNodeState.upcoming,
     ]);
     expect(content.trail[1].displayNumber, 2);
     expect(content.trail.first.semanticsLabel, 'Step 1: Find the road slope');
+  });
+
+  test('closes the trail with the vault, amber only once it can be opened', () {
+    final middle = solutionReaderContent(
+      const SolutionReaderReady(document: _document, stepIndex: 1),
+    );
+    final atTheEnd = solutionReaderContent(
+      const SolutionReaderReady(document: _document, stepIndex: 2),
+    );
+    final opened = solutionReaderContent(
+      const SolutionReaderReady(
+        document: _document,
+        stepIndex: 2,
+        answerRevealed: true,
+      ),
+    );
+
+    expect(middle.trail.last.shape, SolutionTrailNodeShape.marker);
+    expect(middle.trail.last.state, SolutionTrailNodeState.upcoming);
+    expect(atTheEnd.trail.last.state, SolutionTrailNodeState.ready,
+        reason: 'amber means openable, which is not the same as being here');
+    expect(opened.trail.last.state, SolutionTrailNodeState.done);
+    expect(
+      atTheEnd.trail.where((n) => n.state == SolutionTrailNodeState.current),
+      hasLength(1),
+      reason: 'the student is only ever in one place',
+    );
   });
 
   test('names the vault by how far away the answer is', () {
@@ -231,7 +262,7 @@ void main() {
         onBriefing: true,
       ));
 
-      expect(content.trail, hasLength(3));
+      expect(content.trail, hasLength(4));
       expect(content.trail.first.icon, isNotNull);
       expect(content.trail.first.state, SolutionTrailNodeState.current);
       expect(content.trail.first.semanticsLabel, 'The plan');
@@ -252,8 +283,12 @@ void main() {
       final content =
           solutionReaderContent(const SolutionReaderReady(document: _document));
 
-      expect(content.trail, hasLength(3));
-      expect(content.trail.every((n) => n.icon == null), isTrue);
+      expect(content.trail, hasLength(4));
+      expect(
+        content.trail.take(3).every((n) => n.icon == null),
+        isTrue,
+        reason: 'only the vault closes the trail; nothing heads it',
+      );
       expect(content.onBriefing, isFalse);
     });
 
@@ -302,6 +337,89 @@ void main() {
       ));
 
       expect(revealed.checkBody, isEmpty);
+    });
+  });
+
+  group('standing', () {
+    const profile = QuestProfile(
+      bankedXp: 120,
+      streakDays: 3,
+      topic: 'Geometry - Area',
+      questionTitle: 'Road through a field',
+    );
+
+    test('banks XP for the steps already read, not for the one in hand', () {
+      // 3 steps, so step values are 10, 15, 20. Arriving at step 2 means one
+      // step is read; arriving at step 3 means two are.
+      final opening = solutionReaderContent(
+        const SolutionReaderReady(document: _document, profile: profile),
+      );
+      final second = solutionReaderContent(
+        const SolutionReaderReady(
+          document: _document,
+          stepIndex: 1,
+          profile: profile,
+        ),
+      );
+      final third = solutionReaderContent(
+        const SolutionReaderReady(
+          document: _document,
+          stepIndex: 2,
+          profile: profile,
+        ),
+      );
+
+      expect(opening.xpLabel, '120 XP');
+      expect(second.xpLabel, '130 XP');
+      expect(third.xpLabel, '145 XP');
+    });
+
+    test('prices the first step cheap and the last step dear', () {
+      expect(stepXpValue(0, 3), 10);
+      expect(stepXpValue(1, 3), 15);
+      expect(stepXpValue(2, 3), 20);
+    });
+
+    test('shows what the step in hand is worth, but not on the briefing', () {
+      final onStep = solutionReaderContent(
+        const SolutionReaderReady(
+          document: _document,
+          stepIndex: 1,
+          profile: profile,
+        ),
+      );
+      final onBriefing = solutionReaderContent(
+        const SolutionReaderReady(
+          document: _briefedDocument,
+          onBriefing: true,
+          profile: profile,
+        ),
+      );
+
+      expect(onStep.stepXpLabel, '+15 XP');
+      expect(onBriefing.stepXpLabel, '',
+          reason: 'you are not paid for arriving');
+    });
+
+    test('leaves the standing copy empty until the standing loads', () {
+      final content = solutionReaderContent(
+        const SolutionReaderReady(document: _document),
+      );
+
+      expect(content.xpLabel, '');
+      expect(content.streakLabel, '');
+      expect(content.topic, '');
+      expect(content.questionTitle, '');
+    });
+
+    test('names the streak in days', () {
+      final content = solutionReaderContent(
+        const SolutionReaderReady(document: _document, profile: profile),
+      );
+
+      expect(content.streakLabel, '3-day');
+      expect(content.topic, 'Geometry - Area');
+      expect(content.questionTitle, 'Road through a field');
     });
   });
 }

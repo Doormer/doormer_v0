@@ -35,7 +35,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('solution_check')), findsOneWidget);
-    expect(find.text('Check it'), findsOneWidget);
+    expect(find.text('CHECK IT'), findsOneWidget,
+        reason: 'the heading is a kicker, set in caps like every other kicker');
     expect(find.text('Both routes give 160 square metres.'), findsOneWidget);
     expect(find.byType(MathBlockAtom), findsOneWidget);
   });

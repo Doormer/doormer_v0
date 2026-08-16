@@ -1,4 +1,4 @@
-import 'package:doormer/src/core/theme/app_theme_context.dart';
+import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/diagram_atom.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_segment_order.dart';
@@ -32,33 +32,31 @@ class SolutionCheckOrganism extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final cs = context.colorScheme;
-    final tt = context.textTheme;
-
     return Container(
       key: const Key('solution_check'),
       width: double.infinity,
       margin: EdgeInsets.only(top: 12.h),
       padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 16.h),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHigh,
+        color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: cs.outlineVariant),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.fact_check_outlined, size: 16.sp, color: cs.tertiary),
+              Icon(Icons.fact_check_rounded,
+                  size: 15.sp, color: QuestPalette.mint),
               SizedBox(width: 6.w),
               Text(
-                title,
-                style: tt.labelLarge?.copyWith(
-                  fontSize: 12.sp,
-                  letterSpacing: 1.1,
+                title.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  letterSpacing: 1.8,
                   fontWeight: FontWeight.w700,
-                  color: cs.tertiary,
+                  color: QuestPalette.mint,
                 ),
               ),
             ],

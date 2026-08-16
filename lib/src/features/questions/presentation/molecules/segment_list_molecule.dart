@@ -13,11 +13,15 @@ class SegmentListMolecule extends StatelessWidget {
   final void Function(VisualSolutionSegment visual) onEnlargeVisual;
   final DiagramImageProviderBuilder imageProviderBuilder;
 
+  /// Set on the final answer only, so its maths reads as the payoff.
+  final bool emphasised;
+
   const SegmentListMolecule({
     super.key,
     required this.segments,
     required this.onEnlargeVisual,
     this.imageProviderBuilder = networkDiagramImageProvider,
+    this.emphasised = false,
   });
 
   @override
@@ -42,6 +46,7 @@ class SegmentListMolecule extends StatelessWidget {
         key: key,
         latex: segment.latex,
         semanticsLabel: segment.alt,
+        emphasised: emphasised,
       );
     }
     if (segment is VisualSolutionSegment) {

@@ -314,4 +314,70 @@ void main() {
           reason: 'expanding a disclosure must not yank the reader to the top');
     });
   });
+
+  group('the escaping XP sticker', () {
+    testWidgets('is not clipped by the top of the scroll view',
+        (tester) async {
+      tester.view.physicalSize = const Size(360, 690);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        _pump(_params(const SolutionReaderReady(document: _document))),
+      );
+      await tester.pumpAndSettle();
+
+      final sticker = find.byKey(const Key('step_xp_sticker'));
+      expect(sticker, findsOneWidget);
+
+      final stickerTop = tester.getTopLeft(sticker).dy;
+      final scrollTop =
+          tester.getTopLeft(find.byKey(const Key('solution_scroll'))).dy;
+
+      expect(
+        stickerTop,
+        greaterThanOrEqualTo(scrollTop),
+        reason: 'the sticker sits above the card, so the scroll view must '
+            'reserve headroom for it or the viewport cuts the tag in half',
+      );
+    });
+  });
+
+  group('revealing the answer', () {
+    testWidgets('brings the vault into view', (tester) async {
+      tester.view.physicalSize = const Size(360, 690);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_pump(_params(const SolutionReaderReady(
+        document: _tallBriefedDocument,
+        stepIndex: 1,
+      ))));
+      await tester.pumpAndSettle();
+
+      final scrollRect =
+          tester.getRect(find.byKey(const Key('solution_scroll')));
+
+      expect(
+        tester.getTopLeft(find.byKey(const Key('vault_locked'))).dy,
+        greaterThan(scrollRect.bottom),
+        reason: 'the vault starts below the fold, which is what makes the '
+            'reveal invisible without this behaviour',
+      );
+
+      await tester.pumpWidget(_pump(_params(const SolutionReaderReady(
+        document: _tallBriefedDocument,
+        stepIndex: 1,
+        answerRevealed: true,
+      ))));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getTopLeft(find.byKey(const Key('vault_revealed'))).dy,
+        lessThan(scrollRect.bottom),
+        reason: 'the answer is the payoff of the page and must not stay off '
+            'screen when the student asks for it',
+      );
+    });
+  });
 }

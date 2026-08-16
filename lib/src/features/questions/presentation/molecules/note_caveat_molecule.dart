@@ -1,4 +1,5 @@
-import 'package:doormer/src/core/theme/app_theme_context.dart';
+import 'package:doormer/src/core/theme/quest_palette.dart';
+import 'package:doormer/src/features/questions/presentation/atoms/accent_well_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -17,31 +18,23 @@ class NoteCaveatMolecule extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final cs = context.colorScheme;
-    final tt = context.textTheme;
-
-    return Container(
+    return AccentWellAtom(
       key: const Key('solution_note'),
-      width: double.infinity,
+      accent: QuestPalette.amber,
       margin: EdgeInsets.only(top: 12.h),
-      padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 10.h),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(10.r),
-        border: Border(left: BorderSide(color: cs.tertiary, width: 3.w)),
-      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline, size: 15.sp, color: cs.tertiary),
+          Icon(Icons.info_rounded, size: 15.sp, color: QuestPalette.amber),
           SizedBox(width: 8.w),
           Expanded(
             child: Text(
               note,
-              style: tt.bodySmall?.copyWith(
+              style: TextStyle(
+                fontFamily: kBodyFont,
                 fontSize: 12.sp,
-                height: 1.4,
-                color: cs.onSurfaceVariant,
+                height: 1.5,
+                color: QuestPalette.muted,
               ),
             ),
           ),

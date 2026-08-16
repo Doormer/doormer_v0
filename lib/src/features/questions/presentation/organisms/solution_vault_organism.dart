@@ -1,4 +1,4 @@
-import 'package:doormer/src/core/theme/app_theme_context.dart';
+import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/diagram_atom.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_segment_order.dart';
@@ -30,9 +30,6 @@ class SolutionVaultOrganism extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = context.colorScheme;
-    final tt = context.textTheme;
-
     if (revealed) {
       return Container(
         key: const Key('vault_revealed'),
@@ -40,24 +37,31 @@ class SolutionVaultOrganism extends StatelessWidget {
         margin: EdgeInsets.only(top: 12.h),
         padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 16.h),
         decoration: BoxDecoration(
-          color: cs.tertiaryContainer,
-          borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(color: cs.tertiary, width: 2),
+          color: QuestPalette.mint.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(18.r),
+          border: Border.all(color: QuestPalette.mint, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: QuestPalette.mint.withValues(alpha: 0.22),
+              blurRadius: 26,
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.lock_open, size: 16.sp, color: cs.onTertiaryContainer),
+                Icon(Icons.lock_open_rounded,
+                    size: 15.sp, color: QuestPalette.mint),
                 SizedBox(width: 6.w),
                 Text(
-                  'Final answer',
-                  style: tt.labelLarge?.copyWith(
-                    fontSize: 12.sp,
-                    letterSpacing: 1.1,
+                  'CRACKED IT',
+                  style: TextStyle(
+                    fontSize: 10.sp,
+                    letterSpacing: 1.8,
                     fontWeight: FontWeight.w700,
-                    color: cs.onTertiaryContainer,
+                    color: QuestPalette.mint,
                   ),
                 ),
               ],
@@ -67,6 +71,7 @@ class SolutionVaultOrganism extends StatelessWidget {
               segments: answerBody,
               onEnlargeVisual: onEnlargeVisual,
               imageProviderBuilder: imageProviderBuilder,
+              emphasised: true,
             ),
           ],
         ),
@@ -81,18 +86,31 @@ class SolutionVaultOrganism extends StatelessWidget {
         margin: EdgeInsets.only(top: 12.h),
         padding: EdgeInsets.symmetric(horizontal: 13.w, vertical: 11.h),
         decoration: BoxDecoration(
-          color: unlockable ? cs.tertiaryContainer : cs.surfaceContainerHighest,
+          color: unlockable
+              ? QuestPalette.amber.withValues(alpha: 0.14)
+              : Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(14.r),
           border: Border.all(
-            color: unlockable ? cs.tertiary : cs.outlineVariant,
+            color: unlockable
+                ? QuestPalette.amber
+                : Colors.white.withValues(alpha: 0.16),
+            width: unlockable ? 1.5 : 1,
           ),
+          boxShadow: unlockable
+              ? [
+                  BoxShadow(
+                    color: QuestPalette.amber.withValues(alpha: 0.24),
+                    blurRadius: 20,
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           children: [
             Icon(
-              Icons.lock_outline,
+              unlockable ? Icons.lock_open_rounded : Icons.lock_rounded,
               size: 15.sp,
-              color: unlockable ? cs.onTertiaryContainer : cs.onSurfaceVariant,
+              color: unlockable ? QuestPalette.amber : QuestPalette.dim,
             ),
             SizedBox(width: 9.w),
             Expanded(
@@ -100,14 +118,17 @@ class SolutionVaultOrganism extends StatelessWidget {
                 lockedLabel,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: tt.labelLarge?.copyWith(
+                style: TextStyle(
+                  fontFamily: kDisplayFont,
                   fontSize: 12.sp,
                   fontWeight: FontWeight.w500,
-                  color:
-                      unlockable ? cs.onTertiaryContainer : cs.onSurfaceVariant,
+                  color: unlockable ? QuestPalette.amber : QuestPalette.dim,
                 ),
               ),
             ),
+            if (unlockable)
+              Icon(Icons.chevron_right_rounded,
+                  size: 17.sp, color: QuestPalette.amber),
           ],
         ),
       ),
