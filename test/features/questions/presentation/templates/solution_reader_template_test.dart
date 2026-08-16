@@ -771,6 +771,53 @@ void _revealResistTests() {
       expect(back, 0);
     });
 
+    testWidgets('the hint floats clear of the buttons rather than under them',
+        (tester) async {
+      await tester.pumpWidget(_pump(_params(
+        const SolutionReaderReady(document: _document, stepIndex: 0),
+      )));
+      await tester.pump();
+
+      final hint = tester.getRect(find.byKey(const Key('swipe_hint')));
+      final cta = tester.getRect(find.text('Next step'));
+
+      expect(hint.bottom, lessThanOrEqualTo(cta.top),
+          reason: 'it sits above the dock, not on top of the button');
+      expect(cta.top - hint.bottom, lessThan(40),
+          reason: 'it belongs to the buttons, not to the working above them');
+
+      // Paint order: whatever the dock draws must not land on top of it.
+      final barStack = tester.widget<Stack>(find
+          .ancestor(
+            of: find.byKey(const Key('swipe_hint')),
+            matching: find.byType(Stack),
+          )
+          .first);
+      expect(barStack.children.last, isA<Positioned>(),
+          reason: 'the hint is drawn last, so nothing buries it');
+      expect(barStack.clipBehavior, Clip.none,
+          reason: 'it reaches up out of the dock, so clipping erases it');
+
+      // And it must actually land on screen, as a chip rather than a banner.
+      final screen = tester.getRect(find.byType(MaterialApp));
+      expect(hint.top, greaterThanOrEqualTo(screen.top));
+      expect(hint.bottom, lessThanOrEqualTo(screen.bottom));
+      expect(hint.width, lessThan(screen.width * 0.75),
+          reason: 'it is an aside, not a banner across the whole screen');
+    });
+
+    testWidgets('says nothing on the briefing, where there is nothing to swipe',
+        (tester) async {
+      await tester.pumpWidget(_pump(_params(const SolutionReaderReady(
+        document: _briefedDocument,
+        onBriefing: true,
+      ))));
+      await tester.pump();
+
+      expect(find.byKey(const Key('swipe_hint')), findsNothing,
+          reason: 'and so it still has its say when the steps begin');
+    });
+
     testWidgets('the hint retires as soon as the student moves',
         (tester) async {
       await tester.pumpWidget(_pump(_params(

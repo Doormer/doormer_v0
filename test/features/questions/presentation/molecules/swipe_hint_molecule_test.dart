@@ -144,6 +144,16 @@ void main() {
     expect(find.byType(IdleBeatAtom), findsNothing);
   });
 
+  testWidgets('wraps its words instead of stretching across', (tester) async {
+    await tester.pumpWidget(_pump());
+    await tester.pump();
+
+    final pill = tester.getSize(find.byKey(const Key('swipe_hint')));
+    final surface = tester.getSize(find.byType(MaterialApp));
+    expect(pill.width, lessThan(surface.width - 20),
+        reason: 'it wraps its words rather than spanning the screen');
+  });
+
   testWidgets('takes up no room, so the buttons do not shift', (tester) async {
     await tester.pumpWidget(_pump());
     await tester.pump();

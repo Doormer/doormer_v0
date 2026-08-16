@@ -468,7 +468,6 @@ class _CtaBar extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SwipeHintMolecule(used: content.hasMoved),
         IgnorePointer(
           child: Container(
             height: 26.h,
@@ -484,33 +483,51 @@ class _CtaBar extends StatelessWidget {
             ),
           ),
         ),
-        Container(
-          decoration: BoxDecoration(
-            color: QuestPalette.glowBottom,
-            border: Border(
-              top: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
-            ),
-          ),
-          padding: EdgeInsets.fromLTRB(13.w, 11.h, 13.w, 13.h),
-          child: Row(
-            children: [
-              _GhostButton(
-                enabled: content.canGoBack,
-                onPressed: params.onBack,
-              ),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: _PrimaryCta(
-                  label: content.ctaLabel,
-                  accent: accent,
-                  edge: edge,
-                  onPressed: content.ctaEnabled
-                      ? (content.isLastStep ? onRequestReveal : params.onNext)
-                      : null,
+        Stack(
+          alignment: Alignment.topCenter,
+          // The hint reaches up out of the dock; clipping erases it.
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: QuestPalette.glowBottom,
+                border: Border(
+                  top: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
                 ),
               ),
-            ],
-          ),
+              padding: EdgeInsets.fromLTRB(13.w, 11.h, 13.w, 13.h),
+              child: Row(
+                children: [
+                  _GhostButton(
+                    enabled: content.canGoBack,
+                    onPressed: params.onBack,
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: _PrimaryCta(
+                      label: content.ctaLabel,
+                      accent: accent,
+                      edge: edge,
+                      onPressed: content.ctaEnabled
+                          ? (content.isLastStep
+                              ? onRequestReveal
+                              : params.onNext)
+                          : null,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Anchored to the top of the dock and drawn last, so it
+            // floats just above the buttons instead of being buried.
+            if (!content.onBriefing)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: SwipeHintMolecule(used: content.hasMoved),
+              ),
+          ],
         ),
       ],
     );

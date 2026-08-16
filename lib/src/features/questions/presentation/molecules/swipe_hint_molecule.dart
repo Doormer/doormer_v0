@@ -98,22 +98,30 @@ class _SwipeHintMoleculeState extends State<SwipeHintMolecule>
     return SizedBox(
       height: 0,
       child: OverflowBox(
+        minHeight: 0,
         maxHeight: 40.h,
+        // The slot has no height of its own, so aligning to its bottom edge
+        // lifts the pill clear of whatever sits below it.
         alignment: Alignment.bottomCenter,
         child: IgnorePointer(
           child: Padding(
             padding: EdgeInsets.only(bottom: 8.h),
-            child: AnimatedBuilder(
-              animation: _out,
-              builder: (context, child) {
-                final o = _opacity;
-                if (o == 0) return const SizedBox.shrink();
-                return FadeTransition(
-                  opacity: AlwaysStoppedAnimation<double>(o),
-                  child: child,
-                );
-              },
-              child: _pill(),
+            // Loosens the width so the pill wraps its words instead of
+            // stretching into a banner.
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: AnimatedBuilder(
+                animation: _out,
+                builder: (context, child) {
+                  final o = _opacity;
+                  if (o == 0) return const SizedBox.shrink();
+                  return FadeTransition(
+                    opacity: AlwaysStoppedAnimation<double>(o),
+                    child: child,
+                  );
+                },
+                child: _pill(),
+              ),
             ),
           ),
         ),
