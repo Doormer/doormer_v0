@@ -40,6 +40,26 @@ const _briefedDocument = SolutionDocument(
   ]),
 );
 
+/// Every screen here overflows a 690px viewport, so there is always somewhere
+/// to scroll to and a retained offset would be visible.
+const _tallBriefedDocument = SolutionDocument(
+  schemaVersion: '3.0',
+  steps: [
+    SolutionStep(title: 'Find the road slope', body: [
+      TextSolutionSegment('The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. '),
+    ]),
+    SolutionStep(title: 'Scale the width', body: [
+      TextSolutionSegment('The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. '),
+    ]),
+  ],
+  finalAnswer: FinalAnswer(body: [
+    TextSolutionSegment('The paved area is 160 square metres.'),
+  ]),
+  approach: SolutionSection(body: [
+    TextSolutionSegment('The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. The road angle follows from the printed width. '),
+  ]),
+);
+
 Widget _pump(SolutionReaderParams params) {
   return ScreenUtilInit(
     designSize: const Size(360, 690),
@@ -199,6 +219,99 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(const Key('solution_check')), findsNothing);
+    });
+  });
+
+  group('a new screen starts at the top', () {
+    /// The scroll view is reused across screens, so without an explicit reset
+    /// its offset carries over and the student is dropped into the middle of
+    /// the next screen with its heading scrolled off above them.
+    Future<double> offset(WidgetTester tester) async {
+      final position = tester
+          .state<ScrollableState>(find
+              .descendant(
+                of: find.byKey(const Key('solution_scroll')),
+                matching: find.byType(Scrollable),
+              )
+              .first)
+          .position;
+      return position.pixels;
+    }
+
+    testWidgets('resets when advancing off the briefing', (tester) async {
+      tester.view.physicalSize = const Size(360, 690);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_pump(_params(const SolutionReaderReady(
+        document: _tallBriefedDocument,
+        onBriefing: true,
+      ))));
+      await tester.pumpAndSettle();
+
+      await tester.drag(
+          find.byKey(const Key('solution_scroll')), const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(await offset(tester), greaterThan(0));
+
+      await tester.pumpWidget(_pump(_params(
+        const SolutionReaderReady(document: _tallBriefedDocument),
+      )));
+      await tester.pumpAndSettle();
+
+      expect(await offset(tester), 0,
+          reason: 'step one must open at its own heading');
+    });
+
+    testWidgets('resets when moving between steps', (tester) async {
+      tester.view.physicalSize = const Size(360, 690);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_pump(
+        _params(const SolutionReaderReady(document: _tallBriefedDocument)),
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.drag(
+          find.byKey(const Key('solution_scroll')), const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(await offset(tester), greaterThan(0));
+
+      await tester.pumpWidget(_pump(_params(const SolutionReaderReady(
+        document: _tallBriefedDocument,
+        stepIndex: 1,
+      ))));
+      await tester.pumpAndSettle();
+
+      expect(await offset(tester), 0);
+    });
+
+    testWidgets('holds its place when only the rationale toggles',
+        (tester) async {
+      tester.view.physicalSize = const Size(360, 690);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_pump(_params(
+        const SolutionReaderReady(document: _tallBriefedDocument),
+      )));
+      await tester.pumpAndSettle();
+
+      await tester.drag(
+          find.byKey(const Key('solution_scroll')), const Offset(0, -200));
+      await tester.pumpAndSettle();
+      final scrolled = await offset(tester);
+      expect(scrolled, greaterThan(0));
+
+      await tester.pumpWidget(_pump(_params(const SolutionReaderReady(
+        document: _tallBriefedDocument,
+        rationaleVisible: true,
+      ))));
+      await tester.pumpAndSettle();
+
+      expect(await offset(tester), scrolled,
+          reason: 'expanding a disclosure must not yank the reader to the top');
     });
   });
 }

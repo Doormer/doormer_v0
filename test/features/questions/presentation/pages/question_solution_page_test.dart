@@ -117,4 +117,36 @@ void main() {
 
     expect(find.text('Handed over from the solve.'), findsOneWidget);
   });
+
+  testWidgets('lands at the top of step one after a scrolled briefing',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 690);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+
+    // The real approach runs to 1330px on a 690px viewport, so a student
+    // reaches "Start solving" only after scrolling well down the briefing.
+    await tester.drag(
+        find.byKey(const Key('solution_scroll')), const Offset(0, -600));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('solution_cta')));
+    await tester.pumpAndSettle();
+
+    final position = tester
+        .state<ScrollableState>(find
+            .descendant(
+              of: find.byKey(const Key('solution_scroll')),
+              matching: find.byType(Scrollable),
+            )
+            .first)
+        .position;
+
+    expect(position.pixels, 0);
+    expect(tester.getTopLeft(find.text('LEVEL 1')).dy, greaterThanOrEqualTo(0),
+        reason: 'the step heading must not start scrolled off the top');
+  });
 }
