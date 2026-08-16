@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -35,6 +36,47 @@ class _FailingImageProvider extends MemoryImage {
   }
 }
 
+/// Fails the first [failures] loads, then serves the real bytes.
+class _FlakyImageProvider extends MemoryImage {
+  static int attempts = 0;
+
+  final int failures;
+
+  _FlakyImageProvider(this.failures) : super(_pngBytes);
+
+  @override
+  ImageStreamCompleter loadImage(MemoryImage key, ImageDecoderCallback decode) {
+    attempts++;
+    if (attempts <= failures) {
+      return OneFrameImageStreamCompleter(
+        Future<ImageInfo>.error(Exception('dropped request')),
+      );
+    }
+    return super.loadImage(key, decode);
+  }
+}
+
+/// Never resolves, standing in for a diagram still on the wire.
+class _PendingImageProvider extends MemoryImage {
+  _PendingImageProvider() : super(_pngBytes);
+
+  @override
+  ImageStreamCompleter loadImage(MemoryImage key, ImageDecoderCallback decode) {
+    return OneFrameImageStreamCompleter(Completer<ImageInfo>().future);
+  }
+}
+
+/// Walks past every retry the atom is allowed, so what is on screen afterwards
+/// is the figure's final answer rather than a moment mid-recovery.
+Future<void> _settleRetries(WidgetTester tester) async {
+  for (var i = 0; i < DiagramAtom.maxAttempts + 1; i++) {
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(DiagramAtom.retryBackoff);
+  }
+  await tester.pump();
+}
+
 Widget _pump({required DiagramImageProviderBuilder builder}) {
   return ScreenUtilInit(
     designSize: const Size(360, 690),
@@ -55,6 +97,14 @@ Widget _pump({required DiagramImageProviderBuilder builder}) {
 }
 
 void main() {
+  // A cached success from an earlier test would be served without the provider
+  // ever being asked, so the retry counts would read zero.
+  setUp(() {
+    _FlakyImageProvider.attempts = 0;
+    PaintingBinding.instance.imageCache.clear();
+    PaintingBinding.instance.imageCache.clearLiveImages();
+  });
+
   testWidgets('reserves the payload aspect ratio and shows the caption',
       (tester) async {
     await tester.pumpWidget(_pump(builder: (_) => MemoryImage(_pngBytes)));
@@ -88,11 +138,52 @@ void main() {
     expect(filtered.colorFilter, DiagramAtom.inkFilter);
   });
 
+  testWidgets('turns while the diagram is still on its way', (tester) async {
+    await tester.pumpWidget(_pump(builder: (_) => _PendingImageProvider()));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byKey(const Key('diagram_spinner')), findsOneWidget);
+
+    // And it is bounded: an endless spinner would hang this call, and with it
+    // every future test that renders a loading diagram.
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('diagram_spinner')), findsOneWidget,
+        reason: 'the diagram has still not arrived, so the slot stays');
+  });
+
+  testWidgets('holds on through a dropped request instead of giving up',
+      (tester) async {
+    await tester.pumpWidget(_pump(builder: (_) => _FlakyImageProvider(1)));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byKey(const Key('diagram_spinner')), findsOneWidget,
+        reason: 'the figure is still on its way, not gone');
+    expect(find.byKey(const Key('diagram_figure')), findsOneWidget);
+
+    await _settleRetries(tester);
+
+    expect(find.byKey(const Key('diagram_figure')), findsOneWidget,
+        reason: 'one dropped request must not cost the student the diagram');
+    expect(
+      find.text('The 5 m and 4 m measurements determine the road angle.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('tries three times before it gives up', (tester) async {
+    await tester.pumpWidget(_pump(builder: (_) => _FlakyImageProvider(99)));
+    await _settleRetries(tester);
+
+    expect(_FlakyImageProvider.attempts, 3);
+    expect(DiagramAtom.maxAttempts, 3);
+  });
+
   testWidgets('collapses the image and the caption together on load failure',
       (tester) async {
     await tester.pumpWidget(_pump(builder: (_) => _FailingImageProvider()));
-    await tester.pump();
-    await tester.pump();
+    await _settleRetries(tester);
 
     expect(find.byKey(const Key('diagram_figure')), findsNothing);
     expect(find.byKey(const Key('diagram_caption')), findsNothing);
@@ -102,8 +193,7 @@ void main() {
     );
   });
 
-  testWidgets(
-      'resets failure state when the visual changes to a different URL',
+  testWidgets('resets failure state when the visual changes to a different URL',
       (tester) async {
     const visual1 = VisualSolutionSegment(
       mediaType: 'image/png',
@@ -151,16 +241,14 @@ void main() {
     await tester.pumpWidget(
       buildWith(visual: visual1, builder: (_) => _FailingImageProvider()),
     );
-    await tester.pump();
-    await tester.pump();
+    await _settleRetries(tester);
 
     expect(find.byKey(const Key('diagram_figure')), findsNothing,
         reason: 'figure must collapse after load failure');
 
     // Second: same key position, different URL, succeeding provider → renders.
     await tester.pumpWidget(
-      buildWith(
-          visual: visual2, builder: (_) => MemoryImage(_pngBytes)),
+      buildWith(visual: visual2, builder: (_) => MemoryImage(_pngBytes)),
     );
     await tester.pump();
 

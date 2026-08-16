@@ -221,20 +221,24 @@ void main() {
     expect(revealed.answerBody.single.segment, isA<MathSolutionSegment>());
   });
 
-  test('never emits a step-of-total string', () {
-    final content = solutionReaderContent(
-      const SolutionReaderReady(document: _document, stepIndex: 1),
-    );
+  test('counts the level the same way the trail does', () {
+    // The kicker names the whole journey, as the approved design does, so it
+    // must agree with the trail rather than tell a second, different story
+    // about where the student is.
+    for (var i = 0; i < _document.steps.length; i++) {
+      final content = solutionReaderContent(
+        SolutionReaderReady(document: _document, stepIndex: i),
+      );
+      final stepNodes = content.trail
+          .where((n) => n.shape == SolutionTrailNodeShape.step)
+          .toList();
 
-    final copy = [
-      content.levelLabel,
-      content.stepTitle,
-      content.ctaLabel,
-      content.rationaleToggleLabel,
-    ];
-    for (final line in copy) {
-      expect(line.contains(' of '), isFalse,
-          reason: 'the trail is the only progress indicator');
+      expect(content.levelLabel, 'LEVEL ${i + 1} OF ${stepNodes.length}');
+      expect(
+        stepNodes[i].state,
+        SolutionTrailNodeState.current,
+        reason: 'the kicker and the trail must point at the same step',
+      );
     }
   });
 
@@ -288,8 +292,8 @@ void main() {
     });
 
     test('lets step one go back to the briefing', () {
-      final withBriefing =
-          solutionReaderContent(const SolutionReaderReady(document: _briefedDocument));
+      final withBriefing = solutionReaderContent(
+          const SolutionReaderReady(document: _briefedDocument));
       final withoutBriefing =
           solutionReaderContent(const SolutionReaderReady(document: _document));
 
@@ -313,8 +317,8 @@ void main() {
     });
 
     test('marks the briefing done once the student is on a step', () {
-      final content =
-          solutionReaderContent(const SolutionReaderReady(document: _briefedDocument));
+      final content = solutionReaderContent(
+          const SolutionReaderReady(document: _briefedDocument));
 
       expect(content.trail.first.state, SolutionTrailNodeState.done);
       expect(content.trail[1].state, SolutionTrailNodeState.current);
@@ -340,7 +344,8 @@ void main() {
       ));
 
       expect(content.isLastStep, isFalse,
-          reason: 'the CTA would otherwise reveal the answer from the briefing');
+          reason:
+              'the CTA would otherwise reveal the answer from the briefing');
       expect(content.ctaLabel, 'Start solving');
       expect(content.answerRevealed, isFalse);
     });

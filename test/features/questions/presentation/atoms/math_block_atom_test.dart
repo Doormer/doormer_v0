@@ -5,19 +5,89 @@ import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Widget _pump(Widget child, {double width = 320}) {
+Widget _pump(Widget child, {double width = 320, bool motion = false}) {
   return ScreenUtilInit(
     designSize: const Size(360, 690),
     builder: (_, __) => MaterialApp(
       theme: AppTheme.dark,
-      home: Scaffold(
-        body: Center(child: SizedBox(width: width, child: child)),
+      home: MediaQuery(
+        data: MediaQueryData(disableAnimations: !motion),
+        child: Scaffold(
+          body: Center(child: SizedBox(width: width, child: child)),
+        ),
       ),
     ),
   );
 }
 
+void _sheenTests() {
+  const expression = MathBlockAtom(
+    latex: r'\tan\theta=\frac{3}{4}',
+    semanticsLabel: 'tangent theta equals three quarters',
+  );
+
+  group('the sheen', () {
+    testWidgets('passes over the expression once when it arrives',
+        (tester) async {
+      await tester.pumpWidget(_pump(expression, motion: true));
+      // The controller starts in a post-frame callback, so the first pump only
+      // schedules it. Sampling now would read the zeroth tick.
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.byKey(const Key('math_block_sheen')), findsNothing,
+          reason: 'the sweep waits for the card to arrive rather than racing '
+              'it');
+
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byKey(const Key('math_block_sheen')), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('math_block_sheen')), findsNothing,
+          reason: 'a permanent shimmer competes with the maths, and the maths '
+              'must win');
+    });
+
+    testWidgets('travels across rather than glinting in place', (tester) async {
+      await tester.pumpWidget(_pump(expression, motion: true));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      final early = tester
+          .widget<Transform>(find.ancestor(
+            of: find.byKey(const Key('math_block_sheen')),
+            matching: find.byType(Transform),
+          ))
+          .transform
+          .getTranslation()
+          .x;
+
+      await tester.pump(const Duration(milliseconds: 300));
+      final later = tester
+          .widget<Transform>(find.ancestor(
+            of: find.byKey(const Key('math_block_sheen')),
+            matching: find.byType(Transform),
+          ))
+          .transform
+          .getTranslation()
+          .x;
+
+      expect(later, greaterThan(early));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('never runs under reduced motion', (tester) async {
+      await tester.pumpWidget(_pump(expression));
+      await tester.pump();
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(find.byKey(const Key('math_block_sheen')), findsNothing);
+      }
+    });
+  });
+}
+
 void main() {
+  _sheenTests();
   testWidgets('renders the expression through flutter_math_fork',
       (tester) async {
     await tester.pumpWidget(_pump(
@@ -44,7 +114,8 @@ void main() {
     expect(find.byKey(const Key('math_block_overflow_hint')), findsNothing);
   });
 
-  testWidgets('shows the overflow hint when the expression is wider than the box',
+  testWidgets(
+      'shows the overflow hint when the expression is wider than the box',
       (tester) async {
     await tester.pumpWidget(_pump(
       const MathBlockAtom(
