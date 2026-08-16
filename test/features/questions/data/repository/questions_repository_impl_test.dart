@@ -5,6 +5,7 @@ import 'package:doormer/src/features/questions/data/datasource/questions_remote_
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
 import 'package:doormer/src/features/questions/data/repository/questions_repository_impl.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
+import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeQuestionsRemoteDataSource implements QuestionsRemoteDataSource {
@@ -46,6 +47,14 @@ class _FakeQuestionsLocalDataSource implements QuestionsLocalDataSource {
       ),
     );
   }
+
+  @override
+  Future<QuestProfile> loadQuestProfile() async => const QuestProfile(
+        bankedXp: 120,
+        streakDays: 3,
+        topic: 'Geometry - Area',
+        questionTitle: 'Road through a field',
+      );
 }
 
 void main() {

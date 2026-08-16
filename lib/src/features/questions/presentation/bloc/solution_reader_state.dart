@@ -28,6 +28,10 @@ class SolutionReaderReady extends SolutionReaderState {
 
   final String note;
 
+  /// Null until the mock standing loads. The reader draws without it rather
+  /// than holding the solution back for a decoration.
+  final QuestProfile? profile;
+
   const SolutionReaderReady({
     required this.document,
     this.stepIndex = 0,
@@ -35,6 +39,7 @@ class SolutionReaderReady extends SolutionReaderState {
     this.answerRevealed = false,
     this.onBriefing = false,
     this.note = '',
+    this.profile,
   });
 
   bool get isFirstStep => stepIndex == 0;
@@ -48,6 +53,7 @@ class SolutionReaderReady extends SolutionReaderState {
     bool? rationaleVisible,
     bool? answerRevealed,
     bool? onBriefing,
+    QuestProfile? profile,
   }) {
     return SolutionReaderReady(
       document: document,
@@ -56,13 +62,22 @@ class SolutionReaderReady extends SolutionReaderState {
       answerRevealed: answerRevealed ?? this.answerRevealed,
       onBriefing: onBriefing ?? this.onBriefing,
       note: note,
+      profile: profile ?? this.profile,
     );
   }
 
   /// [document] is a plain domain entity, so it compares by identity here.
   @override
   List<Object?> get props =>
-      [document, stepIndex, rationaleVisible, answerRevealed, onBriefing, note];
+      [
+        document,
+        stepIndex,
+        rationaleVisible,
+        answerRevealed,
+        onBriefing,
+        note,
+        profile,
+      ];
 }
 
 class SolutionReaderError extends SolutionReaderState {

@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
+import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 
 abstract class QuestionsRepository {
   Future<PhotoQuestionSolveOutcome> submitPhotoQuestion({
@@ -9,4 +10,6 @@ abstract class QuestionsRepository {
   });
 
   Future<PhotoQuestionSolveOutcome> loadSampleSolution();
+
+  Future<QuestProfile> loadQuestProfile();
 }
