@@ -6,20 +6,17 @@ import 'package:doormer/src/features/questions/presentation/organisms/solve_stat
 import 'package:doormer/src/features/questions/presentation/params/bottom_action_bar_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
-import 'package:doormer/src/features/questions/presentation/params/user_status_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 
 class AskByPhotoTemplate extends StatelessWidget {
-  final UserStatusParams userStatusParams;
   final PhotoUploadPanelParams uploadParams;
   final SolveStatusPanelParams statusParams;
   final BottomActionBarParams bottomBarParams;
 
   const AskByPhotoTemplate({
     super.key,
-    required this.userStatusParams,
     required this.uploadParams,
     required this.statusParams,
     required this.bottomBarParams,
@@ -59,11 +56,6 @@ class AskByPhotoTemplate extends StatelessWidget {
                 ),
               ),
             ),
-            // Positioned(
-            //   top: 24.h,
-            //   left: 24.w,
-            //   child: UserStatusMolecule(params: userStatusParams),
-            // ),
             if (showPanels)
               Positioned.fill(
                   child: _buildSolvePanels(showUploadPanel, showStatusPanel))

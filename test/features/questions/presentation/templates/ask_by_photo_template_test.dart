@@ -1,11 +1,9 @@
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solve_status_presenter.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/user_status_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/bottom_action_bar_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
-import 'package:doormer/src/features/questions/presentation/params/user_status_params.dart';
 import 'package:doormer/src/features/questions/presentation/templates/ask_by_photo_template.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:flutter/material.dart';
@@ -29,11 +27,6 @@ void main() {
         builder: (_, __) => MaterialApp(
           theme: AppTheme.light,
           home: AskByPhotoTemplate(
-            userStatusParams: const UserStatusParams(
-              levelLabel: 'LV.xx',
-              collectedCount: 12,
-              totalCount: 50,
-            ),
             uploadParams: PhotoUploadPanelParams(
               isLoading: false,
               onPickPhoto: () => pickCount++,
@@ -61,10 +54,6 @@ void main() {
       ),
     );
 
-    // UserStatusMolecule is currently commented out of AskByPhotoTemplate (see
-    // c670849). Asserted as absent so that restoring it is a deliberate change
-    // that trips this test rather than a silent one.
-    expect(find.byType(UserStatusMolecule), findsNothing);
     expect(find.byType(NavigationBarOrganism), findsOneWidget);
 
     await tester.tap(find.text('UPLOAD & SOLVE'));
@@ -86,11 +75,6 @@ void main() {
         builder: (_, __) => MaterialApp(
           theme: AppTheme.light,
           home: AskByPhotoTemplate(
-            userStatusParams: const UserStatusParams(
-              levelLabel: 'LV.xx',
-              collectedCount: 0,
-              totalCount: 50,
-            ),
             uploadParams: PhotoUploadPanelParams(
               isLoading: false,
               onPickPhoto: () {},

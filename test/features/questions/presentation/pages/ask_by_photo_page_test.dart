@@ -15,8 +15,10 @@ import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
+import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_quest_profile_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
@@ -59,6 +61,14 @@ class _FakeQuestionsRepository implements QuestionsRepository {
   Future<PhotoQuestionSolveOutcome> loadSampleSolution() {
     throw UnimplementedError();
   }
+
+  @override
+  Future<QuestProfile> loadQuestProfile() async => const QuestProfile(
+        bankedXp: 120,
+        streakDays: 3,
+        topic: 'Geometry - Area',
+        questionTitle: 'Road through a field',
+      );
 }
 
 PhotoQuestionSolveOutcome _outcome(PhotoQuestionSolveStatus status) {
@@ -102,6 +112,7 @@ void main() {
     serviceLocator.registerFactory<SolutionReaderBloc>(
       () => SolutionReaderBloc(
         loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
+        loadQuestProfileUseCase: LoadQuestProfileUseCase(repository),
       ),
     );
   }

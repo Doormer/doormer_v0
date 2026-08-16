@@ -6,7 +6,6 @@ import 'package:doormer/src/features/questions/presentation/mapper/solve_status_
 import 'package:doormer/src/features/questions/presentation/params/bottom_action_bar_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
-import 'package:doormer/src/features/questions/presentation/params/user_status_params.dart';
 import 'package:doormer/src/features/questions/presentation/templates/ask_by_photo_template.dart';
 import 'package:doormer/src/shared/widget/custom_toast.dart';
 import 'package:file_picker/file_picker.dart';
@@ -191,11 +190,6 @@ class AskByPhotoPage extends StatelessWidget {
           final isLoading = loading != null;
 
           return AskByPhotoTemplate(
-            userStatusParams: const UserStatusParams(
-              levelLabel: 'LV.xx',
-              collectedCount: 12,
-              totalCount: 50,
-            ),
             uploadParams: PhotoUploadPanelParams(
               imageBytes: selected?.imageBytes ??
                   loading?.imageBytes ??
