@@ -1,4 +1,5 @@
 import 'package:doormer/src/core/theme/app_theme.dart';
+import 'package:doormer/src/features/questions/presentation/mapper/photo_upload_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solve_status_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/bottom_action_bar_params.dart';
@@ -29,6 +30,7 @@ void main() {
           home: AskByPhotoTemplate(
             uploadParams: PhotoUploadPanelParams(
               isLoading: false,
+              copy: photoUploadCopyFor(hasPhoto: false, isRetry: false),
               onPickPhoto: () => pickCount++,
               onSubmit: () => submitCount++,
               onClear: () {},
@@ -77,6 +79,7 @@ void main() {
           home: AskByPhotoTemplate(
             uploadParams: PhotoUploadPanelParams(
               isLoading: false,
+              copy: photoUploadCopyFor(hasPhoto: false, isRetry: false),
               onPickPhoto: () {},
               onSubmit: () {},
               onClear: () {},

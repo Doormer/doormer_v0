@@ -39,6 +39,7 @@ class PhotoUploadPanelOrganism extends StatelessWidget {
           PhotoActionRowMolecule(
             hasPhoto: hasPhoto,
             isLoading: params.isLoading,
+            pickLabel: params.copy.pickLabel,
             onPick: params.onPickPhoto,
             onClear: params.onClear,
           ),
@@ -46,7 +47,7 @@ class PhotoUploadPanelOrganism extends StatelessWidget {
           AppButtonAtom(
             // The retry lives here rather than in the status panel below:
             // one button, directly under the photo it will send.
-            label: params.isRetry ? 'Try again' : 'Submit to solver',
+            label: params.copy.submitLabel,
             variant: AppButtonVariant.accent,
             expand: true,
             isLoading: params.isLoading,

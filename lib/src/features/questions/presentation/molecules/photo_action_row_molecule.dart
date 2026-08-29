@@ -5,6 +5,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class PhotoActionRowMolecule extends StatelessWidget {
   final bool hasPhoto;
   final bool isLoading;
+
+  /// Named above this layer, because what the picker does depends on whether
+  /// there is already a photo to replace.
+  final String pickLabel;
+
   final VoidCallback onPick;
   final VoidCallback onClear;
 
@@ -12,6 +17,7 @@ class PhotoActionRowMolecule extends StatelessWidget {
     super.key,
     required this.hasPhoto,
     required this.isLoading,
+    required this.pickLabel,
     required this.onPick,
     required this.onClear,
   });
@@ -22,7 +28,7 @@ class PhotoActionRowMolecule extends StatelessWidget {
       children: [
         Expanded(
           child: AppButtonAtom(
-            label: hasPhoto ? 'Retake' : 'Choose photo',
+            label: pickLabel,
             icon: Icons.photo_camera_outlined,
             onPressed: isLoading ? null : onPick,
           ),

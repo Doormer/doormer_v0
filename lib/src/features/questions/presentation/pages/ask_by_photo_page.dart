@@ -2,6 +2,7 @@ import 'package:camera/camera.dart' show XFile;
 import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/mapper/photo_upload_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solve_status_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/params/bottom_action_bar_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
@@ -188,16 +189,22 @@ class AskByPhotoPage extends StatelessWidget {
           // moment the solve goes wrong.
           final failed = state is AskByPhotoSolveFailed ? state : null;
           final isLoading = loading != null;
+          final imageBytes = selected?.imageBytes ??
+              loading?.imageBytes ??
+              failed?.imageBytes;
+          final isRetry = failed?.isRetryable ?? false;
 
           return AskByPhotoTemplate(
             uploadParams: PhotoUploadPanelParams(
-              imageBytes: selected?.imageBytes ??
-                  loading?.imageBytes ??
-                  failed?.imageBytes,
+              imageBytes: imageBytes,
               fileName:
                   selected?.fileName ?? loading?.fileName ?? failed?.fileName,
               isLoading: isLoading,
-              isRetry: failed?.isRetryable ?? false,
+              isRetry: isRetry,
+              copy: photoUploadCopyFor(
+                hasPhoto: imageBytes != null,
+                isRetry: isRetry,
+              ),
               onPickPhoto: () => _showPhotoSourceOptions(context),
               onSubmit: () => context
                   .read<AskByPhotoBloc>()
