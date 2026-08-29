@@ -223,6 +223,31 @@ void main() {
     expect(next, 1);
   });
 
+  testWidgets('the finished CTA leads onward instead of doing nothing',
+      (tester) async {
+    var next = 0;
+    var reveal = 0;
+    await tester.pumpWidget(_pump(_params(
+      const SolutionReaderReady(
+        document: _document,
+        stepIndex: 1,
+        answerRevealed: true,
+      ),
+      onNext: () => next++,
+      onRevealAnswer: () => reveal++,
+    )));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ask another question'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('solution_cta')));
+    await tester.pumpAndSettle();
+
+    expect(next, 1,
+        reason: 'the button that says "ask another question" has to ask one');
+    expect(reveal, 0, reason: 'there is nothing left to reveal');
+  });
+
   testWidgets('the back control is disabled on the first step', (tester) async {
     var back = 0;
     await tester.pumpWidget(_pump(_params(

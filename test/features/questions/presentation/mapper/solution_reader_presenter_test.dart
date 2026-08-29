@@ -221,6 +221,60 @@ void main() {
     expect(revealed.answerBody.single.segment, isA<MathSolutionSegment>());
   });
 
+  test('says what pressing the CTA does, so nothing has to re-derive it', () {
+    SolutionCtaAction actionFor(SolutionReaderReady state) =>
+        solutionReaderContent(state).ctaAction;
+
+    expect(
+      actionFor(const SolutionReaderReady(document: _document)),
+      SolutionCtaAction.advance,
+    );
+    expect(
+      actionFor(const SolutionReaderReady(document: _document, stepIndex: 2)),
+      SolutionCtaAction.reveal,
+      reason: 'the last step is where the button opens the vault',
+    );
+    expect(
+      actionFor(const SolutionReaderReady(
+        document: _document,
+        stepIndex: 2,
+        answerRevealed: true,
+      )),
+      SolutionCtaAction.advance,
+      reason: 'once the answer is out the button leads to the next question; '
+          'sending it to reveal again leaves it doing nothing at all',
+    );
+  });
+
+  test('turns the CTA mint only once the answer is out', () {
+    bool solvedFor(SolutionReaderReady state) =>
+        solutionReaderContent(state).ctaSolved;
+
+    expect(solvedFor(const SolutionReaderReady(document: _document)), isFalse);
+    expect(
+      solvedFor(const SolutionReaderReady(document: _document, stepIndex: 2)),
+      isFalse,
+    );
+    expect(
+      solvedFor(const SolutionReaderReady(
+        document: _document,
+        stepIndex: 2,
+        answerRevealed: true,
+      )),
+      isTrue,
+    );
+    expect(
+      solvedFor(const SolutionReaderReady(
+        document: _document,
+        stepIndex: 0,
+        answerRevealed: true,
+      )),
+      isFalse,
+      reason: 'a stale reveal flag on an earlier step must not paint the '
+          'button as finished',
+    );
+  });
+
   test('puts the streak at stake only on the step that decides it', () {
     bool atStake(int index) => solutionReaderContent(
           SolutionReaderReady(document: _document, stepIndex: index),

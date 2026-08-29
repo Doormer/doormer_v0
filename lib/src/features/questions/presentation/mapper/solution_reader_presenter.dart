@@ -3,6 +3,21 @@ import 'package:doormer/src/features/questions/presentation/mapper/solution_segm
 import 'package:doormer/src/features/questions/presentation/params/solution_trail_node.dart';
 import 'package:flutter/material.dart' show Icons;
 
+/// What pressing the page's one big button does.
+///
+/// Named here rather than worked out again wherever the button is drawn. The
+/// rule used to be written in three places — the button, the swipe handler and
+/// the page — and they drifted: the finished button was still being sent to
+/// the vault, which had nothing left to open, so it did nothing at all.
+enum SolutionCtaAction {
+  /// Move on: to the first step from the plan, to the next step, or — once the
+  /// answer is out — to the next question entirely.
+  advance,
+
+  /// Open the vault.
+  reveal,
+}
+
 /// Everything the widget tree needs to draw one frame of the reader.
 class SolutionReaderContent {
   final String levelLabel;
@@ -18,6 +33,13 @@ class SolutionReaderContent {
   final String vaultLockedLabel;
   final String ctaLabel;
   final bool ctaEnabled;
+
+  /// What pressing it does.
+  final SolutionCtaAction ctaAction;
+
+  /// Whether the button should read as finished. Mint rather than violet, and
+  /// only once the answer is actually out.
+  final bool ctaSolved;
   final bool canGoBack;
 
   /// True once the student has left the first screen. Anything that was only
@@ -74,6 +96,8 @@ class SolutionReaderContent {
     required this.vaultLockedLabel,
     required this.ctaLabel,
     required this.ctaEnabled,
+    required this.ctaAction,
+    required this.ctaSolved,
     required this.canGoBack,
     required this.hasMoved,
     required this.isLastStep,
@@ -230,6 +254,10 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
     // A finished page is not a dead end. Once the answer is out the button
     // stops being "you are done" and becomes the way to the next question.
     ctaEnabled: true,
+    ctaAction: !answerRevealed && isLastStep && !onBriefing
+        ? SolutionCtaAction.reveal
+        : SolutionCtaAction.advance,
+    ctaSolved: answerRevealed,
     canGoBack: onBriefing ? false : (!state.isFirstStep || hasBriefing),
     hasMoved: !onBriefing && !state.isFirstStep,
     isLastStep: isLastStep,
