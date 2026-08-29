@@ -60,16 +60,49 @@ class SolutionTrailNode {
 
 /// The node trail — the page's only progress indicator.
 ///
-/// Nodes shrink to fit but never below [minNodeSize]. Without that floor they
-/// collapse to exactly 0px at nine steps and the trail silently stops
-/// existing, so the row scrolls horizontally instead of squeezing.
+/// Three parts, not one strip: the briefing pinned at the head, the steps
+/// panning between them, and the vault pinned at the tail. The bookends are
+/// destinations rather than stops, and a destination that scrolls out of sight
+/// stops being one — the student cannot see the answer they are working
+/// towards, and never sees its chains break. So only the middle moves.
+///
+/// Nodes are a fixed size and the links between them stretch to take up the
+/// slack. Sizing it the other way round — links fixed, nodes shrinking to fit —
+/// turns the trail into a row of buttons: the circles crowd together and the
+/// road between them disappears. The road is the part that reads as distance
+/// travelled, so the road is the part that flexes.
 ///
 /// Colour is the whole language: mint is banked, pink is here, dim is ahead,
 /// amber is openable. A link lights mint only once the node behind it is done,
 /// so the lit run always reads as ground already covered.
 class SolutionTrailMolecule extends StatefulWidget {
-  static const double minNodeSize = 34;
-  static const double connectorWidth = 16;
+  /// A numbered step you read. The bookends are deliberately larger, so both
+  /// ends of the road read as somewhere to arrive rather than somewhere to
+  /// pass through.
+  static const double stepNodeSize = 30;
+  static const double headNodeSize = 34;
+  static const double tailNodeSize = 38;
+
+  /// The road never shrinks below this, which is what makes the strip overflow
+  /// and pan rather than squeezing itself into nothing.
+  static const double minLinkWidth = 34;
+  static const double linkMargin = 4;
+
+  /// Clear air between a pinned bookend and the panning strip, so a node
+  /// sliding under one is read as leaving rather than as touching it.
+  static const double pinGap = 9;
+
+  /// Breathing room inside the strip's own clip. The node the student is
+  /// standing on glows well past its edge, and at either end of the pan that
+  /// glow would otherwise be sliced off square against the clip.
+  static const double stripPad = 26;
+
+  /// The same room above and below. The strip has to clip horizontally, or
+  /// panned-away nodes keep painting and slide out under the pinned bookends —
+  /// but a clip cuts all four sides, and the glow is wider than the bar is
+  /// tall. So the strip overflows its slot vertically: the glow gets its room
+  /// inside the clip, and the bar's height never changes.
+  static const double glowRoom = 26;
 
   /// The briefing sits ahead of step 0, so it numbers one behind it.
   static const int briefingPosition = -1;
@@ -93,12 +126,37 @@ class SolutionTrailMolecule extends StatefulWidget {
 class _SolutionTrailMoleculeState extends State<SolutionTrailMolecule> {
   final ScrollController _controller = ScrollController();
 
-  double _nodeSize = SolutionTrailMolecule.minNodeSize;
+  /// Node-to-node distance inside the panning strip, settled by the last
+  /// layout. [_centreCurrent] needs it and cannot ask the render tree, so
+  /// layout hands it over.
+  double _stride = SolutionTrailMolecule.stepNodeSize +
+      SolutionTrailMolecule.minLinkWidth +
+      SolutionTrailMolecule.linkMargin * 2;
+
   bool _moreLeft = false;
   bool _moreRight = false;
 
+  /// Where the panning strip starts in [SolutionTrailMolecule.nodes] — 1 when
+  /// a bookend has been lifted out to be pinned, 0 when there is none.
+  int get _stepOffset => _hasHead ? 1 : 0;
+
+  bool get _hasHead =>
+      widget.nodes.isNotEmpty &&
+      widget.nodes.first.shape == SolutionTrailNodeShape.marker;
+
+  bool get _hasTail =>
+      widget.nodes.length > 1 &&
+      widget.nodes.last.shape == SolutionTrailNodeShape.marker;
+
+  List<SolutionTrailNode> get _steps => widget.nodes.sublist(
+        _stepOffset,
+        _hasTail ? widget.nodes.length - 1 : widget.nodes.length,
+      );
+
+  /// The current node's place in the panning strip, or -1 when the student is
+  /// standing on a pinned bookend and there is nothing to pan to.
   int get _currentIndex =>
-      widget.nodes.indexWhere((n) => n.state == SolutionTrailNodeState.current);
+      _steps.indexWhere((n) => n.state == SolutionTrailNodeState.current);
 
   @override
   void initState() {
@@ -110,7 +168,10 @@ class _SolutionTrailMoleculeState extends State<SolutionTrailMolecule> {
   @override
   void didUpdateWidget(SolutionTrailMolecule oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final previous = oldWidget.nodes
+    final previousSteps = oldWidget.nodes
+        .where((n) => n.shape == SolutionTrailNodeShape.step)
+        .toList();
+    final previous = previousSteps
         .indexWhere((n) => n.state == SolutionTrailNodeState.current);
     if (previous != _currentIndex ||
         oldWidget.nodes.length != widget.nodes.length) {
@@ -153,8 +214,9 @@ class _SolutionTrailMoleculeState extends State<SolutionTrailMolecule> {
     final index = _currentIndex;
     if (index < 0) return;
 
-    final stride = _nodeSize + SolutionTrailMolecule.connectorWidth;
-    final centre = index * stride + _nodeSize / 2;
+    const nodeSize = SolutionTrailMolecule.stepNodeSize;
+    final centre =
+        SolutionTrailMolecule.stripPad + index * _stride + nodeSize / 2;
     final target = centre - _controller.position.viewportDimension / 2;
     final clamped = target.clamp(
       _controller.position.minScrollExtent,
@@ -178,48 +240,99 @@ class _SolutionTrailMoleculeState extends State<SolutionTrailMolecule> {
   @override
   Widget build(BuildContext context) {
     final nodes = widget.nodes;
+    if (nodes.isEmpty) return const SizedBox.shrink();
+
+    final hasHead = _hasHead;
+    final hasTail = _hasTail;
+
+    return Row(
+      children: [
+        if (hasHead) ...[
+          _TrailNode(
+            index: 0,
+            node: nodes.first,
+            size: SolutionTrailMolecule.headNodeSize,
+            onTap: _tapFor(0),
+          ),
+          const SizedBox(width: SolutionTrailMolecule.pinGap),
+        ],
+        Expanded(child: _panningStrip()),
+        if (hasTail) ...[
+          const SizedBox(width: SolutionTrailMolecule.pinGap),
+          _TrailNode(
+            index: nodes.length - 1,
+            node: nodes.last,
+            size: SolutionTrailMolecule.tailNodeSize,
+            onTap: _tapFor(nodes.length - 1),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// The only part of the trail that moves.
+  Widget _panningStrip() {
+    final steps = _steps;
+    final offset = _stepOffset;
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        const connectorWidth = SolutionTrailMolecule.connectorWidth;
-        final available = constraints.maxWidth;
-        final connectors = (nodes.length - 1).clamp(0, nodes.length);
-        final perNode = nodes.isEmpty
-            ? SolutionTrailMolecule.minNodeSize
-            : (available - connectors * connectorWidth) / nodes.length;
-        final nodeSize = perNode < SolutionTrailMolecule.minNodeSize
-            ? SolutionTrailMolecule.minNodeSize
-            : perNode;
-        final capped = nodeSize > 40.0 ? 40.0 : nodeSize;
-        _nodeSize = capped;
+        const nodeSize = SolutionTrailMolecule.stepNodeSize;
+        const margin = SolutionTrailMolecule.linkMargin;
+        const minLink = SolutionTrailMolecule.minLinkWidth;
 
-        return _EdgeFade(
-          left: _moreLeft,
-          right: _moreRight,
-          child: SingleChildScrollView(
-            key: const Key('solution_trail_scroll'),
-            controller: _controller,
-            scrollDirection: Axis.horizontal,
-            // The current node is scaled up and glows past its own box; without
-            // the padding the clip cuts the glow off mid-halo.
-            padding: EdgeInsets.symmetric(vertical: 7.h),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (var i = 0; i < nodes.length; i++) ...[
-                  _TrailNode(
-                    index: i,
-                    node: nodes[i],
-                    size: capped,
-                    onTap: _tapFor(i),
-                  ),
-                  if (i < nodes.length - 1)
-                    _TrailConnector(
-                      width: connectorWidth,
-                      lit: nodes[i].state == SolutionTrailNodeState.done,
-                    ),
-                ],
-              ],
+        // Links take the slack when there is any, and hold their minimum when
+        // there is not — which is the point at which the strip starts panning.
+        final gaps = steps.length - 1;
+        final slack = constraints.maxWidth -
+            SolutionTrailMolecule.stripPad * 2 -
+            steps.length * nodeSize -
+            gaps * margin * 2;
+        final linkWidth =
+            gaps > 0 && slack / gaps > minLink ? slack / gaps : minLink;
+        _stride = nodeSize + linkWidth + margin * 2;
+
+        const room = SolutionTrailMolecule.glowRoom;
+        final barHeight = nodeSize + 14.h;
+
+        return SizedBox(
+          height: barHeight,
+          child: OverflowBox(
+            minHeight: barHeight + room * 2,
+            maxHeight: barHeight + room * 2,
+            child: _EdgeFade(
+              left: _moreLeft,
+              right: _moreRight,
+              child: SingleChildScrollView(
+                key: const Key('solution_trail_scroll'),
+                controller: _controller,
+                scrollDirection: Axis.horizontal,
+                // The current node is scaled up and glows past its own box; without
+                // the padding the clip cuts the glow off mid-halo.
+                padding: const EdgeInsets.symmetric(
+                  horizontal: SolutionTrailMolecule.stripPad,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (var i = 0; i < steps.length; i++) ...[
+                      _TrailNode(
+                        index: offset + i,
+                        node: steps[i],
+                        size: nodeSize,
+                        onTap: _tapFor(offset + i),
+                      ),
+                      if (i < steps.length - 1)
+                        _TrailConnector(
+                          index: i,
+                          width: linkWidth,
+                          margin: margin,
+                          lit: steps[i].state == SolutionTrailNodeState.done,
+                        ),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ),
         );
@@ -262,43 +375,65 @@ class _TrailNode extends StatelessWidget {
     Border border;
     List<BoxShadow> shadows = const [];
 
-    switch (node.state) {
-      case SolutionTrailNodeState.done:
-        fill = QuestPalette.mint;
-        foreground = QuestPalette.onMint;
-        border = Border.all(color: QuestPalette.mint, width: 2);
-      case SolutionTrailNodeState.current:
-        gradient = const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [QuestPalette.pink, QuestPalette.violet],
-        );
-        foreground = Colors.white;
-        border = Border.all(color: Colors.white, width: 2);
+    if (isMarker) {
+      // Bookends are outlined, never filled. A solid mint marker is the same
+      // paint as a banked step, and the plan is not a step the student earned
+      // -- it is a place they can go back to.
+      final line = switch (node.state) {
+        SolutionTrailNodeState.done => QuestPalette.mint,
+        SolutionTrailNodeState.ready => QuestPalette.amber,
+        _ => QuestPalette.markerLine,
+      };
+      foreground = line;
+      fill = line.withValues(alpha: 0.16);
+      border = Border.all(color: line, width: 2);
+      if (node.state == SolutionTrailNodeState.ready) {
         shadows = [
           BoxShadow(
-            color: QuestPalette.pink.withValues(alpha: 0.45),
-            blurRadius: 14,
-            spreadRadius: 1,
-          ),
-        ];
-      case SolutionTrailNodeState.ready:
-        fill = QuestPalette.amber;
-        foreground = QuestPalette.onAmber;
-        border = Border.all(color: QuestPalette.amber, width: 2);
-        shadows = [
-          BoxShadow(
-            color: QuestPalette.amber.withValues(alpha: 0.4),
+            color: QuestPalette.amber.withValues(alpha: 0.35),
             blurRadius: 13,
           ),
         ];
-      case SolutionTrailNodeState.upcoming:
-        fill = Colors.white.withValues(alpha: 0.05);
-        foreground = QuestPalette.dim.withValues(alpha: 0.75);
-        border = Border.all(
-          color: Colors.white.withValues(alpha: 0.2),
-          width: 1.5,
-        );
+      }
+    } else {
+      switch (node.state) {
+        case SolutionTrailNodeState.done:
+          fill = QuestPalette.mint;
+          foreground = QuestPalette.onMint;
+          border = Border.all(color: QuestPalette.mint, width: 2);
+        case SolutionTrailNodeState.current:
+          gradient = const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [QuestPalette.pink, QuestPalette.violet],
+          );
+          foreground = Colors.white;
+          border = Border.all(color: Colors.white, width: 2);
+          shadows = [
+            BoxShadow(
+              color: QuestPalette.pink.withValues(alpha: 0.45),
+              blurRadius: 14,
+              spreadRadius: 1,
+            ),
+          ];
+        case SolutionTrailNodeState.ready:
+          fill = QuestPalette.amber;
+          foreground = QuestPalette.onAmber;
+          border = Border.all(color: QuestPalette.amber, width: 2);
+          shadows = [
+            BoxShadow(
+              color: QuestPalette.amber.withValues(alpha: 0.4),
+              blurRadius: 13,
+            ),
+          ];
+        case SolutionTrailNodeState.upcoming:
+          fill = Colors.white.withValues(alpha: 0.05);
+          foreground = QuestPalette.dim.withValues(alpha: 0.75);
+          border = Border.all(
+            color: Colors.white.withValues(alpha: 0.2),
+            width: 1.5,
+          );
+      }
     }
 
     // The current node is the only one that grows. Scaling rather than sizing
@@ -585,14 +720,22 @@ class _VaultChainsState extends State<_VaultChains>
 }
 
 class _TrailConnector extends StatelessWidget {
+  final int index;
   final double width;
+  final double margin;
   final bool lit;
 
-  const _TrailConnector({required this.width, required this.lit});
+  const _TrailConnector({
+    required this.index,
+    required this.width,
+    required this.margin,
+    required this.lit,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: margin),
       width: width,
       height: 3,
       child: Stack(
@@ -600,15 +743,18 @@ class _TrailConnector extends StatelessWidget {
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(2),
+                color: Colors.white.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(9),
               ),
             ),
           ),
           // The lit run wipes outward from the node behind it, so a link reads
           // as ground being covered rather than a light switching on.
           Positioned.fill(
-            child: AnimatedAlign(
+            // A fraction of the box, not an alignment of it: Positioned.fill
+            // hands down tight constraints, and under those a widthFactor is
+            // powerless -- the fill sizes to nothing and no link ever lights.
+            child: AnimatedFractionallySizedBox(
               alignment: Alignment.centerLeft,
               duration: MotionPolicy.duration(
                 context,
@@ -617,9 +763,10 @@ class _TrailConnector extends StatelessWidget {
               curve: Curves.easeOut,
               widthFactor: lit ? 1.0 : 0.0,
               child: DecoratedBox(
+                key: Key('trail_link_fill_$index'),
                 decoration: BoxDecoration(
                   color: QuestPalette.mint,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(9),
                 ),
               ),
             ),

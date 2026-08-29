@@ -34,6 +34,10 @@ class QuestPalette {
   /// Muted text and inert trail furniture.
   static const Color dim = Color(0xFFB9AEE6);
 
+  /// The outline on a trail bookend that is neither ready nor done — the plan
+  /// at the head, and the vault while it is still a long way off.
+  static const Color markerLine = Color(0xFF9B82FF);
+
   /// Body copy on the quest backdrop.
   static const Color body = Color(0xFFE4DCFF);
 

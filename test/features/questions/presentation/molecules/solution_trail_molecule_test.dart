@@ -21,6 +21,26 @@ List<SolutionTrailNode> _nodes(int count, int currentIndex) {
   ];
 }
 
+/// A trail with both bookends: the plan at the head, the vault at the tail.
+List<SolutionTrailNode> _bookended(int stepCount, int currentIndex) => [
+      const SolutionTrailNode(
+        displayNumber: 0,
+        state: SolutionTrailNodeState.done,
+        semanticsLabel: 'The plan',
+        icon: Icons.flag_rounded,
+        shape: SolutionTrailNodeShape.marker,
+        travelTo: SolutionTrailMolecule.briefingPosition,
+      ),
+      ..._nodes(stepCount, currentIndex),
+      const SolutionTrailNode(
+        displayNumber: 0,
+        state: SolutionTrailNodeState.upcoming,
+        semanticsLabel: 'The answer, locked',
+        icon: Icons.lock_rounded,
+        shape: SolutionTrailNodeShape.marker,
+      ),
+    ];
+
 Widget _pump(
   List<SolutionTrailNode> nodes, {
   double width = 358,
@@ -63,7 +83,11 @@ void main() {
     expect(find.text('3'), findsOneWidget);
   });
 
-  testWidgets('never shrinks a node below the 34px floor', (tester) async {
+  testWidgets('holds every step node at one size however many there are',
+      (tester) async {
+    // Nine steps in 200px is far more road than there is room for. The links
+    // are what give way; if the nodes shrink instead, the trail stops reading
+    // as a road and becomes a row of buttons.
     await tester.pumpWidget(_pump(_nodes(9, 0), width: 200));
     await tester.pump();
 
@@ -71,10 +95,23 @@ void main() {
       final size = tester.getSize(find.byKey(Key('trail_node_$i')));
       expect(
         size.width,
-        greaterThanOrEqualTo(SolutionTrailMolecule.minNodeSize - 0.5),
-        reason: 'without the floor the trail collapses to 0px at nine steps',
+        closeTo(SolutionTrailMolecule.stepNodeSize, 0.5),
+        reason: 'node $i was squeezed to fit instead of the link giving way',
       );
     }
+  });
+
+  testWidgets('leaves more road than node between two steps', (tester) async {
+    await tester.pumpWidget(_pump(_nodes(9, 0), width: 200));
+    await tester.pump();
+
+    final a = tester.getTopLeft(find.byKey(const Key('trail_node_0')));
+    final b = tester.getTopLeft(find.byKey(const Key('trail_node_1')));
+    expect(
+      b.dx - a.dx - SolutionTrailMolecule.stepNodeSize,
+      greaterThan(SolutionTrailMolecule.stepNodeSize),
+      reason: 'the distance travelled should out-measure the stop',
+    );
   });
 
   testWidgets('renders an icon instead of a number when the node carries one',
@@ -183,7 +220,8 @@ void _travelTests() {
 }
 
 void _panTests() {
-  testWidgets('brings the current node back into view when it moves past the end',
+  testWidgets(
+      'brings the current node back into view when it moves past the end',
       (tester) async {
     await tester.pumpWidget(_pump(_nodes(12, 0), width: 300));
     await tester.pump();
@@ -201,7 +239,8 @@ void _panTests() {
     expect(controller.offset, greaterThan(0),
         reason: 'a current node past the fold must be panned into view');
 
-    final nodeCentre = tester.getCenter(find.byKey(const Key('trail_node_9'))).dx;
+    final nodeCentre =
+        tester.getCenter(find.byKey(const Key('trail_node_9'))).dx;
     final stripCentre =
         tester.getCenter(find.byKey(const Key('solution_trail_scroll'))).dx;
     expect((nodeCentre - stripCentre).abs(), lessThan(40),
@@ -259,13 +298,11 @@ List<SolutionTrailNode> _withVault(int broken) => [
       _vaultNode(broken),
     ];
 
-int _chains(WidgetTester tester) => tester
-    .widgetList<Container>(find.byType(Container))
-    .where((c) {
+int _chains(WidgetTester tester) =>
+    tester.widgetList<Container>(find.byType(Container)).where((c) {
       final d = c.decoration;
       return d is BoxDecoration && d.color == QuestPalette.dim;
-    })
-    .length;
+    }).length;
 
 void _chainTests() {
   group('the vault chains', () {
@@ -414,5 +451,119 @@ void _inviteRingTests() {
       }
       await tester.pumpAndSettle();
     });
+  });
+
+  testWidgets('keeps the plan and the vault in place while the steps pan',
+      (tester) async {
+    const tail = 8;
+    await tester.pumpWidget(_pump(_bookended(7, 0), width: 358));
+    await tester.pumpAndSettle();
+
+    final headBefore = tester.getTopLeft(find.byKey(const Key('trail_node_0')));
+    final tailBefore =
+        tester.getTopLeft(find.byKey(const Key('trail_node_$tail')));
+    final stepBefore = tester.getTopLeft(find.byKey(const Key('trail_node_6')));
+
+    await tester.pumpWidget(_pump(_bookended(7, 6), width: 358));
+    await tester.pumpAndSettle();
+
+    // The strip really did move -- without this the test would pass on a trail
+    // that never pans at all, and prove nothing.
+    expect(
+      tester.getTopLeft(find.byKey(const Key('trail_node_6'))).dx,
+      isNot(closeTo(stepBefore.dx, 1)),
+      reason: 'the steps should have panned to follow the student',
+    );
+
+    expect(
+      tester.getTopLeft(find.byKey(const Key('trail_node_0'))).dx,
+      closeTo(headBefore.dx, 0.5),
+      reason: 'the way back to the plan must not slide off the head',
+    );
+    expect(
+      tester.getTopLeft(find.byKey(const Key('trail_node_$tail'))).dx,
+      closeTo(tailBefore.dx, 0.5),
+      reason: 'the destination has to stay in sight the whole way',
+    );
+  });
+
+  testWidgets('shows the locked vault from the very first screen',
+      (tester) async {
+    await tester.pumpWidget(_pump(_bookended(7, 0), width: 358));
+    await tester.pumpAndSettle();
+
+    // Its chains break as the working is done. A vault parked off the right
+    // edge means no student ever sees that happen.
+    final rect = tester.getRect(find.byKey(const Key('trail_node_8')));
+    expect(rect.left, greaterThanOrEqualTo(0));
+    expect(rect.right, lessThanOrEqualTo(358));
+  });
+
+  testWidgets('lights the road behind the student and leaves the rest dark',
+      (tester) async {
+    await tester.pumpWidget(_pump(_nodes(4, 2), width: 358));
+    await tester.pumpAndSettle();
+
+    // Steps 1 and 2 are behind them, so those two stretches are covered ground.
+    for (final lit in [0, 1]) {
+      expect(
+        tester.getSize(find.byKey(Key('trail_link_fill_$lit'))).width,
+        greaterThan(1),
+        reason: 'the road out of a finished step should read as travelled',
+      );
+    }
+    expect(
+      tester.getSize(find.byKey(const Key('trail_link_fill_2'))).width,
+      lessThan(1),
+      reason: 'the road ahead has not been walked yet',
+    );
+  });
+
+  testWidgets('outlines the bookends instead of filling them like a step',
+      (tester) async {
+    await tester.pumpWidget(_pump(_bookended(3, 1), width: 358));
+    await tester.pumpAndSettle();
+
+    BoxDecoration decoration(String key) =>
+        tester.widget<Container>(find.byKey(Key(key))).decoration!
+            as BoxDecoration;
+
+    // Step 1 is banked, and a banked step is a solid mint disc.
+    expect(decoration('trail_node_1').color!.a, closeTo(1, 0.01));
+
+    // The plan sits behind them too, but it is not a step they earned. Filling
+    // it the same way says 'step zero, complete'.
+    expect(
+      decoration('trail_node_0').color!.a,
+      lessThan(0.5),
+      reason: 'the plan should read as a place to return to, not a trophy',
+    );
+    expect(decoration('trail_node_0').border, isNotNull);
+  });
+
+  testWidgets('gives the glow room to spill without making the bar taller',
+      (tester) async {
+    await tester.pumpWidget(_pump(_bookended(7, 3), width: 358));
+    await tester.pumpAndSettle();
+
+    final bar = tester.getSize(find.byType(SolutionTrailMolecule)).height;
+    final strip =
+        tester.getSize(find.byKey(const Key('solution_trail_scroll'))).height;
+
+    // The strip has to clip horizontally, and a clip cuts all four sides. If
+    // it is only as tall as the bar, the current node's glow comes out as a
+    // bright rectangle with three square corners.
+    expect(
+      strip,
+      greaterThan(bar + SolutionTrailMolecule.glowRoom),
+      reason: 'the glow has nowhere to go and will be sliced off square',
+    );
+
+    // ...and none of that room is allowed to push the question down the page.
+    expect(
+      bar,
+      lessThan(SolutionTrailMolecule.tailNodeSize + 20),
+      reason: 'the breathing room leaked into the layout',
+    );
   });
 }
