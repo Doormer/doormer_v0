@@ -1,13 +1,18 @@
 import 'package:doormer/src/core/motion/motion_policy.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/accent_well_atom.dart';
+import 'package:doormer/src/features/questions/presentation/atoms/math_flow_atom.dart';
+import 'package:doormer/src/features/questions/utils/math_clauses.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// One LaTeX expression from the payload. Scrolls horizontally when it is
-/// wider than the card, and announces that it does — the longest expression in
-/// a real payload measures 1.9x the card width.
+/// One LaTeX expression from the payload.
+///
+/// Long working wraps at its relations, the way a textbook carries a chain of
+/// equalities onto the next line, so the student reads it rather than dragging
+/// it sideways. Only an expression with nothing safe to break — no relation
+/// anywhere at the top level — still scrolls, and it says so when it does.
 class MathBlockAtom extends StatefulWidget {
   final String latex;
   final String semanticsLabel;
@@ -115,6 +120,37 @@ class _MathBlockAtomState extends State<MathBlockAtom>
     );
   }
 
+  /// The expression, broken at its relations and flowed onto as many lines as
+  /// the card needs. Clauses that fit together stay together, so a short
+  /// expression looks exactly as it did before it could wrap.
+  Widget _expression(double fontSize, Color inkColor, double wrapWidth) {
+    final clauses = mathClauses(widget.latex);
+    final style = TextStyle(
+      fontSize: fontSize,
+      fontWeight: widget.emphasised ? FontWeight.w700 : null,
+      color: inkColor,
+    );
+
+    return MathFlowAtom(
+      key: const Key('math_block_flow'),
+      wrapWidth: wrapWidth,
+      indent: fontSize * 1.5,
+      runSpacing: fontSize * 0.5,
+      gaps: [for (final clause in clauses) clause.gapEm * fontSize],
+      children: [
+        for (final clause in clauses)
+          Math.tex(
+            clause.latex,
+            textStyle: style,
+            onErrorFallback: (error) => Text(
+              clause.latex,
+              style: TextStyle(fontSize: fontSize, color: inkColor),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     const well = AccentWellAtom.wellColor;
@@ -134,22 +170,13 @@ class _MathBlockAtomState extends State<MathBlockAtom>
                     .addPostFrameCallback((_) => _syncOverflow());
                 return false;
               },
-              child: SingleChildScrollView(
-                key: const Key('math_block_scroll'),
-                controller: _controller,
-                scrollDirection: Axis.horizontal,
-                child: ExcludeSemantics(
-                  child: Math.tex(
-                    widget.latex,
-                    textStyle: TextStyle(
-                      fontSize: size,
-                      fontWeight: widget.emphasised ? FontWeight.w700 : null,
-                      color: inkColor,
-                    ),
-                    onErrorFallback: (error) => Text(
-                      widget.latex,
-                      style: TextStyle(fontSize: size, color: inkColor),
-                    ),
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  key: const Key('math_block_scroll'),
+                  controller: _controller,
+                  scrollDirection: Axis.horizontal,
+                  child: ExcludeSemantics(
+                    child: _expression(size, inkColor, constraints.maxWidth),
                   ),
                 ),
               ),
