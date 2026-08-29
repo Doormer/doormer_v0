@@ -1,7 +1,7 @@
 import 'package:doormer/src/core/motion/motion_policy.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/accent_well_atom.dart';
-import 'package:doormer/src/features/questions/presentation/atoms/math_flow_atom.dart';
+import 'package:doormer/src/features/questions/presentation/layout/math_flow.dart';
 import 'package:doormer/src/features/questions/utils/math_clauses.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
@@ -131,7 +131,7 @@ class _MathBlockAtomState extends State<MathBlockAtom>
       color: inkColor,
     );
 
-    return MathFlowAtom(
+    return MathFlow(
       key: const Key('math_block_flow'),
       wrapWidth: wrapWidth,
       indent: fontSize * 1.5,

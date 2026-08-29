@@ -1,4 +1,4 @@
-import 'package:doormer/src/features/questions/presentation/atoms/math_flow_atom.dart';
+import 'package:doormer/src/features/questions/presentation/layout/math_flow.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -41,7 +41,7 @@ Future<void> _pump(
   return tester.pumpWidget(MaterialApp(
     home: Align(
       alignment: Alignment.topLeft,
-      child: MathFlowAtom(
+      child: MathFlow(
         wrapWidth: wrapWidth,
         gaps: gaps,
         indent: indent,
@@ -53,7 +53,7 @@ Future<void> _pump(
 }
 
 Offset _at(WidgetTester tester, Key key) {
-  final flow = tester.renderObject<RenderBox>(find.byType(MathFlowAtom));
+  final flow = tester.renderObject<RenderBox>(find.byType(MathFlow));
   return tester
       .renderObject<RenderBox>(find.byKey(key))
       .localToGlobal(Offset.zero, ancestor: flow);
@@ -73,7 +73,7 @@ void main() {
 
     expect(_at(tester, const Key('a')), const Offset(0, 0));
     expect(_at(tester, const Key('b')), const Offset(44, 0));
-    expect(tester.getSize(find.byType(MathFlowAtom)).height, 10);
+    expect(tester.getSize(find.byType(MathFlow)).height, 10);
   });
 
   testWidgets('spills onto a new line rather than running off the card',
@@ -92,7 +92,7 @@ void main() {
 
     expect(_at(tester, const Key('c')).dy, 16,
         reason: 'the third clause drops to the next line');
-    expect(tester.getSize(find.byType(MathFlowAtom)).width,
+    expect(tester.getSize(find.byType(MathFlow)).width,
         lessThanOrEqualTo(100));
   });
 
@@ -159,7 +159,7 @@ void main() {
       ],
     );
 
-    expect(tester.getSize(find.byType(MathFlowAtom)).height, 26,
+    expect(tester.getSize(find.byType(MathFlow)).height, 26,
         reason: 'two ten-high lines and one gap, with no gap left hanging '
             'under the last line');
   });
@@ -174,11 +174,11 @@ void main() {
       children: const [_Block(180, 10, 10, key: Key('a'))],
     );
 
-    expect(tester.getSize(find.byType(MathFlowAtom)).width, 180);
+    expect(tester.getSize(find.byType(MathFlow)).width, 180);
   });
 
   testWidgets('lays out nothing without falling over', (tester) async {
     await _pump(tester, wrapWidth: 100, children: const []);
-    expect(tester.getSize(find.byType(MathFlowAtom)), Size.zero);
+    expect(tester.getSize(find.byType(MathFlow)), Size.zero);
   });
 }

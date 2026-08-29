@@ -7,12 +7,16 @@ import 'package:flutter/widgets.dart';
 /// Lays a broken-up expression out as running maths: the clauses sit side by
 /// side while they fit, and spill onto a new line when they do not.
 ///
+/// This is a layout primitive, not an atom — it draws nothing itself and knows
+/// nothing about maths beyond the shape of the boxes it is handed. It lives
+/// outside `atoms/` so that an atom composing it is not composing a peer.
+///
 /// [wrapWidth] is passed in rather than taken from the incoming constraints,
 /// because this sits inside a horizontal scroll view — which offers infinite
 /// width — and the whole point is to wrap at the width of the card instead.
 /// The reported size may still exceed [wrapWidth] when a single clause is too
 /// wide to break, and that is what leaves the scroll view something to scroll.
-class MathFlowAtom extends MultiChildRenderObjectWidget {
+class MathFlow extends MultiChildRenderObjectWidget {
   /// The width to break lines at, in pixels.
   final double wrapWidth;
 
@@ -28,7 +32,7 @@ class MathFlowAtom extends MultiChildRenderObjectWidget {
   /// Space between lines.
   final double runSpacing;
 
-  const MathFlowAtom({
+  const MathFlow({
     super.key,
     required this.wrapWidth,
     required this.gaps,
