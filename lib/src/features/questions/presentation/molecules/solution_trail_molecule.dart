@@ -445,6 +445,8 @@ class _TrailNode extends StatelessWidget {
     // The current node is the only one that grows. Scaling rather than sizing
     // keeps every node on one baseline, so the trail does not jog as you move.
     final scale = isCurrent ? 1.14 : 1.0;
+    final chainsBroken = node.chainsBroken;
+    final content = _content(foreground);
 
     Widget dot = Container(
       key: Key('trail_node_$index'),
@@ -459,16 +461,22 @@ class _TrailNode extends StatelessWidget {
         border: border,
         boxShadow: shadows,
       ),
-      child: _content(foreground),
+      // A chained node keeps its glyph outside the box, so the chain can be
+      // laid between the two and pass behind the lock.
+      child: chainsBroken == null ? content : null,
     );
 
     if (node.invites) {
       dot = _InviteRing(size: size, marker: isMarker, child: dot);
     }
 
-    final chainsBroken = node.chainsBroken;
     if (chainsBroken != null) {
-      dot = _VaultChains(size: size, broken: chainsBroken, child: dot);
+      dot = _VaultChains(
+        size: size,
+        broken: chainsBroken,
+        lock: content,
+        child: dot,
+      );
     }
 
     if (isCurrent) {
@@ -594,12 +602,13 @@ typedef VaultChainSegment = ({Offset start, Offset end, double opacity});
 /// [phase] runs 0 (intact) to 1 (snapped and gone). Pure, so the shape of the
 /// thing can be argued with in a test rather than squinted at on a screen.
 ///
-/// Two decisions live here. The chains reach past the node's 19-unit
+/// Every chain is one unbroken run. The chains reach past the node's 19-unit
 /// half-width, because a chain that stops at the silhouette reads as painted on
-/// rather than wrapped around behind. And the last chain is drawn as two stubs
-/// with a hole where the glyph sits, so it passes behind the lock instead of
-/// striking it out - a bar through the middle of a lock reads as "wrong", which
-/// is the last thing a page about getting the answer right should say.
+/// rather than wrapped around behind - and the middle one runs straight across
+/// the lock, because the lock is painted over the top of it. Cutting a hole in
+/// the chain to clear the glyph is what a drawing does; a chain lying on a box
+/// goes behind the fittings, and a chain with a gap already in it is a chain
+/// somebody has already cut.
 List<VaultChainSegment> vaultChainSegments({
   required int index,
   required double phase,
@@ -615,23 +624,9 @@ List<VaultChainSegment> vaultChainSegments({
 
   // Straining, not yet broken: still one length of chain, drawn taut.
   if (snap == 0) {
-    if (chain.gap == 0) {
-      return [
-        (
-          start: Offset(-reach, chain.y),
-          end: Offset(reach, chain.y),
-          opacity: opacity,
-        ),
-      ];
-    }
     return [
       (
         start: Offset(-reach, chain.y),
-        end: Offset(-chain.gap, chain.y),
-        opacity: opacity,
-      ),
-      (
-        start: Offset(chain.gap, chain.y),
         end: Offset(reach, chain.y),
         opacity: opacity,
       ),
@@ -656,8 +651,8 @@ List<VaultChainSegment> vaultChainSegments({
   }
 
   return [
-    half(-reach, -chain.gap, swing, -apart),
-    half(reach, chain.gap, -swing, apart),
+    half(-reach, 0, swing, -apart),
+    half(reach, 0, -swing, apart),
   ];
 }
 
@@ -717,28 +712,31 @@ List<Color> vaultChainShades() => [
       Color.lerp(QuestPalette.dim, QuestPalette.card, 0.81)!,
     ];
 
-/// In break order: the outer chains go first and the one wrapped behind the
-/// lock is the last to give, so the chain still standing at the end is the one
-/// across the lock itself.
+/// In break order: the outer chains go first and the one across the lock is the
+/// last to give, so the chain still standing at the end is the one that matters.
 ///
 /// The middle chain reaches further than the other two because the vault is
 /// widest at its waist - the outer chains cross the corner curve, where the box
 /// has already begun to pull in. Equal reach would leave the middle one looking
 /// short of the edge.
-const List<({double y, double gap, double reach})> _vaultChains = [
-  (y: -11.5, gap: 0, reach: 21),
-  (y: 11.5, gap: 0, reach: 21),
-  (y: 0, gap: 8.5, reach: 22),
+const List<({double y, double reach})> _vaultChains = [
+  (y: -11.5, reach: 21),
+  (y: 11.5, reach: 21),
+  (y: 0, reach: 22),
 ];
 
 class _VaultChains extends StatefulWidget {
   final double size;
   final int broken;
+
+  /// The vault's own lock, drawn last so the chain passes behind it.
+  final Widget lock;
   final Widget child;
 
   const _VaultChains({
     required this.size,
     required this.broken,
+    required this.lock,
     required this.child,
   });
 
@@ -802,26 +800,41 @@ class _VaultChainsState extends State<_VaultChains>
 
   @override
   Widget build(BuildContext context) {
-    if (_gone >= _vaultChains.length && _snapping.isEmpty) return widget.child;
+    if (_gone >= _vaultChains.length && _snapping.isEmpty) {
+      return _stack(widget.child, const []);
+    }
     final unit = widget.size / 38;
     return AnimatedBuilder(
       animation: _snap,
       builder: (context, child) {
         final t = _snap.value;
-        return Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.center,
-          children: [
-            child!,
-            for (var i = 0; i < _vaultChains.length; i++)
-              if (_snapping.contains(i))
-                _chain(i, t, unit)
-              else if (i >= _gone)
-                _chain(i, 0, unit),
-          ],
-        );
+        return _stack(child!, [
+          for (var i = 0; i < _vaultChains.length; i++)
+            if (_snapping.contains(i))
+              _chain(i, t, unit)
+            else if (i >= _gone)
+              _chain(i, 0, unit),
+        ]);
       },
       child: widget.child,
+    );
+  }
+
+  /// The box, then the chain, then the lock.
+  ///
+  /// Order is the whole trick. Painted under the chain the lock is struck
+  /// through by the very thing holding it, which reads as "wrong" - the last
+  /// thing a page about getting the answer right should say. Painted over it,
+  /// the chain simply runs behind the lock and stays one unbroken length.
+  Widget _stack(Widget box, List<Widget> chains) {
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        box,
+        ...chains,
+        KeyedSubtree(key: const Key('vault_lock'), child: widget.lock),
+      ],
     );
   }
 

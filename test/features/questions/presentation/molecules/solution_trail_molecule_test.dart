@@ -393,9 +393,39 @@ void _chainTests() {
               'box, not as an underline beneath it');
       expect(find.byKey(const Key('vault_chain_0')), findsNothing);
       expect(find.byKey(const Key('vault_chain_1')), findsNothing);
-      expect(vaultChainSegments(index: 2, phase: 0), hasLength(2),
-          reason: 'the chain left standing has to be the one that runs behind '
-              'the lock, not one of the plain runs above or below it');
+      final middle = vaultChainSegments(index: 2, phase: 0).single;
+      expect(middle.start.dy, 0,
+          reason: 'the chain left standing has to be the one across the lock, '
+              'not one of the plain runs above or below it');
+    });
+
+    testWidgets('run behind the lock rather than stopping either side of it',
+        (tester) async {
+      await tester.pumpWidget(_pump(_withVault(2)));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.lock_rounded), findsOneWidget,
+          reason: 'the lock moved out of the box so the chain could be laid '
+              'between the two. Left in the box as well it is painted twice, '
+              'once under the chain and once over, and the one underneath is '
+              'the one a future change will start drawing');
+
+      final stack = tester.widget<Stack>(find
+          .ancestor(
+            of: find.byKey(const Key('vault_lock')),
+            matching: find.byType(Stack),
+          )
+          .first);
+      final lock =
+          stack.children.indexWhere((w) => w.key == const Key('vault_lock'));
+      final chain =
+          stack.children.indexWhere((w) => w.key == const Key('vault_chain_2'));
+
+      expect(chain, isNonNegative);
+      expect(lock, greaterThan(chain),
+          reason: 'the chain runs straight across the lock, so the lock has to '
+              'be painted over it. Underneath, the lock is struck through by '
+              'the very thing holding it shut, which reads as a wrong answer');
     });
 
     testWidgets('never appear on a marker that was never locked',
@@ -681,19 +711,18 @@ void _vaultChainGeometryTests() {
               'middle chain -- the one across the waist -- short of the edge');
     });
 
-    test('runs the last chain behind the glyph instead of through it', () {
-      final pieces = vaultChainSegments(index: 2, phase: 0);
+    test('draws every chain as one unbroken length', () {
+      for (var i = 0; i < 3; i++) {
+        final pieces = vaultChainSegments(index: i, phase: 0);
 
-      expect(pieces, hasLength(2),
-          reason: 'a solid bar across the middle of a lock reads as struck '
-              'out, which is the opposite of what this page is about');
-      expect(pieces.first.end.dx, lessThan(0));
-      expect(pieces.last.start.dx, greaterThan(0));
-      expect(pieces.last.start.dx - pieces.first.end.dx, greaterThan(15),
-          reason: 'the hole has to clear the lock glyph at every text scale');
-      for (final piece in pieces) {
-        expect(piece.start.dy, 0);
-        expect(piece.end.dy, 0);
+        expect(pieces, hasLength(1),
+            reason: 'a chain with a hole already cut in it is a chain somebody '
+                'has already been through, which is the one thing the student '
+                'has not done yet');
+        expect(pieces.single.start.dx, lessThan(0));
+        expect(pieces.single.end.dx, greaterThan(0));
+        expect(pieces.single.start.dy, pieces.single.end.dy,
+            reason: 'a chain lying across a box lies level');
       }
     });
 
