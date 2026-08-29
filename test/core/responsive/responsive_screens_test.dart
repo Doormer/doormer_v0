@@ -26,7 +26,7 @@ import 'package:doormer/src/features/questions/presentation/mapper/solution_read
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
 import 'package:doormer/src/features/questions/presentation/params/solution_reader_params.dart';
 import 'package:doormer/src/features/questions/presentation/templates/solution_reader_template.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/solution_trail_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/solution_trail_organism.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -268,7 +268,7 @@ void main() {
         // while only the step body scrolls. A short window shrinks the vertical
         // scale to its floor, which is where that would give way first.
         final trailBottom =
-            tester.getBottomLeft(find.byType(SolutionTrailMolecule)).dy;
+            tester.getBottomLeft(find.byType(SolutionTrailOrganism)).dy;
         final scrollTop =
             tester.getTopLeft(find.byKey(const Key('solution_scroll'))).dy;
         final ctaTop =

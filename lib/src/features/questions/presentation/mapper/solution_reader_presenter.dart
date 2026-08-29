@@ -1,6 +1,6 @@
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_segment_order.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/solution_trail_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/params/solution_trail_node.dart';
 import 'package:flutter/material.dart' show Icons;
 
 /// Everything the widget tree needs to draw one frame of the reader.
@@ -180,7 +180,7 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
           semanticsLabel: 'The plan',
           icon: Icons.flag_rounded,
           shape: SolutionTrailNodeShape.marker,
-          travelTo: onBriefing ? null : SolutionTrailMolecule.briefingPosition,
+          travelTo: onBriefing ? null : SolutionTrailNode.briefingPosition,
           // Students rarely think to go back to the plan, so once they have
           // left it, it says it is still there.
           invites: !onBriefing,

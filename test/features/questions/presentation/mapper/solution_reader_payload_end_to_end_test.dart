@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/solution_trail_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/params/solution_trail_node.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_reader_presenter.dart';

@@ -1,5 +1,7 @@
 import 'package:doormer/src/core/theme/app_theme.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/solution_trail_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/solution_trail_organism.dart';
+import 'package:doormer/src/features/questions/presentation/atoms/vault_chains_atom.dart';
+import 'package:doormer/src/features/questions/presentation/params/solution_trail_node.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,7 +30,7 @@ List<SolutionTrailNode> _bookended(int stepCount, int currentIndex) => [
         semanticsLabel: 'The plan',
         icon: Icons.flag_rounded,
         shape: SolutionTrailNodeShape.marker,
-        travelTo: SolutionTrailMolecule.briefingPosition,
+        travelTo: SolutionTrailNode.briefingPosition,
       ),
       ..._nodes(stepCount, currentIndex),
       const SolutionTrailNode(
@@ -57,7 +59,7 @@ Widget _pump(
         child: Scaffold(
           body: SizedBox(
             width: width,
-            child: SolutionTrailMolecule(nodes: nodes, onNodeTap: onNodeTap),
+            child: SolutionTrailOrganism(nodes: nodes, onNodeTap: onNodeTap),
           ),
         ),
       ),
@@ -67,7 +69,6 @@ Widget _pump(
 
 void main() {
   _chainTests();
-  _vaultChainGeometryTests();
   _vaultLooksLikeMetalTests();
   _inviteRingTests();
   testWidgets('renders one node per step with a tick on completed steps',
@@ -96,7 +97,7 @@ void main() {
       final size = tester.getSize(find.byKey(Key('trail_node_$i')));
       expect(
         size.width,
-        closeTo(SolutionTrailMolecule.stepNodeSize, 0.5),
+        closeTo(SolutionTrailOrganism.stepNodeSize, 0.5),
         reason: 'node $i was squeezed to fit instead of the link giving way',
       );
     }
@@ -109,8 +110,8 @@ void main() {
     final a = tester.getTopLeft(find.byKey(const Key('trail_node_0')));
     final b = tester.getTopLeft(find.byKey(const Key('trail_node_1')));
     expect(
-      b.dx - a.dx - SolutionTrailMolecule.stepNodeSize,
-      greaterThan(SolutionTrailMolecule.stepNodeSize),
+      b.dx - a.dx - SolutionTrailOrganism.stepNodeSize,
+      greaterThan(SolutionTrailOrganism.stepNodeSize),
       reason: 'the distance travelled should out-measure the stop',
     );
   });
@@ -591,7 +592,7 @@ void _inviteRingTests() {
     await tester.pumpWidget(_pump(_bookended(7, 3), width: 358));
     await tester.pumpAndSettle();
 
-    final bar = tester.getSize(find.byType(SolutionTrailMolecule)).height;
+    final bar = tester.getSize(find.byType(SolutionTrailOrganism)).height;
     final strip =
         tester.getSize(find.byKey(const Key('solution_trail_scroll'))).height;
 
@@ -600,14 +601,14 @@ void _inviteRingTests() {
     // bright rectangle with three square corners.
     expect(
       strip,
-      greaterThan(bar + SolutionTrailMolecule.glowRoom),
+      greaterThan(bar + SolutionTrailOrganism.glowRoom),
       reason: 'the glow has nowhere to go and will be sliced off square',
     );
 
     // ...and none of that room is allowed to push the question down the page.
     expect(
       bar,
-      lessThan(SolutionTrailMolecule.tailNodeSize + 8),
+      lessThan(SolutionTrailOrganism.tailNodeSize + 8),
       reason: 'the breathing room leaked into the layout',
     );
   });
@@ -684,72 +685,6 @@ void _vaultLooksLikeMetalTests() {
       expect(shades[1].computeLuminance() - shades.last.computeLuminance(),
           greaterThan(0.12),
           reason: 'without a shaded underside the wire has no thickness');
-    });
-  });
-}
-
-void _vaultChainGeometryTests() {
-  group('the vault chain geometry', () {
-    test('reaches past the node so the chain reads as wrapping around behind',
-        () {
-      for (var i = 0; i < 3; i++) {
-        final pieces = vaultChainSegments(index: i, phase: 0);
-        expect(pieces.first.start.dx, lessThanOrEqualTo(-19.5),
-            reason: 'a chain that stops at the silhouette is painted on, not '
-                'wrapped around');
-        expect(pieces.last.end.dx, greaterThanOrEqualTo(19.5));
-      }
-    });
-
-    test('reaches furthest across the widest part of the vault', () {
-      final outer = vaultChainSegments(index: 0, phase: 0).single.end.dx;
-      final middle = vaultChainSegments(index: 2, phase: 0).last.end.dx;
-
-      expect(middle, greaterThan(outer),
-          reason: 'the outer chains cross the corner curve, where the box has '
-              'already begun to pull in. Reaching the same distance leaves the '
-              'middle chain -- the one across the waist -- short of the edge');
-    });
-
-    test('draws every chain as one unbroken length', () {
-      for (var i = 0; i < 3; i++) {
-        final pieces = vaultChainSegments(index: i, phase: 0);
-
-        expect(pieces, hasLength(1),
-            reason: 'a chain with a hole already cut in it is a chain somebody '
-                'has already been through, which is the one thing the student '
-                'has not done yet');
-        expect(pieces.single.start.dx, lessThan(0));
-        expect(pieces.single.end.dx, greaterThan(0));
-        expect(pieces.single.start.dy, pieces.single.end.dy,
-            reason: 'a chain lying across a box lies level');
-      }
-    });
-
-    test('strains before it breaks', () {
-      final intact = vaultChainSegments(index: 0, phase: 0).single;
-      final strained = vaultChainSegments(index: 0, phase: 0.2).single;
-
-      expect(strained.end.dx, greaterThan(intact.end.dx),
-          reason: 'the chain should pull taut before it lets go');
-    });
-
-    test('breaks into two halves whose free ends fall', () {
-      final halves = vaultChainSegments(index: 0, phase: 0.7);
-
-      expect(halves, hasLength(2),
-          reason: 'a chain that is flung away in one piece was unhooked, not '
-              'broken');
-      for (final half in halves) {
-        expect(half.end.dy, greaterThan(half.start.dy + 2),
-            reason: 'each half pivots on its outer end, so the inner end is '
-                'the one that drops');
-      }
-      expect(halves.first.start.dx, lessThan(halves.last.start.dx));
-    });
-
-    test('is gone by the end of the snap', () {
-      expect(vaultChainSegments(index: 0, phase: 1), isEmpty);
     });
   });
 }

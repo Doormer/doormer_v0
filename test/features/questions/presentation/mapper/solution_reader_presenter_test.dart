@@ -2,7 +2,7 @@ import 'package:doormer/src/features/questions/domain/entity/photo_question_solv
 import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_reader_presenter.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/solution_trail_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/params/solution_trail_node.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _visual = VisualSolutionSegment(

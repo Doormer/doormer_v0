@@ -4,7 +4,7 @@ import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart'
 import 'package:doormer/src/features/questions/presentation/atoms/solution_text_atom.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_reader_presenter.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/solution_trail_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/solution_trail_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solution_step_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/solution_reader_params.dart';
 import 'package:doormer/src/features/questions/presentation/templates/solution_reader_template.dart';
@@ -192,11 +192,11 @@ void main() {
     await tester.pump();
 
     expect(find.byType(Scaffold), findsOneWidget);
-    expect(find.byType(SolutionTrailMolecule), findsOneWidget);
+    expect(find.byType(SolutionTrailOrganism), findsOneWidget);
     expect(find.byType(SolutionStepOrganism), findsOneWidget);
     expect(find.byKey(const Key('solution_cta')), findsOneWidget);
 
-    final trailY = tester.getTopLeft(find.byType(SolutionTrailMolecule)).dy;
+    final trailY = tester.getTopLeft(find.byType(SolutionTrailOrganism)).dy;
     final ctaY = tester.getTopLeft(find.byKey(const Key('solution_cta'))).dy;
     final scrollY =
         tester.getTopLeft(find.byKey(const Key('solution_scroll'))).dy;

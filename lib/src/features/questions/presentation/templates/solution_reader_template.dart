@@ -4,7 +4,7 @@ import 'package:doormer/src/core/motion/motion_policy.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/xp_pellet_atom.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_reader_presenter.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/solution_trail_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/solution_trail_organism.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/swipe_hint_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/quest_hud_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solution_briefing_organism.dart';
@@ -292,7 +292,7 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
                   ),
                   Padding(
                     padding: EdgeInsets.fromLTRB(16.w, 2.h, 16.w, 0),
-                    child: SolutionTrailMolecule(
+                    child: SolutionTrailOrganism(
                       nodes: content.trail,
                       onNodeTap: widget.params.onTravelTo,
                     ),
