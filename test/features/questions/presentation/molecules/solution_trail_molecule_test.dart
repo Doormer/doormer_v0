@@ -67,7 +67,7 @@ Widget _pump(
 
 void main() {
   _chainTests();
-  _vaultBandGeometryTests();
+  _vaultChainGeometryTests();
   _vaultLooksLikeMetalTests();
   _inviteRingTests();
   testWidgets('renders one node per step with a tick on completed steps',
@@ -301,12 +301,12 @@ List<SolutionTrailNode> _withVault(int broken) => [
 
 int _chains(WidgetTester tester) => List.generate(
       3,
-      (i) => find.byKey(Key('vault_band_$i')),
+      (i) => find.byKey(Key('vault_chain_$i')),
     ).where((f) => f.evaluate().isNotEmpty).length;
 
 void _chainTests() {
   group('the vault chains', () {
-    testWidgets('strap the vault shut before any working is done',
+    testWidgets('lash the vault shut before any working is done',
         (tester) async {
       await tester.pumpWidget(_pump(_withVault(0)));
       await tester.pumpAndSettle();
@@ -383,19 +383,19 @@ void _chainTests() {
       expect(_chains(tester), 0);
     });
 
-    testWidgets('leave the strap wrapped behind the lock till last',
+    testWidgets('leave the chain wrapped behind the lock till last',
         (tester) async {
       await tester.pumpWidget(_pump(_withVault(2)));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('vault_band_2')), findsOneWidget,
-          reason: 'one strap left should still read as a chain around the '
+      expect(find.byKey(const Key('vault_chain_2')), findsOneWidget,
+          reason: 'one chain left should still read as wrapped around the '
               'box, not as an underline beneath it');
-      expect(find.byKey(const Key('vault_band_0')), findsNothing);
-      expect(find.byKey(const Key('vault_band_1')), findsNothing);
-      expect(vaultBandSegments(index: 2, phase: 0), hasLength(2),
-          reason: 'the strap left standing has to be the one that runs behind '
-              'the lock, not one of the plain bars above or below it');
+      expect(find.byKey(const Key('vault_chain_0')), findsNothing);
+      expect(find.byKey(const Key('vault_chain_1')), findsNothing);
+      expect(vaultChainSegments(index: 2, phase: 0), hasLength(2),
+          reason: 'the chain left standing has to be the one that runs behind '
+              'the lock, not one of the plain runs above or below it');
     });
 
     testWidgets('never appear on a marker that was never locked',
@@ -595,52 +595,94 @@ void _vaultLooksLikeMetalTests() {
 
       expect(vault.width, greaterThan(plan.width),
           reason: 'the vault is where the student is going, and it is the only '
-              'node carrying detail - straps and a lock. Sized like the plan '
-              'it has no room for either and the straps turn to mush');
+              'node carrying detail - a chain and a lock. Sized like the plan '
+              'it has no room for either and the links turn to mush');
       expect(vault.width, greaterThan(step.width));
     });
 
-    test('lights the straps from above so they read as metal', () {
-      final shades = vaultBandShades();
+    test('fills every run with links rather than one long bar', () {
+      // A run drawn as one stretched link is a bar with rounded ends -- exactly
+      // the thing the chain replaced. What reads as chain is a repeat, and a
+      // repeat needs a count.
+      for (var i = 0; i < 3; i++) {
+        for (final run in vaultChainSegments(index: i, phase: 0)) {
+          final length = (run.end - run.start).distance;
+          expect(vaultChainLinkCount(length), greaterThanOrEqualTo(2),
+              reason: 'chain \$i has a run too short to hold two links, so it '
+                  'draws as a lone oval');
+        }
+      }
+
+      final across = vaultChainSegments(index: 0, phase: 0).single;
+      expect(vaultChainLinkCount((across.end - across.start).distance),
+          greaterThanOrEqualTo(6),
+          reason: 'a chain across the whole vault needs enough links that the '
+              'alternation is visible, not three fat ovals');
+    });
+
+    test('turns every other link edge-on so the run reads as chain', () {
+      final face = vaultChainLinkHeight(0);
+      final edge = vaultChainLinkHeight(1);
+
+      expect(vaultChainLinkHeight(2), face, reason: 'the turn has to repeat');
+      expect(edge, lessThan(face * 0.6),
+          reason:
+              'links all one width are beads on a string. It is the turn of '
+              'every second link that says chain, because at this size the hole '
+              'through a link is too small to say it');
+    });
+
+    test('lights the links from above so they read as metal', () {
+      final shades = vaultChainShades();
 
       expect(shades, hasLength(4));
       var previous = shades.first.computeLuminance();
       for (final shade in shades.skip(1)) {
         expect(shade.computeLuminance(), lessThan(previous),
-            reason: 'a strap shaded flat, or lit from below, reads as a line '
-                'drawn on the vault rather than a bar of metal lying across it');
+            reason: 'a link shaded flat, or lit from below, reads as chain '
+                'drawn on the vault rather than chain lying across it');
         previous = shade.computeLuminance();
       }
-      // Range alone is not enough: a strap with a dark underside but no lit
+      // Range alone is not enough: a link with a dark underside but no lit
       // edge still spans a wide range while looking flat on top.
-      // Measured against the strap's own body rather than a palette colour, so
-      // the guard still holds if the whole strap is re-pitched lighter or
+      // Measured against the link's own body rather than a palette colour, so
+      // the guard still holds if the whole chain is re-pitched lighter or
       // darker.
       expect(shades.first.computeLuminance() - shades[1].computeLuminance(),
           greaterThan(0.12),
-          reason: 'without a lit top edge the strap has no roundness');
+          reason: 'without a lit top edge the wire has no roundness');
       expect(shades[1].computeLuminance() - shades.last.computeLuminance(),
           greaterThan(0.12),
-          reason: 'without a shaded underside the strap has no thickness');
+          reason: 'without a shaded underside the wire has no thickness');
     });
   });
 }
 
-void _vaultBandGeometryTests() {
-  group('the vault strap geometry', () {
-    test('reaches past the node so the straps read as wrapping around behind',
+void _vaultChainGeometryTests() {
+  group('the vault chain geometry', () {
+    test('reaches past the node so the chain reads as wrapping around behind',
         () {
       for (var i = 0; i < 3; i++) {
-        final pieces = vaultBandSegments(index: i, phase: 0);
+        final pieces = vaultChainSegments(index: i, phase: 0);
         expect(pieces.first.start.dx, lessThanOrEqualTo(-19.5),
-            reason: 'a strap that stops at the silhouette is painted on, not '
+            reason: 'a chain that stops at the silhouette is painted on, not '
                 'wrapped around');
         expect(pieces.last.end.dx, greaterThanOrEqualTo(19.5));
       }
     });
 
-    test('runs the last strap behind the glyph instead of through it', () {
-      final pieces = vaultBandSegments(index: 2, phase: 0);
+    test('reaches furthest across the widest part of the vault', () {
+      final outer = vaultChainSegments(index: 0, phase: 0).single.end.dx;
+      final middle = vaultChainSegments(index: 2, phase: 0).last.end.dx;
+
+      expect(middle, greaterThan(outer),
+          reason: 'the outer chains cross the corner curve, where the box has '
+              'already begun to pull in. Reaching the same distance leaves the '
+              'middle chain -- the one across the waist -- short of the edge');
+    });
+
+    test('runs the last chain behind the glyph instead of through it', () {
+      final pieces = vaultChainSegments(index: 2, phase: 0);
 
       expect(pieces, hasLength(2),
           reason: 'a solid bar across the middle of a lock reads as struck '
@@ -656,18 +698,18 @@ void _vaultBandGeometryTests() {
     });
 
     test('strains before it breaks', () {
-      final intact = vaultBandSegments(index: 0, phase: 0).single;
-      final strained = vaultBandSegments(index: 0, phase: 0.2).single;
+      final intact = vaultChainSegments(index: 0, phase: 0).single;
+      final strained = vaultChainSegments(index: 0, phase: 0.2).single;
 
       expect(strained.end.dx, greaterThan(intact.end.dx),
-          reason: 'the strap should pull taut before it lets go');
+          reason: 'the chain should pull taut before it lets go');
     });
 
     test('breaks into two halves whose free ends fall', () {
-      final halves = vaultBandSegments(index: 0, phase: 0.7);
+      final halves = vaultChainSegments(index: 0, phase: 0.7);
 
       expect(halves, hasLength(2),
-          reason: 'a strap that is flung away in one piece was untied, not '
+          reason: 'a chain that is flung away in one piece was unhooked, not '
               'broken');
       for (final half in halves) {
         expect(half.end.dy, greaterThan(half.start.dy + 2),
@@ -678,7 +720,7 @@ void _vaultBandGeometryTests() {
     });
 
     test('is gone by the end of the snap', () {
-      expect(vaultBandSegments(index: 0, phase: 1), isEmpty);
+      expect(vaultChainSegments(index: 0, phase: 1), isEmpty);
     });
   });
 }
