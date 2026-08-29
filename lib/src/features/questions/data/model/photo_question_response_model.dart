@@ -124,7 +124,7 @@ class SolutionSectionModel {
 
   SolutionSection toEntity() {
     return SolutionSection(
-      body: body.map((segment) => segment.toEntity()).toList(growable: false),
+      body: _bodyEntities(body),
     );
   }
 }
@@ -151,9 +151,8 @@ class SolutionStepModel {
   SolutionStep toEntity() {
     return SolutionStep(
       title: title,
-      body: body.map((segment) => segment.toEntity()).toList(growable: false),
-      rationale:
-          rationale.map((segment) => segment.toEntity()).toList(growable: false),
+      body: _bodyEntities(body),
+      rationale: _bodyEntities(rationale),
     );
   }
 }
@@ -169,7 +168,7 @@ class FinalAnswerModel {
 
   FinalAnswer toEntity() {
     return FinalAnswer(
-      body: body.map((segment) => segment.toEntity()).toList(growable: false),
+      body: _bodyEntities(body),
     );
   }
 }
@@ -256,6 +255,9 @@ class VisualSolutionSegmentModel extends SolutionSegmentModel {
         alt: alt,
       );
 }
+
+List<SolutionSegment> _bodyEntities(List<SolutionSegmentModel> body) =>
+    body.map((segment) => segment.toEntity()).toList(growable: false);
 
 int _parseDimension(dynamic value) {
   if (value is int) return value;

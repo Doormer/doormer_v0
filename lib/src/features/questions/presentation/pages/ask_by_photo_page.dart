@@ -200,7 +200,6 @@ class AskByPhotoPage extends StatelessWidget {
               fileName:
                   selected?.fileName ?? loading?.fileName ?? failed?.fileName,
               isLoading: isLoading,
-              isRetry: isRetry,
               copy: photoUploadCopyFor(
                 hasPhoto: imageBytes != null,
                 isRetry: isRetry,

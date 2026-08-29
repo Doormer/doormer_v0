@@ -6,11 +6,8 @@ class PhotoUploadPanelParams {
   final String? fileName;
   final bool isLoading;
 
-  /// True once a failed solve has left this photo in place, so the button
-  /// below it is resending rather than sending.
-  final bool isRetry;
-
-  /// Button labels, resolved above this layer because they change with state.
+  /// Button labels, resolved above this layer because they change with state —
+  /// including whether the submit button is sending or resending.
   final PhotoUploadCopy copy;
 
   final VoidCallback onPickPhoto;
@@ -21,7 +18,6 @@ class PhotoUploadPanelParams {
     this.imageBytes,
     this.fileName,
     required this.isLoading,
-    this.isRetry = false,
     required this.copy,
     required this.onPickPhoto,
     required this.onSubmit,
