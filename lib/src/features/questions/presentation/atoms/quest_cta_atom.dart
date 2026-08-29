@@ -11,10 +11,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// [solved] turns it mint. That is a fact about the page, not about the
 /// button, so it is passed in rather than inferred from being disabled —
 /// a disabled button quietly turning green is not a thing anyone expects.
+///
+/// There is no disabled state. The one page that uses this keeps its button
+/// live at all times, so a dimmed variant would be a rendering nothing could
+/// reach. Add it back with a test the day something actually needs it.
 class QuestCtaAtom extends StatelessWidget {
   final String label;
   final bool solved;
-  final VoidCallback? onPressed;
+  final VoidCallback onPressed;
 
   const QuestCtaAtom({
     super.key,
@@ -25,41 +29,37 @@ class QuestCtaAtom extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final disabled = onPressed == null;
     final accent = solved ? QuestPalette.mint : QuestPalette.violet;
     final edge = solved ? _solvedEdge : _actionEdge;
 
-    return Opacity(
-      opacity: disabled ? 0.6 : 1,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          key: const Key('solution_cta'),
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(12.r),
-          child: Container(
-            height: 48.h,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: accent,
-              borderRadius: BorderRadius.circular(12.r),
-              boxShadow: [
-                BoxShadow(color: edge, offset: const Offset(0, 3)),
-                BoxShadow(
-                  color: accent.withValues(alpha: 0.42),
-                  blurRadius: 22,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontFamily: kDisplayFont,
-                fontSize: 13.5.sp,
-                fontWeight: FontWeight.w600,
-                color: solved ? QuestPalette.onMint : Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: const Key('solution_cta'),
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(12.r),
+        child: Container(
+          height: 48.h,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: accent,
+            borderRadius: BorderRadius.circular(12.r),
+            boxShadow: [
+              BoxShadow(color: edge, offset: const Offset(0, 3)),
+              BoxShadow(
+                color: accent.withValues(alpha: 0.42),
+                blurRadius: 22,
+                offset: const Offset(0, 10),
               ),
+            ],
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: kDisplayFont,
+              fontSize: 13.5.sp,
+              fontWeight: FontWeight.w600,
+              color: solved ? QuestPalette.onMint : Colors.white,
             ),
           ),
         ),

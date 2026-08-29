@@ -32,9 +32,9 @@ class SolutionReaderContent {
   final List<OrderedSegment> answerBody;
   final String vaultLockedLabel;
   final String ctaLabel;
-  final bool ctaEnabled;
 
-  /// What pressing it does.
+  /// What pressing it does. There is no disabled case: a finished page is not a
+  /// dead end, so the button is always live and only its destination changes.
   final SolutionCtaAction ctaAction;
 
   /// Whether the button should read as finished. Mint rather than violet, and
@@ -95,7 +95,6 @@ class SolutionReaderContent {
     required this.answerBody,
     required this.vaultLockedLabel,
     required this.ctaLabel,
-    required this.ctaEnabled,
     required this.ctaAction,
     required this.ctaSolved,
     required this.canGoBack,
@@ -253,7 +252,6 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
                 : 'Next step',
     // A finished page is not a dead end. Once the answer is out the button
     // stops being "you are done" and becomes the way to the next question.
-    ctaEnabled: true,
     ctaAction: !answerRevealed && isLastStep && !onBriefing
         ? SolutionCtaAction.reveal
         : SolutionCtaAction.advance,

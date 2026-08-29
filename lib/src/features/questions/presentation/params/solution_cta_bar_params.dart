@@ -9,8 +9,9 @@ class SolutionCtaBarParams {
   final bool ctaSolved;
 
   /// Already resolved above this layer: the bar does not work out what the
-  /// button means, it only presses it.
-  final VoidCallback? onCtaPressed;
+  /// button means, it only presses it. Never null — the reader's button is
+  /// always live, and only its destination changes.
+  final VoidCallback onCtaPressed;
 
   final bool canGoBack;
   final VoidCallback onBack;

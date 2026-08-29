@@ -104,10 +104,10 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
   /// Identifies which screen is showing. The level label already encodes the
   /// step, so this changes on exactly the transitions that should start at the
   /// top, and not on a rationale or answer toggle.
-  String get _screenId {
-    final content = widget.params.content;
-    return content.onBriefing ? 'briefing' : content.levelLabel;
-  }
+  static String _screenIdOf(SolutionReaderContent content) =>
+      content.onBriefing ? 'briefing' : content.levelLabel;
+
+  String get _screenId => _screenIdOf(widget.params.content);
 
   @override
   void initState() {
@@ -193,8 +193,7 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
   void didUpdateWidget(SolutionReaderTemplate oldWidget) {
     super.didUpdateWidget(oldWidget);
     final previous = oldWidget.params.content;
-    final previousId = previous.onBriefing ? 'briefing' : previous.levelLabel;
-    final movedOn = previousId != _screenId;
+    final movedOn = _screenIdOf(previous) != _screenId;
     if (movedOn) {
       // Geometry is only true once the new step has laid out.
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -233,7 +232,6 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
     final v = details.primaryVelocity ?? 0;
     if (v.abs() < _swipeVelocity) return;
     if (v < 0) {
-      if (!content.ctaEnabled) return;
       _ctaHandler(content)();
     } else {
       if (!content.canGoBack) return;
@@ -390,8 +388,7 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
                     params: SolutionCtaBarParams(
                       ctaLabel: content.ctaLabel,
                       ctaSolved: content.ctaSolved,
-                      onCtaPressed:
-                          content.ctaEnabled ? _ctaHandler(content) : null,
+                      onCtaPressed: _ctaHandler(content),
                       canGoBack: content.canGoBack,
                       onBack: params.onBack,
                       showSwipeHint: !content.onBriefing,

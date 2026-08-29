@@ -311,9 +311,14 @@ class _SolutionVaultOrganismState extends State<SolutionVaultOrganism>
   }
 
   Widget _shutVault() {
+    final unlockable = widget.unlockable;
+    // Amber is the whole language of "you may open this now"; dim is the vault
+    // keeping out of the way until then.
+    final accent = unlockable ? QuestPalette.amber : QuestPalette.dim;
+
     return GestureDetector(
       key: const Key('vault_locked'),
-      onTap: widget.unlockable ? widget.onReveal : null,
+      onTap: unlockable ? widget.onReveal : null,
       child: Padding(
         padding: EdgeInsets.only(top: 12.h),
         child: _shutFrame(
@@ -321,15 +326,15 @@ class _SolutionVaultOrganismState extends State<SolutionVaultOrganism>
             width: double.infinity,
             padding: EdgeInsets.symmetric(horizontal: 13.w, vertical: 11.h),
             decoration: BoxDecoration(
-              color: widget.unlockable
+              color: unlockable
                   ? QuestPalette.amber.withValues(alpha: 0.14)
                   : Colors.white.withValues(alpha: 0.04),
               borderRadius: BorderRadius.circular(14.r),
               // The openable state draws its edge with DashedBorderAtom.
-              border: widget.unlockable
+              border: unlockable
                   ? null
                   : Border.all(color: Colors.white.withValues(alpha: 0.16)),
-              boxShadow: widget.unlockable
+              boxShadow: unlockable
                   ? [
                       BoxShadow(
                         color: QuestPalette.amber.withValues(alpha: 0.24),
@@ -344,13 +349,9 @@ class _SolutionVaultOrganismState extends State<SolutionVaultOrganism>
                   period: const Duration(milliseconds: 2400),
                   beats: 4,
                   child: Icon(
-                    widget.unlockable
-                        ? Icons.lock_open_rounded
-                        : Icons.lock_rounded,
+                    unlockable ? Icons.lock_open_rounded : Icons.lock_rounded,
                     size: 15.sp,
-                    color: widget.unlockable
-                        ? QuestPalette.amber
-                        : QuestPalette.dim,
+                    color: accent,
                   ),
                   builder: (context, phase, child) {
                     // The lock strains upward against what is holding it.
@@ -371,13 +372,11 @@ class _SolutionVaultOrganismState extends State<SolutionVaultOrganism>
                       fontFamily: kDisplayFont,
                       fontSize: 12.sp,
                       fontWeight: FontWeight.w500,
-                      color: widget.unlockable
-                          ? QuestPalette.amber
-                          : QuestPalette.dim,
+                      color: accent,
                     ),
                   ),
                 ),
-                if (widget.unlockable)
+                if (unlockable)
                   Icon(Icons.chevron_right_rounded,
                       size: 17.sp, color: QuestPalette.amber),
               ],

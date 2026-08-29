@@ -207,7 +207,6 @@ void main() {
     );
 
     expect(middle.ctaLabel, 'Next step');
-    expect(middle.ctaEnabled, isTrue);
     expect(middle.canGoBack, isFalse);
     expect(last.ctaLabel, 'Reveal answer');
     expect(last.canGoBack, isTrue);
@@ -217,7 +216,6 @@ void main() {
       reason: 'a finished page is not a dead end; the button becomes the way '
           'onward rather than a label saying the student is done',
     );
-    expect(revealed.ctaEnabled, isTrue);
     expect(revealed.answerBody.single.segment, isA<MathSolutionSegment>());
   });
 
@@ -349,9 +347,9 @@ void main() {
 
     expect(content.answerRevealed, isFalse,
         reason: 'vault must not be revealed on a non-last step');
-    expect(content.ctaEnabled, isTrue,
-        reason: 'CTA must remain enabled on a non-last step');
     expect(content.ctaLabel, 'Next step');
+    expect(content.ctaAction, SolutionCtaAction.advance,
+        reason: 'a stale reveal must not send an earlier step to the vault');
   });
 
   group('briefing', () {
@@ -378,7 +376,6 @@ void main() {
       ));
 
       expect(content.ctaLabel, 'Start solving');
-      expect(content.ctaEnabled, isTrue);
       expect(content.canGoBack, isFalse);
     });
 
