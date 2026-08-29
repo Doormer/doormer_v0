@@ -1,5 +1,5 @@
 import 'package:doormer/src/core/theme/quest_palette.dart';
-import 'package:doormer/src/features/questions/presentation/atoms/accent_well_atom.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/accent_well_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 

@@ -1,6 +1,6 @@
 import 'package:doormer/src/core/motion/motion_policy.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
-import 'package:doormer/src/features/questions/presentation/atoms/accent_well_atom.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/accent_well_atom.dart';
 import 'package:doormer/src/features/questions/presentation/layout/math_flow.dart';
 import 'package:doormer/src/features/questions/utils/math_clauses.dart';
 import 'package:flutter/material.dart';
