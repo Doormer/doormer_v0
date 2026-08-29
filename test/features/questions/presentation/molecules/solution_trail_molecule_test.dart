@@ -1,6 +1,5 @@
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/solution_trail_molecule.dart';
-import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -68,6 +67,7 @@ Widget _pump(
 
 void main() {
   _chainTests();
+  _vaultBandGeometryTests();
   _inviteRingTests();
   testWidgets('renders one node per step with a tick on completed steps',
       (tester) async {
@@ -298,11 +298,10 @@ List<SolutionTrailNode> _withVault(int broken) => [
       _vaultNode(broken),
     ];
 
-int _chains(WidgetTester tester) =>
-    tester.widgetList<Container>(find.byType(Container)).where((c) {
-      final d = c.decoration;
-      return d is BoxDecoration && d.color == QuestPalette.dim;
-    }).length;
+int _chains(WidgetTester tester) => List.generate(
+      3,
+      (i) => find.byKey(Key('vault_band_$i')),
+    ).where((f) => f.evaluate().isNotEmpty).length;
 
 void _chainTests() {
   group('the vault chains', () {
@@ -381,6 +380,21 @@ void _chainTests() {
       await tester.pump();
 
       expect(_chains(tester), 0);
+    });
+
+    testWidgets('leave the strap wrapped behind the lock till last',
+        (tester) async {
+      await tester.pumpWidget(_pump(_withVault(2)));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('vault_band_2')), findsOneWidget,
+          reason: 'one strap left should still read as a chain around the '
+              'box, not as an underline beneath it');
+      expect(find.byKey(const Key('vault_band_0')), findsNothing);
+      expect(find.byKey(const Key('vault_band_1')), findsNothing);
+      expect(vaultBandSegments(index: 2, phase: 0), hasLength(2),
+          reason: 'the strap left standing has to be the one that runs behind '
+              'the lock, not one of the plain bars above or below it');
     });
 
     testWidgets('never appear on a marker that was never locked',
@@ -565,5 +579,62 @@ void _inviteRingTests() {
       lessThan(SolutionTrailMolecule.tailNodeSize + 20),
       reason: 'the breathing room leaked into the layout',
     );
+  });
+}
+
+void _vaultBandGeometryTests() {
+  group('the vault strap geometry', () {
+    test('reaches past the node so the straps read as wrapping around behind',
+        () {
+      for (var i = 0; i < 3; i++) {
+        final pieces = vaultBandSegments(index: i, phase: 0);
+        expect(pieces.first.start.dx, lessThanOrEqualTo(-19.5),
+            reason: 'a strap that stops at the silhouette is painted on, not '
+                'wrapped around');
+        expect(pieces.last.end.dx, greaterThanOrEqualTo(19.5));
+      }
+    });
+
+    test('runs the last strap behind the glyph instead of through it', () {
+      final pieces = vaultBandSegments(index: 2, phase: 0);
+
+      expect(pieces, hasLength(2),
+          reason: 'a solid bar across the middle of a lock reads as struck '
+              'out, which is the opposite of what this page is about');
+      expect(pieces.first.end.dx, lessThan(0));
+      expect(pieces.last.start.dx, greaterThan(0));
+      expect(pieces.last.start.dx - pieces.first.end.dx, greaterThan(15),
+          reason: 'the hole has to clear the lock glyph at every text scale');
+      for (final piece in pieces) {
+        expect(piece.start.dy, 0);
+        expect(piece.end.dy, 0);
+      }
+    });
+
+    test('strains before it breaks', () {
+      final intact = vaultBandSegments(index: 0, phase: 0).single;
+      final strained = vaultBandSegments(index: 0, phase: 0.2).single;
+
+      expect(strained.end.dx, greaterThan(intact.end.dx),
+          reason: 'the strap should pull taut before it lets go');
+    });
+
+    test('breaks into two halves whose free ends fall', () {
+      final halves = vaultBandSegments(index: 0, phase: 0.7);
+
+      expect(halves, hasLength(2),
+          reason: 'a strap that is flung away in one piece was untied, not '
+              'broken');
+      for (final half in halves) {
+        expect(half.end.dy, greaterThan(half.start.dy + 2),
+            reason: 'each half pivots on its outer end, so the inner end is '
+                'the one that drops');
+      }
+      expect(halves.first.start.dx, lessThan(halves.last.start.dx));
+    });
+
+    test('is gone by the end of the snap', () {
+      expect(vaultBandSegments(index: 0, phase: 1), isEmpty);
+    });
   });
 }

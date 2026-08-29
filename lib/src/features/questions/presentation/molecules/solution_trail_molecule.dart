@@ -581,9 +581,97 @@ class _InviteRing extends StatelessWidget {
 /// They break one at a time as the working is done, so the student can see the
 /// answer coming loose. A chain does not fade when it goes — it snaps and is
 /// flung off, because it was broken rather than switched off.
-class _VaultChains extends StatefulWidget {
-  static const int count = 3;
+/// One drawn piece of a vault strap, in 38px node units measured from the
+/// node centre.
+typedef VaultBandSegment = ({Offset start, Offset end, double opacity});
 
+/// Geometry of the straps that lash the vault shut.
+///
+/// [phase] runs 0 (intact) to 1 (snapped and gone). Pure, so the shape of the
+/// thing can be argued with in a test rather than squinted at on a screen.
+///
+/// Two decisions live here. The straps reach past the node's 19-unit
+/// half-width, because a band that stops at the silhouette reads as painted on
+/// rather than wrapped around behind. And the last strap is drawn as two stubs
+/// with a hole where the glyph sits, so it passes behind the lock instead of
+/// striking it out - a bar through the middle of a lock reads as "wrong", which
+/// is the last thing a page about getting the answer right should say.
+List<VaultBandSegment> vaultBandSegments({
+  required int index,
+  required double phase,
+}) {
+  final band = _vaultBands[index];
+  final strain = (phase / 0.28).clamp(0.0, 1.0);
+  final snap =
+      Curves.easeOutCubic.transform(((phase - 0.28) / 0.72).clamp(0.0, 1.0));
+  final reach = _vaultReach * (1 + 0.09 * strain);
+  final opacity = math.pow(1 - snap, 1.3).toDouble() * 0.74;
+
+  if (opacity <= 0) return const [];
+
+  // Straining, not yet broken: still one piece, drawn taut. Splitting it early
+  // would show the two round caps meeting as a bulge at the centre.
+  if (snap == 0) {
+    if (band.gap == 0) {
+      return [
+        (
+          start: Offset(-reach, band.y),
+          end: Offset(reach, band.y),
+          opacity: opacity,
+        ),
+      ];
+    }
+    return [
+      (
+        start: Offset(-reach, band.y),
+        end: Offset(-band.gap, band.y),
+        opacity: opacity,
+      ),
+      (
+        start: Offset(band.gap, band.y),
+        end: Offset(reach, band.y),
+        opacity: opacity,
+      ),
+    ];
+  }
+
+  // Each half pivots about its outer end, so the free inner end is what falls -
+  // the way a strained band gives way in the middle and the ends drop.
+  final swing = 62 * snap * math.pi / 180;
+  final drop = 7 * snap * snap;
+  final apart = 1.5 * snap;
+
+  VaultBandSegment half(double outerX, double innerX, double angle, double dx) {
+    final anchor = Offset(outerX + dx, band.y + drop);
+    final arm = innerX - outerX;
+    return (
+      start: anchor,
+      end: anchor + Offset(arm * math.cos(angle), arm * math.sin(angle)),
+      opacity: opacity,
+    );
+  }
+
+  return [
+    half(-reach, -band.gap, swing, -apart),
+    half(reach, band.gap, -swing, apart),
+  ];
+}
+
+/// Half-length of a strap. The node's half-width is 19, so every strap runs
+/// past the silhouette on both sides.
+const double _vaultReach = 21;
+const double _vaultThickness = 2.6;
+
+/// In break order: the outer straps go first and the one wrapped behind the
+/// lock is the last to give, so the final chain standing still reads as a
+/// chain rather than as an underline.
+const List<({double y, double gap})> _vaultBands = [
+  (y: -12.5, gap: 0),
+  (y: 12.5, gap: 0),
+  (y: 0, gap: 8.5),
+];
+
+class _VaultChains extends StatefulWidget {
   final double size;
   final int broken;
   final Widget child;
@@ -600,13 +688,6 @@ class _VaultChains extends StatefulWidget {
 
 class _VaultChainsState extends State<_VaultChains>
     with SingleTickerProviderStateMixin {
-  /// Base pose of each bar: angle in degrees, then offset in 38px node units.
-  static const List<(double, Offset)> _bars = [
-    (38, Offset(-13, -11)),
-    (-38, Offset(13, -11)),
-    (0, Offset(0, 15)),
-  ];
-
   late final AnimationController _snap;
 
   /// Chains already gone when this trail was drawn. Arriving at a part-solved
@@ -661,7 +742,7 @@ class _VaultChainsState extends State<_VaultChains>
 
   @override
   Widget build(BuildContext context) {
-    if (_gone >= _VaultChains.count && _snapping.isEmpty) return widget.child;
+    if (_gone >= _vaultBands.length && _snapping.isEmpty) return widget.child;
     final unit = widget.size / 38;
     return AnimatedBuilder(
       animation: _snap,
@@ -672,11 +753,11 @@ class _VaultChainsState extends State<_VaultChains>
           alignment: Alignment.center,
           children: [
             child!,
-            for (var i = 0; i < _VaultChains.count; i++)
+            for (var i = 0; i < _vaultBands.length; i++)
               if (_snapping.contains(i))
-                _bar(_bars[i].$1, _bars[i].$2, t, unit)
+                _band(i, t, unit)
               else if (i >= _gone)
-                _bar(_bars[i].$1, _bars[i].$2, 0, unit),
+                _band(i, 0, unit),
           ],
         );
       },
@@ -684,39 +765,71 @@ class _VaultChainsState extends State<_VaultChains>
     );
   }
 
-  Widget _bar(double baseAngle, Offset baseOffset, double t, double unit) {
-    // Strain first, then the break: the bar pulls against its anchor before it
-    // lets go.
-    final strained = (t / 0.3).clamp(0.0, 1.0);
-    final flung = ((t - 0.3) / 0.7).clamp(0.0, 1.0);
-    final angle =
-        t == 0 ? baseAngle : _lerp(_lerp(baseAngle, -29, strained), -72, flung);
-    final offset = Offset.lerp(baseOffset, const Offset(14, 20), flung)!;
-    final stretch = _lerp(_lerp(1, 1.08, strained), 0.5, flung);
-    return Transform.translate(
-      offset: offset * unit,
-      child: Transform.rotate(
-        angle: angle * math.pi / 180,
-        child: Transform.scale(
-          scaleX: stretch,
-          scaleY: 1,
-          child: Opacity(
-            opacity: (1 - flung) * 0.75,
-            child: Container(
-              width: 15 * unit,
-              height: 3 * unit,
-              decoration: BoxDecoration(
-                color: QuestPalette.dim,
-                borderRadius: BorderRadius.circular(2 * unit),
-              ),
-            ),
-          ),
-        ),
-      ),
+  Widget _band(int index, double phase, double unit) {
+    return CustomPaint(
+      key: Key('vault_band_$index'),
+      size: Size(widget.size, widget.size),
+      painter: _VaultBandPainter(index: index, phase: phase, unit: unit),
+    );
+  }
+}
+
+/// Paints one strap. A painter rather than boxes because a strap has to spill
+/// past the node it wraps, and nothing here clips.
+class _VaultBandPainter extends CustomPainter {
+  final int index;
+  final double phase;
+  final double unit;
+
+  const _VaultBandPainter({
+    required this.index,
+    required this.phase,
+    required this.unit,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.translate(size.width / 2, size.height / 2);
+    for (final segment in vaultBandSegments(index: index, phase: phase)) {
+      _draw(canvas, segment);
+    }
+    canvas.restore();
+  }
+
+  void _draw(Canvas canvas, VaultBandSegment segment) {
+    final a = segment.start * unit;
+    final b = segment.end * unit;
+    canvas.drawLine(
+      a,
+      b,
+      Paint()
+        ..color = QuestPalette.dim.withValues(alpha: segment.opacity)
+        ..strokeWidth = _vaultThickness * unit
+        ..strokeCap = StrokeCap.round,
+    );
+
+    // A hairline of light along the top edge. Without it the strap is a flat
+    // pill; with it, it is a band of metal.
+    final run = segment.end - segment.start;
+    final length = run.distance;
+    if (length <= 3) return;
+    final trim = run / length * 1.2;
+    const lift = Offset(0, -_vaultThickness * 0.34);
+    canvas.drawLine(
+      (segment.start + trim + lift) * unit,
+      (segment.end - trim + lift) * unit,
+      Paint()
+        ..color =
+            const Color(0xFFFFFFFF).withValues(alpha: segment.opacity * 0.26)
+        ..strokeWidth = 0.8 * unit
+        ..strokeCap = StrokeCap.round,
     );
   }
 
-  double _lerp(double a, double b, double t) => a + (b - a) * t;
+  @override
+  bool shouldRepaint(_VaultBandPainter old) =>
+      old.phase != phase || old.unit != unit || old.index != index;
 }
 
 class _TrailConnector extends StatelessWidget {
