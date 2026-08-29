@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:doormer/src/core/motion/motion_policy.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/idle_beat_atom.dart';
@@ -81,7 +82,12 @@ class SolutionTrailMolecule extends StatefulWidget {
   /// pass through.
   static const double stepNodeSize = 30;
   static const double headNodeSize = 34;
-  static const double tailNodeSize = 38;
+
+  /// The vault is the biggest thing on the trail. It is the destination, and
+  /// it is the only node carrying detail - three straps and a lock - so it
+  /// needs the room. This costs nothing vertically: the bar is already as tall
+  /// as a step node plus its padding.
+  static const double tailNodeSize = 44;
 
   /// The road never shrinks below this, which is what makes the strip overflow
   /// and pan rather than squeezing itself into nothing.
@@ -605,7 +611,7 @@ List<VaultBandSegment> vaultBandSegments({
   final snap =
       Curves.easeOutCubic.transform(((phase - 0.28) / 0.72).clamp(0.0, 1.0));
   final reach = _vaultReach * (1 + 0.09 * strain);
-  final opacity = math.pow(1 - snap, 1.3).toDouble() * 0.74;
+  final opacity = math.pow(1 - snap, 1.3).toDouble() * 0.82;
 
   if (opacity <= 0) return const [];
 
@@ -660,14 +666,33 @@ List<VaultBandSegment> vaultBandSegments({
 /// Half-length of a strap. The node's half-width is 19, so every strap runs
 /// past the silhouette on both sides.
 const double _vaultReach = 21;
-const double _vaultThickness = 2.6;
+const double _vaultThickness = 3.8;
+
+/// Where each shade sits across the thickness of a strap.
+const List<double> _vaultShadeStops = [0, 0.26, 0.6, 1];
+
+/// The strap read top to bottom.
+///
+/// A single flat colour makes a strap look like a line drawn on the vault. Four
+/// shades running light to dark make it look like a bar of metal lit from
+/// above, which is the whole difference between a drawing of a lock and a thing
+/// that looks locked. Derived from [QuestPalette.dim] so the straps stay inert
+/// trail furniture rather than becoming a new colour with a new meaning. They
+/// sit mostly *below* dim: pewter reads as iron, while a strap pitched at dim
+/// or brighter turns white and outshines the vault it is meant to hold shut.
+List<Color> vaultBandShades() => [
+      Color.lerp(QuestPalette.dim, QuestPalette.cream, 0.26)!,
+      Color.lerp(QuestPalette.dim, QuestPalette.card, 0.20)!,
+      Color.lerp(QuestPalette.dim, QuestPalette.card, 0.58)!,
+      Color.lerp(QuestPalette.dim, QuestPalette.card, 0.81)!,
+    ];
 
 /// In break order: the outer straps go first and the one wrapped behind the
 /// lock is the last to give, so the final chain standing still reads as a
 /// chain rather than as an underline.
 const List<({double y, double gap})> _vaultBands = [
-  (y: -12.5, gap: 0),
-  (y: 12.5, gap: 0),
+  (y: -11.5, gap: 0),
+  (y: 11.5, gap: 0),
   (y: 0, gap: 8.5),
 ];
 
@@ -800,31 +825,45 @@ class _VaultBandPainter extends CustomPainter {
   void _draw(Canvas canvas, VaultBandSegment segment) {
     final a = segment.start * unit;
     final b = segment.end * unit;
-    canvas.drawLine(
-      a,
-      b,
-      Paint()
-        ..color = QuestPalette.dim.withValues(alpha: segment.opacity)
-        ..strokeWidth = _vaultThickness * unit
-        ..strokeCap = StrokeCap.round,
+    final run = b - a;
+    final length = run.distance;
+    if (length <= 0.5) return;
+
+    final thickness = _vaultThickness * unit;
+    canvas.save();
+    canvas.translate((a.dx + b.dx) / 2, (a.dy + b.dy) / 2);
+    canvas.rotate(run.direction);
+
+    final radius = Radius.circular(thickness / 2);
+    final body = Rect.fromCenter(
+      center: Offset.zero,
+      width: length,
+      height: thickness,
     );
 
-    // A hairline of light along the top edge. Without it the strap is a flat
-    // pill; with it, it is a band of metal.
-    final run = segment.end - segment.start;
-    final length = run.distance;
-    if (length <= 3) return;
-    final trim = run / length * 1.2;
-    const lift = Offset(0, -_vaultThickness * 0.34);
-    canvas.drawLine(
-      (segment.start + trim + lift) * unit,
-      (segment.end - trim + lift) * unit,
+    // The strap lies on the vault rather than in it, so it drops a little
+    // shade. Without this the metal sits in the same plane as the box and the
+    // whole node goes flat.
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(body.shift(Offset(0, thickness * 0.42)), radius),
       Paint()
-        ..color =
-            const Color(0xFFFFFFFF).withValues(alpha: segment.opacity * 0.26)
-        ..strokeWidth = 0.8 * unit
-        ..strokeCap = StrokeCap.round,
+        ..color = QuestPalette.night.withValues(alpha: segment.opacity * 0.55),
     );
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(body, radius),
+      Paint()
+        ..shader = ui.Gradient.linear(
+          Offset(0, -thickness / 2),
+          Offset(0, thickness / 2),
+          [
+            for (final shade in vaultBandShades())
+              shade.withValues(alpha: shade.a * segment.opacity),
+          ],
+          _vaultShadeStops,
+        ),
+    );
+    canvas.restore();
   }
 
   @override

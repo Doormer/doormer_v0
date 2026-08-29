@@ -68,6 +68,7 @@ Widget _pump(
 void main() {
   _chainTests();
   _vaultBandGeometryTests();
+  _vaultLooksLikeMetalTests();
   _inviteRingTests();
   testWidgets('renders one node per step with a tick on completed steps',
       (tester) async {
@@ -576,9 +577,52 @@ void _inviteRingTests() {
     // ...and none of that room is allowed to push the question down the page.
     expect(
       bar,
-      lessThan(SolutionTrailMolecule.tailNodeSize + 20),
+      lessThan(SolutionTrailMolecule.tailNodeSize + 8),
       reason: 'the breathing room leaked into the layout',
     );
+  });
+}
+
+void _vaultLooksLikeMetalTests() {
+  group('the vault', () {
+    testWidgets('is the biggest thing on the trail', (tester) async {
+      await tester.pumpWidget(_pump(_bookended(4, 1)));
+      await tester.pumpAndSettle();
+
+      final vault = tester.getSize(find.byKey(const Key('trail_node_5')));
+      final plan = tester.getSize(find.byKey(const Key('trail_node_0')));
+      final step = tester.getSize(find.byKey(const Key('trail_node_2')));
+
+      expect(vault.width, greaterThan(plan.width),
+          reason: 'the vault is where the student is going, and it is the only '
+              'node carrying detail - straps and a lock. Sized like the plan '
+              'it has no room for either and the straps turn to mush');
+      expect(vault.width, greaterThan(step.width));
+    });
+
+    test('lights the straps from above so they read as metal', () {
+      final shades = vaultBandShades();
+
+      expect(shades, hasLength(4));
+      var previous = shades.first.computeLuminance();
+      for (final shade in shades.skip(1)) {
+        expect(shade.computeLuminance(), lessThan(previous),
+            reason: 'a strap shaded flat, or lit from below, reads as a line '
+                'drawn on the vault rather than a bar of metal lying across it');
+        previous = shade.computeLuminance();
+      }
+      // Range alone is not enough: a strap with a dark underside but no lit
+      // edge still spans a wide range while looking flat on top.
+      // Measured against the strap's own body rather than a palette colour, so
+      // the guard still holds if the whole strap is re-pitched lighter or
+      // darker.
+      expect(shades.first.computeLuminance() - shades[1].computeLuminance(),
+          greaterThan(0.12),
+          reason: 'without a lit top edge the strap has no roundness');
+      expect(shades[1].computeLuminance() - shades.last.computeLuminance(),
+          greaterThan(0.12),
+          reason: 'without a shaded underside the strap has no thickness');
+    });
   });
 }
 
