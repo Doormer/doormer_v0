@@ -1,11 +1,11 @@
 import 'package:doormer/src/core/di/service_locator.dart';
-import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_reader_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/diagram_enlarge_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/solution_reader_params.dart';
+import 'package:doormer/src/features/questions/presentation/templates/solution_reader_placeholder_template.dart';
 import 'package:doormer/src/features/questions/presentation/templates/solution_reader_template.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -54,23 +54,10 @@ class QuestionSolutionPage extends StatelessWidget {
           }
 
           if (state is SolutionReaderError) {
-            return Scaffold(
-              body: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    state.message,
-                    textAlign: TextAlign.center,
-                    style: context.textTheme.bodyLarge,
-                  ),
-                ),
-              ),
-            );
+            return SolutionReaderPlaceholderTemplate(message: state.message);
           }
 
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          return const SolutionReaderPlaceholderTemplate();
         },
       ),
     );

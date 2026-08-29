@@ -1,4 +1,6 @@
 import 'package:camera/camera.dart';
+import 'package:doormer/src/features/questions/presentation/params/camera_capture_params.dart';
+import 'package:doormer/src/features/questions/presentation/templates/camera_capture_template.dart';
 import 'package:flutter/material.dart';
 
 class CameraPage extends StatefulWidget {
@@ -117,45 +119,45 @@ class _CameraPageState extends State<CameraPage> {
     final controller = _controller;
     final initializeFuture = _initializeControllerFuture;
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: const Text('Take a photo'),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-      ),
-      body: controller == null || initializeFuture == null
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
-          : FutureBuilder<void>(
-              future: initializeFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.done) {
-                  return Center(
-                    child: CameraPreview(controller),
-                  );
-                }
+    if (controller == null || initializeFuture == null) {
+      return CameraCaptureTemplate(
+        params: _params(status: CameraCaptureStatus.starting),
+      );
+    }
 
-                if (snapshot.hasError) {
-                  return const Center(
-                    child: Text(
-                      'Unable to open camera',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  );
-                }
-
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
-              },
+    return FutureBuilder<void>(
+      future: initializeFuture,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return CameraCaptureTemplate(
+            params: _params(status: CameraCaptureStatus.failed),
+          );
+        }
+        if (snapshot.connectionState == ConnectionState.done) {
+          return CameraCaptureTemplate(
+            params: _params(
+              status: CameraCaptureStatus.ready,
+              preview: CameraPreview(controller),
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _takePicture,
-        child: const Icon(Icons.camera_alt),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+          );
+        }
+        return CameraCaptureTemplate(
+          params: _params(status: CameraCaptureStatus.starting),
+        );
+      },
+    );
+  }
+
+  CameraCaptureParams _params({
+    required CameraCaptureStatus status,
+    Widget? preview,
+  }) {
+    return CameraCaptureParams(
+      status: status,
+      preview: preview,
+      title: 'Take a photo',
+      failureMessage: 'Unable to open camera',
+      onCapture: _takePicture,
     );
   }
 }
