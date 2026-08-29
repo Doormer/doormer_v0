@@ -79,8 +79,6 @@ flutter:
           weight: 700
 
   assets:
-    # Add assets from the images directory to the application.
-    - assets/
     - assets/images/
     - assets/mock/mock_login_response.json
     - assets/mock/mock_question_response.json
