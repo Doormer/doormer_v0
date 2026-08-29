@@ -2,7 +2,7 @@ import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/diagram_atom.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_segment_order.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/segment_list_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/segment_list_organism.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -19,13 +19,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// because it has to reset when the step changes; this appears only in the
 /// opened vault, at the end of the trail, where there is no step change left
 /// for it to survive.
-class SolutionCheckMolecule extends StatefulWidget {
+class SolutionCheckOrganism extends StatefulWidget {
   final String title;
   final List<OrderedSegment> body;
   final void Function(VisualSolutionSegment visual) onEnlargeVisual;
   final DiagramImageProviderBuilder imageProviderBuilder;
 
-  const SolutionCheckMolecule({
+  const SolutionCheckOrganism({
     super.key,
     required this.title,
     required this.body,
@@ -34,10 +34,10 @@ class SolutionCheckMolecule extends StatefulWidget {
   });
 
   @override
-  State<SolutionCheckMolecule> createState() => _SolutionCheckMoleculeState();
+  State<SolutionCheckOrganism> createState() => _SolutionCheckOrganismState();
 }
 
-class _SolutionCheckMoleculeState extends State<SolutionCheckMolecule> {
+class _SolutionCheckOrganismState extends State<SolutionCheckOrganism> {
   bool _open = false;
 
   @override
@@ -94,7 +94,7 @@ class _SolutionCheckMoleculeState extends State<SolutionCheckMolecule> {
             Padding(
               key: const Key('solution_check_body'),
               padding: EdgeInsets.only(top: 4.h),
-              child: SegmentListMolecule(
+              child: SegmentListOrganism(
                 segments: widget.body,
                 onEnlargeVisual: widget.onEnlargeVisual,
                 imageProviderBuilder: widget.imageProviderBuilder,

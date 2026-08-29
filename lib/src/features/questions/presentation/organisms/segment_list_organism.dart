@@ -7,8 +7,8 @@ import 'package:doormer/src/features/questions/presentation/molecules/diagram_fi
 import 'package:flutter/material.dart';
 
 /// Renders an already-ordered segment list. Ordering is decided above this
-/// widget so the molecule stays dumb.
-class SegmentListMolecule extends StatelessWidget {
+/// widget so this stays dumb.
+class SegmentListOrganism extends StatelessWidget {
   final List<OrderedSegment> segments;
   final void Function(VisualSolutionSegment visual) onEnlargeVisual;
   final DiagramImageProviderBuilder imageProviderBuilder;
@@ -16,7 +16,7 @@ class SegmentListMolecule extends StatelessWidget {
   /// Set on the final answer only, so its maths reads as the payoff.
   final bool emphasised;
 
-  const SegmentListMolecule({
+  const SegmentListOrganism({
     super.key,
     required this.segments,
     required this.onEnlargeVisual,

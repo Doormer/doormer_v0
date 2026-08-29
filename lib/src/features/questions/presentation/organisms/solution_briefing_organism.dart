@@ -1,7 +1,7 @@
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/quest_card_atom.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/note_caveat_molecule.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/segment_list_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/segment_list_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/solution_briefing_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -52,7 +52,7 @@ class SolutionBriefingOrganism extends StatelessWidget {
             ],
           ),
           SizedBox(height: 12.h),
-          SegmentListMolecule(
+          SegmentListOrganism(
             segments: params.body,
             onEnlargeVisual: params.onEnlargeVisual,
             imageProviderBuilder: params.imageProviderBuilder,

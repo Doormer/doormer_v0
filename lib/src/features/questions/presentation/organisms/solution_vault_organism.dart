@@ -6,8 +6,8 @@ import 'package:doormer/src/features/questions/domain/entity/photo_question_solv
 import 'package:doormer/src/features/questions/presentation/atoms/confetti_atom.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/diagram_atom.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_segment_order.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/segment_list_molecule.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/solution_check_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/segment_list_organism.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/solution_check_organism.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/dashed_border_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/idle_beat_atom.dart';
 import 'package:flutter/material.dart';
@@ -293,13 +293,13 @@ class _SolutionVaultOrganismState extends State<SolutionVaultOrganism>
             ),
           ),
           SizedBox(height: 6.h),
-          SegmentListMolecule(
+          SegmentListOrganism(
             segments: widget.answerBody,
             onEnlargeVisual: widget.onEnlargeVisual,
             imageProviderBuilder: widget.imageProviderBuilder,
             emphasised: true,
           ),
-          SolutionCheckMolecule(
+          SolutionCheckOrganism(
             title: widget.checkTitle,
             body: widget.checkBody,
             onEnlargeVisual: widget.onEnlargeVisual,

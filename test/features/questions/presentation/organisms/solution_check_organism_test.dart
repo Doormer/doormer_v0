@@ -2,7 +2,7 @@ import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/math_block_atom.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_segment_order.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/solution_check_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/solution_check_organism.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,7 +14,7 @@ Widget _pump(List<OrderedSegment> body) {
       theme: AppTheme.dark,
       home: Scaffold(
         body: SingleChildScrollView(
-          child: SolutionCheckMolecule(
+          child: SolutionCheckOrganism(
             title: 'Check it',
             body: body,
             onEnlargeVisual: (_) {},

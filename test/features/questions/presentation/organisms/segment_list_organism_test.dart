@@ -6,7 +6,7 @@ import 'package:doormer/src/features/questions/domain/entity/photo_question_solv
 import 'package:doormer/src/features/questions/presentation/atoms/math_block_atom.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_segment_order.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/diagram_figure_molecule.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/segment_list_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/segment_list_organism.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -38,7 +38,7 @@ void main() {
           body: SingleChildScrollView(
             child: SizedBox(
               width: 358,
-              child: SegmentListMolecule(
+              child: SegmentListOrganism(
                 segments: diagramFirstOrder(const [
                   TextSolutionSegment('Let theta be the angle.'),
                   _visual,

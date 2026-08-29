@@ -1,8 +1,8 @@
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/quest_card_atom.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/xp_sticker_atom.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/rationale_reveal_molecule.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/segment_list_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/rationale_reveal_organism.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/segment_list_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/solution_step_params.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/rise_in_atom.dart';
 import 'package:flutter/material.dart';
@@ -65,13 +65,13 @@ class SolutionStepOrganism extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SegmentListMolecule(
+                SegmentListOrganism(
                   segments: params.body,
                   onEnlargeVisual: params.onEnlargeVisual,
                   imageProviderBuilder: params.imageProviderBuilder,
                 ),
                 if (params.hasRationale)
-                  RationaleRevealMolecule(
+                  RationaleRevealOrganism(
                     toggleLabel: params.rationaleToggleLabel,
                     visible: params.rationaleVisible,
                     onToggle: params.onToggleRationale,
