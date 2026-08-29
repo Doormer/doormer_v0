@@ -302,7 +302,7 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
                     padding: EdgeInsets.fromLTRB(16.w, 2.h, 16.w, 0),
                     child: SolutionTrailOrganism(
                       nodes: content.trail,
-                      onNodeTap: widget.params.onTravelTo,
+                      onNodeTap: params.onTravelTo,
                     ),
                   ),
                   Expanded(
@@ -321,65 +321,7 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: content.onBriefing
-                              ? [
-                                  // Keyed by screen so the card pops and its contents
-                                  // rise again on every move, rather than the words
-                                  // silently changing inside a frame that never moved.
-                                  CardPopAtom(
-                                    key: ValueKey<String>(_screenId),
-                                    child: SolutionBriefingOrganism(
-                                      params: SolutionBriefingParams(
-                                        title: content.briefingTitle,
-                                        body: content.briefingBody,
-                                        note: content.note,
-                                        onEnlargeVisual: params.onEnlargeVisual,
-                                        imageProviderBuilder:
-                                            params.imageProviderBuilder,
-                                      ),
-                                    ),
-                                  ),
-                                ]
-                              : [
-                                  CardPopAtom(
-                                    key: ValueKey<String>(_screenId),
-                                    child: SolutionStepOrganism(
-                                      params: SolutionStepParams(
-                                        levelLabel: content.levelLabel,
-                                        stepTitle: content.stepTitle,
-                                        body: content.body,
-                                        rationale: content.rationale,
-                                        hasRationale: content.hasRationale,
-                                        rationaleVisible:
-                                            content.rationaleVisible,
-                                        rationaleToggleLabel:
-                                            content.rationaleToggleLabel,
-                                        xpLabel: content.stepXpLabel,
-                                        xpStickerKey: _stickerKey,
-                                        onToggleRationale:
-                                            params.onToggleRationale,
-                                        onEnlargeVisual: params.onEnlargeVisual,
-                                        imageProviderBuilder:
-                                            params.imageProviderBuilder,
-                                      ),
-                                    ),
-                                  ),
-                                  SolutionVaultOrganism(
-                                    key: _vaultKey,
-                                    revealed: content.answerRevealed,
-                                    unlockable: content.isLastStep,
-                                    lockedLabel: content.vaultLockedLabel,
-                                    solvedLabel: content.vaultSolvedLabel,
-                                    checkTitle: content.checkTitle,
-                                    checkBody: content.checkBody,
-                                    answerBody: content.answerBody,
-                                    resisting: _resisting,
-                                    onReveal: _requestReveal,
-                                    onEnlargeVisual: params.onEnlargeVisual,
-                                    imageProviderBuilder:
-                                        params.imageProviderBuilder,
-                                  ),
-                                ],
+                          children: _screenChildren(content),
                         ),
                       ),
                     ),
@@ -402,6 +344,69 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
           ],
         ),
       ),
+    );
+  }
+
+  /// What is being read right now: the plan on its own, or a step with the
+  /// vault sitting under it.
+  List<Widget> _screenChildren(SolutionReaderContent content) {
+    if (content.onBriefing) {
+      return [_popped(_briefing(content))];
+    }
+    return [_popped(_step(content)), _vault(content)];
+  }
+
+  /// Keyed by screen so the card pops and its contents rise again on every
+  /// move, rather than the words silently changing inside a frame that never
+  /// moved.
+  Widget _popped(Widget child) =>
+      CardPopAtom(key: ValueKey<String>(_screenId), child: child);
+
+  Widget _briefing(SolutionReaderContent content) {
+    return SolutionBriefingOrganism(
+      params: SolutionBriefingParams(
+        title: content.briefingTitle,
+        body: content.briefingBody,
+        note: content.note,
+        onEnlargeVisual: widget.params.onEnlargeVisual,
+        imageProviderBuilder: widget.params.imageProviderBuilder,
+      ),
+    );
+  }
+
+  Widget _step(SolutionReaderContent content) {
+    return SolutionStepOrganism(
+      params: SolutionStepParams(
+        levelLabel: content.levelLabel,
+        stepTitle: content.stepTitle,
+        body: content.body,
+        rationale: content.rationale,
+        hasRationale: content.hasRationale,
+        rationaleVisible: content.rationaleVisible,
+        rationaleToggleLabel: content.rationaleToggleLabel,
+        xpLabel: content.stepXpLabel,
+        xpStickerKey: _stickerKey,
+        onToggleRationale: widget.params.onToggleRationale,
+        onEnlargeVisual: widget.params.onEnlargeVisual,
+        imageProviderBuilder: widget.params.imageProviderBuilder,
+      ),
+    );
+  }
+
+  Widget _vault(SolutionReaderContent content) {
+    return SolutionVaultOrganism(
+      key: _vaultKey,
+      revealed: content.answerRevealed,
+      unlockable: content.isLastStep,
+      lockedLabel: content.vaultLockedLabel,
+      solvedLabel: content.vaultSolvedLabel,
+      checkTitle: content.checkTitle,
+      checkBody: content.checkBody,
+      answerBody: content.answerBody,
+      resisting: _resisting,
+      onReveal: _requestReveal,
+      onEnlargeVisual: widget.params.onEnlargeVisual,
+      imageProviderBuilder: widget.params.imageProviderBuilder,
     );
   }
 
