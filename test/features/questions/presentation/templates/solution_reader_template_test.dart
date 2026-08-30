@@ -8,6 +8,9 @@ import 'package:doormer/src/features/questions/presentation/organisms/solution_t
 import 'package:doormer/src/features/questions/presentation/organisms/solution_step_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/solution_reader_params.dart';
 import 'package:doormer/src/features/questions/presentation/templates/solution_reader_template.dart';
+import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/quest_hud_organism.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/solution_cta_bar_organism.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -126,13 +129,22 @@ const _tallBriefedDocument = SolutionDocument(
   ]),
 );
 
-Widget _pump(SolutionReaderParams params, {bool motion = true}) {
+Widget _pump(
+  SolutionReaderParams params, {
+  bool motion = true,
+  Size? column,
+}) {
   return ScreenUtilInit(
     designSize: const Size(360, 690),
     builder: (_, __) => MaterialApp(
       theme: AppTheme.dark,
       home: MediaQuery(
-        data: MediaQueryData(disableAnimations: !motion),
+        // [column] is what the app shell hands the reader: the window on a
+        // phone, and the capped reading column on anything wider.
+        data: MediaQueryData(
+          size: column ?? Size.zero,
+          disableAnimations: !motion,
+        ),
         child: SolutionReaderTemplate(params: params),
       ),
     ),
@@ -510,6 +522,8 @@ void main() {
       );
     });
   });
+
+  group('where the trail goes', _trailPlacementTests);
 }
 
 void _xpFlightTests() {
@@ -859,5 +873,125 @@ void _revealResistTests() {
       expect(find.byKey(const Key('swipe_hint')), findsNothing,
           reason: 'it has been answered, so it should stop talking');
     });
+  });
+}
+
+/// Where the trail goes.
+///
+/// The road is a bar across the top of a phone, where height is cheap and width
+/// is not. It stands up into a rail down the side once the reader has width to
+/// spare, which buys back the height a short laptop window has least of.
+void _trailPlacementTests() {
+  Finder trail() => find.byType(SolutionTrailOrganism);
+
+  SolutionReaderParams params() => _params(_atStep(1));
+
+  testWidgets('lies across the top on a phone', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(_pump(
+      params(),
+      motion: false,
+      column: const Size(390, 844),
+    ));
+    await tester.pump();
+
+    expect(tester.widget<SolutionTrailOrganism>(trail()).axis,
+        Axis.horizontal);
+
+    final road = tester.getRect(trail());
+    final body = tester.getRect(find.byKey(const Key('solution_scroll')));
+    expect(road.bottom, lessThanOrEqualTo(body.top + 1),
+        reason: 'the road sits above the reading, not beside it');
+  });
+
+  testWidgets('stands up beside the reading on a wide window', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(_pump(
+      params(),
+      motion: false,
+      // What the shell hands down on a laptop: the column at its full width.
+      column: const Size(AppLayout.maxContentWidth, 900),
+    ));
+    await tester.pump();
+
+    expect(tester.widget<SolutionTrailOrganism>(trail()).axis, Axis.vertical);
+
+    final road = tester.getRect(trail());
+    final body = tester.getRect(find.byKey(const Key('solution_scroll')));
+    expect(road.right, lessThanOrEqualTo(body.left + 1),
+        reason: 'the road runs down the left of the reading');
+    expect(road.top, lessThan(body.bottom));
+  });
+
+  testWidgets('buys back the height it used to cost', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(_pump(
+      params(),
+      motion: false,
+      column: const Size(360, 900),
+    ));
+    await tester.pump();
+    final asBar = tester.getRect(find.byKey(const Key('solution_scroll')));
+
+    await tester.pumpWidget(_pump(
+      params(),
+      motion: false,
+      column: const Size(AppLayout.maxContentWidth, 900),
+    ));
+    await tester.pump();
+    final asRail = tester.getRect(find.byKey(const Key('solution_scroll')));
+
+    expect(asRail.height, greaterThan(asBar.height),
+        reason: 'standing the road up is the whole point of the rail');
+  });
+
+  testWidgets('leaves the reading the lion\'s share of the width',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(_pump(
+      params(),
+      motion: false,
+      column: const Size(AppLayout.maxContentWidth, 900),
+    ));
+    await tester.pump();
+
+    final road = tester.getRect(trail());
+    expect(road.width, lessThan(AppLayout.maxContentWidth * 0.15),
+        reason: 'a rail is chrome; the reading is what the screen is for');
+  });
+
+  testWidgets('keeps the header and the buttons across the full width',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(_pump(
+      params(),
+      motion: false,
+      column: const Size(AppLayout.maxContentWidth, 900),
+    ));
+    await tester.pump();
+
+    final road = tester.getRect(trail());
+    final hud = tester.getRect(find.byType(QuestHudOrganism));
+    final dock = tester.getRect(find.byType(SolutionCtaBarOrganism));
+
+    expect(hud.bottom, lessThanOrEqualTo(road.top + 1),
+        reason: 'the header spans the reader, above the rail');
+    expect(dock.top, greaterThanOrEqualTo(road.bottom - 1),
+        reason: 'the buttons span the reader, below the rail');
   });
 }

@@ -271,19 +271,33 @@ void main() {
         // The reader's whole design rests on the trail and the CTA staying put
         // while only the step body scrolls. A short window shrinks the vertical
         // scale to its floor, which is where that would give way first.
-        final trailBottom =
-            tester.getBottomLeft(find.byType(SolutionTrailOrganism)).dy;
-        final scrollTop =
-            tester.getTopLeft(find.byKey(const Key('solution_scroll'))).dy;
+        //
+        // Which side the trail is on is the window's business -- a bar above the
+        // reading on a phone, a rail beside it on anything wider -- so what is
+        // pinned down here is that it is never *inside* the reading, at any
+        // size, and so can never scroll away.
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('solution_scroll')),
+            matching: find.byType(SolutionTrailOrganism),
+          ),
+          findsNothing,
+        );
+
+        final trail = tester.getRect(find.byType(SolutionTrailOrganism));
+        final scroll = tester.getRect(find.byKey(const Key('solution_scroll')));
         final ctaTop =
             tester.getTopLeft(find.byKey(const Key('solution_cta'))).dy;
 
         // Adjacent edges land on the same pixel, so compare with the tolerance
-        // Flutter uses for its own geometry rather than exactly: these two
-        // differ in the fifteenth decimal place.
-        expect(trailBottom,
-            lessThanOrEqualTo(scrollTop + precisionErrorTolerance));
-        expect(ctaTop, greaterThan(scrollTop));
+        // Flutter uses for its own geometry rather than exactly: these differ in
+        // the fifteenth decimal place.
+        const nudge = precisionErrorTolerance;
+        final clearsAbove = trail.bottom <= scroll.top + nudge;
+        final clearsBeside = trail.right <= scroll.left + nudge;
+        expect(clearsAbove || clearsBeside, isTrue,
+            reason: 'the trail must not sit on top of the reading');
+        expect(ctaTop, greaterThan(scroll.top));
 
         // The CTA has to stay inside the painted column. Compared against the
         // column's own rect, not the raw viewport: the column is centred, so on

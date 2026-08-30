@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/motion/motion_policy.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/xp_pellet_atom.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_reader_presenter.dart';
@@ -273,6 +274,12 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
     final params = widget.params;
     final content = params.content;
 
+    // Once the reading column has stopped growing there is width to spare, and
+    // the road is better spent standing up beside the reading than lying across
+    // the top of it -- a wide window is short, and height is what it has least
+    // of. Below that the window *is* the column, so the bar stays.
+    final asRail = MediaQuery.sizeOf(context).width >= AppLayout.maxContentWidth;
+
     return Scaffold(
       body: SizedBox.expand(
         child: Stack(
@@ -295,33 +302,32 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
                       xpTrigger: _landings,
                     ),
                   ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(16.w, 2.h, 16.w, 0),
-                    child: SolutionTrailOrganism(
-                      nodes: content.trail,
-                      onNodeTap: params.onTravelTo,
+                  if (!asRail)
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(16.w, 2.h, 16.w, 0),
+                      child: _trail(content, Axis.horizontal),
                     ),
-                  ),
                   Expanded(
-                    child: GestureDetector(
-                      // Horizontal only: reading up and down must never cost
-                      // the student their place.
-                      onHorizontalDragEnd: (d) => _swipe(d, content),
-                      child: SingleChildScrollView(
-                        key: const Key('solution_scroll'),
-                        controller: _scrollController,
-                        padding: EdgeInsets.fromLTRB(
-                          16.w,
-                          _stickerHeadroom.h,
-                          16.w,
-                          16.h,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: _screenChildren(content),
-                        ),
-                      ),
-                    ),
+                    child: asRail
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.fromLTRB(16.w, 8.h, 0, 0),
+                                child: Align(
+                                  // The road hangs from the top and runs down
+                                  // only as far as it needs to. Stretched to
+                                  // the full height it would leave craters
+                                  // between the steps.
+                                  alignment: Alignment.topCenter,
+                                  widthFactor: 1,
+                                  child: _trail(content, Axis.vertical),
+                                ),
+                              ),
+                              Expanded(child: _body(content)),
+                            ],
+                          )
+                        : _body(content),
                   ),
                   SolutionCtaBarOrganism(
                     params: SolutionCtaBarParams(
@@ -346,6 +352,31 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
 
   /// What is being read right now: the plan on its own, or a step with the
   /// vault sitting under it.
+  Widget _trail(SolutionReaderContent content, Axis axis) {
+    return SolutionTrailOrganism(
+      nodes: content.trail,
+      onNodeTap: widget.params.onTravelTo,
+      axis: axis,
+    );
+  }
+
+  Widget _body(SolutionReaderContent content) {
+    return GestureDetector(
+      // Horizontal only: reading up and down must never cost the student their
+      // place.
+      onHorizontalDragEnd: (d) => _swipe(d, content),
+      child: SingleChildScrollView(
+        key: const Key('solution_scroll'),
+        controller: _scrollController,
+        padding: EdgeInsets.fromLTRB(16.w, _stickerHeadroom.h, 16.w, 16.h),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: _screenChildren(content),
+        ),
+      ),
+    );
+  }
+
   List<Widget> _screenChildren(SolutionReaderContent content) {
     if (content.onBriefing) {
       return [_popped(_briefing(content))];
