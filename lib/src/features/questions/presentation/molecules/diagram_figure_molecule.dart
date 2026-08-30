@@ -8,6 +8,19 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// SAS-signed and expire — so on failure the figure and its caption disappear
 /// together rather than leaving a broken glyph and an orphan caption.
 class DiagramFigureMolecule extends StatefulWidget {
+  /// Most of the viewport an inline figure may claim.
+  ///
+  /// [AspectRatio] derives height from the width it is offered, so a wider
+  /// window makes a *taller* figure: uncapped, the diagram grew to 507px in a
+  /// 900px laptop window and pushed the working that explains it off screen.
+  /// The cap keeps the figure and some of its reasoning visible together.
+  ///
+  /// It lives here rather than on [DiagramAtom] because the enlarge view uses
+  /// the same atom and wants the opposite -- as much of the screen as the
+  /// figure can take. Phones are unaffected either way: at 358px of column a
+  /// figure is 239px tall, well under the cap, so width still decides.
+  static const double maxViewportFraction = 0.34;
+
   final VisualSolutionSegment visual;
   final VoidCallback onEnlarge;
   final DiagramImageProviderBuilder imageProviderBuilder;
@@ -62,12 +75,20 @@ class _DiagramFigureMoleculeState extends State<DiagramFigureMolecule> {
               borderRadius: BorderRadius.circular(12.r),
               border: Border.all(color: cs.outlineVariant),
             ),
-            child: DiagramAtom(
-              url: widget.visual.url,
-              aspectRatio: widget.visual.aspectRatio,
-              semanticsLabel: widget.visual.alt,
-              onFailed: _onFailed,
-              imageProviderBuilder: widget.imageProviderBuilder,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(context).height *
+                      DiagramFigureMolecule.maxViewportFraction,
+                ),
+                child: DiagramAtom(
+                  url: widget.visual.url,
+                  aspectRatio: widget.visual.aspectRatio,
+                  semanticsLabel: widget.visual.alt,
+                  onFailed: _onFailed,
+                  imageProviderBuilder: widget.imageProviderBuilder,
+                ),
+              ),
             ),
           ),
         ),

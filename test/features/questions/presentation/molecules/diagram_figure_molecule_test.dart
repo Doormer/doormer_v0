@@ -282,4 +282,114 @@ void main() {
 
     expect(enlarged, 1);
   });
+
+  group('height cap', () {
+    Widget pumpAt({required double columnWidth}) {
+      return ScreenUtilInit(
+        designSize: const Size(360, 690),
+        builder: (_, __) => MaterialApp(
+          theme: AppTheme.dark,
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: columnWidth,
+                child: DiagramFigureMolecule(
+                  visual: _visual,
+                  onEnlarge: () {},
+                  imageProviderBuilder: (_) => MemoryImage(_pngBytes),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    Size figureSize(WidgetTester tester) =>
+        tester.getSize(find.byType(AspectRatio));
+
+    double figureHeight(WidgetTester tester) => figureSize(tester).height;
+
+    testWidgets('caps a figure so the working it explains stays on screen',
+        (tester) async {
+      // A laptop: wide enough for the whole column, but short.
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(pumpAt(columnWidth: 760));
+      await tester.pump();
+
+      // Uncapped, AspectRatio would take the full column and derive 507px of
+      // height -- more than half the window, pushing the working out of view.
+      expect(figureHeight(tester), lessThan(507));
+      expect(
+        figureHeight(tester),
+        closeTo(900 * DiagramFigureMolecule.maxViewportFraction, 0.5),
+      );
+    });
+
+    testWidgets('leaves a phone figure alone -- it never reaches the cap',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(pumpAt(columnWidth: 358));
+      await tester.pump();
+
+      // Width still decides -- height is exactly what the aspect ratio makes
+      // of the width on offer -- so the cap changes nothing about phones.
+      final figure = figureSize(tester);
+      expect(figure.height, closeTo(figure.width / _visual.aspectRatio, 0.5));
+      expect(
+        figure.height,
+        lessThan(844 * DiagramFigureMolecule.maxViewportFraction),
+      );
+    });
+
+    testWidgets('does not cap the enlarge view, which wants the whole screen',
+        (tester) async {
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(ScreenUtilInit(
+        designSize: const Size(360, 690),
+        builder: (_, __) => MaterialApp(
+          theme: AppTheme.dark,
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: 760,
+                child: DiagramAtom(
+                  url: _visual.url,
+                  aspectRatio: _visual.aspectRatio,
+                  semanticsLabel: _visual.alt,
+                  onFailed: () {},
+                  imageProviderBuilder: (_) => MemoryImage(_pngBytes),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ));
+      await tester.pump();
+
+      final figure = figureSize(tester);
+      expect(figure.width, 760, reason: 'the atom takes all the width it gets');
+      expect(
+        figure.height,
+        closeTo(760 / _visual.aspectRatio, 0.5),
+        reason: 'the atom itself must stay uncapped for the enlarge view',
+      );
+      expect(
+        figure.height,
+        greaterThan(900 * DiagramFigureMolecule.maxViewportFraction),
+        reason: 'and so may exceed what an inline figure is allowed',
+      );
+    });
+  });
 }
