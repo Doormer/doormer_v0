@@ -9,9 +9,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// The dock at the foot of the reader: back, the one big button, and the swipe
 /// hint floating above them.
 ///
-/// Opaque, with a 26px fade above it. At 92% opacity content showed through
-/// and text was cut mid-glyph at the boundary, which reads as broken rather
-/// than scrollable.
+/// Paints no fill of its own, just a fade above it. Nothing scrolls behind the
+/// dock -- it is a sibling below the scroll view, not an overlay on top of one
+/// -- so a fill buys no occlusion, and an opaque one is actively wrong on a
+/// wide window: it is clipped to the content column, so it ends in a hard
+/// vertical edge with the app backdrop still showing either side of it.
+///
+/// If you reintroduce a fill here, check it at 1440px wide, not just on a
+/// phone. On a phone the column is the window and the seam cannot appear.
 class SolutionCtaBarOrganism extends StatelessWidget {
   final SolutionCtaBarParams params;
 
@@ -42,13 +47,7 @@ class SolutionCtaBarOrganism extends StatelessWidget {
           // The hint reaches up out of the dock; clipping erases it.
           clipBehavior: Clip.none,
           children: [
-            Container(
-              decoration: BoxDecoration(
-                color: QuestPalette.glowBottom,
-                border: Border(
-                  top: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
-                ),
-              ),
+            Padding(
               padding: EdgeInsets.fromLTRB(13.w, 11.h, 13.w, 13.h),
               child: Row(
                 children: [
