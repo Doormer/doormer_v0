@@ -226,7 +226,7 @@ void main() {
     expect(find.text('Choose from gallery'), findsOneWidget);
   });
 
-  testWidgets('template owns one primary scaffold with onPrimary header text',
+  testWidgets('template owns one scaffold and lets the app backdrop through',
       (tester) async {
     repository = _FakeQuestionsRepository(
       outcome: _outcome(PhotoQuestionSolveStatus.solved),
@@ -239,10 +239,15 @@ void main() {
     final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
     final colorScheme =
         Theme.of(tester.element(find.byType(Scaffold))).colorScheme;
-    expect(scaffold.backgroundColor, colorScheme.primary);
+    // The page used to paint itself primary. That colour is bounded by the
+    // content column, so on a wide window it showed as a violet slab with the
+    // app backdrop still visible either side of it.
+    expect(scaffold.backgroundColor, isNull);
 
+    // And because the header now sits on the surface rather than on primary,
+    // it takes the surface's ink.
     final uploadHeading = tester.widget<Text>(find.text('Upload a photo'));
-    expect(uploadHeading.style?.color, colorScheme.onPrimary);
+    expect(uploadHeading.style?.color, colorScheme.onSurface);
   });
 
   testWidgets('selecting a photo shows the preview and enables submit',

@@ -1,4 +1,3 @@
-import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/ask_by_photo_header_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/photo_upload_panel_organism.dart';
@@ -41,7 +40,6 @@ class AskByPhotoTemplate extends StatelessWidget {
     final showPanels = showUploadPanel || showStatusPanel;
 
     return Scaffold(
-      backgroundColor: context.colorScheme.primary,
       body: SafeArea(
         child: Stack(
           children: [

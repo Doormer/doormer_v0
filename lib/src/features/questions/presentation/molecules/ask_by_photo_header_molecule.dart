@@ -8,7 +8,7 @@ class AskByPhotoHeaderMolecule extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final onPrimary = context.colorScheme.onPrimary;
+    final onSurface = context.colorScheme.onSurface;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -17,7 +17,7 @@ class AskByPhotoHeaderMolecule extends StatelessWidget {
           'Ready to solve?',
           textAlign: TextAlign.center,
           style: GoogleFonts.josefinSans(
-            color: onPrimary,
+            color: onSurface,
             fontSize: 18,
             fontWeight: FontWeight.w500,
           ),
@@ -27,7 +27,7 @@ class AskByPhotoHeaderMolecule extends StatelessWidget {
           'Upload a photo',
           textAlign: TextAlign.center,
           style: GoogleFonts.josefinSans(
-            color: onPrimary,
+            color: onSurface,
             fontSize: 28,
             fontWeight: FontWeight.w700,
           ),
@@ -37,7 +37,7 @@ class AskByPhotoHeaderMolecule extends StatelessWidget {
           "We'll help you solve it step by step",
           textAlign: TextAlign.center,
           style: GoogleFonts.josefinSans(
-            color: onPrimary,
+            color: onSurface,
             fontSize: 24,
             fontWeight: FontWeight.w600,
             height: 1.15,
