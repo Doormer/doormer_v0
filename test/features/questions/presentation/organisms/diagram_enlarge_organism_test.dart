@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/diagram_enlarge_organism.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/quest_backdrop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -176,8 +177,21 @@ void main() {
     ));
     await tester.pump();
 
+    // It paints the app's own backdrop, so the sheet matches the surround
+    // instead of showing as a slab with hard edges on a wide window.
+    expect(find.byKey(const Key('enlarge_backdrop')), findsOneWidget);
+    expect(
+      tester.widget(find.byKey(const Key('enlarge_backdrop'))),
+      isA<QuestBackdrop>(),
+    );
+
     final backdrop = tester.widget<DecoratedBox>(
-      find.byKey(const Key('enlarge_backdrop')),
+      find
+          .descendant(
+            of: find.byKey(const Key('enlarge_backdrop')),
+            matching: find.byType(DecoratedBox),
+          )
+          .first,
     );
     final gradient =
         (backdrop.decoration as BoxDecoration).gradient as RadialGradient;

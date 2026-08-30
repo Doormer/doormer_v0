@@ -2,10 +2,17 @@ import 'package:doormer/src/core/motion/motion_policy.dart';
 import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/diagram_atom.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/quest_backdrop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// A diagram at full width, over an opaque backdrop.
+///
+/// It paints the app's own [QuestBackdrop] rather than a backdrop of its own.
+/// The route is clipped to the content column, so a bespoke one showed as a
+/// slab with two hard vertical edges and the real page still visible either
+/// side of it on a wide window. Painting the same thing as the surround makes
+/// the sheet seamless while staying every bit as opaque.
 ///
 /// A translucent backdrop left the step heading and body readable behind the
 /// figure, with the road line running through the text. Contrast scoring
@@ -13,9 +20,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// legible, so the sheet is opaque. The gradient keeps it from being a flat
 /// black hole.
 class DiagramEnlargeOrganism extends StatefulWidget {
-  static const Color _backdropInner = Color(0xFF16103A);
-  static const Color _backdropOuter = Color(0xFF07040F);
-
   static const Duration backdropFade = Duration(milliseconds: 220);
   static const Duration cardRise = Duration(milliseconds: 280);
 
@@ -89,18 +93,9 @@ class _DiagramEnlargeOrganismState extends State<DiagramEnlargeOrganism>
       children: [
         FadeTransition(
           opacity: backdrop,
-          child: const DecoratedBox(
+          child: const QuestBackdrop(
             key: Key('enlarge_backdrop'),
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment(0, -1),
-                radius: 1.2,
-                colors: [
-                  DiagramEnlargeOrganism._backdropInner,
-                  DiagramEnlargeOrganism._backdropOuter,
-                ],
-              ),
-            ),
+            child: SizedBox.expand(),
           ),
         ),
         SlideTransition(
