@@ -68,7 +68,11 @@ class AppTheme {
       useMaterial3: true,
       fontFamily: kBodyFont,
       colorScheme: scheme,
-      scaffoldBackgroundColor: scheme.surface,
+      // The app shell paints one backdrop across the whole window, so pages
+      // let it through instead of each painting its own flat rectangle. An
+      // opaque scaffold would show as a hard-edged block wherever the window
+      // is wider than the content column.
+      scaffoldBackgroundColor: Colors.transparent,
       textTheme: AppTextStyles.apply(const TextTheme()),
       appBarTheme: AppBarTheme(
         backgroundColor: scheme.surface,

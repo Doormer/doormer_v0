@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:doormer/src/core/motion/motion_policy.dart';
-import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/xp_pellet_atom.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_reader_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solution_trail_organism.dart';
@@ -15,7 +14,6 @@ import 'package:doormer/src/features/questions/presentation/params/solution_brie
 import 'package:doormer/src/features/questions/presentation/params/solution_cta_bar_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solution_reader_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solution_step_params.dart';
-import 'package:doormer/src/shared/design/atomic/atoms/quest_backdrop.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/card_pop_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -276,8 +274,7 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
     final content = params.content;
 
     return Scaffold(
-      backgroundColor: QuestPalette.night,
-      body: QuestBackdrop(
+      body: SizedBox.expand(
         child: Stack(
           key: _stageKey,
           children: [

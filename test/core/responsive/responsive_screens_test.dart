@@ -28,6 +28,7 @@ import 'package:doormer/src/features/questions/presentation/params/solution_read
 import 'package:doormer/src/features/questions/presentation/templates/solution_reader_template.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solution_trail_organism.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:flutter/foundation.dart' show precisionErrorTolerance;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -67,7 +68,6 @@ const Map<String, Size> _viewports = {
   'laptop': Size(1440, 900),
   'desktop': Size(1920, 1080),
 };
-
 
 const _solutionDocument = SolutionDocument(
   schemaVersion: '3.0',
@@ -206,13 +206,17 @@ void main() {
 
     void expectNoZoom(String what, Map<String, double> measured) {
       final baseline = measured['iPhone 14']!;
+      // Derived from the clamp rather than written out, so the band moves with
+      // the constants instead of silently going stale when they change.
+      final phoneScale = AppLayout.scaleFor(_viewports['iPhone 14']!);
+      final low = AppLayout.minScale / phoneScale - 0.05;
+      final high = AppLayout.maxScale / phoneScale + 0.05;
+
       for (final entry in measured.entries) {
         final ratio = entry.value / baseline;
         expect(
           ratio,
-          // The clamp allows scale 0.85-1.3 and the phone baseline sits at
-          // 1.083, so anything genuinely clamped lands in 0.78-1.20.
-          inInclusiveRange(0.75, 1.25),
+          inInclusiveRange(low, high),
           reason: '$what on a ${entry.key} measured '
               '${ratio.toStringAsFixed(2)}x its size on a phone. Sizing must '
               'stay inside the clamped scale band instead of tracking the '
@@ -274,7 +278,11 @@ void main() {
         final ctaTop =
             tester.getTopLeft(find.byKey(const Key('solution_cta'))).dy;
 
-        expect(trailBottom, lessThanOrEqualTo(scrollTop));
+        // Adjacent edges land on the same pixel, so compare with the tolerance
+        // Flutter uses for its own geometry rather than exactly: these two
+        // differ in the fifteenth decimal place.
+        expect(trailBottom,
+            lessThanOrEqualTo(scrollTop + precisionErrorTolerance));
         expect(ctaTop, greaterThan(scrollTop));
 
         // The CTA has to stay inside the painted column. Compared against the

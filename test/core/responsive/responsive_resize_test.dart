@@ -107,16 +107,20 @@ void main() {
     final atDesign = tester.getSize(find.byKey(const Key('scaled')));
     expect(atDesign.width, closeTo(100, 1));
 
-    // Grow the window past the column cap. The scale should rise to its
-    // ceiling and the already-mounted subtree should repaint at the new size.
+    // Grow the window. The already-mounted subtree has to repaint at the new
+    // scale rather than keep the one it was first built with.
     tester.view.physicalSize = const Size(1440, 900);
     await tester.pumpAndSettle();
 
     final atLaptop = tester.getSize(find.byKey(const Key('scaled')));
     expect(
       atLaptop.width,
-      closeTo(100 * AppLayout.maxScale, 1),
+      greaterThan(atDesign.width),
       reason: 'the mounted subtree kept the scale it was first built with',
+    );
+    expect(
+      atLaptop.width,
+      closeTo(100 * AppLayout.scaleFor(const Size(1440, 900)), 1),
     );
 
     // And back down again.

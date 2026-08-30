@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:doormer/src/shared/design/atomic/atoms/quest_backdrop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -17,7 +18,7 @@ abstract final class AppLayout {
   /// working, an equation. Past roughly this width a line of body text runs
   /// well beyond a comfortable measure, so extra window width is better spent
   /// on margins than on longer lines.
-  static const double maxContentWidth = 600;
+  static const double maxContentWidth = 760;
 
   /// Bounds on how far the design canvas may be scaled.
   ///
@@ -26,7 +27,27 @@ abstract final class AppLayout {
   /// text becomes 56px. The ceiling keeps large windows legible; the floor
   /// stops very narrow ones from shrinking text into illegibility.
   static const double minScale = 0.85;
-  static const double maxScale = 1.3;
+  static const double maxScale = 1.45;
+
+  /// How wide the reading column is in a given window.
+  ///
+  /// Narrower windows get the whole width; past [maxContentWidth] the column
+  /// stops growing and centres instead.
+  static double columnWidthFor(double windowWidth) {
+    return math.min(windowWidth, maxContentWidth);
+  }
+
+  /// How far the design canvas is scaled in a given window.
+  ///
+  /// Taken from whichever axis has least room, so the canvas fits in both
+  /// dimensions and the two axes can never drift apart. Scaling by width alone
+  /// would let a wide-but-short laptop window grow the type until the page no
+  /// longer fits the height it has.
+  static double scaleFor(Size window) {
+    final byWidth = columnWidthFor(window.width) / designSize.width;
+    final byHeight = window.height / designSize.height;
+    return math.min(byWidth, byHeight).clamp(minScale, maxScale);
+  }
 }
 
 /// Bounds the app to a single readable column and pins the UI scale.
@@ -36,16 +57,22 @@ abstract final class AppLayout {
 ///
 /// Two things happen here, and they have to happen together:
 ///
-///  * The column is capped at [AppLayout.maxContentWidth] and centred, with the
-///    surrounding window painted in the scheme's *lowest* surface. That colour
-///    is chosen to recede: painted in a raised surface instead, the margins
-///    came out lighter than the page and the column read as a panel stuck onto
-///    a board rather than as the page itself.
-///  * [ScreenUtil] is configured from the *column* rather than the window, with
-///    the scale clamped. The design size is derived rather than fixed: feeding
-///    the package `columnWidth / desiredScale` makes its `scaleWidth` come out
-///    at exactly the clamped scale, which is the only lever it offers for
-///    bounding growth.
+///  * The column is capped at [AppLayout.maxContentWidth] and centred, and one
+///    [QuestBackdrop] is painted across the *whole window* behind it. The
+///    backdrop belongs here rather than on each page because a page-owned one
+///    is clipped to the column: its glow stopped dead at the column edge and
+///    the margins beside it read as two flat black bars. Painted once at the
+///    window, the surround becomes part of the design instead of a seam.
+///    Pages therefore paint no background of their own -
+///    `scaffoldBackgroundColor` is transparent app-wide.
+///  * [ScreenUtil] is configured with a single clamped scale for both axes,
+///    taken from whichever axis has least room (see [AppLayout.scaleFor]).
+///    The design size is derived rather than fixed: feeding the package
+///    `window / desiredScale` makes its `scaleWidth` come out at exactly the
+///    clamped scale, which is the only lever it offers for bounding growth.
+///    Deriving the two axes independently is a trap - they agree only while
+///    both are clamped to the same ceiling, and drift apart the moment one is
+///    not, which stretches the canvas out of proportion.
 ///
 /// Configuring runs through [ScreenUtilInit] rather than a bare
 /// [ScreenUtil.configure] call because the package keeps its metrics in a
@@ -65,8 +92,12 @@ abstract final class AppLayout {
 /// so the singleton still describing the window is inert.
 ///
 /// On any viewport narrower than [AppLayout.maxContentWidth] - every phone -
-/// this resolves to the previous behaviour exactly: full width, design size
-/// untouched.
+/// the column is the window, so there is no surround to paint and the backdrop
+/// covers exactly what a page-owned one used to. Phone rendering is unchanged.
+///
+/// Note that a wide-but-short window is limited by its *height*, not its width:
+/// a 1440x900 laptop scales to about 1.30, not [AppLayout.maxScale]. The
+/// ceiling is only reached when a window is tall enough to spend it.
 ///
 /// One consequence of wrapping the Navigator rather than each page: route-level
 /// modals live in the Navigator's own overlay, so a bottom sheet or dialog is
@@ -86,20 +117,18 @@ class ResponsiveAppShell extends StatelessWidget {
     final mediaQuery = MediaQuery.of(context);
     final window = mediaQuery.size;
 
-    final contentWidth = math.min(window.width, AppLayout.maxContentWidth);
+    final contentWidth = AppLayout.columnWidthFor(window.width);
     final contentQuery = mediaQuery.copyWith(
       size: Size(contentWidth, window.height),
     );
 
-    // Derived from the window, but scaled by the column: the width the user
-    // actually gets is what should decide how big things look.
-    final designSize = Size(
-      window.width / _scaleFor(contentWidth, AppLayout.designSize.width),
-      window.height / _scaleFor(window.height, AppLayout.designSize.height),
-    );
+    // One scale for both axes, taken from whichever has least room. The two
+    // were computed independently before and only agreed because both hit the
+    // old ceiling; raising it pulled them apart.
+    final scale = AppLayout.scaleFor(window);
+    final designSize = Size(window.width / scale, window.height / scale);
 
-    return ColoredBox(
-      color: Theme.of(context).colorScheme.surfaceContainerLowest,
+    return QuestBackdrop(
       child: Center(
         child: SizedBox(
           width: contentWidth,
@@ -118,9 +147,5 @@ class ResponsiveAppShell extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  static double _scaleFor(double available, double design) {
-    return (available / design).clamp(AppLayout.minScale, AppLayout.maxScale);
   }
 }

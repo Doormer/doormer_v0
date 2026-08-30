@@ -4,8 +4,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// The reader before it has anything to read: still loading, or unable to.
 ///
-/// It owns a Scaffold in the same colours as the reader itself, so arriving at
-/// a solution does not flash a bare white page first.
+/// It owns a Scaffold like the reader itself, so arriving at a solution does
+/// not flash a bare white page first.
 class SolutionReaderPlaceholderTemplate extends StatelessWidget {
   /// Null while loading. When set, this is shown instead of the spinner.
   final String? message;
@@ -17,7 +17,6 @@ class SolutionReaderPlaceholderTemplate extends StatelessWidget {
     final message = this.message;
 
     return Scaffold(
-      backgroundColor: QuestPalette.night,
       body: Center(
         child: message == null
             ? const CircularProgressIndicator(color: QuestPalette.violet)

@@ -5,6 +5,7 @@
 // while corner radii grew only 1.3x. The numbers below are the contract.
 import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/quest_backdrop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -76,7 +77,8 @@ void main() {
       expect(probe.gutter16w, closeTo(17.3, 0.3));
     });
 
-    testWidgets('a very narrow window floors the scale instead of shrinking '
+    testWidgets(
+        'a very narrow window floors the scale instead of shrinking '
         'text away', (tester) async {
       final probe = await probeAt(tester, const Size(240, 600));
 
@@ -87,25 +89,34 @@ void main() {
   });
 
   group('desktop viewports clamp both the column and the scale', () {
-    testWidgets('a 1440x900 laptop caps the column and keeps text readable',
+    testWidgets('a 1440x900 laptop widens the column and keeps text readable',
         (tester) async {
-      final probe = await probeAt(tester, const Size(1440, 900));
+      const window = Size(1440, 900);
+      final probe = await probeAt(tester, window);
+      final scale = AppLayout.scaleFor(window);
 
       expect(probe.paintedWidth, AppLayout.maxContentWidth);
       expect(probe.mediaSize!.width, AppLayout.maxContentWidth);
 
+      // This window is short before it is narrow: 900px of height fits the
+      // 690px canvas only 1.3 times, so height is what sets the scale here and
+      // the ceiling is never reached.
+      expect(scale, lessThan(AppLayout.maxScale));
+
       // Regression guard. Unclamped this window produced scaleWidth = 4.0:
       // 14.sp rendered at 56px and 16.w at 64px, while 16.r stayed near 21px.
-      expect(probe.body14sp, closeTo(14 * AppLayout.maxScale, 0.3));
-      expect(probe.heading24sp, closeTo(24 * AppLayout.maxScale, 0.3));
-      expect(probe.gutter16w, closeTo(16 * AppLayout.maxScale, 0.3));
-      expect(probe.gap24h, closeTo(24 * AppLayout.maxScale, 0.3));
+      expect(probe.body14sp, closeTo(14 * scale, 0.3));
+      expect(probe.heading24sp, closeTo(24 * scale, 0.3));
+      expect(probe.gutter16w, closeTo(16 * scale, 0.3));
+      expect(probe.gap24h, closeTo(24 * scale, 0.3));
     });
 
-    testWidgets('a 1920x1080 desktop clamps to the same numbers',
+    testWidgets('a 1920x1080 desktop has the room to reach the ceiling',
         (tester) async {
-      final probe = await probeAt(tester, const Size(1920, 1080));
+      const window = Size(1920, 1080);
+      final probe = await probeAt(tester, window);
 
+      expect(AppLayout.scaleFor(window), AppLayout.maxScale);
       expect(probe.paintedWidth, AppLayout.maxContentWidth);
       expect(probe.body14sp, closeTo(14 * AppLayout.maxScale, 0.3));
       expect(probe.gutter16w, closeTo(16 * AppLayout.maxScale, 0.3));
@@ -128,9 +139,10 @@ void main() {
       expect(radiusScale, closeTo(widthScale, 0.05));
     });
 
-    testWidgets('paints the window outside the column so it recedes',
+    testWidgets('carries the backdrop across the whole window, not the column',
         (tester) async {
-      tester.view.physicalSize = const Size(1440, 900);
+      const window = Size(1440, 900);
+      tester.view.physicalSize = window;
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
@@ -142,24 +154,19 @@ void main() {
         ),
       );
 
-      final backdrop = tester.widget<ColoredBox>(
-        find
-            .descendant(
-              of: find.byType(ResponsiveAppShell),
-              matching: find.byType(ColoredBox),
-            )
-            .first,
-      );
-      final scheme = Theme.of(
-        tester.element(find.byType(ResponsiveAppShell)),
-      ).colorScheme;
+      // The margins beside the column used to be a flat fill, which read as
+      // two black bars with a hard seam down each side of the page. The
+      // backdrop spans the window instead, so its glow and dot grid run
+      // straight through where that seam was.
+      final backdrop = tester.getRect(find.byType(QuestBackdrop).first);
 
-      expect(backdrop.color, scheme.surfaceContainerLowest);
+      expect(backdrop.width, window.width);
+      expect(backdrop.height, window.height);
       expect(
-        backdrop.color.computeLuminance(),
-        lessThanOrEqualTo(scheme.surface.computeLuminance()),
-        reason: 'a surround lighter than the page turns the column into a '
-            'panel stuck on a board',
+        backdrop.width,
+        greaterThan(AppLayout.maxContentWidth),
+        reason: 'a backdrop only as wide as the column would leave the '
+            'margins unpainted, which is the letterboxing this replaced',
       );
     });
   });
