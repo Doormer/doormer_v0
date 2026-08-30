@@ -1,5 +1,7 @@
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solution_trail_organism.dart';
+import 'package:doormer/src/features/questions/presentation/atoms/trail_connector_atom.dart';
+import 'package:doormer/src/features/questions/presentation/molecules/trail_node_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/vault_chains_atom.dart';
 import 'package:doormer/src/features/questions/presentation/params/solution_trail_node.dart';
 import 'package:flutter/material.dart';
@@ -44,7 +46,9 @@ List<SolutionTrailNode> _bookended(int stepCount, int currentIndex) => [
 
 Widget _pump(
   List<SolutionTrailNode> nodes, {
-  double width = 358,
+  double? width = 358,
+  double? height,
+  Axis axis = Axis.horizontal,
   void Function(int position)? onNodeTap,
   bool motion = false,
 }) {
@@ -57,9 +61,17 @@ Widget _pump(
         // they are measuring it -- otherwise every pump would wait on a loop.
         data: MediaQueryData(disableAnimations: !motion),
         child: Scaffold(
-          body: SizedBox(
-            width: width,
-            child: SolutionTrailOrganism(nodes: nodes, onNodeTap: onNodeTap),
+          body: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: width,
+              height: height,
+              child: SolutionTrailOrganism(
+                nodes: nodes,
+                onNodeTap: onNodeTap,
+                axis: axis,
+              ),
+            ),
           ),
         ),
       ),
@@ -169,6 +181,7 @@ void main() {
         reason: 'a read step shows that it is read, not its number');
   });
 
+  group('as a rail', _railTests);
   group('travel', _travelTests);
   group('panning', _panTests);
   group('edges', _edgeTests);
@@ -686,5 +699,204 @@ void _vaultLooksLikeMetalTests() {
           greaterThan(0.12),
           reason: 'without a shaded underside the wire has no thickness');
     });
+  });
+}
+
+/// The vertical form: on a window wide enough to spare the width, the trail
+/// runs down the side of the reader instead of across the top of it, which
+/// buys back the height a short laptop window has least of.
+void _railTests() {
+
+  // Found by position rather than by what a node displays: a step already read
+  // shows a check instead of its number, and a node with nowhere to travel
+  // carries no tap key at all. Tree order is head, steps, tail -- the order the
+  // road runs in.
+  Finder nodeAt(int index) => find.byType(TrailNodeMolecule).at(index);
+
+  testWidgets('keeps the vault at the end of the road, not the end of the box',
+      (tester) async {
+    // Far more height than seven steps need: the road must hug its own length
+    // rather than spreading to fill whatever it is given. The surface has to be
+    // grown too -- the default 600px one cannot hold the surplus that makes
+    // this test mean anything.
+    tester.view.physicalSize = const Size(500, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(_pump(
+      _bookended(7, 0),
+      width: null,
+      height: 1100,
+      axis: Axis.vertical,
+    ));
+    await tester.pump();
+
+    final lastStep = tester.getRect(nodeAt(7));
+    final vault = tester.getRect(nodeAt(8));
+
+    expect(
+      vault.top - lastStep.bottom,
+      lessThan(SolutionTrailOrganism.stripPad * 2 +
+          SolutionTrailOrganism.pinGap +
+          1),
+      reason: 'a gap the height of a card reads as a mistake, not a pin',
+    );
+  });
+
+  testWidgets('runs down the screen rather than across it', (tester) async {
+    await tester.pumpWidget(_pump(
+      _nodes(3, 0),
+      width: 120,
+      height: 500,
+      axis: Axis.vertical,
+    ));
+    await tester.pump();
+
+    final first = tester.getCenter(nodeAt(0));
+    final second = tester.getCenter(nodeAt(1));
+    final third = tester.getCenter(nodeAt(2));
+
+    expect(second.dy, greaterThan(first.dy));
+    expect(third.dy, greaterThan(second.dy));
+    expect(second.dx, moreOrLessEquals(first.dx, epsilon: 0.5),
+        reason: 'the road is a straight line down, not a staircase');
+  });
+
+  testWidgets('claims only the width a node needs, leaving the rest to read',
+      (tester) async {
+    await tester.pumpWidget(_pump(
+      _bookended(3, 0),
+      // Deliberately unforced: the rail has to settle its own width, which is
+      // the whole question here.
+      width: null,
+      height: 600,
+      axis: Axis.vertical,
+    ));
+    await tester.pump();
+
+    final rail = tester.getSize(find.byType(SolutionTrailOrganism));
+    expect(rail.width, lessThanOrEqualTo(SolutionTrailOrganism.tailNodeSize),
+        reason: 'a rail wider than its widest node is stealing reading width');
+  });
+
+  testWidgets('starts at the top instead of stretching to fill the height',
+      (tester) async {
+    await tester.pumpWidget(_pump(
+      _bookended(3, 0),
+      width: 120,
+      height: 800,
+      axis: Axis.vertical,
+    ));
+    await tester.pump();
+
+    final rail = tester.getSize(find.byType(SolutionTrailOrganism));
+    expect(rail.height, lessThan(800),
+        reason: 'a short trail in a tall window must not stretch to fit it');
+
+    // The road holds its normal spacing rather than pulling the nodes apart.
+    final first = tester.getCenter(nodeAt(1));
+    final second = tester.getCenter(nodeAt(2));
+    expect(
+      second.dy - first.dy,
+      moreOrLessEquals(
+        SolutionTrailOrganism.stepNodeSize +
+            SolutionTrailOrganism.minLinkWidth +
+            SolutionTrailOrganism.linkMargin * 2,
+        epsilon: 1,
+      ),
+    );
+  });
+
+  testWidgets('bookends the road top and bottom', (tester) async {
+    await tester.pumpWidget(_pump(
+      _bookended(3, 0),
+      width: 120,
+      height: 600,
+      axis: Axis.vertical,
+    ));
+    await tester.pump();
+
+    final plan = tester.getCenter(find.byIcon(Icons.flag_rounded));
+    final vault = tester.getCenter(find.byIcon(Icons.lock_rounded));
+    final firstStep = tester.getCenter(nodeAt(1));
+
+    expect(plan.dy, lessThan(firstStep.dy), reason: 'the plan is where you start');
+    expect(vault.dy, greaterThan(firstStep.dy),
+        reason: 'the vault is where you are going');
+  });
+
+  testWidgets('draws its links down the trail, not across it', (tester) async {
+    await tester.pumpWidget(_pump(
+      _nodes(3, 0),
+      width: 120,
+      height: 500,
+      axis: Axis.vertical,
+    ));
+    await tester.pump();
+
+    final link = tester.getSize(find.byType(TrailConnectorAtom).first);
+    expect(link.height, greaterThan(link.width),
+        reason: 'a run of road down a rail is taller than it is wide');
+  });
+
+  testWidgets('pans to keep the current node in view on a short rail',
+      (tester) async {
+    await tester.pumpWidget(_pump(
+      _nodes(12, 0),
+      width: 120,
+      height: 260,
+      axis: Axis.vertical,
+    ));
+    await tester.pumpAndSettle();
+
+    final scroll = find.byKey(const Key('solution_trail_scroll'));
+    final atStart =
+        tester.widget<SingleChildScrollView>(scroll).controller!.offset;
+
+    await tester.pumpWidget(_pump(
+      _nodes(12, 9),
+      width: 120,
+      height: 260,
+      axis: Axis.vertical,
+    ));
+    await tester.pumpAndSettle();
+
+    final atStepTen =
+        tester.widget<SingleChildScrollView>(scroll).controller!.offset;
+    expect(atStepTen, greaterThan(atStart),
+        reason: 'the rail follows the student down the road');
+  });
+
+  testWidgets('scrolls down the rail, so a long road is reachable',
+      (tester) async {
+    await tester.pumpWidget(_pump(
+      _nodes(12, 0),
+      width: 120,
+      height: 260,
+      axis: Axis.vertical,
+    ));
+    await tester.pump();
+
+    final scroll = tester.widget<SingleChildScrollView>(
+      find.byKey(const Key('solution_trail_scroll')),
+    );
+    expect(scroll.scrollDirection, Axis.vertical);
+  });
+
+  testWidgets('still travels when a covered node is tapped', (tester) async {
+    final travelled = <int>[];
+    await tester.pumpWidget(_pump(
+      _nodes(4, 2),
+      width: 120,
+      height: 500,
+      axis: Axis.vertical,
+      onNodeTap: travelled.add,
+    ));
+    await tester.pump();
+
+    await tester.tap(nodeAt(0));
+    await tester.pump();
+
+    expect(travelled, [0]);
   });
 }

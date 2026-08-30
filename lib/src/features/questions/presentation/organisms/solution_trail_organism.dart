@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:doormer/src/core/motion/motion_policy.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/edge_fade_atom.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/trail_connector_atom.dart';
@@ -63,10 +65,19 @@ class SolutionTrailOrganism extends StatefulWidget {
   /// it. A null callback disables travel.
   final void Function(int position)? onNodeTap;
 
+  /// Which way the road runs.
+  ///
+  /// Across the top of the screen on a phone, where width is what there is
+  /// least of and a bar costs only one node's worth of height. Down the side on
+  /// a window wide enough to spare it, where height is the scarce dimension and
+  /// the trail can buy some back by standing up.
+  final Axis axis;
+
   const SolutionTrailOrganism({
     super.key,
     required this.nodes,
     this.onNodeTap,
+    this.axis = Axis.horizontal,
   });
 
   @override
@@ -83,8 +94,10 @@ class _SolutionTrailOrganismState extends State<SolutionTrailOrganism> {
       SolutionTrailOrganism.minLinkWidth +
       SolutionTrailOrganism.linkMargin * 2;
 
-  bool _moreLeft = false;
-  bool _moreRight = false;
+  bool _moreBefore = false;
+  bool _moreAfter = false;
+
+  bool get _isHorizontal => widget.axis == Axis.horizontal;
 
   /// Where the panning strip starts in [SolutionTrailOrganism.nodes] — 1 when
   /// a bookend has been lifted out to be pinned, 0 when there is none.
@@ -144,12 +157,12 @@ class _SolutionTrailOrganismState extends State<SolutionTrailOrganism> {
   void _syncEdges() {
     if (!mounted || !_controller.hasClients) return;
     final position = _controller.position;
-    final left = position.extentBefore > 1;
-    final right = position.extentAfter > 1;
-    if (left == _moreLeft && right == _moreRight) return;
+    final before = position.extentBefore > 1;
+    final after = position.extentAfter > 1;
+    if (before == _moreBefore && after == _moreAfter) return;
     setState(() {
-      _moreLeft = left;
-      _moreRight = right;
+      _moreBefore = before;
+      _moreAfter = after;
     });
   }
 
@@ -195,7 +208,15 @@ class _SolutionTrailOrganismState extends State<SolutionTrailOrganism> {
     final hasHead = _hasHead;
     final hasTail = _hasTail;
 
-    return Row(
+    final strip = _panningStrip();
+
+    return Flex(
+      direction: widget.axis,
+      // A bar is handed the screen's width and spends all of it. A rail is
+      // handed the screen's height and must not: stretched to fill, a short
+      // road would pull its nodes hundreds of pixels apart and stop reading as
+      // a road. It takes what the road needs and starts at the top.
+      mainAxisSize: _isHorizontal ? MainAxisSize.max : MainAxisSize.min,
       children: [
         if (hasHead) ...[
           TrailNodeMolecule(
@@ -204,11 +225,11 @@ class _SolutionTrailOrganismState extends State<SolutionTrailOrganism> {
             size: SolutionTrailOrganism.headNodeSize,
             onTap: _tapFor(0),
           ),
-          const SizedBox(width: SolutionTrailOrganism.pinGap),
+          const SizedBox.square(dimension: SolutionTrailOrganism.pinGap),
         ],
-        Expanded(child: _panningStrip()),
+        if (_isHorizontal) Expanded(child: strip) else Flexible(child: strip),
         if (hasTail) ...[
-          const SizedBox(width: SolutionTrailOrganism.pinGap),
+          const SizedBox.square(dimension: SolutionTrailOrganism.pinGap),
           TrailNodeMolecule(
             index: nodes.length - 1,
             node: nodes.last,
@@ -229,40 +250,59 @@ class _SolutionTrailOrganismState extends State<SolutionTrailOrganism> {
       builder: (context, constraints) {
         const nodeSize = SolutionTrailOrganism.stepNodeSize;
         const margin = SolutionTrailOrganism.linkMargin;
-        const minLink = SolutionTrailOrganism.minLinkWidth;
 
-        // Links take the slack when there is any, and hold their minimum when
-        // there is not — which is the point at which the strip starts panning.
-        final gaps = steps.length - 1;
-        final slack = constraints.maxWidth -
-            SolutionTrailOrganism.stripPad * 2 -
-            steps.length * nodeSize -
-            gaps * margin * 2;
-        final linkWidth =
-            gaps > 0 && slack / gaps > minLink ? slack / gaps : minLink;
-        _stride = nodeSize + linkWidth + margin * 2;
+        final linkLength = _isHorizontal
+            ? _stretchedLink(constraints.maxWidth, steps.length)
+            // A rail holds its links at the minimum. It is offered far more
+            // room along the trail than a bar is, so taking the slack would
+            // leave the nodes a hundred pixels apart.
+            : SolutionTrailOrganism.minLinkWidth;
+        _stride = nodeSize + linkLength + margin * 2;
 
         const room = SolutionTrailOrganism.glowRoom;
-        final barHeight = nodeSize + 14.h;
+        // How deep the strip is across the trail. It clips, so it is exactly
+        // one node deep; the glow that overruns it is given room below.
+        final thickness = nodeSize + 14.h;
+
+        // A scroll view spends every pixel it is offered, and a rail is offered
+        // the whole side of the screen. Left alone it would strand the vault at
+        // the bottom with a card's height of empty road above it, so the rail
+        // is cut to the length of the road -- or to the room available, which is
+        // the point at which it starts panning instead.
+        final railLength = _isHorizontal
+            ? null
+            : math.min(
+                constraints.maxHeight,
+                SolutionTrailOrganism.stripPad * 2 +
+                    steps.length * nodeSize +
+                    (steps.length - 1) * (linkLength + margin * 2),
+              );
 
         return SizedBox(
-          height: barHeight,
+          width: _isHorizontal ? null : thickness,
+          height: _isHorizontal ? thickness : railLength,
           child: OverflowBox(
-            minHeight: barHeight + room * 2,
-            maxHeight: barHeight + room * 2,
+            minWidth: _isHorizontal ? null : thickness + room * 2,
+            maxWidth: _isHorizontal ? null : thickness + room * 2,
+            minHeight: _isHorizontal ? thickness + room * 2 : null,
+            maxHeight: _isHorizontal ? thickness + room * 2 : null,
             child: EdgeFadeAtom(
-              left: _moreLeft,
-              right: _moreRight,
+              start: _moreBefore,
+              end: _moreAfter,
+              axis: widget.axis,
               child: SingleChildScrollView(
                 key: const Key('solution_trail_scroll'),
                 controller: _controller,
-                scrollDirection: Axis.horizontal,
+                scrollDirection: widget.axis,
                 // The current node is scaled up and glows past its own box; without
                 // the padding the clip cuts the glow off mid-halo.
-                padding: const EdgeInsets.symmetric(
-                  horizontal: SolutionTrailOrganism.stripPad,
+                padding: EdgeInsets.symmetric(
+                  horizontal:
+                      _isHorizontal ? SolutionTrailOrganism.stripPad : 0,
+                  vertical: _isHorizontal ? 0 : SolutionTrailOrganism.stripPad,
                 ),
-                child: Row(
+                child: Flex(
+                  direction: widget.axis,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     for (var i = 0; i < steps.length; i++) ...[
@@ -275,8 +315,9 @@ class _SolutionTrailOrganismState extends State<SolutionTrailOrganism> {
                       if (i < steps.length - 1)
                         TrailConnectorAtom(
                           index: i,
-                          width: linkWidth,
+                          length: linkLength,
                           margin: margin,
+                          axis: widget.axis,
                           lit: steps[i].state == SolutionTrailNodeState.done,
                         ),
                     ],
@@ -288,6 +329,21 @@ class _SolutionTrailOrganismState extends State<SolutionTrailOrganism> {
         );
       },
     );
+  }
+
+  /// Links take the slack when there is any, and hold their minimum when there
+  /// is not — which is the point at which the strip starts panning.
+  double _stretchedLink(double extent, int stepCount) {
+    const nodeSize = SolutionTrailOrganism.stepNodeSize;
+    const margin = SolutionTrailOrganism.linkMargin;
+    const minLink = SolutionTrailOrganism.minLinkWidth;
+
+    final gaps = stepCount - 1;
+    final slack = extent -
+        SolutionTrailOrganism.stripPad * 2 -
+        stepCount * nodeSize -
+        gaps * margin * 2;
+    return gaps > 0 && slack / gaps > minLink ? slack / gaps : minLink;
   }
 
   /// Only ground already covered is travellable, and the presenter decides
