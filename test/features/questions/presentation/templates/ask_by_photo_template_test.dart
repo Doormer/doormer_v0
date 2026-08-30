@@ -1,3 +1,4 @@
+import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/photo_upload_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solve_status_presenter.dart';
@@ -131,6 +132,92 @@ void main() {
       findsAtLeastNWidgets(1),
       reason: 'FilledButton backing the accent CTA must resolve to tertiary',
     );
+  });
+
+  group('the dock on a wide window', () {
+    // Mounted the way the app mounts it: inside the shell, which caps and
+    // centres the column, and inside the page's own side margins. Handing the
+    // dock a raw window width instead measures a size it is never given.
+    Future<void> pumpMounted(WidgetTester tester, Size window) async {
+      tester.view.physicalSize = window;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          builder: (context, child) =>
+              ResponsiveAppShell(child: child ?? const SizedBox.shrink()),
+          home: AskByPhotoTemplate(
+            uploadParams: PhotoUploadPanelParams(
+              isLoading: false,
+              copy: photoUploadCopyFor(hasPhoto: false, isRetry: false),
+              onPickPhoto: () {},
+              onSubmit: () {},
+              onClear: () {},
+            ),
+            statusParams: const SolveStatusPanelParams(
+              content: SolveStatusContent(
+                title: '',
+                body: '',
+                showActions: false,
+              ),
+              onRetake: _noop,
+              onTypeInstead: _noop,
+            ),
+            bottomBarParams: BottomActionBarParams(
+              onCopy: () {},
+              onAiChat: () {},
+              onUpload: () {},
+              onChat: () {},
+              onProfile: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    NavigationBar dock(WidgetTester tester) =>
+        tester.widget<NavigationBar>(find.byType(NavigationBar));
+
+    for (final window in const <String, Size>{
+      'laptop': Size(1440, 900),
+      'desktop': Size(1920, 1080),
+      'tablet portrait': Size(820, 1180),
+      'tablet landscape': Size(1180, 820),
+    }.entries) {
+      testWidgets('names its destinations on a ${window.key}', (tester) async {
+        await pumpMounted(tester, window.value);
+
+        expect(
+          dock(tester).labelBehavior,
+          NavigationDestinationLabelBehavior.alwaysShow,
+          reason: 'five unlabelled icons is a guessing game when there is '
+              'room to just say what they are',
+        );
+        for (final name in const [
+          'Saved',
+          'AI Tutor',
+          'Solve',
+          'Discuss',
+          'Profile',
+        ]) {
+          expect(find.text(name), findsOneWidget);
+        }
+      });
+    }
+
+    testWidgets('stays on icons alone on a phone', (tester) async {
+      await pumpMounted(tester, const Size(390, 844));
+
+      expect(
+        dock(tester).labelBehavior,
+        NavigationDestinationLabelBehavior.alwaysHide,
+        reason: 'five labels across a phone would be squeezed illegible',
+      );
+    });
   });
 }
 

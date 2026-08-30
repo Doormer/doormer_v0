@@ -1,3 +1,4 @@
+import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/bottom_action_bar_params.dart';
@@ -121,16 +122,58 @@ void main() {
     }
   });
 
-  testWidgets('shows destination labels on wide screens', (tester) async {
-    await pumpNavigation(
+  // Sizes the dock itself rather than the window: what decides whether the
+  // names show is the room the dock is given, and the page it lives on keeps a
+  // margin either side. Testing it by window width measures the wrong number
+  // and reports a pass for a width the app never hands over -- which is how the
+  // labels came to be unreachable in the first place. That the app does give it
+  // the room lives in the template's tests, where the margins are real.
+  Future<void> pumpDockOfWidth(WidgetTester tester, double width) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(360, 690),
+        builder: (_, __) => MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.bottomCenter,
+              child: SizedBox(
+                width: width,
+                child: NavigationBarOrganism(
+                  params: BottomActionBarParams(
+                    selectedIndex: 0,
+                    onCopy: () {},
+                    onAiChat: () {},
+                    onUpload: () {},
+                    onChat: () {},
+                    onProfile: () {},
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+  }
+
+  const destinations = 5;
+
+  testWidgets('names its destinations once each one has room to be named',
+      (tester) async {
+    await pumpDockOfWidth(
       tester,
-      size: const Size(1100, 800),
-      tapped: <String>[],
+      NavigationBarOrganism.labelRoom * destinations,
     );
 
     final navigationBar =
         tester.widget<NavigationBar>(find.byType(NavigationBar));
-    expect(tester.getSize(find.byType(NavigationBar)).width, 760);
     expect(
       navigationBar.labelBehavior,
       NavigationDestinationLabelBehavior.alwaysShow,
@@ -142,6 +185,59 @@ void main() {
           )
           .map((destination) => destination.label),
       ['Saved', 'AI Tutor', 'Solve', 'Discuss', 'Profile'],
+    );
+  });
+
+  testWidgets('drops the hover tooltip once the name is on screen',
+      (tester) async {
+    await pumpDockOfWidth(
+      tester,
+      NavigationBarOrganism.labelRoom * destinations,
+    );
+
+    for (final destination in tester.widgetList<NavigationDestination>(
+      find.byType(NavigationDestination),
+    )) {
+      expect(destination.tooltip, '',
+          reason: 'a tooltip that repeats the label the user is already '
+              'reading is noise');
+    }
+  });
+
+  testWidgets('keeps the hover tooltip while the name is hidden',
+      (tester) async {
+    await pumpDockOfWidth(
+      tester,
+      NavigationBarOrganism.labelRoom * destinations - 1,
+    );
+
+    for (final destination in tester.widgetList<NavigationDestination>(
+      find.byType(NavigationDestination),
+    )) {
+      expect(destination.tooltip, isNull,
+          reason: 'null lets the destination fall back to naming itself, '
+              'which is the only name a bare icon has');
+    }
+  });
+
+  testWidgets('keeps quiet while a name would be squeezed', (tester) async {
+    await pumpDockOfWidth(
+      tester,
+      NavigationBarOrganism.labelRoom * destinations - 1,
+    );
+
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).labelBehavior,
+      NavigationDestinationLabelBehavior.alwaysHide,
+    );
+  });
+
+  testWidgets('never grows past the reading column', (tester) async {
+    await pumpDockOfWidth(tester, AppLayout.maxContentWidth + 400);
+
+    expect(
+      tester.getSize(find.byType(NavigationBar)).width,
+      AppLayout.maxContentWidth,
     );
   });
 
