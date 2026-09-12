@@ -1,5 +1,4 @@
 import 'package:bloc/bloc.dart';
-import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/services/sessions/session_service.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/shared/user/entity/user.dart';
@@ -58,17 +57,5 @@ class GlobalSessionBloc extends Bloc<GlobalSessionEvent, GlobalSessionState> {
   ) async {
     emit(SessionActiveState(event.user));
     AppLogger.info('Session Started');
-  }
-
-  /// Returns the current user if session is active, otherwise expires session.
-  User getUser() {
-    final currentState = state;
-
-    if (currentState is SessionActiveState) {
-      return currentState.user;
-    } else {
-      add(ExpireSession());
-      throw AuthFailure("User session is expired. Redirecting to login.");
-    }
   }
 }

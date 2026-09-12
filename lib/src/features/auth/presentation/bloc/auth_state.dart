@@ -26,6 +26,3 @@ class AuthError extends AuthState {
   @override
   List<Object?> get props => [error];
 }
-
-// New state for email verification
-class AuthEmailVerificationPending extends AuthState {}

@@ -1,0 +1,260 @@
+{
+    "status": "solved",
+    "question_id": "57",
+    "note": "The printed rectangle width is not given directly; it is derived from the road angle and the 24 m vertical drop.",
+    "solution": {
+        "schema_version": "3.0",
+        "approach": {
+            "body": [
+                {
+                    "type": "text",
+                    "value": "Frozen question-data ledger: The printed data are a 4 m road width in the question text; 71 m on the left boundary from the rectangle's top-left corner to the upper road edge; 5 m on the left boundary between the two parallel road edges; 24 m on the left boundary from the lower road edge to the bottom-left corner; and a printed 4 m perpendicular arrow between the road edges in the diagram. The two printed 4 m labels represent the same road width. No rectangle width is printed. Rejected student marks: faint handwritten fragments below the printed question are student_work, not question_data, and no handwritten number or result is used. Diagram topology: a rectangle is crossed by two parallel road edges sloping down from left to right. The upper edge enters the left side and exits the right side; the lower edge enters the left side and exits at the bottom-right corner. Plan: use the 5 m and 4 m data to obtain the road angle, use the 24 m drop to find the rectangle width, then find the area of the parallelogram-shaped road region inside the rectangle."
+                }
+            ]
+        },
+        "steps": [
+            {
+                "title": "Find the road's slope",
+                "body": [
+                    {
+                        "type": "text",
+                        "value": "Let θ be the angle that either road edge makes below the horizontal. At the left side, the 5 m vertical separation, the 4 m perpendicular road width, and the remaining component form a right triangle."
+                    },
+                    {
+                        "type": "visual",
+                        "media_type": "image/png",
+                        "url": "https://takadev1cv.blob.core.windows.net/question/visual/1/91838de1-da5f-4042-8dcd-e4ced7a1dffd.png?se=2026-08-16T09%3A02%3A32Z&sig=zX24hDykmh%2BoALya%2B3SGcqpdRrxxHgFaGuo%2FbVLe%2BKI%3D&sp=r&sr=b&sv=2025-01-05",
+                        "width": 1600,
+                        "height": 1067,
+                        "caption": "The 5 m and 4 m measurements determine the road angle.",
+                        "alt": "A right triangle formed by the 5 m vertical separation, the 4 m perpendicular road width, and an unknown third side between the parallel road edges."
+                    },
+                    {
+                        "type": "math",
+                        "latex": "\\sqrt{5^2-4^2}=\\sqrt{25-16}=3",
+                        "alt": "The unknown third side of the right triangle is 3 m."
+                    },
+                    {
+                        "type": "text",
+                        "value": "Since the perpendicular width is 4 m and the vertical separation is 5 m, the road has a 3:4 vertical-drop-to-horizontal-run ratio."
+                    },
+                    {
+                        "type": "math",
+                        "latex": "\\tan\\theta=\\frac{3}{4}",
+                        "alt": "The road drops 3 metres for every 4 metres of horizontal run."
+                    }
+                ],
+                "rationale": [
+                    {
+                        "type": "text",
+                        "value": "The 5 m segment is the hypotenuse of the right triangle because it joins the two road edges vertically, while the 4 m arrow is perpendicular to the road."
+                    }
+                ]
+            },
+            {
+                "title": "Find the rectangle's width",
+                "body": [
+                    {
+                        "type": "text",
+                        "value": "The lower road edge enters the rectangle on the left side and exits at the bottom-right corner. Its vertical drop inside the rectangle is therefore the printed 24 m segment. Let W be the rectangle's horizontal width."
+                    },
+                    {
+                        "type": "visual",
+                        "media_type": "image/png",
+                        "url": "https://takadev1cv.blob.core.windows.net/question/visual/1/f7c93879-03d8-4f6a-855e-16d859a2e8b0.png?se=2026-08-16T09%3A02%3A32Z&sig=fDZVRzo3wnS9Q1FZOzCzGNaHElho0KMNhjqlocHX9o0%3D&sp=r&sr=b&sv=2025-01-05",
+                        "width": 1600,
+                        "height": 1067,
+                        "caption": "The lower edge's endpoints show which 24 m drop belongs in the slope calculation.",
+                        "alt": "The lower road edge enters the left side and exits at the bottom-right corner; the vertical drop is 24 m and the horizontal width is unknown."
+                    },
+                    {
+                        "type": "math",
+                        "latex": "\\frac{24}{W}=\\frac{3}{4}\\quad\\Longrightarrow\\quad W=24\\cdot\\frac{4}{3}=32\\ \\mathrm{m}",
+                        "alt": "The rectangle width is 32 metres."
+                    },
+                    {
+                        "type": "text",
+                        "value": "The 71 m label locates the upper road entry but is not needed for the width calculation."
+                    }
+                ],
+                "rationale": [
+                    {
+                        "type": "text",
+                        "value": "The lower edge's vertical drop is 24 m, not 71 m or 100 m, because it starts at the lower road intersection on the left and ends at the bottom-right corner."
+                    }
+                ]
+            },
+            {
+                "title": "Calculate the lost area",
+                "body": [
+                    {
+                        "type": "text",
+                        "value": "The part of the road inside the rectangle is a parallelogram. Its vertical sides are 5 m apart vertically, and the horizontal separation of those sides is the rectangle width, 32 m."
+                    },
+                    {
+                        "type": "visual",
+                        "media_type": "image/png",
+                        "url": "https://takadev1cv.blob.core.windows.net/question/visual/1/0d8ff544-d0f8-47f3-a63e-f59d3b92ed6c.png?se=2026-08-16T09%3A02%3A32Z&sig=y3vP0DnHfYSmKPu71fBbl4yFrURf5d8GH5%2BJ0lXGxro%3D&sp=r&sr=b&sv=2025-01-05",
+                        "width": 1600,
+                        "height": 1067,
+                        "caption": "The road region inside the rectangle can be measured as 5 m by 32 m.",
+                        "alt": "A parallelogram-shaped road region with vertical side 5 m and horizontal separation 32 m."
+                    },
+                    {
+                        "type": "math",
+                        "latex": "A=5\\times32=160\\ \\mathrm{m^2}",
+                        "alt": "The area of the lost land is 160 square metres."
+                    }
+                ],
+                "rationale": [
+                    {
+                        "type": "text",
+                        "value": "For a parallelogram, area equals a base multiplied by its perpendicular height. Taking the vertical side as the base gives 5 m, and its perpendicular horizontal height is 32 m."
+                    }
+                ]
+            },
+            {
+                "title": "Calculate the lost area",
+                "body": [
+                    {
+                        "type": "text",
+                        "value": "The part of the road inside the rectangle is a parallelogram. Its vertical sides are 5 m apart vertically, and the horizontal separation of those sides is the rectangle width, 32 m."
+                    },
+                    {
+                        "type": "visual",
+                        "media_type": "image/png",
+                        "url": "https://takadev1cv.blob.core.windows.net/question/visual/1/0d8ff544-d0f8-47f3-a63e-f59d3b92ed6c.png?se=2026-08-16T09%3A02%3A32Z&sig=y3vP0DnHfYSmKPu71fBbl4yFrURf5d8GH5%2BJ0lXGxro%3D&sp=r&sr=b&sv=2025-01-05",
+                        "width": 1600,
+                        "height": 1067,
+                        "caption": "The road region inside the rectangle can be measured as 5 m by 32 m.",
+                        "alt": "A parallelogram-shaped road region with vertical side 5 m and horizontal separation 32 m."
+                    },
+                    {
+                        "type": "math",
+                        "latex": "A=5\\times32=160\\ \\mathrm{m^2}",
+                        "alt": "The area of the lost land is 160 square metres."
+                    }
+                ],
+                "rationale": [
+                    {
+                        "type": "text",
+                        "value": "For a parallelogram, area equals a base multiplied by its perpendicular height. Taking the vertical side as the base gives 5 m, and its perpendicular horizontal height is 32 m."
+                    }
+                ]
+            },
+            {
+                "title": "Calculate the lost area",
+                "body": [
+                    {
+                        "type": "text",
+                        "value": "The part of the road inside the rectangle is a parallelogram. Its vertical sides are 5 m apart vertically, and the horizontal separation of those sides is the rectangle width, 32 m."
+                    },
+                    {
+                        "type": "visual",
+                        "media_type": "image/png",
+                        "url": "https://takadev1cv.blob.core.windows.net/question/visual/1/0d8ff544-d0f8-47f3-a63e-f59d3b92ed6c.png?se=2026-08-16T09%3A02%3A32Z&sig=y3vP0DnHfYSmKPu71fBbl4yFrURf5d8GH5%2BJ0lXGxro%3D&sp=r&sr=b&sv=2025-01-05",
+                        "width": 1600,
+                        "height": 1067,
+                        "caption": "The road region inside the rectangle can be measured as 5 m by 32 m.",
+                        "alt": "A parallelogram-shaped road region with vertical side 5 m and horizontal separation 32 m."
+                    },
+                    {
+                        "type": "math",
+                        "latex": "A=5\\times32=160\\ \\mathrm{m^2}",
+                        "alt": "The area of the lost land is 160 square metres."
+                    }
+                ],
+                "rationale": [
+                    {
+                        "type": "text",
+                        "value": "For a parallelogram, area equals a base multiplied by its perpendicular height. Taking the vertical side as the base gives 5 m, and its perpendicular horizontal height is 32 m."
+                    }
+                ]
+            },
+            {
+                "title": "Calculate the lost area",
+                "body": [
+                    {
+                        "type": "text",
+                        "value": "The part of the road inside the rectangle is a parallelogram. Its vertical sides are 5 m apart vertically, and the horizontal separation of those sides is the rectangle width, 32 m."
+                    },
+                    {
+                        "type": "visual",
+                        "media_type": "image/png",
+                        "url": "https://takadev1cv.blob.core.windows.net/question/visual/1/0d8ff544-d0f8-47f3-a63e-f59d3b92ed6c.png?se=2026-08-16T09%3A02%3A32Z&sig=y3vP0DnHfYSmKPu71fBbl4yFrURf5d8GH5%2BJ0lXGxro%3D&sp=r&sr=b&sv=2025-01-05",
+                        "width": 1600,
+                        "height": 1067,
+                        "caption": "The road region inside the rectangle can be measured as 5 m by 32 m.",
+                        "alt": "A parallelogram-shaped road region with vertical side 5 m and horizontal separation 32 m."
+                    },
+                    {
+                        "type": "math",
+                        "latex": "A=5\\times32=160\\ \\mathrm{m^2}",
+                        "alt": "The area of the lost land is 160 square metres."
+                    }
+                ],
+                "rationale": [
+                    {
+                        "type": "text",
+                        "value": "For a parallelogram, area equals a base multiplied by its perpendicular height. Taking the vertical side as the base gives 5 m, and its perpendicular horizontal height is 32 m."
+                    }
+                ]
+            },
+            {
+                "title": "Calculate the lost area",
+                "body": [
+                    {
+                        "type": "text",
+                        "value": "The part of the road inside the rectangle is a parallelogram. Its vertical sides are 5 m apart vertically, and the horizontal separation of those sides is the rectangle width, 32 m."
+                    },
+                    {
+                        "type": "visual",
+                        "media_type": "image/png",
+                        "url": "https://takadev1cv.blob.core.windows.net/question/visual/1/0d8ff544-d0f8-47f3-a63e-f59d3b92ed6c.png?se=2026-08-16T09%3A02%3A32Z&sig=y3vP0DnHfYSmKPu71fBbl4yFrURf5d8GH5%2BJ0lXGxro%3D&sp=r&sr=b&sv=2025-01-05",
+                        "width": 1600,
+                        "height": 1067,
+                        "caption": "The road region inside the rectangle can be measured as 5 m by 32 m.",
+                        "alt": "A parallelogram-shaped road region with vertical side 5 m and horizontal separation 32 m."
+                    },
+                    {
+                        "type": "math",
+                        "latex": "A=5\\times32=160\\ \\mathrm{m^2}",
+                        "alt": "The area of the lost land is 160 square metres."
+                    }
+                ],
+                "rationale": [
+                    {
+                        "type": "text",
+                        "value": "For a parallelogram, area equals a base multiplied by its perpendicular height. Taking the vertical side as the base gives 5 m, and its perpendicular horizontal height is 32 m."
+                    }
+                ]
+            }
+        ],
+        "verification": {
+            "body": [
+                {
+                    "type": "text",
+                    "value": "Accepted givens and their roles: 4 m determines the road angle; 5 m determines both the angle triangle and the vertical side of the lost-land parallelogram; 24 m gives the lower edge's vertical drop and hence the rectangle width; 71 m only locates the upper road entry and is unnecessary for the final area. The lower edge was traced from the left-side intersection to the bottom-right corner, and the upper edge exits through the right side. No rejected handwritten mark entered the reasoning."
+                },
+                {
+                    "type": "math",
+                    "latex": "\\text{Road-edge length}=\\sqrt{32^2+24^2}=40\\ \\mathrm{m},\\qquad A=40\\times4=160\\ \\mathrm{m^2}",
+                    "alt": "An independent check gives a 40 m road-edge length across the rectangle and a 4 m perpendicular width."
+                },
+                {
+                    "type": "text",
+                    "value": "Both methods give 160 m². The units are square metres, and the magnitude is consistent with a road strip 32 m long horizontally and 5 m apart vertically."
+                }
+            ]
+        },
+        "final_answer": {
+            "body": [
+                {
+                    "type": "math",
+                    "latex": "\\boxed{160\\ \\mathrm{m^2}}",
+                    "alt": "The lost land has an area of 160 square metres."
+                }
+            ]
+        }
+    }
+}

@@ -34,17 +34,3 @@ class LoadRegistrationOptionsEvent extends RegistrationEvent {
   @override
   List<Object?> get props => [];
 }
-
-/// Event triggered when user uploads cv
-class UpdateCVEvent extends RegistrationEvent {
-  final Uint8List cvBytes;
-  final String cvFileName;
-
-  const UpdateCVEvent({
-    required this.cvBytes,
-    required this.cvFileName,
-  });
-
-  @override
-  List<Object?> get props => [cvBytes, cvFileName];
-}

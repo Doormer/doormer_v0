@@ -1,0 +1,60 @@
+import 'package:doormer/src/core/theme/app_theme_context.dart';
+import 'package:doormer/src/features/questions/presentation/molecules/photo_action_row_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/molecules/photo_preview_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/surface_card_atom.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+class PhotoUploadPanelOrganism extends StatelessWidget {
+  final PhotoUploadPanelParams params;
+
+  const PhotoUploadPanelOrganism({super.key, required this.params});
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = context.textTheme;
+    final hasPhoto = params.imageBytes != null;
+    final name = params.fileName;
+
+    return SurfaceCardAtom(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Photo input',
+            style: tt.titleLarge?.copyWith(fontSize: 20.sp),
+          ),
+          SizedBox(height: 16.h),
+          PhotoPreviewMolecule(imageBytes: params.imageBytes),
+          if (hasPhoto && name != null) ...[
+            SizedBox(height: 12.h),
+            Text(
+              name,
+              style: tt.bodySmall?.copyWith(fontSize: 12.sp),
+            ),
+          ],
+          SizedBox(height: 22.h),
+          PhotoActionRowMolecule(
+            hasPhoto: hasPhoto,
+            isLoading: params.isLoading,
+            pickLabel: params.copy.pickLabel,
+            onPick: params.onPickPhoto,
+            onClear: params.onClear,
+          ),
+          SizedBox(height: 12.h),
+          AppButtonAtom(
+            // The retry lives here rather than in the status panel below:
+            // one button, directly under the photo it will send.
+            label: params.copy.submitLabel,
+            variant: AppButtonVariant.accent,
+            expand: true,
+            isLoading: params.isLoading,
+            onPressed: hasPhoto && !params.isLoading ? params.onSubmit : null,
+          ),
+        ],
+      ),
+    );
+  }
+}

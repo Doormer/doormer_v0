@@ -1,6 +1,5 @@
-import 'dart:html' as html;
-import 'package:doormer/src/core/theme/app_colors.dart';
-import 'package:doormer/src/core/theme/app_text_styles.dart';
+import 'package:universal_html/html.dart' as html;
+import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/auth/presentation/widget/agreement_text_widget.dart';
 import 'package:doormer/src/features/auth/presentation/widget/signup_button.dart';
@@ -107,11 +106,13 @@ class SignUpPageWeb extends StatelessWidget {
                         }
                       },
                       builder: (context, state) {
+                        final colorScheme = context.colorScheme;
+                        final textTheme = context.textTheme;
                         return Container(
                           width: containerWidth,
                           padding: const EdgeInsets.all(24.0),
                           decoration: BoxDecoration(
-                            border: Border.all(color: AppColors.borders),
+                            border: Border.all(color: colorScheme.outlineVariant),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Form(
@@ -121,17 +122,19 @@ class SignUpPageWeb extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 // Heading at the top center
-                                const Text(
+                                Text(
                                   'Join Today!',
                                   textAlign: TextAlign.center,
-                                  style: AppTextStyles.displayMedium,
+                                  style: textTheme.displayMedium,
                                 ),
                                 const SizedBox(height: 8),
                                 // Hint text below the heading
                                 Text(
                                   'Sign up to get started',
                                   textAlign: TextAlign.center,
-                                  style: AppTextStyles.hintText,
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
                                 ),
                                 const SizedBox(height: 24),
                                 const Align(
@@ -148,28 +151,31 @@ class SignUpPageWeb extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 24),
                                 // Divider row
-                                const Row(
+                                Row(
                                   children: [
                                     Expanded(
-                                        child: Divider(color: Colors.grey)),
+                                        child: Divider(color: colorScheme.outlineVariant)),
                                     Padding(
                                       padding:
-                                          EdgeInsets.symmetric(horizontal: 8.0),
-                                      child: Text('or sign up with',
-                                          style:
-                                              TextStyle(color: Colors.black54)),
+                                          const EdgeInsets.symmetric(horizontal: 8.0),
+                                      child: Text(
+                                        'or sign up with',
+                                        style: textTheme.bodyMedium?.copyWith(
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
                                     ),
                                     Expanded(
-                                        child: Divider(color: Colors.grey)),
+                                        child: Divider(color: colorScheme.outlineVariant)),
                                   ],
                                 ),
                                 const SizedBox(height: 16),
                                 // Email text field
-                                const Align(
+                                Align(
                                   alignment: Alignment.centerLeft,
                                   child: Text(
                                     'Email',
-                                    style: AppTextStyles.bodyMedium,
+                                    style: textTheme.bodyMedium,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -180,11 +186,11 @@ class SignUpPageWeb extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 16),
                                 // Password text field
-                                const Align(
+                                Align(
                                   alignment: Alignment.centerLeft,
                                   child: Text(
                                     'Password',
-                                    style: AppTextStyles.bodyMedium,
+                                    style: textTheme.bodyMedium,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -209,9 +215,9 @@ class SignUpPageWeb extends StatelessWidget {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Text(
+                                    Text(
                                       "Already have an account? ",
-                                      style: AppTextStyles.bodyMedium,
+                                      style: textTheme.bodyMedium,
                                     ),
                                     GestureDetector(
                                       onTap: () {
@@ -219,9 +225,10 @@ class SignUpPageWeb extends StatelessWidget {
                                       },
                                       child: Text(
                                         "Login",
-                                        style:
-                                            AppTextStyles.bodyMedium.copyWith(
+                                        style: textTheme.bodyMedium?.copyWith(
+                                          color: colorScheme.primary,
                                           decoration: TextDecoration.underline,
+                                          decorationColor: colorScheme.primary,
                                         ),
                                       ),
                                     ),

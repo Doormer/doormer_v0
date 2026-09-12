@@ -1,6 +1,5 @@
-import 'package:doormer/src/core/theme/app_text_styles.dart';
+import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:flutter/material.dart';
-import 'package:doormer/src/core/theme/app_colors.dart';
 
 class CustomTextFieldWeb extends StatelessWidget {
   final String label;
@@ -8,7 +7,6 @@ class CustomTextFieldWeb extends StatelessWidget {
   final TextInputType? keyboardType;
   final TextEditingController? controller;
   final String? Function(String?)? validator;
-  // New configuration parameters for border styling.
   final Color? borderColor;
   final double? borderThickness;
 
@@ -25,16 +23,22 @@ class CustomTextFieldWeb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color effectiveBorderColor = borderColor ?? AppColors.borders;
+    final cs = context.colorScheme;
+    final tt = context.textTheme;
+
+    final Color effectiveBorderColor = borderColor ?? cs.outlineVariant;
     final double effectiveBorderThickness = borderThickness ?? 1.0;
+
+    final borderSide = BorderSide(
+      color: effectiveBorderColor,
+      width: effectiveBorderThickness,
+    );
+    final borderRadius = BorderRadius.circular(8.0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: AppTextStyles.bodyMedium,
-        ),
+        Text(label, style: tt.bodyMedium),
         const SizedBox(height: 8),
         Theme(
           data: Theme.of(context).copyWith(
@@ -46,33 +50,24 @@ class CustomTextFieldWeb extends StatelessWidget {
             controller: controller,
             keyboardType: keyboardType,
             validator: validator,
-            cursorColor: AppColors.primary,
-            style: AppTextStyles.inputText,
+            cursorColor: cs.primary,
+            style: tt.bodyMedium,
             decoration: InputDecoration(
               hintText: hintText,
-              hintStyle: AppTextStyles.hintText,
+              hintStyle: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: cs.surfaceContainerLowest,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.0),
-                borderSide: BorderSide(
-                  color: effectiveBorderColor,
-                  width: effectiveBorderThickness,
-                ),
+                borderRadius: borderRadius,
+                borderSide: borderSide,
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.0),
-                borderSide: BorderSide(
-                  color: effectiveBorderColor,
-                  width: effectiveBorderThickness,
-                ),
+                borderRadius: borderRadius,
+                borderSide: borderSide,
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.0),
-                borderSide: BorderSide(
-                  color: effectiveBorderColor,
-                  width: effectiveBorderThickness,
-                ),
+                borderRadius: borderRadius,
+                borderSide: borderSide,
               ),
             ),
           ),

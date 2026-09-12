@@ -1,5 +1,4 @@
-import 'package:doormer/src/core/theme/app_colors.dart';
-import 'package:doormer/src/core/theme/app_text_styles.dart';
+import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:flutter/material.dart';
 
 class AuthTextField extends StatelessWidget {
@@ -18,32 +17,36 @@ class AuthTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final textTheme = context.textTheme;
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
-      cursorColor: AppColors.primary,
-      style: AppTextStyles.selectedText,
+      cursorColor: colorScheme.primary,
+      style: textTheme.bodyMedium,
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: AppTextStyles.hintText,
+        hintStyle: textTheme.bodyMedium?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
           borderSide: BorderSide(
-            color: AppColors.borders, // Normal border color
+            color: colorScheme.outlineVariant,
             width: 1.0,
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
           borderSide: BorderSide(
-            color: AppColors.focusedBorders, // Enabled border color
+            color: colorScheme.outlineVariant,
             width: 1.0,
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
           borderSide: BorderSide(
-            color: AppColors.focusedBorders, // Focused border color
+            color: colorScheme.primary,
             width: 2.0,
           ),
         ),

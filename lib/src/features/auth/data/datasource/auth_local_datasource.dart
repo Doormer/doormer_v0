@@ -31,21 +31,6 @@ class AuthLocalDataSource {
     }
   }
 
-  Future<String> getGoogleIdToken() async {
-    return "mock-google-id-token";
-  }
-
-  Future<LoginResponseModel> exchangeGoogleIdTokenForTokens(
-      String googleIdToken) async {
-    final mockData = await _loadMockData();
-
-    if (googleIdToken != "mock-google-id-token") {
-      throw AuthFailure("Invalid Google ID token.");
-    }
-
-    return LoginResponseModel.fromJson(mockData);
-  }
-
   Future<Map<String, dynamic>> _loadMockData() async {
     try {
       final mockJson =

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:doormer/src/core/theme/app_text_styles.dart';
-import 'package:doormer/src/core/theme/app_colors.dart';
 
 class SelectionBottomSheet extends StatefulWidget {
   final List<String> initialSelection;
@@ -8,20 +6,22 @@ class SelectionBottomSheet extends StatefulWidget {
   final Function(List<String>) onSubmit;
   final VoidCallback onClose;
 
-  // Configurable properties.
   final String title;
   final int maxSelection;
   final String confirmButtonText;
   final String cancelButtonText;
   final double? sheetHeight;
 
-  // New parameters for styling.
-  final Color borderColor;
+  /// Defaults to [ColorScheme.outlineVariant] when null.
+  final Color? borderColor;
   final double borderThickness;
-  final Color mainColor;
-  final Color confirmTextColor;
+  /// Defaults to [ColorScheme.primary] when null.
+  /// Also controls the selection-indicator badge when explicitly provided;
+  /// otherwise [ColorScheme.primaryContainer] is used for the badge.
+  final Color? mainColor;
+  /// Defaults to [ColorScheme.onPrimary] when null.
+  final Color? confirmTextColor;
   final TextStyle? titleTextStyle;
-  // New parameter: unified button height.
   final double buttonHeight;
 
   const SelectionBottomSheet({
@@ -35,10 +35,10 @@ class SelectionBottomSheet extends StatefulWidget {
     this.confirmButtonText = "Confirm",
     this.cancelButtonText = "Cancel",
     this.sheetHeight,
-    this.borderColor = Colors.black,
+    this.borderColor,
     this.borderThickness = 1.0,
-    this.mainColor = Colors.black,
-    this.confirmTextColor = Colors.white,
+    this.mainColor,
+    this.confirmTextColor,
     this.titleTextStyle,
     this.buttonHeight = 40.0,
   });
@@ -91,52 +91,63 @@ class SelectionBottomSheetState extends State<SelectionBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final resolvedBorderColor = widget.borderColor ?? cs.outlineVariant;
+    final resolvedMainColor = widget.mainColor ?? cs.primary;
+    final resolvedConfirmTextColor = widget.confirmTextColor ?? cs.onPrimary;
+    // Selection-indicator badge uses primaryContainer/onPrimaryContainer unless
+    // an explicit mainColor is provided.
+    final badgeColor =
+        widget.mainColor != null ? resolvedMainColor : cs.primaryContainer;
+    final badgeTextColor = widget.mainColor != null
+        ? resolvedConfirmTextColor
+        : cs.onPrimaryContainer;
+
     final double height =
         widget.sheetHeight ?? MediaQuery.of(context).size.height * 0.8;
     return Container(
       height: height,
       padding: const EdgeInsets.all(16.0),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.zero, // Remove round edges on top.
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.zero,
       ),
       child: Column(
         children: [
-          // Header with title using AppTextStyles.titleMedium.
           Text(
             widget.title,
-            style: widget.titleTextStyle ?? AppTextStyles.titleMedium,
+            style: widget.titleTextStyle ?? tt.titleMedium,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          // Align the selection summary to the left.
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
               "${selectedItems.length}/${widget.maxSelection} items selected",
+              style: tt.bodyMedium,
             ),
           ),
           const SizedBox(height: 16),
-          // Search Bar with updated border and hint style.
           TextField(
             decoration: InputDecoration(
               hintText: "Search...",
-              hintStyle: AppTextStyles.hintText,
-              prefixIcon: const Icon(Icons.search),
+              hintStyle: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+              prefixIcon: Icon(Icons.search, color: cs.onSurfaceVariant),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(
-                  color: Colors.black,
+                borderSide: BorderSide(
+                  color: cs.outlineVariant,
                   width: 1.0,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(
-                  color: Colors.black,
+                borderSide: BorderSide(
+                  color: cs.primary,
                   width: 2.0,
                 ),
               ),
@@ -148,7 +159,6 @@ class SelectionBottomSheetState extends State<SelectionBottomSheet> {
             },
           ),
           const SizedBox(height: 16),
-          // Scrollable list with one row per option.
           Expanded(
             child: ListView.separated(
               itemCount: displayedOptions.length,
@@ -164,34 +174,32 @@ class SelectionBottomSheetState extends State<SelectionBottomSheet> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color:
-                            isSelected ? widget.mainColor : widget.borderColor,
+                        color: isSelected
+                            ? resolvedMainColor
+                            : resolvedBorderColor,
                         width: widget.borderThickness,
                       ),
                       borderRadius: BorderRadius.circular(8),
                       color: isSelected
-                          ? widget.mainColor.withValues(alpha: 0.1)
+                          ? badgeColor.withValues(alpha: 0.1)
                           : Colors.transparent,
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: Text(
-                            item,
-                            softWrap: true,
-                          ),
+                          child: Text(item, softWrap: true, style: tt.bodyMedium),
                         ),
                         if (isSelected)
                           Padding(
                             padding: const EdgeInsets.only(left: 8.0),
                             child: CircleAvatar(
                               radius: 12,
-                              backgroundColor: widget.mainColor,
+                              backgroundColor: badgeColor,
                               child: Text(
                                 (selectionIndex + 1).toString(),
                                 style: TextStyle(
-                                  color: widget.confirmTextColor,
+                                  color: badgeTextColor,
                                   fontSize: 12,
                                 ),
                               ),
@@ -205,64 +213,75 @@ class SelectionBottomSheetState extends State<SelectionBottomSheet> {
             ),
           ),
           const Divider(),
-          // Footer with cancel and confirm buttons.
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: widget.buttonHeight,
-                  child: OutlinedButton.icon(
-                    onPressed: widget.onClose,
-                    icon: Icon(Icons.close, color: widget.mainColor),
-                    label: Text(
-                      widget.cancelButtonText,
-                      style: TextStyle(color: widget.mainColor),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: Size(double.infinity, widget.buttonHeight),
-                      side: BorderSide(
-                        color: widget.borderColor,
-                        width: widget.borderThickness,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: SizedBox(
-                  height: widget.buttonHeight,
-                  child: OutlinedButton.icon(
-                    onPressed: selectedItems.isEmpty
-                        ? null
-                        : () => widget.onSubmit(selectedItems),
-                    icon: Icon(Icons.check, color: widget.confirmTextColor),
-                    label: Text(
-                      widget.confirmButtonText,
-                      style: TextStyle(color: widget.confirmTextColor),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: Size(double.infinity, widget.buttonHeight),
-                      backgroundColor: widget.mainColor,
-                      foregroundColor: widget.confirmTextColor,
-                      side: BorderSide(
-                        color: widget.mainColor,
-                        width: widget.borderThickness,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          )
+          _buildFooterButtons(
+            resolvedMainColor: resolvedMainColor,
+            resolvedBorderColor: resolvedBorderColor,
+            resolvedConfirmTextColor: resolvedConfirmTextColor,
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFooterButtons({
+    required Color resolvedMainColor,
+    required Color resolvedBorderColor,
+    required Color resolvedConfirmTextColor,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: SizedBox(
+            height: widget.buttonHeight,
+            child: OutlinedButton.icon(
+              onPressed: widget.onClose,
+              icon: Icon(Icons.close, color: resolvedMainColor),
+              label: Text(
+                widget.cancelButtonText,
+                style: TextStyle(color: resolvedMainColor),
+              ),
+              style: OutlinedButton.styleFrom(
+                minimumSize: Size(double.infinity, widget.buttonHeight),
+                side: BorderSide(
+                  color: resolvedBorderColor,
+                  width: widget.borderThickness,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: SizedBox(
+            height: widget.buttonHeight,
+            child: OutlinedButton.icon(
+              onPressed: selectedItems.isEmpty
+                  ? null
+                  : () => widget.onSubmit(selectedItems),
+              icon: Icon(Icons.check, color: resolvedConfirmTextColor),
+              label: Text(
+                widget.confirmButtonText,
+                style: TextStyle(color: resolvedConfirmTextColor),
+              ),
+              style: OutlinedButton.styleFrom(
+                minimumSize: Size(double.infinity, widget.buttonHeight),
+                backgroundColor: resolvedMainColor,
+                foregroundColor: resolvedConfirmTextColor,
+                side: BorderSide(
+                  color: resolvedMainColor,
+                  width: widget.borderThickness,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

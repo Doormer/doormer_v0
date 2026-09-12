@@ -152,3 +152,7 @@ app.*.symbols
 
 # .env
 .env
+
+# Superpowers brainstorming artifacts
+.superpowers/
+docs/

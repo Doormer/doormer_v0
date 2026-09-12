@@ -1,5 +1,4 @@
-import 'package:doormer/src/core/theme/app_colors.dart';
-import 'package:doormer/src/core/theme/app_text_styles.dart';
+import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:flutter/material.dart';
 
 class SignUpButton extends StatelessWidget {
@@ -17,20 +16,19 @@ class SignUpButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 40, // Set the button height
-      child: ElevatedButton(
+      height: 40,
+      child: FilledButton(
         onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
+        style: FilledButton.styleFrom(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
         ),
         child: isLoading
-            ? const CircularProgressIndicator(
-                color: AppColors.surface,
+            ? CircularProgressIndicator(
+                color: context.colorScheme.onPrimary,
               )
-            : Text(buttonText, style: AppTextStyles.buttonText),
+            : Text(buttonText),
       ),
     );
   }
