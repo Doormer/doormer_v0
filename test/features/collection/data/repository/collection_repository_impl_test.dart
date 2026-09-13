@@ -27,6 +27,15 @@ const _quadrant = CollectibleCard(
   artAsset: 'b.png',
   description: 'd',
 );
+const _flint = CollectibleCard(
+  id: 'flint',
+  name: 'Flint',
+  deckId: 'cinder',
+  rarity: Rarity.common,
+  scaleLabel: 'Small',
+  artAsset: 'c.png',
+  description: 'd',
+);
 
 /// Hand-written fake, matching the repo's existing test style. `mockito` is in
 /// `pubspec.yaml` but no test in this repo uses it.
@@ -35,12 +44,13 @@ class _FakeDataSource implements CollectionLocalDataSource {
   _FakeDataSource(this.sequence);
 
   @override
-  Future<Collection> loadCollection() async => Collection(
-        decks: const [
+  Future<Collection> loadCollection() async => const Collection(
+        decks: [
           Deck(id: 'meridian', name: 'Meridian', cards: [_gnomon, _quadrant]),
+          Deck(id: 'cinder', name: 'Cinder', cards: [_flint]),
         ],
         holdingsByCardId: {
-          'gnomon': const Holding(
+          'gnomon': Holding(
             card: _gnomon,
             standardCopies: 2,
             specialCopies: 0,
@@ -194,5 +204,77 @@ void main() {
       () => repo.convertCopy('gnomon', CardVariant.special),
       throwsA(isA<ValidationFailure>()),
     );
+  });
+
+  test('a draw never awards a card from another deck', () async {
+    // The bundled asset interleaves decks; a shared cursor would leak one
+    // deck's card into another deck's draw.
+    final repo = _repo(const [
+      DrawOutcome(
+        card: _flint, // cinder
+        variant: CardVariant.standard,
+        kind: DrawResultKind.newCard,
+        copiesAfter: 0,
+      ),
+      DrawOutcome(
+        card: _quadrant, // meridian
+        variant: CardVariant.standard,
+        kind: DrawResultKind.newCard,
+        copiesAfter: 0,
+      ),
+    ]);
+    await repo.load();
+
+    final outcome = await repo.draw('meridian');
+
+    expect(outcome.card.deckId, 'meridian');
+    expect(outcome.card.id, 'quadrant');
+  });
+
+  test('each deck keeps its own place in the sequence', () async {
+    final repo = _repo(const [
+      DrawOutcome(
+        card: _quadrant,
+        variant: CardVariant.standard,
+        kind: DrawResultKind.newCard,
+        copiesAfter: 0,
+      ),
+      DrawOutcome(
+        card: _flint,
+        variant: CardVariant.standard,
+        kind: DrawResultKind.newCard,
+        copiesAfter: 0,
+      ),
+    ]);
+    await repo.load();
+
+    final first = await repo.draw('meridian');
+    final second = await repo.draw('cinder');
+
+    expect(first.card.id, 'quadrant');
+    expect(second.card.id, 'flint');
+  });
+
+  test('a repeated card stops claiming to be new', () async {
+    // Second lap of a one-step sequence: the asset still says newCard, but the
+    // card is held by then.
+    final repo = _repo(const [
+      DrawOutcome(
+        card: _quadrant,
+        variant: CardVariant.standard,
+        kind: DrawResultKind.newCard,
+        copiesAfter: 0,
+      ),
+    ]);
+    await repo.load();
+
+    final first = await repo.draw('meridian');
+    await repo.convertCopy('gnomon', CardVariant.standard);
+    await repo.convertCopy('gnomon', CardVariant.standard);
+    final second = await repo.draw('meridian');
+
+    expect(first.kind, DrawResultKind.newCard);
+    expect(second.kind, DrawResultKind.duplicate);
+    expect(second.copiesAfter, 2);
   });
 }

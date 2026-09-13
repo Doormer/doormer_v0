@@ -17,7 +17,11 @@ class CollectionRepositoryImpl implements CollectionRepository {
 
   Collection? _collection;
   List<DrawOutcome> _sequence = const [];
-  int _cursor = 0;
+
+  /// One cursor per deck. A single shared cursor would let a draw from one deck
+  /// award a card belonging to another, because the bundled sequence interleaves
+  /// decks.
+  final Map<String, int> _cursors = <String, int>{};
 
   CollectionRepositoryImpl({required this.dataSource});
 
@@ -26,7 +30,7 @@ class CollectionRepositoryImpl implements CollectionRepository {
     final collection = await dataSource.loadCollection();
     _collection = collection;
     _sequence = await dataSource.loadDrawSequence();
-    _cursor = 0;
+    _cursors.clear();
     return collection;
   }
 
@@ -42,14 +46,19 @@ class CollectionRepositoryImpl implements CollectionRepository {
     if (!collection.canAffordDraw) {
       throw ValidationFailure('Not enough points for a draw.');
     }
-    if (_sequence.isEmpty) {
+
+    // A draw is always *from* a deck, so only that deck's steps are eligible.
+    final deckSteps =
+        _sequence.where((s) => s.card.deckId == deckId).toList(growable: false);
+    if (deckSteps.isEmpty) {
       throw ValidationFailure('There is nothing left to draw.');
     }
 
     // Wrap rather than run dry: this is a review build and someone will draw
     // more times than the sequence has entries.
-    final step = _sequence[_cursor % _sequence.length];
-    _cursor++;
+    final cursor = _cursors[deckId] ?? 0;
+    final step = deckSteps[cursor % deckSteps.length];
+    _cursors[deckId] = cursor + 1;
 
     final existing = collection.holdingsByCardId[step.card.id];
     final Holding updated;
@@ -73,10 +82,23 @@ class CollectionRepositoryImpl implements CollectionRepository {
       walletPoints: collection.walletPoints - collection.drawCost,
     );
 
+    // The kind is derived from what was actually held a moment ago, not taken
+    // from the asset. On the second lap of the sequence the asset's own label is
+    // stale — a card it calls `newCard` is by then already held — and a reveal
+    // reading "A new one" above a badge reading x2 is plainly wrong.
+    final DrawResultKind kind;
+    if (existing == null) {
+      kind = DrawResultKind.newCard;
+    } else if (step.variant == CardVariant.special && !existing.hasSpecial) {
+      kind = DrawResultKind.upgrade;
+    } else {
+      kind = DrawResultKind.duplicate;
+    }
+
     return DrawOutcome(
       card: step.card,
       variant: step.variant,
-      kind: step.kind,
+      kind: kind,
       copiesAfter: updated.totalCopies,
     );
   }
