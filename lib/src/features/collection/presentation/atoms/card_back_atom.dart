@@ -13,7 +13,10 @@ class CardBackAtom extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = width ?? 118.w;
+    // Scaled even when given explicitly, matching CollectibleCardAtom. If one
+    // face scaled and the other did not, the card would change size the instant
+    // it flipped on any screen that is not exactly 360pt wide.
+    final w = (width ?? 118).w;
     return Container(
       width: w,
       height: w * 3 / 2,

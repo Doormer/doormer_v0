@@ -108,4 +108,85 @@ void main() {
     await tester.tap(find.byType(CardRevealOrganism));
     expect(dismissed, 1);
   });
+
+  testWidgets('the headline stays hidden until the card has landed',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 690);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_host(CardRevealOrganism(
+      params: RevealParams(
+        outcome: _outcome(DrawResultKind.newCard),
+        onDismiss: () {},
+      ),
+    )));
+
+    final state = tester.state<CardRevealState>(find.byType(CardRevealOrganism));
+
+    // Mid-flip: the card is still turning, so the result must not be announced.
+    await tester.pump(const Duration(milliseconds: 850));
+    expect(state.headlineOpacity, 0.0,
+        reason: 'announcing the result mid-flip spoils the reveal');
+
+    // After the flip has finished, it arrives.
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(state.headlineOpacity, greaterThan(0.0));
+  });
+
+  testWidgets('a rare draw gets the flourish and a common one does not',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 690);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    Future<int> glowCount(Rarity rarity) async {
+      await tester.pumpWidget(_host(CardRevealOrganism(
+        key: ValueKey(rarity),
+        params: RevealParams(
+          outcome: DrawOutcome(
+            card: CollectibleCard(
+              id: 'x',
+              name: 'X',
+              deckId: 'meridian',
+              rarity: rarity,
+              scaleLabel: 'Small',
+              artAsset: 'assets/cards/meridian/gnomon.png',
+              description: 'd',
+            ),
+            variant: CardVariant.standard,
+            kind: DrawResultKind.newCard,
+            copiesAfter: 1,
+          ),
+          onDismiss: () {},
+        ),
+      )));
+      await tester.pump(const Duration(milliseconds: 900));
+      return tester.widgetList(find.byType(Transform)).length;
+    }
+
+    final rare = await glowCount(Rarity.rare);
+    final common = await glowCount(Rarity.common);
+    expect(rare, greaterThan(common),
+        reason: 'if every draw bloomed, none would mean anything');
+  });
+
+  testWidgets('with motion off the headline is fully arrived too',
+      (tester) async {
+    await tester.pumpWidget(_host(
+      CardRevealOrganism(
+        params: RevealParams(
+          outcome: _outcome(DrawResultKind.newCard),
+          onDismiss: () {},
+        ),
+      ),
+      reduceMotion: true,
+    ));
+    await tester.pump();
+    final state = tester.state<CardRevealState>(find.byType(CardRevealOrganism));
+    expect(state.headlineOpacity, closeTo(1.0, 0.001),
+        reason: 'motion off must cost movement, never information');
+  });
 }

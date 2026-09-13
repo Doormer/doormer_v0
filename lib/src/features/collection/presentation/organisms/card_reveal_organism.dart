@@ -52,6 +52,12 @@ class CardRevealState extends State<CardRevealOrganism>
 
   late final Animation<double> _flip;
 
+  /// The headline's own arrival, after the flip has finished.
+  late final Animation<double> _landing;
+
+  /// How far the headline has arrived, 0 hidden to 1 fully shown.
+  double get headlineOpacity => _landing.value;
+
   bool get _isRare => widget.params.outcome.card.rarity == Rarity.rare;
 
   @override
@@ -65,6 +71,13 @@ class CardRevealState extends State<CardRevealOrganism>
       parent: _controller,
       // Back 190ms, tell 450ms, then the flip, then the landing.
       curve: const Interval(0.4, 0.66, curve: Curves.easeInOutCubic),
+    );
+    // The headline waits for the flip to finish. Riding the flip's own midpoint
+    // would announce the result while the card was still edge-on, which reads
+    // as the app spoiling its own reveal.
+    _landing = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.66, 0.85, curve: Curves.easeOut),
     );
   }
 
@@ -150,7 +163,7 @@ class CardRevealState extends State<CardRevealOrganism>
                   ),
                   SizedBox(height: 18.h),
                   Opacity(
-                    opacity: faceUp ? 1.0 : 0.0,
+                    opacity: _landing.value,
                     child: Text(
                       outcome.kind.headline,
                       style: TextStyle(
