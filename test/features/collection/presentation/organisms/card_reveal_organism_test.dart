@@ -111,6 +111,49 @@ void main() {
     expect(CardRevealOrganism.glowScaleX(1.0), closeTo(1.0, 0.001));
   });
 
+  testWidgets('the card lifts to its full height exactly as it turns edge-on',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 690);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(_host(CardRevealOrganism(
+      params: RevealParams(
+        outcome: _outcome(DrawResultKind.newCard),
+        onDismiss: () {},
+      ),
+    )));
+
+    final state = tester.state<CardRevealState>(find.byType(CardRevealOrganism));
+    var peakLift = 0.0;
+    var peakScale = 1.0;
+    var minGround = 1.0;
+    var liftAtEdgeOn = 0.0;
+    var closestToEdgeOn = 1.0;
+
+    for (var i = 0; i < 90; i++) {
+      await tester.pump(const Duration(milliseconds: 20));
+      if (state.lift < peakLift) peakLift = state.lift;
+      if (state.cardScale > peakScale) peakScale = state.cardScale;
+      if (state.groundScale < minGround) minGround = state.groundScale;
+      final distance = (state.rotation - 0.5).abs();
+      if (distance < closestToEdgeOn) {
+        closestToEdgeOn = distance;
+        liftAtEdgeOn = state.lift;
+      }
+    }
+
+    // Sampling every 20ms of a 416ms flip lands within ~2.5% of the true peak.
+    expect(peakLift, lessThan(-11.0), reason: 'the mockup lifts 12px');
+    expect(peakScale, greaterThan(1.05), reason: 'the mockup grows to 1.06');
+    expect(minGround, lessThan(0.70), reason: 'the shadow contracts to 0.62');
+
+    // The point of the whole gesture: keying these to the eased rotation put
+    // the peak after the card was already turning back, and halved it.
+    expect(liftAtEdgeOn, lessThan(-11.0),
+        reason: 'the card must be at full height at the moment it is edge-on');
+  });
+
   testWidgets('tapping dismisses', (tester) async {
     var dismissed = 0;
     await tester.pumpWidget(_host(CardRevealOrganism(

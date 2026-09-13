@@ -92,16 +92,29 @@ class CardRevealState extends State<CardRevealOrganism>
 
   /// How far the card has lifted off the table, in design pixels before
   /// screen scaling. Zero back and landed; negative — risen — mid-flip.
-  double get lift => _liftFor(rotation);
+  double get lift => _liftFor(flipProgress);
+
+  /// Linear progress through the flip window, 0 at its start and 1 at its end.
+  ///
+  /// The lift, scale and ground shadow are keyed to THIS, not to [rotation].
+  /// `rotation` is eased, so it rushes through its middle values: keying the
+  /// peak to it both placed the peak after the card was edge-on and squashed
+  /// it to roughly half amplitude. CSS keyframes are positions in time, and so
+  /// are these.
+  double get flipProgress {
+    const start = CardRevealOrganism.tellEnd;
+    const end = CardRevealOrganism.flipEnd;
+    return ((_controller.value - start) / (end - start)).clamp(0.0, 1.0);
+  }
 
   /// The card's own scale as it turns. It grows slightly through the flip.
-  double get cardScale => _scaleFor(rotation);
+  double get cardScale => _scaleFor(flipProgress);
 
   /// The ground shadow's scale: it contracts as the card lifts.
-  double get groundScale => _groundScaleFor(rotation);
+  double get groundScale => _groundScaleFor(flipProgress);
 
   /// The ground shadow's opacity, dimming as it contracts.
-  double get groundOpacity => _groundOpacityFor(rotation);
+  double get groundOpacity => _groundOpacityFor(flipProgress);
 
   @override
   void initState() {
@@ -272,13 +285,17 @@ class CardRevealState extends State<CardRevealOrganism>
                       // 6. Motes — four warm particles rising and fading,
                       // staggered, low on the card.
                       if (showFlourish)
-                        _mote('reveal-mote-0', 0.18, 0.22, 0.00, cardW, cardH, t),
+                        _mote(
+                            'reveal-mote-0', 0.18, 0.22, 0.00, cardW, cardH, t),
                       if (showFlourish)
-                        _mote('reveal-mote-1', 0.74, 0.30, 0.03, cardW, cardH, t),
+                        _mote(
+                            'reveal-mote-1', 0.74, 0.30, 0.03, cardW, cardH, t),
                       if (showFlourish)
-                        _mote('reveal-mote-2', 0.40, 0.14, 0.06, cardW, cardH, t),
+                        _mote(
+                            'reveal-mote-2', 0.40, 0.14, 0.06, cardW, cardH, t),
                       if (showFlourish)
-                        _mote('reveal-mote-3', 0.62, 0.18, 0.09, cardW, cardH, t),
+                        _mote(
+                            'reveal-mote-3', 0.62, 0.18, 0.09, cardW, cardH, t),
 
                       // 2 & 8. The card itself: lifts and grows as it turns,
                       // every rarity, then un-mirrors past edge-on so the art
@@ -296,7 +313,8 @@ class CardRevealState extends State<CardRevealOrganism>
                                 transform: Matrix4.identity()..rotateY(math.pi),
                                 child: _fan(
                                   outcome,
-                                  overlay: showFlourish ? _sweepOverlay(t) : null,
+                                  overlay:
+                                      showFlourish ? _sweepOverlay(t) : null,
                                 ),
                               )
                             : const CardBackAtom(width: _cardDesignWidth),
@@ -498,31 +516,31 @@ class CardRevealState extends State<CardRevealOrganism>
   }
 
   /// translateY 0 → -6 → -12 → -5 → 0, peaking at the 90° point.
-  static double _liftFor(double rotation) => _piecewise(
-        rotation,
-        const [0.0, 0.56, 0.66, 0.77, 1.0],
+  static double _liftFor(double t) => _piecewise(
+        t,
+        const [0.0, 0.214, 0.464, 0.714, 1.0],
         const [0.0, -6.0, -12.0, -5.0, 0.0],
       );
 
   /// scale 1.0 → 1.03 → 1.06 → 1.03 → 1.04 → 1.0, peaking at the 90° point.
-  static double _scaleFor(double rotation) => _piecewise(
-        rotation,
-        const [0.0, 0.56, 0.66, 0.77, 0.88, 1.0],
-        const [1.0, 1.03, 1.06, 1.03, 1.04, 1.0],
+  static double _scaleFor(double t) => _piecewise(
+        t,
+        const [0.0, 0.214, 0.464, 0.714, 1.0],
+        const [1.0, 1.03, 1.06, 1.03, 1.0],
       );
 
   /// Ground shadow scale 1.0 → 0.62 → 0.94 → 1.0 across the flip.
-  static double _groundScaleFor(double rotation) => _piecewise(
-        rotation,
-        const [0.0, 0.17, 0.36, 0.56, 0.78, 1.0],
-        const [1.0, 1.0, 0.62, 0.94, 1.0, 1.0],
+  static double _groundScaleFor(double t) => _piecewise(
+        t,
+        const [0.0, 0.214, 0.464, 0.714, 1.0],
+        const [1.0, 1.0, 0.62, 0.94, 1.0],
       );
 
   /// Ground shadow opacity 0.75 → 0.35 → 0.66 → 0.75 across the flip.
-  static double _groundOpacityFor(double rotation) => _piecewise(
-        rotation,
-        const [0.0, 0.17, 0.36, 0.56, 0.78, 1.0],
-        const [0.75, 0.75, 0.35, 0.66, 0.75, 0.75],
+  static double _groundOpacityFor(double t) => _piecewise(
+        t,
+        const [0.0, 0.214, 0.464, 0.714, 1.0],
+        const [0.75, 0.75, 0.35, 0.66, 0.75],
       );
 
   /// The tell glow: builds through the tell — before the card has turned at
@@ -647,13 +665,31 @@ class _RaysPainter extends CustomPainter {
   // The seven bright wedges from the mockup's conic-gradient, as fractions of
   // a full turn, each paired with the alpha the mockup gives that wedge.
   static const List<double> _bandStarts = [
-    0 / 360, 30 / 360, 62 / 360, 128 / 360, 187 / 360, 250 / 360, 330 / 360,
+    0 / 360,
+    30 / 360,
+    62 / 360,
+    128 / 360,
+    187 / 360,
+    250 / 360,
+    330 / 360,
   ];
   static const List<double> _bandEnds = [
-    7 / 360, 35 / 360, 69 / 360, 135 / 360, 194 / 360, 257 / 360, 337 / 360,
+    7 / 360,
+    35 / 360,
+    69 / 360,
+    135 / 360,
+    194 / 360,
+    257 / 360,
+    337 / 360,
   ];
   static const List<double> _bandAlphas = [
-    0.24, 0.18, 0.24, 0.22, 0.20, 0.24, 0.20,
+    0.24,
+    0.18,
+    0.24,
+    0.22,
+    0.20,
+    0.24,
+    0.20,
   ];
 
   @override
@@ -700,7 +736,9 @@ class _RaysPainter extends CustomPainter {
     canvas.drawCircle(
       center,
       radius,
-      Paint()..shader = SweepGradient(colors: colors, stops: stops).createShader(rect),
+      Paint()
+        ..shader =
+            SweepGradient(colors: colors, stops: stops).createShader(rect),
     );
     // mask-image: radial-gradient(circle,#000 18%,transparent 62%) — opaque
     // near the card, fading to nothing by 62% of the radius.
