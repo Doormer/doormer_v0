@@ -92,7 +92,29 @@ class CollectionTemplate extends StatelessWidget {
 
   Widget _narrow(BuildContext context) {
     if (selectedDeckId == null) {
-      return SingleChildScrollView(child: _deckList(isRail: false));
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Text(
+                  '${collection.decks.length} decks',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 11.5.sp, color: QuestPalette.dim),
+                ),
+              ),
+              SizedBox(width: 10.w),
+              Flexible(child: _wallet()),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          Expanded(
+            child: SingleChildScrollView(child: _deckList(isRail: false)),
+          ),
+        ],
+      );
     }
     return _deckBody(context, showBack: true);
   }
@@ -123,9 +145,21 @@ class CollectionTemplate extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (showBack) _backRow(deck.name),
-        Text(
-          '${collection.heldCountFor(deckId)} of ${deck.size} held',
-          style: TextStyle(fontSize: 11.5.sp, color: QuestPalette.dim),
+        // Flexible on both sides: a Row of two plain Texts overflows the moment
+        // the type scales up, which is the same defect the facts list had.
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Flexible(
+              child: Text(
+                '${collection.heldCountFor(deckId)} of ${deck.size} held',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 11.5.sp, color: QuestPalette.dim),
+              ),
+            ),
+            SizedBox(width: 10.w),
+            Flexible(child: _wallet()),
+          ],
         ),
         SizedBox(height: 14.h),
         Expanded(
@@ -142,6 +176,47 @@ class CollectionTemplate extends StatelessWidget {
           label: 'Draw a card · ${collection.drawCost}',
           expand: true,
           onPressed: collection.canAffordDraw ? onDraw : null,
+        ),
+        // A greyed-out button with no explanation reads as broken. The empty
+        // deck already says how far short the student is; a filled one owes
+        // them the same answer.
+        if (!collection.canAffordDraw)
+          Padding(
+            padding: EdgeInsets.only(top: 9.h),
+            child: Center(
+              child: Text(
+                '${collection.pointsShortOfDraw} more points to draw',
+                style: TextStyle(fontSize: 11.sp, color: QuestPalette.amber),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// The wallet, shown wherever a student might be about to spend.
+  ///
+  /// It was computed from the first task and rendered nowhere, so points could
+  /// be earned and spent entirely invisibly.
+  Widget _wallet() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 6.w,
+          height: 6.w,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: QuestPalette.amber,
+          ),
+        ),
+        SizedBox(width: 6.w),
+        Flexible(
+          child: Text(
+            '${collection.walletPoints} points',
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 11.5.sp, color: QuestPalette.dim),
+          ),
         ),
       ],
     );

@@ -29,7 +29,19 @@ class _CollectionView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CollectionBloc, CollectionState>(
+    return BlocConsumer<CollectionBloc, CollectionState>(
+      // A draw or trade that fails was previously silent: the bloc set
+      // `errorMessage` and nothing ever read it, so the student tapped and
+      // simply nothing happened.
+      listenWhen: (previous, current) =>
+          current is CollectionReady && current.errorMessage != null,
+      listener: (context, state) {
+        final message = (state as CollectionReady).errorMessage;
+        if (message == null) return;
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(message)));
+      },
       builder: (context, state) {
         if (state is CollectionLoading) {
           return const Scaffold(

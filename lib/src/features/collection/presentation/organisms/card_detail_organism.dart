@@ -37,10 +37,19 @@ class CardDetailOrganism extends StatelessWidget {
     final holding = params.holding;
     final card = holding.card;
 
-    // Trading the only copy would empty the grid slot the student just filled,
-    // so it is refused rather than offered and then undone.
-    final canTrade = holding.standardCopies > 1;
-    final payout = card.rarity.conversionValue;
+    // Never trade away the last copy: that would empty the grid slot the
+    // student just filled. Any copy beyond the first is fair game, whichever
+    // printing it is.
+    final canTrade = holding.totalCopies > 1;
+
+    // Trade the plainer printing first, so a student keeps the special one.
+    // Judging this on `standardCopies > 1` instead would leave a holding of
+    // one standard and one special showing "Held 2" with the action dead.
+    final tradeVariant =
+        holding.standardCopies > 0 ? CardVariant.standard : CardVariant.special;
+    final payout = tradeVariant == CardVariant.special
+        ? card.rarity.specialConversionValue
+        : card.rarity.conversionValue;
 
     return Center(
       child: ConstrainedBox(
@@ -83,7 +92,15 @@ class CardDetailOrganism extends StatelessWidget {
                         ),
                       ),
                       SizedBox(height: 10.h),
-                      _Fact(label: 'Held', value: '${holding.totalCopies}'),
+                      _Fact(
+                        label: 'Held',
+                        // Otherwise "Now special" is announced once at the
+                        // reveal and is then invisible everywhere forever.
+                        value: holding.hasSpecial
+                            ? '${holding.totalCopies}'
+                                ' · ${holding.specialCopies} special'
+                            : '${holding.totalCopies}',
+                      ),
                       _Fact(label: 'Rarity', value: _rarityLabel(card.rarity)),
                       _Fact(label: 'Deck', value: card.scaleLabel),
                       SizedBox(height: 16.h),
@@ -92,7 +109,7 @@ class CardDetailOrganism extends StatelessWidget {
                           label: 'Trade one',
                           variant: AppButtonVariant.accent,
                           onPressed: canTrade
-                              ? () => params.onConvert(CardVariant.standard)
+                              ? () => params.onConvert(tradeVariant)
                               : null,
                         ),
                       ),

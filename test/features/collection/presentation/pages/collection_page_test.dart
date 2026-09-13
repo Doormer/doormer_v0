@@ -149,6 +149,46 @@ void main() {
     expect(find.byType(CardTileMolecule), findsNWidgets(5));
   });
 
+  testWidgets('leaving the collection and coming back keeps what was drawn',
+      (tester) async {
+    await _pumpPhone(tester);
+    await tester.tap(find.widgetWithText(DeckRowMolecule, 'Meridian'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Draw a card'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(CardRevealOrganism));
+    await tester.pumpAndSettle();
+    expect(find.byType(CardTileMolecule), findsNWidgets(5));
+
+    // Remount the page, as navigating away and back would. Startup must not
+    // re-read the asset and throw the session away.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(_app());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(DeckRowMolecule, 'Meridian'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CardTileMolecule), findsNWidgets(5),
+        reason: 'the drawn card survived the remount');
+    expect(find.textContaining('80 points'), findsOneWidget,
+        reason: 'and so did the points it cost');
+  });
+
+  testWidgets('the wallet is visible, so points are never spent invisibly',
+      (tester) async {
+    await _pumpPhone(tester);
+    expect(find.textContaining('120 points'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(DeckRowMolecule, 'Meridian'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('120 points'), findsOneWidget,
+        reason: 'the wallet must follow the student to where they spend');
+  });
+
   testWidgets('tapping a card opens its detail, and it can be closed',
       (tester) async {
     await _pumpPhone(tester);
