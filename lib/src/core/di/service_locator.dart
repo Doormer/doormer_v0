@@ -5,6 +5,7 @@ import 'package:doormer/src/core/services/sessions/session_service_impl.dart';
 import 'package:doormer/src/core/utils/token_storage/token_storage.dart';
 import 'package:doormer/src/core/utils/token_storage/token_storage_web.dart';
 import 'package:doormer/src/features/auth/di/auth_module.dart';
+import 'package:doormer/src/features/collection/di/collection_module.dart';
 import 'package:doormer/src/features/questions/di/questions_module.dart';
 import 'package:doormer/src/features/registration/di/registration_module.dart';
 import 'package:doormer/src/shared/sessions/bloc/global_session_bloc.dart';
@@ -49,4 +50,5 @@ Future<void> initDependencies() async {
   initAuthModule(); // Initializes dependencies for the auth feature
   initRegisterModule();
   initQuestionsModule();
+  initCollectionModule();
 }
