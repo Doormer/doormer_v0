@@ -44,6 +44,21 @@ void main() {
       cardWidth: 104,
     )));
     expect(find.byType(CardTileMolecule), findsNothing);
+    // Counting tiles alone would still pass if placeholders of some other type
+    // were appended, which is exactly the thing this rule forbids.
+    final wrap = tester.widget<Wrap>(find.byType(Wrap));
+    expect(wrap.children, isEmpty);
+  });
+
+  testWidgets('renders nothing beyond the held cards themselves',
+      (tester) async {
+    final holdings = [_holding('a'), _holding('b'), _holding('c')];
+    await tester.pumpWidget(_host(CardGridOrganism(
+      holdings: holdings,
+      cardWidth: 104,
+    )));
+    final wrap = tester.widget<Wrap>(find.byType(Wrap));
+    expect(wrap.children.length, holdings.length);
   });
 
   testWidgets('uses Wrap so a partial last row can centre', (tester) async {

@@ -13,24 +13,25 @@ import '../params/deck_row_params.dart';
 class DeckListOrganism extends StatelessWidget {
   final List<DeckRowParams> rows;
 
-  /// True in the desktop rail, where 190px has no room for a status flag.
-  final bool isRail;
-
-  const DeckListOrganism({
-    super.key,
-    required this.rows,
-    required this.isRail,
-  });
+  const DeckListOrganism({super.key, required this.rows});
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      shrinkWrap: true,
-      padding: EdgeInsets.zero,
-      itemCount: rows.length,
-      separatorBuilder: (_, __) => SizedBox(height: 2.h),
-      itemBuilder: (context, index) =>
-          DeckRowMolecule(params: rows[index]),
+    // Deliberately NOT a ListView. The template already wraps this in a
+    // SingleChildScrollView, and nesting a second vertical scrollable inside
+    // one is both a scroll-ownership bug and the slow shrink-wrap layout path.
+    // Whoever mounts this list owns the scrolling.
+    //
+    // Rail behaviour is not a parameter here: it lives entirely in
+    // DeckRowParams.showFlag, so there is one source of truth rather than two.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < rows.length; i++) ...[
+          if (i > 0) SizedBox(height: 2.h),
+          DeckRowMolecule(params: rows[i]),
+        ],
+      ],
     );
   }
 }
