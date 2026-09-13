@@ -53,6 +53,9 @@ void main() {
       ),
     )));
     final box = tester.getSize(find.byKey(const Key('card-detail-body')));
+    // Asserted against the literal as well as the constant, so a future drift
+    // in the constant cannot quietly bless itself.
+    expect(box.width, lessThanOrEqualTo(520));
     expect(box.width, lessThanOrEqualTo(CardDetailOrganism.maxWidth));
   });
 
@@ -103,5 +106,21 @@ void main() {
     )));
     await tester.tap(find.byType(AppButtonAtom));
     expect(traded, CardVariant.standard);
+  });
+
+  testWidgets('can be closed', (tester) async {
+    tester.view.physicalSize = const Size(360, 690);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    var closed = 0;
+    await tester.pumpWidget(_host(CardDetailOrganism(
+      params: CardDetailParams(
+        holding: const Holding(card: _card, standardCopies: 2, specialCopies: 0),
+        onConvert: (_) {},
+        onClose: () => closed++,
+      ),
+    )));
+    await tester.tap(find.byKey(const Key('card-detail-close')));
+    expect(closed, 1);
   });
 }

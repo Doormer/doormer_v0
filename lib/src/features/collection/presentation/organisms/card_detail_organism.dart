@@ -45,53 +45,70 @@ class CardDetailOrganism extends StatelessWidget {
         child: Container(
           key: const Key('card-detail-body'),
           padding: EdgeInsets.all(18.w),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              CollectibleCardAtom(card: card, width: 132),
-              SizedBox(width: 18.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      card.description,
-                      style: TextStyle(
-                        fontSize: 11.5.sp,
-                        height: 1.45,
-                        color: QuestPalette.cream.withValues(alpha: 0.72),
-                      ),
-                    ),
-                    SizedBox(height: 10.h),
-                    _Fact(label: 'Held', value: '${holding.totalCopies}'),
-                    _Fact(label: 'Rarity', value: _rarityLabel(card.rarity)),
-                    _Fact(label: 'Deck', value: card.scaleLabel),
-                    SizedBox(height: 16.h),
-                    Center(
-                      child: AppButtonAtom(
-                        label: 'Trade one',
-                        variant: AppButtonVariant.accent,
-                        onPressed: canTrade
-                            ? () => params.onConvert(CardVariant.standard)
-                            : null,
-                      ),
-                    ),
-                    if (canTrade)
-                      Padding(
-                        padding: EdgeInsets.only(top: 6.h),
-                        child: Center(
-                          child: Text(
-                            '+$payout points',
-                            style: TextStyle(
-                              fontSize: 10.5.sp,
-                              color: QuestPalette.mint,
-                            ),
+              Align(
+                alignment: Alignment.topRight,
+                child: IconButton(
+                  key: const Key('card-detail-close'),
+                  onPressed: params.onClose,
+                  icon: Icon(Icons.close, size: 18.w),
+                  color: QuestPalette.muted,
+                  tooltip: 'Close',
+                ),
+              ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CollectibleCardAtom(card: card, width: 132),
+                  SizedBox(width: 18.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          card.description,
+                          style: TextStyle(
+                            fontSize: 11.5.sp,
+                            height: 1.45,
+                            color: QuestPalette.cream.withValues(alpha: 0.72),
                           ),
                         ),
-                      ),
-                  ],
-                ),
+                        SizedBox(height: 10.h),
+                        _Fact(label: 'Held', value: '${holding.totalCopies}'),
+                        _Fact(
+                            label: 'Rarity', value: _rarityLabel(card.rarity)),
+                        _Fact(label: 'Deck', value: card.scaleLabel),
+                        SizedBox(height: 16.h),
+                        Center(
+                          child: AppButtonAtom(
+                            label: 'Trade one',
+                            variant: AppButtonVariant.accent,
+                            onPressed: canTrade
+                                ? () => params.onConvert(CardVariant.standard)
+                                : null,
+                          ),
+                        ),
+                        if (canTrade)
+                          Padding(
+                            padding: EdgeInsets.only(top: 6.h),
+                            child: Center(
+                              child: Text(
+                                '+$payout points',
+                                style: TextStyle(
+                                  fontSize: 10.5.sp,
+                                  color: QuestPalette.mint,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
