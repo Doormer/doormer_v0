@@ -73,9 +73,11 @@ class EmptyDeckOrganism extends StatelessWidget {
         ),
         SizedBox(height: 18.h),
         AppButtonAtom(
-          label: 'Draw a card',
+          // The price rides on the label. Disabling the button must not hide
+          // what a draw costs — that is the whole reason it stays on screen
+          // rather than disappearing when it cannot be afforded.
+          label: 'Draw a card · ${params.drawCost}',
           expand: true,
-          // Disabled, not hidden — hiding it would hide the price.
           onPressed: params.canAfford ? params.onDraw : null,
         ),
         if (!params.canAfford) ...[

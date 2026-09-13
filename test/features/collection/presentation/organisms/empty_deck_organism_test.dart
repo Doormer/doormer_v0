@@ -61,6 +61,49 @@ void main() {
     // No percentage, chance or odds language anywhere.
     expect(find.textContaining('%'), findsNothing);
     expect(find.textContaining('chance'), findsNothing);
+    expect(find.textContaining('odds'), findsNothing);
+  });
+
+  testWidgets('lists the rarest first, because that chip is the pull',
+      (tester) async {
+    _pinDesignViewport(tester);
+    await tester.pumpWidget(_host(EmptyDeckOrganism(params: _params())));
+    final chips = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((t) => t.data)
+        .whereType<String>()
+        .where((s) =>
+            s.endsWith('rare') || s.endsWith('uncommon') || s.endsWith('common'))
+        .toList();
+    expect(chips, ['1 rare', '2 uncommon', '3 common']);
+  });
+
+  testWidgets('a rarity the deck does not contain is omitted, not shown as zero',
+      (tester) async {
+    _pinDesignViewport(tester);
+    await tester.pumpWidget(_host(EmptyDeckOrganism(
+      params: EmptyDeckParams(
+        deckSize: 3,
+        rarityMix: const {Rarity.common: 3, Rarity.uncommon: 0, Rarity.rare: 0},
+        drawCost: 40,
+        canAfford: true,
+        pointsShort: 0,
+        onDraw: () {},
+      ),
+    )));
+    expect(find.text('3 common'), findsOneWidget);
+    expect(find.textContaining('0 rare'), findsNothing);
+    expect(find.textContaining('0 uncommon'), findsNothing);
+  });
+
+  testWidgets('the price stays visible even when the draw is disabled',
+      (tester) async {
+    _pinDesignViewport(tester);
+    await tester.pumpWidget(_host(
+      EmptyDeckOrganism(params: _params(canAfford: false, pointsShort: 25)),
+    ));
+    expect(find.textContaining('40'), findsWidgets,
+        reason: 'disabling the button must not hide what a draw costs');
   });
 
   testWidgets('names no ship, hull or fleet', (tester) async {
