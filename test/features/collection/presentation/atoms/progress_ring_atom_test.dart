@@ -36,4 +36,12 @@ void main() {
     expect(atom.fraction, 0.0);
     expect(atom.isComplete, isFalse);
   });
+
+  testWidgets('an over-counted deck still reads as complete', (tester) async {
+    await tester.pumpWidget(_host(const ProgressRingAtom(held: 8, total: 6)));
+    final atom = tester.widget<ProgressRingAtom>(find.byType(ProgressRingAtom));
+    expect(atom.isComplete, isTrue);
+    expect(atom.fraction, 1.0, reason: 'the ring must not overfill');
+    expect(atom.ringColour, QuestPalette.mint);
+  });
 }
