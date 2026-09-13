@@ -14,8 +14,6 @@ import '../atoms/collectible_card_atom.dart';
 /// instead was tried and fails — at 104px a 5px offset is a line, and reads as
 /// a drop shadow rather than a card.
 class CardTileMolecule extends StatelessWidget {
-  static const List<double> _angles = [5.0, 2.5];
-
   final Holding holding;
   final double width;
   final VoidCallback? onTap;
@@ -29,27 +27,35 @@ class CardTileMolecule extends StatelessWidget {
 
   /// Layers *behind* the front card. Capped at two: the grid answers
   /// "one, a couple, or a pile" and the badge answers "how many".
-  static int layersFor(int copies) {
-    if (copies <= 1) return 0;
-    if (copies == 2) return 1;
-    return 2;
+  static int layersFor(int copies) => anglesFor(copies).length;
+
+  /// The rear layers' angles, **ordered back to front**.
+  ///
+  /// A pair opens to 3°; three or more splay to 5° and 2.5°. The list order is
+  /// the paint order, and in a [Stack] later children paint on top — so the
+  /// steepest angle must come first or the deepest card ends up in front of
+  /// the shallower one.
+  static List<double> anglesFor(int copies) {
+    if (copies <= 1) return const [];
+    if (copies == 2) return const [3.0];
+    return const [5.0, 2.5];
   }
 
   @override
   Widget build(BuildContext context) {
     final copies = holding.totalCopies;
-    final layers = layersFor(copies);
 
     return GestureDetector(
       onTap: onTap,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Painted first so they sit behind the art but above the surface.
-          for (var i = layers - 1; i >= 0; i--)
+          // Painted first so they sit behind the art but above the surface,
+          // and in back-to-front order so the steepest tilt is deepest.
+          for (final angle in anglesFor(copies))
             Transform.rotate(
               alignment: Alignment.bottomCenter,
-              angle: _angles[i] * math.pi / 180,
+              angle: angle * math.pi / 180,
               child: Container(
                 width: width.w,
                 height: width.w / CollectibleCardAtom.aspectRatio,
