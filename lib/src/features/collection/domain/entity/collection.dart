@@ -27,10 +27,7 @@ class Collection extends Equatable {
   /// Held cards for one deck, in the deck's own card order so the grid is
   /// stable as it fills rather than reordering on every draw.
   List<Holding> holdingsForDeck(String deckId) {
-    final deck = decks.firstWhere(
-      (d) => d.id == deckId,
-      orElse: () => const Deck(id: '', name: '', cards: []),
-    );
+    final deck = decks.firstWhere((d) => d.id == deckId);
     return deck.cards
         .map((c) => holdingsByCardId[c.id])
         .whereType<Holding>()

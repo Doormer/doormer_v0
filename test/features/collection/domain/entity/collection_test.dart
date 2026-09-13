@@ -76,5 +76,16 @@ void main() {
       expect(collection.heldCountFor('cinder'), 0);
       expect(collection.holdingsForDeck('cinder'), isEmpty);
     });
+
+    test('an unknown deck id is a programming error, not an empty deck', () {
+      const collection = Collection(
+        decks: [Deck(id: 'meridian', name: 'Meridian', cards: [])],
+        holdingsByCardId: {},
+        walletPoints: 120,
+        drawCost: 40,
+      );
+      expect(() => collection.holdingsForDeck('nope'), throwsStateError);
+      expect(() => collection.heldCountFor('nope'), throwsStateError);
+    });
   });
 }
