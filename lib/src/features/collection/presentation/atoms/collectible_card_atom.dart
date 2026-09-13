@@ -32,21 +32,26 @@ class CollectibleCardAtom extends StatelessWidget {
   });
 
   /// The halo for a rarity, or null when it should not glow at all.
-  static BoxShadow? haloFor(Rarity rarity) {
+  ///
+  /// Sized as a fraction of the card, not in fixed pixels: a glow that keeps its
+  /// radius while the card scales is too heavy on a grid tile and too faint on
+  /// a reveal. Taking [width] rather than reading `ScreenUtil` keeps this
+  /// callable from a test without pumping a widget first.
+  static BoxShadow? haloFor(Rarity rarity, {required double width}) {
     switch (rarity) {
       case Rarity.common:
         return null;
       case Rarity.uncommon:
         return BoxShadow(
           color: QuestPalette.amber.withValues(alpha: 0.45),
-          blurRadius: 10,
-          spreadRadius: 0.5,
+          blurRadius: width * 0.096,
+          spreadRadius: width * 0.005,
         );
       case Rarity.rare:
         return BoxShadow(
           color: QuestPalette.amber.withValues(alpha: 0.55),
-          blurRadius: 22,
-          spreadRadius: 3,
+          blurRadius: width * 0.212,
+          spreadRadius: width * 0.029,
         );
     }
   }
@@ -54,7 +59,7 @@ class CollectibleCardAtom extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final w = width.w;
-    final halo = haloFor(card.rarity);
+    final halo = haloFor(card.rarity, width: w);
     final radius = BorderRadius.circular(10.r);
 
     return Container(
@@ -65,8 +70,8 @@ class CollectibleCardAtom extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            blurRadius: w * 0.173,
+            offset: Offset(0, w * 0.077),
           ),
           if (halo != null) halo,
         ],
@@ -103,6 +108,7 @@ class CollectibleCardAtom extends StatelessWidget {
                 top: 6.h,
                 right: 6.w,
                 child: Container(
+                  key: const Key('card-copies-badge'),
                   padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
                   decoration: BoxDecoration(
                     color: QuestPalette.night.withValues(alpha: 0.82),

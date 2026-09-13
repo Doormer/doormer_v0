@@ -31,19 +31,29 @@ void main() {
 
   testWidgets('a common card has no halo, so the halo still means something',
       (tester) async {
-    expect(CollectibleCardAtom.haloFor(Rarity.common), isNull);
+    expect(CollectibleCardAtom.haloFor(Rarity.common, width: 104), isNull);
   });
 
   testWidgets('halo weight grows with scarcity', (tester) async {
-    final uncommon = CollectibleCardAtom.haloFor(Rarity.uncommon)!;
-    final rare = CollectibleCardAtom.haloFor(Rarity.rare)!;
+    final uncommon = CollectibleCardAtom.haloFor(Rarity.uncommon, width: 104)!;
+    final rare = CollectibleCardAtom.haloFor(Rarity.rare, width: 104)!;
     expect(rare.blurRadius, greaterThan(uncommon.blurRadius));
+  });
+
+  testWidgets('the halo scales with the card, rather than staying fixed',
+      (tester) async {
+    final small = CollectibleCardAtom.haloFor(Rarity.rare, width: 104)!;
+    final large = CollectibleCardAtom.haloFor(Rarity.rare, width: 208)!;
+    expect(large.blurRadius, greaterThan(small.blurRadius));
   });
 
   testWidgets('a card held once shows no count badge', (tester) async {
     await tester.pumpWidget(_host(
       CollectibleCardAtom(card: _card(Rarity.common), width: 104, copies: 1),
     ));
+    // By key, not by text: a regression rendering "1" or an icon would slip
+    // past a text-only assertion.
+    expect(find.byKey(const Key('card-copies-badge')), findsNothing);
     expect(find.textContaining('×'), findsNothing);
   });
 
@@ -53,6 +63,7 @@ void main() {
       CollectibleCardAtom(card: _card(Rarity.common), width: 104, copies: 147),
     ));
     expect(find.text('×147'), findsOneWidget);
+    expect(find.byKey(const Key('card-copies-badge')), findsOneWidget);
   });
 
   testWidgets('the card keeps a 2:3 shape at any width', (tester) async {
