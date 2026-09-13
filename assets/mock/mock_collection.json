@@ -1,0 +1,46 @@
+{
+  "walletPoints": 120,
+  "drawCost": 40,
+  "decks": [
+    {
+      "id": "meridian",
+      "name": "Meridian",
+      "cards": [
+        {"id": "gnomon", "name": "Gnomon", "rarity": "common", "scaleLabel": "Small", "artAsset": "assets/cards/meridian/gnomon.png", "description": "Casts a shadow long enough to read a heading from."},
+        {"id": "vernier", "name": "Vernier", "rarity": "common", "scaleLabel": "Small", "artAsset": "assets/cards/meridian/vernier.png", "description": "Nested sleeves that slide to split a reading finer."},
+        {"id": "lodestone", "name": "Lodestone", "rarity": "common", "scaleLabel": "Small", "artAsset": "assets/cards/meridian/lodeston.png", "description": "Drags a haze of iron filings wherever it turns."},
+        {"id": "astrolabe", "name": "Astrolabe", "rarity": "uncommon", "scaleLabel": "Medium", "artAsset": "assets/cards/meridian/astrolabe.png", "description": "Unfolds into a ring wider than itself to take one reading, then folds away."},
+        {"id": "quadrant", "name": "Quadrant", "rarity": "uncommon", "scaleLabel": "Medium", "artAsset": "assets/cards/meridian/quadrant.png", "description": "A quarter arc that measures the angle to anything it can see."},
+        {"id": "orrery", "name": "The Orrery", "rarity": "rare", "scaleLabel": "Capital", "artAsset": "assets/cards/meridian/Orrey.png", "description": "Carries a working model of the system it is crossing."}
+      ]
+    },
+    {
+      "id": "cinder",
+      "name": "Cinder",
+      "cards": [
+        {"id": "flint", "name": "Flint", "rarity": "common", "scaleLabel": "Small", "artAsset": "assets/cards/cinder/cinder_flint.png", "description": "Three striker arms that throw sparks to start something bigger."},
+        {"id": "wick", "name": "Wick", "rarity": "common", "scaleLabel": "Small", "artAsset": "assets/cards/cinder/cinder_wick.png", "description": "Burns slowly and on purpose."},
+        {"id": "rasp", "name": "Rasp", "rarity": "common", "scaleLabel": "Small", "artAsset": "assets/cards/cinder/cinder_rasp.png", "description": "Strips plating off anything it is dragged along."},
+        {"id": "scorch", "name": "Scorch", "rarity": "uncommon", "scaleLabel": "Medium", "artAsset": "assets/cards/cinder/cinder_scorch.png", "description": "Leaves a blackened wake it never outruns."},
+        {"id": "kiln", "name": "Kiln", "rarity": "uncommon", "scaleLabel": "Medium", "artAsset": "assets/cards/cinder/cinder_kiln.png", "description": "Holds a fire hot enough to reshape what it carries."},
+        {"id": "crucible", "name": "The Crucible", "rarity": "rare", "scaleLabel": "Capital", "artAsset": "assets/cards/cinder/cinder_crucible.png", "description": "Everything it takes in comes out as something else."}
+      ]
+    }
+  ],
+  "holdings": [
+    {"cardId": "gnomon", "standardCopies": 3, "specialCopies": 0},
+    {"cardId": "vernier", "standardCopies": 1, "specialCopies": 0},
+    {"cardId": "astrolabe", "standardCopies": 1, "specialCopies": 1},
+    {"cardId": "orrery", "standardCopies": 1, "specialCopies": 0}
+  ],
+  "drawSequence": [
+    {"cardId": "quadrant", "variant": "standard", "kind": "newCard"},
+    {"cardId": "gnomon", "variant": "standard", "kind": "duplicate"},
+    {"cardId": "lodestone", "variant": "standard", "kind": "newCard"},
+    {"cardId": "vernier", "variant": "special", "kind": "upgrade"},
+    {"cardId": "flint", "variant": "standard", "kind": "newCard"},
+    {"cardId": "gnomon", "variant": "standard", "kind": "duplicate"},
+    {"cardId": "crucible", "variant": "standard", "kind": "newCard"},
+    {"cardId": "wick", "variant": "standard", "kind": "newCard"}
+  ]
+}
