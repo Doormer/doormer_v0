@@ -59,6 +59,44 @@ void main() {
     expect(box.width, lessThanOrEqualTo(CardDetailOrganism.maxWidth));
   });
 
+  testWidgets('stacks the card above its facts on a phone, without overflowing',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 690);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    // A Dialog's own insets are what make this tight: side by side, the facts
+    // column is left about 94px, which a label and its value overflow.
+    await tester.pumpWidget(ScreenUtilInit(
+      designSize: const Size(360, 690),
+      builder: (_, __) => MaterialApp(
+        home: Scaffold(
+          body: Dialog(
+            backgroundColor: Colors.transparent,
+            child: CardDetailOrganism(
+              params: CardDetailParams(
+                holding: const Holding(
+                  card: _card,
+                  standardCopies: 2,
+                  specialCopies: 0,
+                ),
+                onConvert: (_) {},
+                onClose: () {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull,
+        reason: 'a RenderFlex overflow paints a stripe a student would see');
+    expect(find.text('Uncommon'), findsOneWidget);
+    expect(find.text('Trade one'), findsOneWidget);
+  });
+
   testWidgets('the convert action says Trade one and never says spare',
       (tester) async {
     tester.view.physicalSize = const Size(360, 690);

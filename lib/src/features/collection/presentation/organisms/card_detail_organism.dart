@@ -14,6 +14,9 @@ import '../params/card_detail_params.dart';
 class CardDetailOrganism extends StatelessWidget {
   static const double maxWidth = 520;
 
+  /// Below this the card sits above its facts rather than beside them.
+  static const double stackBelowWidth = 420;
+
   final CardDetailParams params;
 
   const CardDetailOrganism({super.key, required this.params});
@@ -59,56 +62,79 @@ class CardDetailOrganism extends StatelessWidget {
                   tooltip: 'Close',
                 ),
               ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CollectibleCardAtom(card: card, width: 132),
-                  SizedBox(width: 18.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          card.description,
-                          style: TextStyle(
-                            fontSize: 11.5.sp,
-                            height: 1.45,
-                            color: QuestPalette.cream.withValues(alpha: 0.72),
-                          ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  // A phone cannot hold the card beside its facts: inside a
+                  // Dialog's insets there is roughly 94px left for a label and
+                  // its value, which overflows. The spec calls for the card
+                  // above its facts on a narrow screen, and this is where that
+                  // lives.
+                  final stacked = constraints.maxWidth < stackBelowWidth;
+                  final facts = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        card.description,
+                        style: TextStyle(
+                          fontSize: 11.5.sp,
+                          height: 1.45,
+                          color: QuestPalette.cream.withValues(alpha: 0.72),
                         ),
-                        SizedBox(height: 10.h),
-                        _Fact(label: 'Held', value: '${holding.totalCopies}'),
-                        _Fact(
-                            label: 'Rarity', value: _rarityLabel(card.rarity)),
-                        _Fact(label: 'Deck', value: card.scaleLabel),
-                        SizedBox(height: 16.h),
-                        Center(
-                          child: AppButtonAtom(
-                            label: 'Trade one',
-                            variant: AppButtonVariant.accent,
-                            onPressed: canTrade
-                                ? () => params.onConvert(CardVariant.standard)
-                                : null,
-                          ),
+                      ),
+                      SizedBox(height: 10.h),
+                      _Fact(label: 'Held', value: '${holding.totalCopies}'),
+                      _Fact(label: 'Rarity', value: _rarityLabel(card.rarity)),
+                      _Fact(label: 'Deck', value: card.scaleLabel),
+                      SizedBox(height: 16.h),
+                      Center(
+                        child: AppButtonAtom(
+                          label: 'Trade one',
+                          variant: AppButtonVariant.accent,
+                          onPressed: canTrade
+                              ? () => params.onConvert(CardVariant.standard)
+                              : null,
                         ),
-                        if (canTrade)
-                          Padding(
-                            padding: EdgeInsets.only(top: 6.h),
-                            child: Center(
-                              child: Text(
-                                '+$payout points',
-                                style: TextStyle(
-                                  fontSize: 10.5.sp,
-                                  color: QuestPalette.mint,
-                                ),
+                      ),
+                      if (canTrade)
+                        Padding(
+                          padding: EdgeInsets.only(top: 6.h),
+                          child: Center(
+                            child: Text(
+                              '+$payout points',
+                              style: TextStyle(
+                                fontSize: 10.5.sp,
+                                color: QuestPalette.mint,
                               ),
                             ),
                           ),
+                        ),
+                    ],
+                  );
+
+                  if (stacked) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Center(
+                          child: CollectibleCardAtom(card: card, width: 158),
+                        ),
+                        SizedBox(height: 14.h),
+                        facts,
                       ],
-                    ),
-                  ),
-                ],
+                    );
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CollectibleCardAtom(card: card, width: 132),
+                      SizedBox(width: 18.w),
+                      Expanded(child: facts),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -131,14 +157,26 @@ class _Fact extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: TextStyle(fontSize: 11.sp, color: QuestPalette.dim)),
-          Text(value,
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11.sp, color: QuestPalette.dim),
+            ),
+          ),
+          SizedBox(width: 8.w),
+          Flexible(
+            child: Text(
+              value,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
               style: TextStyle(
                 fontSize: 11.sp,
                 fontWeight: FontWeight.w600,
                 color: QuestPalette.cream,
-              )),
+              ),
+            ),
+          ),
         ],
       ),
     );
