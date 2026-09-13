@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:doormer/src/core/motion/motion_policy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -13,7 +14,7 @@ import '../atoms/collectible_card_atom.dart';
 /// rotation has meant *more than one* everywhere in this feature. Offsetting
 /// instead was tried and fails — at 104px a 5px offset is a line, and reads as
 /// a drop shadow rather than a card.
-class CardTileMolecule extends StatelessWidget {
+class CardTileMolecule extends StatefulWidget {
   final Holding holding;
   final double width;
   final VoidCallback? onTap;
@@ -42,42 +43,70 @@ class CardTileMolecule extends StatelessWidget {
   }
 
   @override
+  State<CardTileMolecule> createState() => _CardTileMoleculeState();
+}
+
+class _CardTileMoleculeState extends State<CardTileMolecule> {
+  /// "Tap opens; 5px lift on press" — the spec's own words for this gesture.
+  static const double _pressLift = 5;
+  static const Duration _pressDuration = Duration(milliseconds: 120);
+
+  bool _pressed = false;
+
+  void _setPressed(bool pressed) {
+    if (_pressed == pressed) return;
+    setState(() => _pressed = pressed);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final copies = holding.totalCopies;
+    final copies = widget.holding.totalCopies;
 
     return GestureDetector(
-      onTap: onTap,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Painted first so they sit behind the art but above the surface,
-          // and in back-to-front order so the steepest tilt is deepest.
-          for (final angle in anglesFor(copies))
-            Transform.rotate(
-              alignment: Alignment.bottomCenter,
-              angle: angle * math.pi / 180,
-              child: Container(
-                width: width.w,
-                height: width.w / CollectibleCardAtom.aspectRatio,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2A2450),
-                  borderRadius: BorderRadius.circular(10.r),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.55),
-                      blurRadius: 9,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
+      onTap: widget.onTap,
+      onTapDown: (_) => _setPressed(true),
+      onTapUp: (_) => _setPressed(false),
+      onTapCancel: () => _setPressed(false),
+      child: AnimatedContainer(
+        duration: MotionPolicy.duration(context, _pressDuration),
+        curve: Curves.easeOut,
+        transform: Matrix4.translationValues(
+          0,
+          _pressed ? -_pressLift.h : 0,
+          0,
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Painted first so they sit behind the art but above the surface,
+            // and in back-to-front order so the steepest tilt is deepest.
+            for (final angle in CardTileMolecule.anglesFor(copies))
+              Transform.rotate(
+                alignment: Alignment.bottomCenter,
+                angle: angle * math.pi / 180,
+                child: Container(
+                  width: widget.width.w,
+                  height: widget.width.w / CollectibleCardAtom.aspectRatio,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2A2450),
+                    borderRadius: BorderRadius.circular(10.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.55),
+                        blurRadius: 9,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+            CollectibleCardAtom(
+              card: widget.holding.card,
+              width: widget.width,
+              copies: copies,
             ),
-          CollectibleCardAtom(
-            card: holding.card,
-            width: width,
-            copies: copies,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

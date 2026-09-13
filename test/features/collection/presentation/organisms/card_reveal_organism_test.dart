@@ -17,6 +17,16 @@ const _card = CollectibleCard(
   description: 'd',
 );
 
+const _rareCard = CollectibleCard(
+  id: 'orrery',
+  name: 'The Orrery',
+  deckId: 'meridian',
+  rarity: Rarity.rare,
+  scaleLabel: 'Capital',
+  artAsset: 'assets/cards/meridian/gnomon.png',
+  description: 'd',
+);
+
 Widget _host(Widget child, {bool reduceMotion = false}) => ScreenUtilInit(
       designSize: const Size(360, 690),
       builder: (_, __) => MaterialApp(
@@ -27,8 +37,13 @@ Widget _host(Widget child, {bool reduceMotion = false}) => ScreenUtilInit(
       ),
     );
 
-DrawOutcome _outcome(DrawResultKind kind, {int copiesAfter = 1}) => DrawOutcome(
-      card: _card,
+DrawOutcome _outcome(
+  DrawResultKind kind, {
+  int copiesAfter = 1,
+  CollectibleCard card = _card,
+}) =>
+    DrawOutcome(
+      card: card,
       variant: CardVariant.standard,
       kind: kind,
       copiesAfter: copiesAfter,
@@ -135,42 +150,128 @@ void main() {
     expect(state.headlineOpacity, greaterThan(0.0));
   });
 
-  testWidgets('a rare draw gets the flourish and a common one does not',
+  testWidgets(
+      'a rare draw renders every flourish layer and a common one renders none',
       (tester) async {
     tester.view.physicalSize = const Size(360, 690);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    Future<int> glowCount(Rarity rarity) async {
+    // The rare-only layers from the spec: glow, rays, both rings, all four
+    // motes, and the sweep. Ground shadow and the flip itself are deliberately
+    // excluded — they belong to every rarity, so they would not distinguish
+    // the two draws.
+    const flourishKeys = [
+      'reveal-glow',
+      'reveal-rays',
+      'reveal-ring-1',
+      'reveal-ring-2',
+      'reveal-mote-0',
+      'reveal-mote-1',
+      'reveal-mote-2',
+      'reveal-mote-3',
+      'reveal-sweep',
+    ];
+
+    Future<int> flourishLayerCount(CollectibleCard card) async {
       await tester.pumpWidget(_host(CardRevealOrganism(
-        key: ValueKey(rarity),
+        key: ValueKey(card.rarity),
         params: RevealParams(
-          outcome: DrawOutcome(
-            card: CollectibleCard(
-              id: 'x',
-              name: 'X',
-              deckId: 'meridian',
-              rarity: rarity,
-              scaleLabel: 'Small',
-              artAsset: 'assets/cards/meridian/gnomon.png',
-              description: 'd',
-            ),
-            variant: CardVariant.standard,
-            kind: DrawResultKind.newCard,
-            copiesAfter: 1,
-          ),
+          outcome: _outcome(DrawResultKind.newCard, card: card),
           onDismiss: () {},
         ),
       )));
-      await tester.pump(const Duration(milliseconds: 900));
-      return tester.widgetList(find.byType(Transform)).length;
+      // Well into the landing, where every flourish layer is at its most
+      // visible.
+      await tester.pump(const Duration(milliseconds: 1500));
+      return flourishKeys
+          .where((k) => find.byKey(ValueKey(k)).evaluate().isNotEmpty)
+          .length;
     }
 
-    final rare = await glowCount(Rarity.rare);
-    final common = await glowCount(Rarity.common);
-    expect(rare, greaterThan(common),
+    final rare = await flourishLayerCount(_rareCard);
+    final common = await flourishLayerCount(_card);
+
+    expect(rare, flourishKeys.length,
+        reason: 'a rare draw should show every flourish layer');
+    expect(common, 0,
         reason: 'if every draw bloomed, none would mean anything');
+    expect(rare, greaterThan(common));
+
+    // The ground shadow is physics, not flourish, and belongs to both — still
+    // present on the common draw left mounted by the loop above.
+    expect(find.byKey(const ValueKey('reveal-ground')), findsOneWidget);
+  });
+
+  testWidgets('the glow builds during the tell, before the card turns',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 690);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_host(CardRevealOrganism(
+      params: RevealParams(
+        outcome: _outcome(DrawResultKind.newCard, card: _rareCard),
+        onDismiss: () {},
+      ),
+    )));
+
+    final state = tester.state<CardRevealState>(find.byType(CardRevealOrganism));
+
+    // Mid-tell (0.12-0.40 of 1600ms): 400ms sits comfortably inside it.
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(state.rotation, 0.0,
+        reason: 'the card must not have started turning yet');
+    expect(state.glowOpacity, greaterThan(0.0),
+        reason: 'anticipation should build a beat before the turn');
+  });
+
+  testWidgets('under reduced motion the decorative loop does not run',
+      (tester) async {
+    await tester.pumpWidget(_host(
+      CardRevealOrganism(
+        params: RevealParams(
+          outcome: _outcome(DrawResultKind.newCard, card: _rareCard),
+          onDismiss: () {},
+        ),
+      ),
+      reduceMotion: true,
+    ));
+    await tester.pump();
+
+    final state = tester.state<CardRevealState>(find.byType(CardRevealOrganism));
+    expect(state.flourishRunning, isFalse,
+        reason:
+            'a continuously-repeating loop must not run when motion is off');
+  });
+
+  testWidgets('ground shadow and lift apply to a common draw too',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 690);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_host(CardRevealOrganism(
+      params: RevealParams(
+        outcome: _outcome(DrawResultKind.newCard), // common
+        onDismiss: () {},
+      ),
+    )));
+
+    final state = tester.state<CardRevealState>(find.byType(CardRevealOrganism));
+
+    // Mid-flip (0.40-0.66 of 1600ms): 850ms sits comfortably inside it.
+    await tester.pump(const Duration(milliseconds: 850));
+    expect(state.rotation, greaterThan(0.0));
+    expect(state.rotation, lessThan(1.0));
+    expect(state.lift, isNot(0.0),
+        reason: 'the card should lift as it turns, even on a common draw');
+    expect(state.groundScale, isNot(1.0),
+        reason: 'the ground shadow should react to the lift');
+    expect(find.byKey(const ValueKey('reveal-ground')), findsOneWidget);
   });
 
   testWidgets('with motion off the headline is fully arrived too',

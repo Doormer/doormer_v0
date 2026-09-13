@@ -3,6 +3,7 @@ import 'package:doormer/src/features/collection/domain/entity/collectible_card.d
 import 'package:doormer/src/features/collection/domain/entity/holding.dart';
 import 'package:doormer/src/features/collection/presentation/molecules/card_tile_molecule.dart';
 import 'package:doormer/src/features/collection/presentation/organisms/card_grid_organism.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/rise_in_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -81,5 +82,29 @@ void main() {
     )));
     await tester.tap(find.byType(CardTileMolecule).last);
     expect(tapped, 'b');
+  });
+
+  testWidgets('cards arrive staggered by their position in the grid',
+      (tester) async {
+    await tester.pumpWidget(_host(CardGridOrganism(
+      holdings: [_holding('a'), _holding('b'), _holding('c')],
+      cardWidth: 104,
+    )));
+
+    // Each tile arrives through RiseInAtom, a beat behind the one before it —
+    // rather than the whole grid appearing at once.
+    final risers = tester.widgetList<RiseInAtom>(find.byType(RiseInAtom)).toList();
+    expect(risers.map((w) => w.order).toList(), [0, 1, 2]);
+
+    final tiles = find.byType(CardTileMolecule);
+    for (var i = 0; i < 3; i++) {
+      expect(
+        find.descendant(
+          of: find.byType(RiseInAtom).at(i),
+          matching: tiles,
+        ),
+        findsOneWidget,
+      );
+    }
   });
 }

@@ -103,4 +103,36 @@ void main() {
       expect(layer.alignment, Alignment.bottomCenter);
     }
   });
+
+  testWidgets('lifts about 5px while pressed, and settles back on release',
+      (tester) async {
+    await tester.pumpWidget(_host(
+      CardTileMolecule(
+        holding: const Holding(card: _card, standardCopies: 1, specialCopies: 0),
+        width: 104,
+        onTap: () {},
+      ),
+    ));
+
+    double liftY() {
+      final container = tester.widget<AnimatedContainer>(
+        find.descendant(
+          of: find.byType(CardTileMolecule),
+          matching: find.byType(AnimatedContainer),
+        ),
+      );
+      return container.transform?.getTranslation().y ?? 0.0;
+    }
+
+    expect(liftY(), 0.0, reason: 'resting flat before any press');
+
+    final gesture =
+        await tester.startGesture(tester.getCenter(find.byType(CardTileMolecule)));
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(liftY(), lessThan(0.0), reason: 'pressing should lift the tile');
+
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(liftY(), 0.0, reason: 'releasing should settle it back down');
+  });
 }

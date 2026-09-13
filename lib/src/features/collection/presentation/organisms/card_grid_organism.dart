@@ -1,3 +1,4 @@
+import 'package:doormer/src/shared/design/atomic/atoms/rise_in_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -13,6 +14,10 @@ import '../molecules/card_tile_molecule.dart';
 ///
 /// Cards not held are absent. There are no placeholders, silhouettes or empty
 /// frames: a collection should not read as a checklist of failures.
+///
+/// Cards arrive rather than appear, each a small beat behind the one before —
+/// [RiseInAtom] already owns that stagger and already honours reduced motion,
+/// so the grid only has to hand it each tile's place in line.
 class CardGridOrganism extends StatelessWidget {
   final List<Holding> holdings;
   final double cardWidth;
@@ -32,11 +37,14 @@ class CardGridOrganism extends StatelessWidget {
       spacing: 18.w,
       runSpacing: 20.h,
       children: [
-        for (final holding in holdings)
-          CardTileMolecule(
-            holding: holding,
-            width: cardWidth,
-            onTap: onCardTap == null ? null : () => onCardTap!(holding),
+        for (final (index, holding) in holdings.indexed)
+          RiseInAtom(
+            order: index,
+            child: CardTileMolecule(
+              holding: holding,
+              width: cardWidth,
+              onTap: onCardTap == null ? null : () => onCardTap!(holding),
+            ),
           ),
       ],
     );
