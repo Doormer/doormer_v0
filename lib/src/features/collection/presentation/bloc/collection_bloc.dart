@@ -75,13 +75,21 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     emit(ready.copyWith(isDrawing: true, clearReveal: true));
     try {
       final result = await drawCard(deckId);
-      emit(ready.copyWith(
+      // Merge into the state as it stands NOW, not the snapshot taken before
+      // the await. Bloc handlers run concurrently, so a DeckClosed or
+      // RevealDismissed that arrived mid-draw would otherwise be silently
+      // undone — the deck would reopen itself under the student.
+      final latest = state;
+      if (latest is! CollectionReady) return;
+      emit(latest.copyWith(
         collection: result.collection,
         isDrawing: false,
         pendingReveal: result.outcome,
       ));
     } on Failure catch (failure) {
-      emit(ready.copyWith(
+      final latest = state;
+      if (latest is! CollectionReady) return;
+      emit(latest.copyWith(
         isDrawing: false,
         clearReveal: true,
         errorMessage: failure.message,
@@ -107,9 +115,15 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     if (ready is! CollectionReady) return;
     try {
       final collection = await convertCopy(event.cardId, event.variant);
-      emit(ready.copyWith(collection: collection));
+      // Same reason as the draw: merge into the latest state so a reveal the
+      // student dismissed mid-convert does not come back.
+      final latest = state;
+      if (latest is! CollectionReady) return;
+      emit(latest.copyWith(collection: collection));
     } on Failure catch (failure) {
-      emit(ready.copyWith(errorMessage: failure.message, clearError: false));
+      final latest = state;
+      if (latest is! CollectionReady) return;
+      emit(latest.copyWith(errorMessage: failure.message, clearError: false));
     }
   }
 }

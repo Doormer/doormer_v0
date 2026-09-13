@@ -111,6 +111,51 @@ void main() {
   );
 
   blocTest<CollectionBloc, CollectionState>(
+    'a new draw clears the previous reveal before it starts',
+    build: build,
+    seed: () => CollectionReady(
+      collection: _collection(),
+      selectedDeckId: 'meridian',
+      pendingReveal: const DrawOutcome(
+        card: _gnomon,
+        variant: CardVariant.standard,
+        kind: DrawResultKind.newCard,
+        copiesAfter: 1,
+      ),
+    ),
+    act: (bloc) => bloc.add(const DrawRequested()),
+    expect: () => [
+      isA<CollectionReady>()
+          .having((s) => s.isDrawing, 'isDrawing', isTrue)
+          .having((s) => s.pendingReveal, 'pendingReveal', isNull),
+      isA<CollectionReady>()
+          .having((s) => s.isDrawing, 'isDrawing', isFalse)
+          .having((s) => s.pendingReveal?.kind, 'reveal kind',
+              DrawResultKind.duplicate),
+    ],
+  );
+
+  blocTest<CollectionBloc, CollectionState>(
+    'closing the deck mid-draw is not undone when the draw lands',
+    build: build,
+    seed: () => CollectionReady(
+      collection: _collection(),
+      selectedDeckId: 'meridian',
+    ),
+    act: (bloc) async {
+      bloc.add(const DrawRequested());
+      bloc.add(const DeckClosed());
+    },
+    // The draw still lands and still pays out, but it must not reopen the deck.
+    verify: (bloc) {
+      final state = bloc.state as CollectionReady;
+      expect(state.selectedDeckId, isNull,
+          reason: 'the student left the deck; the draw must not drag them back');
+      expect(state.isDrawing, isFalse);
+    },
+  );
+
+  blocTest<CollectionBloc, CollectionState>(
     'a draw refreshes the collection, so the wallet is never stale',
     build: build,
     seed: () => CollectionReady(
