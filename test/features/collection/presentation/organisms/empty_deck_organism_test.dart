@@ -73,12 +73,15 @@ void main() {
         .map((t) => t.data)
         .whereType<String>()
         .where((s) =>
-            s.endsWith('rare') || s.endsWith('uncommon') || s.endsWith('common'))
+            s.endsWith('rare') ||
+            s.endsWith('uncommon') ||
+            s.endsWith('common'))
         .toList();
     expect(chips, ['1 rare', '2 uncommon', '3 common']);
   });
 
-  testWidgets('a rarity the deck does not contain is omitted, not shown as zero',
+  testWidgets(
+      'a rarity the deck does not contain is omitted, not shown as zero',
       (tester) async {
     _pinDesignViewport(tester);
     await tester.pumpWidget(_host(EmptyDeckOrganism(

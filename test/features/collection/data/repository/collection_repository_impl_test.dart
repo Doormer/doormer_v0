@@ -69,7 +69,8 @@ CollectionRepositoryImpl _repo(List<DrawOutcome> sequence) {
 }
 
 void main() {
-  test('a new card appears in the collection and costs the draw price', () async {
+  test('a new card appears in the collection and costs the draw price',
+      () async {
     final repo = _repo(const [
       DrawOutcome(
         card: _quadrant,
@@ -103,7 +104,8 @@ void main() {
     final outcome = await repo.draw('meridian');
 
     expect(outcome.copiesAfter, 3);
-    expect((await repo.current()).holdingsByCardId['gnomon']!.standardCopies, 3);
+    expect(
+        (await repo.current()).holdingsByCardId['gnomon']!.standardCopies, 3);
   });
 
   test('an upgrade adds a special copy and keeps the standard one', () async {
@@ -176,7 +178,8 @@ void main() {
     expect(second.card.id, 'quadrant', reason: 'sequence restarts at the top');
   });
 
-  test('converting pays the rarity value and removes exactly one copy', () async {
+  test('converting pays the rarity value and removes exactly one copy',
+      () async {
     final repo = _repo(const []);
     await repo.load();
 

@@ -25,7 +25,9 @@ const _gnomon = CollectibleCard(
 );
 
 Collection _collection({int wallet = 120}) => Collection(
-      decks: const [Deck(id: 'meridian', name: 'Meridian', cards: [_gnomon])],
+      decks: const [
+        Deck(id: 'meridian', name: 'Meridian', cards: [_gnomon])
+      ],
       holdingsByCardId: const {
         'gnomon': Holding(
           card: _gnomon,
@@ -83,7 +85,8 @@ void main() {
     act: (bloc) => bloc.add(const CollectionStarted()),
     expect: () => [
       isA<CollectionLoading>(),
-      isA<CollectionReady>().having((s) => s.selectedDeckId, 'selectedDeckId', isNull),
+      isA<CollectionReady>()
+          .having((s) => s.selectedDeckId, 'selectedDeckId', isNull),
     ],
   );
 
@@ -93,20 +96,23 @@ void main() {
     seed: () => CollectionReady(collection: _collection()),
     act: (bloc) => bloc.add(const DeckSelected('meridian')),
     expect: () => [
-      isA<CollectionReady>().having((s) => s.selectedDeckId, 'selectedDeckId', 'meridian'),
+      isA<CollectionReady>()
+          .having((s) => s.selectedDeckId, 'selectedDeckId', 'meridian'),
     ],
   );
 
   blocTest<CollectionBloc, CollectionState>(
     'a draw goes through drawing, then holds the outcome for the reveal',
     build: build,
-    seed: () => CollectionReady(collection: _collection(), selectedDeckId: 'meridian'),
+    seed: () =>
+        CollectionReady(collection: _collection(), selectedDeckId: 'meridian'),
     act: (bloc) => bloc.add(const DrawRequested()),
     expect: () => [
       isA<CollectionReady>().having((s) => s.isDrawing, 'isDrawing', isTrue),
       isA<CollectionReady>()
           .having((s) => s.isDrawing, 'isDrawing', isFalse)
-          .having((s) => s.pendingReveal?.kind, 'reveal kind', DrawResultKind.duplicate),
+          .having((s) => s.pendingReveal?.kind, 'reveal kind',
+              DrawResultKind.duplicate),
     ],
   );
 
@@ -150,7 +156,8 @@ void main() {
     verify: (bloc) {
       final state = bloc.state as CollectionReady;
       expect(state.selectedDeckId, isNull,
-          reason: 'the student left the deck; the draw must not drag them back');
+          reason:
+              'the student left the deck; the draw must not drag them back');
       expect(state.isDrawing, isFalse);
     },
   );
@@ -190,7 +197,8 @@ void main() {
     ),
     act: (bloc) => bloc.add(const RevealDismissed()),
     expect: () => [
-      isA<CollectionReady>().having((s) => s.pendingReveal, 'pendingReveal', isNull),
+      isA<CollectionReady>()
+          .having((s) => s.pendingReveal, 'pendingReveal', isNull),
     ],
   );
 
@@ -200,14 +208,16 @@ void main() {
       repository.failDraw = true;
       return build();
     },
-    seed: () => CollectionReady(collection: _collection(), selectedDeckId: 'meridian'),
+    seed: () =>
+        CollectionReady(collection: _collection(), selectedDeckId: 'meridian'),
     act: (bloc) => bloc.add(const DrawRequested()),
     expect: () => [
       isA<CollectionReady>().having((s) => s.isDrawing, 'isDrawing', isTrue),
       isA<CollectionReady>()
           .having((s) => s.isDrawing, 'isDrawing', isFalse)
           .having((s) => s.pendingReveal, 'pendingReveal', isNull)
-          .having((s) => s.errorMessage, 'errorMessage', 'Not enough points for a draw.'),
+          .having((s) => s.errorMessage, 'errorMessage',
+              'Not enough points for a draw.'),
     ],
   );
 

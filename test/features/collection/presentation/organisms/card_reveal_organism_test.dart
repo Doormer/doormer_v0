@@ -71,7 +71,11 @@ void main() {
       DrawResultKind.duplicate: 'Another one',
     }.entries) {
       await tester.pumpWidget(_host(CardRevealOrganism(
-        params: RevealParams(outcome: _outcome(entry.key), onDismiss: () {}),
+        params: RevealParams(
+          outcome: _outcome(entry.key),
+          supportingLine: 'Meridian is 5 of 6',
+          onDismiss: () {},
+        ),
       )));
       await tester.pumpAndSettle();
       expect(find.text(entry.value), findsOneWidget);
@@ -83,6 +87,7 @@ void main() {
     await tester.pumpWidget(_host(
       CardRevealOrganism(
         params: RevealParams(
+          supportingLine: 'Meridian is 5 of 6',
           outcome: _outcome(DrawResultKind.newCard),
           onDismiss: () {},
         ),
@@ -102,6 +107,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(_host(CardRevealOrganism(
       params: RevealParams(
+        supportingLine: 'Meridian is 5 of 6',
         outcome: _outcome(DrawResultKind.newCard),
         onDismiss: () {},
       ),
@@ -121,6 +127,7 @@ void main() {
 
     await tester.pumpWidget(_host(CardRevealOrganism(
       params: RevealParams(
+        supportingLine: 'Meridian is 5 of 6',
         outcome: _outcome(DrawResultKind.newCard),
         onDismiss: () {},
       ),
@@ -167,6 +174,7 @@ void main() {
       await tester.pumpWidget(_host(CardRevealOrganism(
         key: ValueKey(rarity),
         params: RevealParams(
+          supportingLine: 'Meridian is 5 of 6',
           outcome: DrawOutcome(
             card: CollectibleCard(
               id: 'x',
@@ -211,6 +219,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(_host(CardRevealOrganism(
       params: RevealParams(
+        supportingLine: 'Meridian is 5 of 6',
         outcome: _outcome(DrawResultKind.newCard),
         onDismiss: () {},
       ),
@@ -233,6 +242,7 @@ void main() {
       await tester.pumpWidget(_host(CardRevealOrganism(
         key: ValueKey('tell-${rarity.name}'),
         params: RevealParams(
+          supportingLine: 'Meridian is 5 of 6',
           outcome: DrawOutcome(
             card: CollectibleCard(
               id: 'x',
@@ -276,6 +286,7 @@ void main() {
     var dismissed = 0;
     await tester.pumpWidget(_host(CardRevealOrganism(
       params: RevealParams(
+        supportingLine: 'Meridian is 5 of 6',
         outcome: _outcome(DrawResultKind.newCard),
         onDismiss: () => dismissed++,
       ),
@@ -294,6 +305,7 @@ void main() {
 
     await tester.pumpWidget(_host(CardRevealOrganism(
       params: RevealParams(
+        supportingLine: 'Meridian is 5 of 6',
         outcome: _outcome(DrawResultKind.newCard),
         onDismiss: () {},
       ),
@@ -339,6 +351,7 @@ void main() {
       await tester.pumpWidget(_host(CardRevealOrganism(
         key: ValueKey(card.rarity),
         params: RevealParams(
+          supportingLine: 'Meridian is 5 of 6',
           outcome: _outcome(DrawResultKind.newCard, card: card),
           onDismiss: () {},
         ),
@@ -379,6 +392,7 @@ void main() {
 
     await tester.pumpWidget(_host(CardRevealOrganism(
       params: RevealParams(
+        supportingLine: 'Meridian is 5 of 6',
         outcome: _outcome(DrawResultKind.newCard, card: _rareCard),
         onDismiss: () {},
       ),
@@ -400,6 +414,7 @@ void main() {
     await tester.pumpWidget(_host(
       CardRevealOrganism(
         params: RevealParams(
+          supportingLine: 'Meridian is 5 of 6',
           outcome: _outcome(DrawResultKind.newCard, card: _rareCard),
           onDismiss: () {},
         ),
@@ -424,6 +439,7 @@ void main() {
 
     await tester.pumpWidget(_host(CardRevealOrganism(
       params: RevealParams(
+        supportingLine: 'Meridian is 5 of 6',
         outcome: _outcome(DrawResultKind.newCard), // common
         onDismiss: () {},
       ),
@@ -448,6 +464,7 @@ void main() {
     await tester.pumpWidget(_host(
       CardRevealOrganism(
         params: RevealParams(
+          supportingLine: 'Meridian is 5 of 6',
           outcome: _outcome(DrawResultKind.newCard),
           onDismiss: () {},
         ),

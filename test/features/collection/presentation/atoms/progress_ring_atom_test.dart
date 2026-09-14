@@ -6,23 +6,27 @@ import 'package:flutter_test/flutter_test.dart';
 
 Widget _host(Widget child) => ScreenUtilInit(
       designSize: const Size(360, 690),
-      builder: (_, __) => MaterialApp(home: Scaffold(body: Center(child: child))),
+      builder: (_, __) =>
+          MaterialApp(home: Scaffold(body: Center(child: child))),
     );
 
 void main() {
   testWidgets('shows the held count as digits', (tester) async {
-    await tester.pumpWidget(_host(const ProgressRingAtom(held: 147, total: 200)));
+    await tester
+        .pumpWidget(_host(const ProgressRingAtom(held: 147, total: 200)));
     expect(find.text('147'), findsOneWidget);
   });
 
-  testWidgets('a complete deck rings mint, matching a completed card', (tester) async {
+  testWidgets('a complete deck rings mint, matching a completed card',
+      (tester) async {
     await tester.pumpWidget(_host(const ProgressRingAtom(held: 6, total: 6)));
     final atom = tester.widget<ProgressRingAtom>(find.byType(ProgressRingAtom));
     expect(atom.isComplete, isTrue);
     expect(atom.ringColour, QuestPalette.mint);
   });
 
-  testWidgets('an untouched deck is not complete and does not ring mint', (tester) async {
+  testWidgets('an untouched deck is not complete and does not ring mint',
+      (tester) async {
     await tester.pumpWidget(_host(const ProgressRingAtom(held: 0, total: 9)));
     final atom = tester.widget<ProgressRingAtom>(find.byType(ProgressRingAtom));
     expect(atom.isComplete, isFalse);

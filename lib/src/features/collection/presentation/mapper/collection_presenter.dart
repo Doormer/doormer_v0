@@ -1,4 +1,5 @@
 import '../../domain/entity/collection.dart';
+import '../../domain/entity/draw_outcome.dart';
 import '../params/deck_row_params.dart';
 import '../params/empty_deck_params.dart';
 
@@ -40,5 +41,28 @@ class CollectionPresenter {
       pointsShort: collection.pointsShortOfDraw,
       onDraw: onDraw,
     );
+  }
+
+  /// The quiet line under a reveal's headline.
+  ///
+  /// Transcribed from the mockup's three outcomes: deck progress for a new
+  /// card, reassurance that the plain copy survives an upgrade, and what a
+  /// spare is worth for a duplicate. The headline says what happened; this
+  /// says what it means.
+  static String revealSupportingLine({
+    required Collection collection,
+    required DrawOutcome outcome,
+  }) {
+    switch (outcome.kind) {
+      case DrawResultKind.newCard:
+        final deck =
+            collection.decks.firstWhere((d) => d.id == outcome.card.deckId);
+        return '${deck.name} is '
+            '${collection.heldCountFor(deck.id)} of ${deck.size}';
+      case DrawResultKind.upgrade:
+        return 'You keep the standard one.';
+      case DrawResultKind.duplicate:
+        return 'Trade one for ${outcome.card.rarity.conversionValue} points';
+    }
   }
 }

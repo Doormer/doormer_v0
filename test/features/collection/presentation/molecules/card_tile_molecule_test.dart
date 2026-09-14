@@ -108,7 +108,8 @@ void main() {
       (tester) async {
     await tester.pumpWidget(_host(
       CardTileMolecule(
-        holding: const Holding(card: _card, standardCopies: 1, specialCopies: 0),
+        holding:
+            const Holding(card: _card, standardCopies: 1, specialCopies: 0),
         width: 104,
         onTap: () {},
       ),
@@ -126,8 +127,8 @@ void main() {
 
     expect(liftY(), 0.0, reason: 'resting flat before any press');
 
-    final gesture =
-        await tester.startGesture(tester.getCenter(find.byType(CardTileMolecule)));
+    final gesture = await tester
+        .startGesture(tester.getCenter(find.byType(CardTileMolecule)));
     await tester.pump(const Duration(milliseconds: 150));
     expect(liftY(), lessThan(0.0), reason: 'pressing should lift the tile');
 

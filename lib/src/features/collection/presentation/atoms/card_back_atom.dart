@@ -86,8 +86,10 @@ class LatticePainter extends CustomPainter {
     // Start a full height to the left so the down-right diagonals still cover
     // the top-left corner.
     for (double x = -size.height; x < size.width + size.height; x += spacing) {
-      canvas.drawLine(Offset(x, 0), Offset(x + size.height, size.height), paint);
-      canvas.drawLine(Offset(x, size.height), Offset(x + size.height, 0), paint);
+      canvas.drawLine(
+          Offset(x, 0), Offset(x + size.height, size.height), paint);
+      canvas.drawLine(
+          Offset(x, size.height), Offset(x + size.height, 0), paint);
     }
   }
 

@@ -55,7 +55,9 @@ void main() {
       final gnomon = _card('gnomon', Rarity.common);
       final vernier = _card('vernier', Rarity.common);
       final collection = Collection(
-        decks: [Deck(id: 'meridian', name: 'Meridian', cards: [gnomon, vernier])],
+        decks: [
+          Deck(id: 'meridian', name: 'Meridian', cards: [gnomon, vernier])
+        ],
         holdingsByCardId: {
           'gnomon': Holding(card: gnomon, standardCopies: 5, specialCopies: 0),
         },
@@ -68,7 +70,12 @@ void main() {
 
     test('a deck with nothing held reports zero', () {
       final collection = Collection(
-        decks: [Deck(id: 'cinder', name: 'Cinder', cards: [_card('flint', Rarity.common, deckId: 'cinder')])],
+        decks: [
+          Deck(
+              id: 'cinder',
+              name: 'Cinder',
+              cards: [_card('flint', Rarity.common, deckId: 'cinder')])
+        ],
         holdingsByCardId: const {},
         walletPoints: 15,
         drawCost: 40,

@@ -8,6 +8,7 @@ import '../organisms/card_detail_organism.dart';
 import '../organisms/card_reveal_organism.dart';
 import '../params/card_detail_params.dart';
 import '../params/reveal_params.dart';
+import '../mapper/collection_presenter.dart';
 import '../templates/collection_template.dart';
 
 /// The only widget in this feature that touches `flutter_bloc`.
@@ -87,6 +88,10 @@ class _CollectionView extends StatelessWidget {
                 child: CardRevealOrganism(
                   params: RevealParams(
                     outcome: ready.pendingReveal!,
+                    supportingLine: CollectionPresenter.revealSupportingLine(
+                      collection: ready.collection,
+                      outcome: ready.pendingReveal!,
+                    ),
                     onDismiss: () => bloc.add(const RevealDismissed()),
                   ),
                 ),

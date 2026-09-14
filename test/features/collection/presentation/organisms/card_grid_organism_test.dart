@@ -24,8 +24,8 @@ Holding _holding(String id, {int copies = 1}) => Holding(
 
 Widget _host(Widget child, {double width = 550}) => ScreenUtilInit(
       designSize: const Size(360, 690),
-      builder: (_, __) =>
-          MaterialApp(home: Scaffold(body: SizedBox(width: width, child: child))),
+      builder: (_, __) => MaterialApp(
+          home: Scaffold(body: SizedBox(width: width, child: child))),
     );
 
 void main() {
@@ -93,7 +93,8 @@ void main() {
 
     // Each tile arrives through RiseInAtom, a beat behind the one before it —
     // rather than the whole grid appearing at once.
-    final risers = tester.widgetList<RiseInAtom>(find.byType(RiseInAtom)).toList();
+    final risers =
+        tester.widgetList<RiseInAtom>(find.byType(RiseInAtom)).toList();
     expect(risers.map((w) => w.order).toList(), [0, 1, 2]);
 
     final tiles = find.byType(CardTileMolecule);

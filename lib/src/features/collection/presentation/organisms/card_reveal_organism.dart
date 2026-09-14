@@ -421,6 +421,24 @@ class CardRevealState extends State<CardRevealOrganism>
                       ),
                     ),
                   ),
+                  // The mockup pairs every headline with a quiet line: the
+                  // headline says what happened, this says what it means.
+                  if (widget.params.supportingLine.isNotEmpty)
+                    Opacity(
+                      opacity: _landing.value,
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 11.h),
+                        child: Text(
+                          widget.params.supportingLine,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 10.5.sp,
+                            height: 1.45,
+                            color: QuestPalette.muted,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               );
             },

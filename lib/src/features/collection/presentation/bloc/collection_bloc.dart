@@ -42,7 +42,8 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     } on Failure catch (failure) {
       emit(CollectionFailed(failure.message));
     } catch (e, stackTrace) {
-      AppLogger.error('Collection load failed', error: e, stackTrace: stackTrace);
+      AppLogger.error('Collection load failed',
+          error: e, stackTrace: stackTrace);
       emit(const CollectionFailed('We could not open your collection.'));
     }
   }

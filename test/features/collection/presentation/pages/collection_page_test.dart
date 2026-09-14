@@ -212,6 +212,40 @@ void main() {
         reason: 'the wallet must follow the student to where they spend');
   });
 
+  testWidgets('every reveal pairs its headline with a supporting line',
+      (tester) async {
+    await _pumpPhone(tester);
+    await tester.tap(find.widgetWithText(DeckRowMolecule, 'Meridian'));
+    await tester.pumpAndSettle();
+
+    // 1. Upgrade — the mockup reassures that the plain copy survives.
+    await tester.tap(find.textContaining('Draw a card').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1700));
+    expect(find.text('Now special'), findsOneWidget);
+    expect(find.text('You keep the standard one.'), findsOneWidget);
+    await tester.tap(find.byType(CardRevealOrganism));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // 2. New card — deck progress, in digits.
+    await tester.tap(find.textContaining('Draw a card').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1700));
+    expect(find.text('A new one'), findsOneWidget);
+    expect(find.text('Meridian is 5 of 6'), findsOneWidget);
+    await tester.tap(find.byType(CardRevealOrganism));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // 3. Duplicate — what the spare is worth. Gnomon is common, so 5.
+    await tester.tap(find.textContaining('Draw a card').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1700));
+    expect(find.text('Another one'), findsOneWidget);
+    expect(find.text('Trade one for 5 points'), findsOneWidget);
+  });
+
   testWidgets('tapping a card opens its detail, and it can be closed',
       (tester) async {
     await _pumpPhone(tester);
