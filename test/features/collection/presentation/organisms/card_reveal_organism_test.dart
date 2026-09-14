@@ -3,6 +3,7 @@ import 'package:doormer/src/features/collection/domain/entity/collectible_card.d
 import 'package:doormer/src/features/collection/domain/entity/draw_outcome.dart';
 import 'package:doormer/src/features/collection/presentation/organisms/card_reveal_organism.dart';
 import 'package:doormer/src/features/collection/presentation/params/reveal_params.dart';
+import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -90,7 +91,8 @@ void main() {
     ));
     await tester.pump();
 
-    final state = tester.state<CardRevealState>(find.byType(CardRevealOrganism));
+    final state =
+        tester.state<CardRevealState>(find.byType(CardRevealOrganism));
     expect(state.rotation, closeTo(1.0, 0.001),
         reason: 'must arrive at the face-up end, never stop mid-flip');
     expect(find.text('Gnomon'), findsOneWidget);
@@ -124,7 +126,8 @@ void main() {
       ),
     )));
 
-    final state = tester.state<CardRevealState>(find.byType(CardRevealOrganism));
+    final state =
+        tester.state<CardRevealState>(find.byType(CardRevealOrganism));
     var peakLift = 0.0;
     var peakScale = 1.0;
     var minGround = 1.0;
@@ -154,6 +157,71 @@ void main() {
         reason: 'the card must be at full height at the moment it is edge-on');
   });
 
+  testWidgets('the tell is a ladder across rarities, not a switch',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 690);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    Future<double> peakGlowFor(Rarity rarity) async {
+      await tester.pumpWidget(_host(CardRevealOrganism(
+        key: ValueKey(rarity),
+        params: RevealParams(
+          outcome: DrawOutcome(
+            card: CollectibleCard(
+              id: 'x',
+              name: 'X',
+              deckId: 'meridian',
+              rarity: rarity,
+              scaleLabel: 'S',
+              artAsset: 'assets/cards/meridian/gnomon.png',
+              description: 'd',
+            ),
+            variant: CardVariant.standard,
+            kind: DrawResultKind.newCard,
+            copiesAfter: 1,
+          ),
+          onDismiss: () {},
+        ),
+      )));
+      final state =
+          tester.state<CardRevealState>(find.byType(CardRevealOrganism));
+      var peak = 0.0;
+      for (var i = 0; i < 90; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+        if (state.glowOpacity > peak) peak = state.glowOpacity;
+      }
+      return peak;
+    }
+
+    final common = await peakGlowFor(Rarity.common);
+    final uncommon = await peakGlowFor(Rarity.uncommon);
+    final rare = await peakGlowFor(Rarity.rare);
+
+    // The spec's phase table: "Glow builds — strength scales with rarity".
+    // Gating the glow on `isRare` made this a switch, and left a common draw
+    // with no tell at all, which reads as a draw that failed.
+    expect(common, greaterThan(0.0),
+        reason: 'a common draw still settles, softly');
+    expect(uncommon, greaterThan(common));
+    expect(rare, greaterThan(uncommon));
+  });
+
+  testWidgets('a common draw settles in violet, because brass means rare',
+      (tester) async {
+    await tester.pumpWidget(_host(CardRevealOrganism(
+      params: RevealParams(
+        outcome: _outcome(DrawResultKind.newCard),
+        onDismiss: () {},
+      ),
+    )));
+    final state =
+        tester.state<CardRevealState>(find.byType(CardRevealOrganism));
+    expect(state.tellColour, QuestPalette.violet,
+        reason:
+            'brass is the rarity language; a common draw must not borrow it');
+  });
+
   testWidgets('tapping dismisses', (tester) async {
     var dismissed = 0;
     await tester.pumpWidget(_host(CardRevealOrganism(
@@ -181,7 +249,8 @@ void main() {
       ),
     )));
 
-    final state = tester.state<CardRevealState>(find.byType(CardRevealOrganism));
+    final state =
+        tester.state<CardRevealState>(find.byType(CardRevealOrganism));
 
     // Mid-flip: the card is still turning, so the result must not be announced.
     await tester.pump(const Duration(milliseconds: 850));
@@ -206,7 +275,6 @@ void main() {
     // excluded — they belong to every rarity, so they would not distinguish
     // the two draws.
     const flourishKeys = [
-      'reveal-glow',
       'reveal-rays',
       'reveal-ring-1',
       'reveal-ring-2',
@@ -238,6 +306,11 @@ void main() {
 
     expect(rare, flourishKeys.length,
         reason: 'a rare draw should show every flourish layer');
+    // The glow is deliberately NOT in that list: it is the tell, and the spec
+    // grades its strength by rarity rather than switching it off. What a
+    // common draw must not have is rays, rings, motes and sweep.
+    expect(find.byKey(const ValueKey('reveal-glow')), findsOneWidget,
+        reason: 'even a common draw settles, softly');
     expect(common, 0,
         reason: 'if every draw bloomed, none would mean anything');
     expect(rare, greaterThan(common));
@@ -261,7 +334,8 @@ void main() {
       ),
     )));
 
-    final state = tester.state<CardRevealState>(find.byType(CardRevealOrganism));
+    final state =
+        tester.state<CardRevealState>(find.byType(CardRevealOrganism));
 
     // Mid-tell (0.12-0.40 of 1600ms): 400ms sits comfortably inside it.
     await tester.pump(const Duration(milliseconds: 400));
@@ -284,7 +358,8 @@ void main() {
     ));
     await tester.pump();
 
-    final state = tester.state<CardRevealState>(find.byType(CardRevealOrganism));
+    final state =
+        tester.state<CardRevealState>(find.byType(CardRevealOrganism));
     expect(state.flourishRunning, isFalse,
         reason:
             'a continuously-repeating loop must not run when motion is off');
@@ -304,7 +379,8 @@ void main() {
       ),
     )));
 
-    final state = tester.state<CardRevealState>(find.byType(CardRevealOrganism));
+    final state =
+        tester.state<CardRevealState>(find.byType(CardRevealOrganism));
 
     // Mid-flip (0.40-0.66 of 1600ms): 850ms sits comfortably inside it.
     await tester.pump(const Duration(milliseconds: 850));
@@ -329,7 +405,8 @@ void main() {
       reduceMotion: true,
     ));
     await tester.pump();
-    final state = tester.state<CardRevealState>(find.byType(CardRevealOrganism));
+    final state =
+        tester.state<CardRevealState>(find.byType(CardRevealOrganism));
     expect(state.headlineOpacity, closeTo(1.0, 0.001),
         reason: 'motion off must cost movement, never information');
   });

@@ -77,9 +77,34 @@ class CardRevealState extends State<CardRevealOrganism>
   /// How far the headline has arrived, 0 hidden to 1 fully shown.
   double get headlineOpacity => _landing.value;
 
-  bool get _isRare => widget.params.outcome.card.rarity == Rarity.rare;
+  Rarity get _rarity => widget.params.outcome.card.rarity;
+
+  bool get _isRare => _rarity == Rarity.rare;
 
   bool get _flourishWanted => _isRare && MotionPolicy.idle(context);
+
+  /// How strong the tell is for this rarity.
+  ///
+  /// The spec's phase table says the glow's "strength scales with rarity", so
+  /// this is a ladder rather than a switch. A common draw still gets something
+  /// — the mockup calls it "a soft violet settle" — because a draw that does
+  /// nothing at all reads as a draw that failed.
+  double get tellStrength {
+    switch (_rarity) {
+      case Rarity.common:
+        return 0.34;
+      case Rarity.uncommon:
+        return 0.62;
+      case Rarity.rare:
+        return 1.0;
+    }
+  }
+
+  /// Brass is the rarity language everywhere in this feature, so a common draw
+  /// settles in violet instead — present, but not claiming to be scarce.
+  Color get tellColour => _isRare || _rarity == Rarity.uncommon
+      ? QuestPalette.amber
+      : QuestPalette.violet;
 
   /// Whether the decorative ray loop is actually spinning right now. Exposed
   /// so a test can prove reduced motion stops it, instead of trusting
@@ -88,7 +113,7 @@ class CardRevealState extends State<CardRevealOrganism>
 
   /// How visible the rare "tell" glow is, already folded down to zero for a
   /// common draw — this is what actually renders, not a raw shape.
-  double get glowOpacity => _isRare ? _glowShapeFor(_controller.value) : 0.0;
+  double get glowOpacity => _glowShapeFor(_controller.value) * tellStrength;
 
   /// How far the card has lifted off the table, in design pixels before
   /// screen scaling. Zero back and landed; negative — risen — mid-flip.
@@ -178,6 +203,8 @@ class CardRevealState extends State<CardRevealOrganism>
   Widget build(BuildContext context) {
     final outcome = widget.params.outcome;
     final showFlourish = _flourishWanted;
+    // The tell runs at every rarity; only its strength and colour change.
+    final showTell = MotionPolicy.idle(context);
     final cardW = _cardDesignWidth.w;
     final cardH = cardW / CollectibleCardAtom.aspectRatio;
 
@@ -249,8 +276,14 @@ class CardRevealState extends State<CardRevealOrganism>
 
                       // 3. Glow — builds in the tell, peaks on landing,
                       // settles. Scaled by [glowScaleX] so it foreshortens
-                      // with the card. Rare only.
-                      if (showFlourish)
+                      // with the card.
+                      //
+                      // Every rarity, not just rare: its strength and colour
+                      // come from [tellStrength] and [tellColour], which is
+                      // what "the glow builds, strength scales with rarity"
+                      // means. Gating it on rare made the ladder a switch and
+                      // left a common draw with no tell at all.
+                      if (showTell)
                         Positioned(
                           left: -9.w,
                           right: -9.w,
@@ -266,8 +299,8 @@ class CardRevealState extends State<CardRevealOrganism>
                                 borderRadius: BorderRadius.circular(18.r),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: QuestPalette.amber
-                                        .withValues(alpha: 0.6 * glowOpacity),
+                                    color: tellColour.withValues(
+                                        alpha: 0.6 * glowOpacity),
                                     blurRadius: 70 * glowOpacity,
                                     spreadRadius: 22 * glowOpacity,
                                   ),
