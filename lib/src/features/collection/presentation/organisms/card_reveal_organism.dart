@@ -486,6 +486,10 @@ class CardRevealState extends State<CardRevealOrganism>
       card: outcome.card,
       width: 126,
       copies: outcome.copiesAfter,
+      // The printing just drawn, not the whole holding: an upgrade has to look
+      // special at the moment it is announced, which is the only time the word
+      // appears.
+      isSpecial: outcome.variant == CardVariant.special,
     );
 
     return Stack(

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:doormer/src/features/collection/data/datasource/collection_local_datasource.dart';
 import 'package:doormer/src/features/collection/di/collection_module.dart';
+import 'package:doormer/src/features/collection/presentation/atoms/collectible_card_atom.dart';
 import 'package:doormer/src/features/collection/presentation/molecules/card_tile_molecule.dart';
 import 'package:doormer/src/features/collection/presentation/molecules/deck_row_molecule.dart';
 import 'package:doormer/src/features/collection/presentation/organisms/card_detail_organism.dart';
@@ -244,6 +245,24 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1700));
     expect(find.text('Another one'), findsOneWidget);
     expect(find.text('Trade one for 5 points'), findsOneWidget);
+  });
+
+  testWidgets('an upgrade is still visible after the reveal is dismissed',
+      (tester) async {
+    await _pumpPhone(tester);
+    await tester.tap(find.widgetWithText(DeckRowMolecule, 'Meridian'));
+    await tester.pumpAndSettle();
+
+    // The Orrery already has a plain copy; the first draw upgrades it.
+    Iterable<CollectibleCardAtom> specials() => tester
+        .widgetList<CollectibleCardAtom>(find.byType(CollectibleCardAtom))
+        .where((c) => c.isSpecial);
+
+    final before = specials().length;
+    await _drawAndDismiss(tester);
+
+    expect(specials().length, greaterThan(before),
+        reason: '"Now special" must leave something behind in the grid');
   });
 
   testWidgets('tapping a card opens its detail, and it can be closed',

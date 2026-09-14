@@ -23,12 +23,20 @@ class CollectibleCardAtom extends StatelessWidget {
   /// one*, and a badge reading ×1 would be noise on every card.
   final int copies;
 
+  /// Whether a special printing is held.
+  ///
+  /// Without this a special copy is indistinguishable from a plain one the
+  /// moment the reveal is dismissed, so "Now special" would announce something
+  /// the collection then never shows again.
+  final bool isSpecial;
+
   const CollectibleCardAtom({
     super.key,
     required this.card,
     required this.width,
     this.showScale = true,
     this.copies = 1,
+    this.isSpecial = false,
   });
 
   /// The halo for a rarity, or null when it should not glow at all.
@@ -103,6 +111,31 @@ class CollectibleCardAtom extends StatelessWidget {
                 ),
               ),
             ),
+            // The special printing: a static diagonal mirror polish, sitting
+            // above the art and below the name. The card brief calls it
+            // "mirror polish"; it is deliberately still, unlike the sweep that
+            // crosses the card once during a rare reveal.
+            if (isSpecial)
+              const Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment(-1.0, -0.6),
+                        end: Alignment(1.0, 0.6),
+                        stops: [0.30, 0.44, 0.50, 0.56, 0.70],
+                        colors: [
+                          Color(0x00FFFFFF),
+                          Color(0x80FFFFFF),
+                          Color(0xBFFFF4D6),
+                          Color(0x73FFFFFF),
+                          Color(0x00FFFFFF),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             if (copies > 1)
               Positioned(
                 top: 6.h,

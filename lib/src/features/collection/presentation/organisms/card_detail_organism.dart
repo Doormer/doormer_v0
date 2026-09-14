@@ -157,7 +157,11 @@ class CardDetailOrganism extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Center(
-                          child: CollectibleCardAtom(card: card, width: 158),
+                          child: CollectibleCardAtom(
+                            card: card,
+                            width: 158,
+                            isSpecial: holding.hasSpecial,
+                          ),
                         ),
                         SizedBox(height: 14.h),
                         facts,
@@ -168,7 +172,11 @@ class CardDetailOrganism extends StatelessWidget {
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CollectibleCardAtom(card: card, width: 132),
+                      CollectibleCardAtom(
+                        card: card,
+                        width: 132,
+                        isSpecial: holding.hasSpecial,
+                      ),
                       SizedBox(width: 18.w),
                       Expanded(child: facts),
                     ],

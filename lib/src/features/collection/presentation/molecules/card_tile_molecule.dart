@@ -104,6 +104,7 @@ class _CardTileMoleculeState extends State<CardTileMolecule> {
               card: widget.holding.card,
               width: widget.width,
               copies: copies,
+              isSpecial: widget.holding.hasSpecial,
             ),
           ],
         ),

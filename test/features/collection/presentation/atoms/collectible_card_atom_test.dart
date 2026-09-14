@@ -66,6 +66,33 @@ void main() {
     expect(find.byKey(const Key('card-copies-badge')), findsOneWidget);
   });
 
+  testWidgets('a special printing is visibly different from a plain one',
+      (tester) async {
+    // "Now special" is announced once at the reveal. Without a treatment on
+    // the card itself, that upgrade is invisible everywhere afterwards and the
+    // student has no way to tell the two printings apart.
+    Iterable<DecoratedBox> gradientOverlays() => tester
+        .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+        .where((d) => (d.decoration as BoxDecoration).gradient != null);
+
+    await tester.pumpWidget(_host(
+      CollectibleCardAtom(card: _card(Rarity.uncommon), width: 132),
+    ));
+    final plain = gradientOverlays().length;
+
+    await tester.pumpWidget(_host(
+      CollectibleCardAtom(
+        card: _card(Rarity.uncommon),
+        width: 132,
+        isSpecial: true,
+      ),
+    ));
+    final special = gradientOverlays().length;
+
+    expect(special, greaterThan(plain),
+        reason: 'the special printing adds the mirror-polish sheen');
+  });
+
   testWidgets('the card keeps a 2:3 shape at any width', (tester) async {
     // The default 800x600 test viewport is shorter than 690 design px, so a
     // 200-wide card (scaled up from the 800-wide viewport) would be clipped
