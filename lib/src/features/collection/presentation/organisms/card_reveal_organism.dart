@@ -83,37 +83,91 @@ class CardRevealState extends State<CardRevealOrganism>
 
   bool get _flourishWanted => _isRare && MotionPolicy.idle(context);
 
-  /// How strong the tell is for this rarity.
+  /// Whether the decorative ray loop is actually spinning right now. Exposed
+  /// so a test can prove reduced motion stops it, instead of reaching into
+  /// private state.
+  bool get flourishRunning => _rayController.isAnimating;
+
+  /// The glow's opacity over the whole reveal, transcribed from the mockup's
+  /// own keyframes rather than scaled from a single shape.
   ///
-  /// The spec's phase table says the glow's "strength scales with rarity", so
-  /// this is a ladder rather than a switch. A common draw still gets something
-  /// — the mockup calls it "a soft violet settle" — because a draw that does
-  /// nothing at all reads as a draw that failed.
+  /// The two tiers are not the same curve at different volumes — they differ
+  /// in *when* they happen. The rare glow (`gO`) starts building at 26% and is
+  /// full at 38%, before the card has turned: that IS the tell, and the
+  /// anticipation mockup describes it as "the brass glow builds before the
+  /// card resolves, so you know it is rare a moment early". The common glow
+  /// (`cgO`) is flat zero until 40% and only appears as the card lands. A
+  /// common draw has no tell, because a tell that every draw had would tell
+  /// you nothing.
+  double get glowOpacity {
+    final t = _controller.value;
+    if (_isRare) {
+      return _piecewise(
+        t,
+        const [0.0, 0.119, 0.26, 0.38, 0.478, 0.66, 0.779, 1.0],
+        const [0.0, 0.0, 0.5, 1.0, 0.5, 1.0, 0.9, 0.85],
+      );
+    }
+    // Uncommon sits between the two: no tell, so the tell stays a rare
+    // signal, but a stronger landing settle than a common draw gets.
+    final peak = _rarity == Rarity.uncommon ? 0.75 : 0.55;
+    final rest = _rarity == Rarity.uncommon ? 0.5 : 0.35;
+    return _piecewise(
+      t,
+      const [0.0, 0.40, 0.66, 1.0],
+      [0.0, 0.0, peak, rest],
+    );
+  }
+
+  /// Blur radius, in the mockup's own units: rare 20 → 74 → 44 → 34,
+  /// common 22 → 12. A common settle is a tenth of the rare bloom.
+  double get glowBlur {
+    final t = _controller.value;
+    if (_isRare) {
+      return _piecewise(
+        t,
+        const [0.0, 0.119, 0.66, 0.779, 1.0],
+        const [20.0, 20.0, 74.0, 44.0, 34.0],
+      );
+    }
+    final peak = _rarity == Rarity.uncommon ? 34.0 : 22.0;
+    return _piecewise(
+        t, const [0.0, 0.40, 0.66, 1.0], [peak, peak, peak, 12.0]);
+  }
+
+  /// Spread radius: rare 4 → 26 → 12 → 9, common 3 → 1.
+  double get glowSpread {
+    final t = _controller.value;
+    if (_isRare) {
+      return _piecewise(
+        t,
+        const [0.0, 0.119, 0.66, 0.779, 1.0],
+        const [4.0, 4.0, 26.0, 12.0, 9.0],
+      );
+    }
+    final peak = _rarity == Rarity.uncommon ? 5.0 : 3.0;
+    return _piecewise(t, const [0.0, 0.40, 0.66, 1.0], [peak, peak, peak, 1.0]);
+  }
+
+  /// Brass for rare and uncommon; a common draw settles in the pale lavender
+  /// the mockup uses, `rgba(185,174,230,…)`, which is [QuestPalette.dim].
+  /// Brass is the rarity language everywhere else, so a common draw must not
+  /// borrow it.
+  Color get tellColour =>
+      _rarity == Rarity.common ? QuestPalette.dim : QuestPalette.amber;
+
+  /// Peak glow strength for this rarity, kept for callers that only need the
+  /// ladder rather than the curve.
   double get tellStrength {
     switch (_rarity) {
       case Rarity.common:
-        return 0.34;
+        return 0.55;
       case Rarity.uncommon:
-        return 0.62;
+        return 0.75;
       case Rarity.rare:
         return 1.0;
     }
   }
-
-  /// Brass is the rarity language everywhere in this feature, so a common draw
-  /// settles in violet instead — present, but not claiming to be scarce.
-  Color get tellColour => _isRare || _rarity == Rarity.uncommon
-      ? QuestPalette.amber
-      : QuestPalette.violet;
-
-  /// Whether the decorative ray loop is actually spinning right now. Exposed
-  /// so a test can prove reduced motion stops it, instead of trusting
-  /// private state.
-  bool get flourishRunning => _rayController.isAnimating;
-
-  /// How visible the rare "tell" glow is, already folded down to zero for a
-  /// common draw — this is what actually renders, not a raw shape.
-  double get glowOpacity => _glowShapeFor(_controller.value) * tellStrength;
 
   /// How far the card has lifted off the table, in design pixels before
   /// screen scaling. Zero back and landed; negative — risen — mid-flip.
@@ -575,29 +629,6 @@ class CardRevealState extends State<CardRevealOrganism>
         const [0.0, 0.214, 0.464, 0.714, 1.0],
         const [0.75, 0.75, 0.35, 0.66, 0.75],
       );
-
-  /// The tell glow: builds through the tell — before the card has turned at
-  /// all — keeps rising through the flip, peaks just as the card lands, then
-  /// settles to a resting halo.
-  static double _glowShapeFor(double t) {
-    if (t <= CardRevealOrganism.backEnd) return 0.0;
-    if (t <= CardRevealOrganism.tellEnd) {
-      final p = (t - CardRevealOrganism.backEnd) /
-          (CardRevealOrganism.tellEnd - CardRevealOrganism.backEnd);
-      return 0.75 * Curves.easeOut.transform(p);
-    }
-    if (t <= CardRevealOrganism.flipEnd) {
-      final p = (t - CardRevealOrganism.tellEnd) /
-          (CardRevealOrganism.flipEnd - CardRevealOrganism.tellEnd);
-      return 0.75 + 0.15 * Curves.easeIn.transform(p);
-    }
-    final p =
-        ((t - CardRevealOrganism.flipEnd) / (1.0 - CardRevealOrganism.flipEnd))
-            .clamp(0.0, 1.0);
-    if (p <= 0.3) return 0.90 + 0.10 * Curves.easeOut.transform(p / 0.3);
-    final settleT = ((p - 0.3) / 0.7).clamp(0.0, 1.0);
-    return 1.0 - 0.15 * Curves.easeOut.transform(settleT);
-  }
 
   /// Rays: hidden until the landing, then fade in — with a small overshoot,
   /// as the CSS does — to about 0.42.

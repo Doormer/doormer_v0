@@ -207,7 +207,7 @@ void main() {
     expect(rare, greaterThan(uncommon));
   });
 
-  testWidgets('a common draw settles in violet, because brass means rare',
+  testWidgets('a common draw settles in the mockup pale lavender, not brass',
       (tester) async {
     await tester.pumpWidget(_host(CardRevealOrganism(
       params: RevealParams(
@@ -217,9 +217,59 @@ void main() {
     )));
     final state =
         tester.state<CardRevealState>(find.byType(CardRevealOrganism));
-    expect(state.tellColour, QuestPalette.violet,
-        reason:
-            'brass is the rarity language; a common draw must not borrow it');
+    // The landing mockup's common glow is rgba(185,174,230,...) — that is
+    // QuestPalette.dim. Brass is the rarity language everywhere else in this
+    // feature, so a common draw must not borrow it.
+    expect(state.tellColour, QuestPalette.dim);
+  });
+
+  testWidgets('only a rare draw tells you before the card turns',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 690);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    Future<double> glowBeforeTheTurn(Rarity rarity) async {
+      await tester.pumpWidget(_host(CardRevealOrganism(
+        key: ValueKey('tell-${rarity.name}'),
+        params: RevealParams(
+          outcome: DrawOutcome(
+            card: CollectibleCard(
+              id: 'x',
+              name: 'X',
+              deckId: 'meridian',
+              rarity: rarity,
+              scaleLabel: 'S',
+              artAsset: 'assets/cards/meridian/gnomon.png',
+              description: 'd',
+            ),
+            variant: CardVariant.standard,
+            kind: DrawResultKind.newCard,
+            copiesAfter: 1,
+          ),
+          onDismiss: () {},
+        ),
+      )));
+      final state =
+          tester.state<CardRevealState>(find.byType(CardRevealOrganism));
+      var peak = 0.0;
+      for (var i = 0; i < 90; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+        // Only while the card is still face-down: that is the tell.
+        if (state.rotation == 0.0 && state.glowOpacity > peak) {
+          peak = state.glowOpacity;
+        }
+      }
+      return peak;
+    }
+
+    // The mockup's common glow keyframe is flat zero until 40%, which is where
+    // the flip starts: a common draw has no tell at all. A tell that every
+    // draw had would tell you nothing.
+    expect(await glowBeforeTheTurn(Rarity.common), 0.0);
+    expect(await glowBeforeTheTurn(Rarity.uncommon), 0.0);
+    expect(await glowBeforeTheTurn(Rarity.rare), greaterThan(0.9),
+        reason: 'the brass glow builds before the card resolves');
   });
 
   testWidgets('tapping dismisses', (tester) async {
