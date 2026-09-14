@@ -262,186 +262,195 @@ class CardRevealState extends State<CardRevealOrganism>
     final cardW = _cardDesignWidth.w;
     final cardH = cardW / CollectibleCardAtom.aspectRatio;
 
-    return GestureDetector(
-      onTap: widget.params.onDismiss,
-      behavior: HitTestBehavior.opaque,
-      child: ColoredBox(
-        color: QuestPalette.night.withValues(alpha: 0.92),
-        child: Center(
-          child: AnimatedBuilder(
-            animation: Listenable.merge([_controller, _rayController]),
-            builder: (context, _) {
-              final t = _controller.value;
-              final rot = rotation;
-              final faceUp = rot >= 0.5;
+    // The reveal is mounted as a bare Stack sibling above the template, so it
+    // has no Material ancestor of its own. Without one, every Text here draws
+    // Flutter's yellow "no Material" underline. Transparency keeps the scrim
+    // exactly as it was.
+    return Material(
+      type: MaterialType.transparency,
+      child: GestureDetector(
+        onTap: widget.params.onDismiss,
+        behavior: HitTestBehavior.opaque,
+        child: ColoredBox(
+          color: QuestPalette.night.withValues(alpha: 0.92),
+          child: Center(
+            child: AnimatedBuilder(
+              animation: Listenable.merge([_controller, _rayController]),
+              builder: (context, _) {
+                final t = _controller.value;
+                final rot = rotation;
+                final faceUp = rot >= 0.5;
 
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Stack(
-                    clipBehavior: Clip.none,
-                    alignment: Alignment.center,
-                    children: [
-                      // 4. Rays — a slow, continuous starburst, rare only.
-                      if (showFlourish)
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.center,
+                      children: [
+                        // 4. Rays — a slow, continuous starburst, rare only.
+                        if (showFlourish)
+                          Positioned(
+                            left: -0.7 * cardW,
+                            right: -0.7 * cardW,
+                            top: -0.7 * cardH,
+                            bottom: -0.7 * cardH,
+                            child: CustomPaint(
+                              key: const ValueKey('reveal-rays'),
+                              painter: _RaysPainter(
+                                opacity: _rayOpacityFor(t),
+                                turns: _rayController.value,
+                              ),
+                            ),
+                          ),
+
+                        // 1. Ground shadow — every rarity. Contracts as the
+                        // card lifts, which is what sells the lift.
                         Positioned(
-                          left: -0.7 * cardW,
-                          right: -0.7 * cardW,
-                          top: -0.7 * cardH,
-                          bottom: -0.7 * cardH,
-                          child: CustomPaint(
-                            key: const ValueKey('reveal-rays'),
-                            painter: _RaysPainter(
-                              opacity: _rayOpacityFor(t),
-                              turns: _rayController.value,
+                          left: 0,
+                          right: 0,
+                          bottom: -10.h,
+                          child: Center(
+                            child: Opacity(
+                              opacity: groundOpacity,
+                              child: Transform.scale(
+                                scale: groundScale,
+                                child: Container(
+                                  key: const ValueKey('reveal-ground'),
+                                  width: cardW * 0.76,
+                                  height: 14.h,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(999.r),
+                                    gradient: RadialGradient(
+                                      colors: [
+                                        Colors.black.withValues(alpha: 0.7),
+                                        Colors.black.withValues(alpha: 0.0),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
 
-                      // 1. Ground shadow — every rarity. Contracts as the
-                      // card lifts, which is what sells the lift.
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: -10.h,
-                        child: Center(
-                          child: Opacity(
-                            opacity: groundOpacity,
-                            child: Transform.scale(
-                              scale: groundScale,
+                        // 3. Glow — builds in the tell, peaks on landing,
+                        // settles. Scaled by [glowScaleX] so it foreshortens
+                        // with the card.
+                        //
+                        // Every rarity, not just rare: its strength and colour
+                        // come from [tellStrength] and [tellColour], which is
+                        // what "the glow builds, strength scales with rarity"
+                        // means. Gating it on rare made the ladder a switch and
+                        // left a common draw with no tell at all.
+                        if (showTell)
+                          Positioned(
+                            left: -9.w,
+                            right: -9.w,
+                            top: -9.h,
+                            bottom: -9.h,
+                            child: Transform(
+                              alignment: Alignment.center,
+                              transform: Matrix4.identity()
+                                ..scale(
+                                    CardRevealOrganism.glowScaleX(rot), 1.0),
                               child: Container(
-                                key: const ValueKey('reveal-ground'),
-                                width: cardW * 0.76,
-                                height: 14.h,
+                                key: const ValueKey('reveal-glow'),
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(999.r),
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      Colors.black.withValues(alpha: 0.7),
-                                      Colors.black.withValues(alpha: 0.0),
-                                    ],
-                                  ),
+                                  borderRadius: BorderRadius.circular(18.r),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: tellColour.withValues(
+                                          alpha: 0.6 * glowOpacity),
+                                      blurRadius: 70 * glowOpacity,
+                                      spreadRadius: 22 * glowOpacity,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
 
-                      // 3. Glow — builds in the tell, peaks on landing,
-                      // settles. Scaled by [glowScaleX] so it foreshortens
-                      // with the card.
-                      //
-                      // Every rarity, not just rare: its strength and colour
-                      // come from [tellStrength] and [tellColour], which is
-                      // what "the glow builds, strength scales with rarity"
-                      // means. Gating it on rare made the ladder a switch and
-                      // left a common draw with no tell at all.
-                      if (showTell)
-                        Positioned(
-                          left: -9.w,
-                          right: -9.w,
-                          top: -9.h,
-                          bottom: -9.h,
-                          child: Transform(
-                            alignment: Alignment.center,
-                            transform: Matrix4.identity()
-                              ..scale(CardRevealOrganism.glowScaleX(rot), 1.0),
-                            child: Container(
-                              key: const ValueKey('reveal-glow'),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(18.r),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: tellColour.withValues(
-                                        alpha: 0.6 * glowOpacity),
-                                    blurRadius: 70 * glowOpacity,
-                                    spreadRadius: 22 * glowOpacity,
+                        // 5. Rings — two, popping outward from the card edge.
+                        // The second is delayed slightly behind the first.
+                        if (showFlourish) _ring('reveal-ring-1', 0.0, t),
+                        if (showFlourish) _ring('reveal-ring-2', 0.03, t),
+
+                        // 6. Motes — four warm particles rising and fading,
+                        // staggered, low on the card.
+                        if (showFlourish)
+                          _mote('reveal-mote-0', 0.18, 0.22, 0.00, cardW, cardH,
+                              t),
+                        if (showFlourish)
+                          _mote('reveal-mote-1', 0.74, 0.30, 0.03, cardW, cardH,
+                              t),
+                        if (showFlourish)
+                          _mote('reveal-mote-2', 0.40, 0.14, 0.06, cardW, cardH,
+                              t),
+                        if (showFlourish)
+                          _mote('reveal-mote-3', 0.62, 0.18, 0.09, cardW, cardH,
+                              t),
+
+                        // 2 & 8. The card itself: lifts and grows as it turns,
+                        // every rarity, then un-mirrors past edge-on so the art
+                        // renders the right way round.
+                        Transform(
+                          alignment: Alignment.center,
+                          transform: Matrix4.identity()
+                            ..setEntry(3, 2, 0.0011)
+                            ..rotateY(rot * math.pi)
+                            ..translate(0.0, lift.h)
+                            ..scale(cardScale),
+                          child: faceUp
+                              ? Transform(
+                                  alignment: Alignment.center,
+                                  transform: Matrix4.identity()
+                                    ..rotateY(math.pi),
+                                  child: _fan(
+                                    outcome,
+                                    overlay:
+                                        showFlourish ? _sweepOverlay(t) : null,
                                   ),
-                                ],
-                              ),
-                            ),
-                          ),
+                                )
+                              : const CardBackAtom(width: _cardDesignWidth),
                         ),
-
-                      // 5. Rings — two, popping outward from the card edge.
-                      // The second is delayed slightly behind the first.
-                      if (showFlourish) _ring('reveal-ring-1', 0.0, t),
-                      if (showFlourish) _ring('reveal-ring-2', 0.03, t),
-
-                      // 6. Motes — four warm particles rising and fading,
-                      // staggered, low on the card.
-                      if (showFlourish)
-                        _mote(
-                            'reveal-mote-0', 0.18, 0.22, 0.00, cardW, cardH, t),
-                      if (showFlourish)
-                        _mote(
-                            'reveal-mote-1', 0.74, 0.30, 0.03, cardW, cardH, t),
-                      if (showFlourish)
-                        _mote(
-                            'reveal-mote-2', 0.40, 0.14, 0.06, cardW, cardH, t),
-                      if (showFlourish)
-                        _mote(
-                            'reveal-mote-3', 0.62, 0.18, 0.09, cardW, cardH, t),
-
-                      // 2 & 8. The card itself: lifts and grows as it turns,
-                      // every rarity, then un-mirrors past edge-on so the art
-                      // renders the right way round.
-                      Transform(
-                        alignment: Alignment.center,
-                        transform: Matrix4.identity()
-                          ..setEntry(3, 2, 0.0011)
-                          ..rotateY(rot * math.pi)
-                          ..translate(0.0, lift.h)
-                          ..scale(cardScale),
-                        child: faceUp
-                            ? Transform(
-                                alignment: Alignment.center,
-                                transform: Matrix4.identity()..rotateY(math.pi),
-                                child: _fan(
-                                  outcome,
-                                  overlay:
-                                      showFlourish ? _sweepOverlay(t) : null,
-                                ),
-                              )
-                            : const CardBackAtom(width: _cardDesignWidth),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 18.h),
-                  // 9. Headline — unchanged, on the landing.
-                  Opacity(
-                    opacity: _landing.value,
-                    child: Text(
-                      outcome.kind.headline,
-                      style: TextStyle(
-                        fontSize: 19.sp,
-                        fontWeight: FontWeight.w800,
-                        color: _headlineColour(outcome),
-                      ),
+                      ],
                     ),
-                  ),
-                  // The mockup pairs every headline with a quiet line: the
-                  // headline says what happened, this says what it means.
-                  if (widget.params.supportingLine.isNotEmpty)
+                    SizedBox(height: 18.h),
+                    // 9. Headline — unchanged, on the landing.
                     Opacity(
                       opacity: _landing.value,
-                      child: Padding(
-                        padding: EdgeInsets.only(top: 11.h),
-                        child: Text(
-                          widget.params.supportingLine,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 10.5.sp,
-                            height: 1.45,
-                            color: QuestPalette.muted,
-                          ),
+                      child: Text(
+                        outcome.kind.headline,
+                        style: TextStyle(
+                          fontSize: 19.sp,
+                          fontWeight: FontWeight.w800,
+                          color: _headlineColour(outcome),
                         ),
                       ),
                     ),
-                ],
-              );
-            },
+                    // The mockup pairs every headline with a quiet line: the
+                    // headline says what happened, this says what it means.
+                    if (widget.params.supportingLine.isNotEmpty)
+                      Opacity(
+                        opacity: _landing.value,
+                        child: Padding(
+                          padding: EdgeInsets.only(top: 11.h),
+                          child: Text(
+                            widget.params.supportingLine,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 10.5.sp,
+                              height: 1.45,
+                              color: QuestPalette.muted,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),

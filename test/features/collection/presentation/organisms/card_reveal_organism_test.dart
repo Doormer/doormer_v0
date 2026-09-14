@@ -282,6 +282,39 @@ void main() {
         reason: 'the brass glow builds before the card resolves');
   });
 
+  testWidgets('has a Material of its own, so text is not underlined',
+      (tester) async {
+    // The reveal is mounted as a bare Stack sibling above the template, with no
+    // Material ancestor. Flutter marks Text in that position with a yellow
+    // double underline, which a student would see on every single draw.
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: MediaQuery(
+          data: const MediaQueryData(size: Size(360, 690)),
+          child: ScreenUtilInit(
+            designSize: const Size(360, 690),
+            builder: (_, __) => CardRevealOrganism(
+              params: RevealParams(
+                outcome: _outcome(DrawResultKind.newCard),
+                supportingLine: 'Meridian is 5 of 6',
+                onDismiss: () {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1700));
+
+    // No MaterialApp, no Scaffold — if the organism does not bring its own
+    // Material, this text cannot render cleanly.
+    expect(find.byType(Material), findsWidgets);
+    final text = tester.widget<Text>(find.text('A new one'));
+    expect(text.style?.decoration ?? TextDecoration.none, TextDecoration.none);
+  });
+
   testWidgets('tapping dismisses', (tester) async {
     var dismissed = 0;
     await tester.pumpWidget(_host(CardRevealOrganism(
