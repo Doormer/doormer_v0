@@ -84,7 +84,7 @@ class CollectionTemplate extends StatelessWidget {
         Expanded(
           child: selectedDeckId == null
               ? const SizedBox.shrink()
-              : _deckBody(context),
+              : _deckBody(context, isWide: true),
         ),
       ],
     );
@@ -119,7 +119,11 @@ class CollectionTemplate extends StatelessWidget {
     return _deckBody(context, showBack: true);
   }
 
-  Widget _deckBody(BuildContext context, {bool showBack = false}) {
+  Widget _deckBody(
+    BuildContext context, {
+    bool showBack = false,
+    bool isWide = false,
+  }) {
     final deckId = selectedDeckId!;
     final holdings = collection.holdingsForDeck(deckId);
     final deck = collection.decks.firstWhere((d) => d.id == deckId);
@@ -167,6 +171,10 @@ class CollectionTemplate extends StatelessWidget {
             child: CardGridOrganism(
               holdings: holdings,
               cardWidth: 104,
+              // Two grids, not one grid at two sizes: a phone fills the width
+              // edge to edge because it has none to spare, a wide window
+              // centres fixed-width cards.
+              fillWidth: !isWide,
               onCardTap: onCardTap,
             ),
           ),

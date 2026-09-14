@@ -73,6 +73,60 @@ void main() {
     expect(wrap.alignment, WrapAlignment.center);
   });
 
+  testWidgets('on a phone two cards fill the width, edge to edge',
+      (tester) async {
+    // The design asks for two grids, not one at two sizes: "Desktop centred,
+    // phone fills the width, two columns, edge to edge" — a phone has no
+    // spare horizontal space to give away.
+    await tester.pumpWidget(_host(
+      width: 332,
+      CardGridOrganism(
+        holdings: [_holding('a'), _holding('b')],
+        cardWidth: 104,
+        fillWidth: true,
+      ),
+    ));
+
+    final first = tester.getRect(find.byType(CardTileMolecule).at(0));
+    final second = tester.getRect(find.byType(CardTileMolecule).at(1));
+
+    expect(first.left, closeTo(0, 1), reason: 'flush to the left edge');
+    expect(second.right, closeTo(332, 1), reason: 'flush to the right edge');
+    expect(first.width, greaterThan(140),
+        reason: 'a filled column is far wider than the fixed 104');
+  });
+
+  testWidgets('on a wide window the cards stay fixed and centre',
+      (tester) async {
+    // Reproduces the template's own context. A Column with
+    // CrossAxisAlignment.start lets its child shrink to its content, which is
+    // what left-aligned the grid: the Wrap became exactly as wide as two
+    // cards, so WrapAlignment.center had nothing to centre within.
+    await tester.pumpWidget(_host(
+      width: 700,
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CardGridOrganism(
+            holdings: [_holding('a'), _holding('b')],
+            cardWidth: 104,
+          ),
+        ],
+      ),
+    ));
+
+    final first = tester.getRect(find.byType(CardTileMolecule).at(0));
+    final second = tester.getRect(find.byType(CardTileMolecule).at(1));
+
+    // Left-aligning here was the bug: inside a Column with
+    // CrossAxisAlignment.start the Wrap shrank to its own content, leaving
+    // WrapAlignment.center nothing to centre within.
+    final leftGap = first.left;
+    final rightGap = 700 - second.right;
+    expect(leftGap, greaterThan(1), reason: 'not flush left');
+    expect(leftGap, closeTo(rightGap, 2), reason: 'centred, not left-aligned');
+  });
+
   testWidgets('reports which card was tapped', (tester) async {
     String? tapped;
     await tester.pumpWidget(_host(CardGridOrganism(
