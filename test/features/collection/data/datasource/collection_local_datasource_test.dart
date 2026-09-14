@@ -1,6 +1,5 @@
 import 'package:doormer/src/features/collection/data/datasource/collection_local_datasource.dart';
 import 'package:doormer/src/features/collection/domain/entity/card_rarity.dart';
-import 'package:doormer/src/features/collection/domain/entity/draw_outcome.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -43,9 +42,13 @@ void main() {
   test('the draw sequence resolves card ids to real cards', () async {
     final sequence = await dataSource.loadDrawSequence();
     expect(sequence, isNotEmpty);
-    expect(sequence.first.card.id, 'quadrant');
-    expect(sequence.first.kind, DrawResultKind.newCard);
-    expect(sequence[1].kind, DrawResultKind.duplicate);
+    // The fixture deliberately opens each deck on its rare, so a reviewer sees
+    // the flourish on the first draw rather than three draws later.
+    expect(sequence.first.card.id, 'orrery');
+    expect(sequence.first.card.rarity, Rarity.rare);
+    expect(sequence.first.variant, CardVariant.special);
+    // Every step must name a card that exists; a typo here is a crash at draw.
+    expect(sequence.every((s) => s.card.id.isNotEmpty), isTrue);
   });
 
   test('every art asset named in the collection actually exists', () async {

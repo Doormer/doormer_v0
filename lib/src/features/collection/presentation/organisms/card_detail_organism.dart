@@ -57,6 +57,28 @@ class CardDetailOrganism extends StatelessWidget {
         child: Container(
           key: const Key('card-detail-body'),
           padding: EdgeInsets.all(18.w),
+          // A surface of its own. Without this the detail had padding but no
+          // background, so the grid behind it showed straight through and the
+          // two sets of text overlapped.
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14.r),
+            border: Border.all(
+              color: QuestPalette.cream.withValues(alpha: 0.08),
+              width: 1.w,
+            ),
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [QuestPalette.ink, QuestPalette.night],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.55),
+                blurRadius: 30,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,

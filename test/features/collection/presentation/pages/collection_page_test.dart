@@ -48,6 +48,7 @@ class _MemoryBundle extends CachingAssetBundle {
     return '';
   }
 }
+
 Widget _app() => ScreenUtilInit(
       designSize: const Size(360, 690),
       builder: (_, __) => const MaterialApp(home: CollectionPage()),
@@ -65,6 +66,21 @@ Future<void> _pumpPhone(WidgetTester tester) async {
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 100));
   await tester.pumpAndSettle();
+}
+
+/// Pumps the reveal through to its end.
+///
+/// Not `pumpAndSettle`: a rare draw spins its rays continuously by design, so
+/// there is never a frame with nothing scheduled and settling would hang.
+Future<void> _drawAndDismiss(WidgetTester tester) async {
+  await tester.tap(tester.widgetList(find.textContaining('Draw a card')).isEmpty
+      ? find.textContaining('Draw a card')
+      : find.textContaining('Draw a card').first);
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 1700));
+  await tester.tap(find.byType(CardRevealOrganism));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 400));
 }
 
 void main() {
@@ -134,18 +150,26 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.textContaining('Draw a card'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1700));
 
     expect(find.byType(CardRevealOrganism), findsOneWidget);
-    // The asset's first Meridian step is Quadrant, a card not yet held.
-    expect(find.text('A new one'), findsOneWidget);
+    // The fixture opens Meridian on the rare, drawn as a special copy of a card
+    // already held, so this is an upgrade rather than a new card.
+    expect(find.text('Now special'), findsOneWidget);
 
     await tester.tap(find.byType(CardRevealOrganism));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.byType(CardRevealOrganism), findsNothing,
         reason: 'a reveal must not be able to stick on screen');
-    // The drawn card has joined the grid.
+    // An upgrade adds a printing, not a card, so the grid still holds 4.
+    expect(find.byType(CardTileMolecule), findsNWidgets(4));
+
+    // The second draw is Quadrant, which is genuinely new — that is what grows
+    // the grid.
+    await _drawAndDismiss(tester);
     expect(find.byType(CardTileMolecule), findsNWidgets(5));
   });
 
@@ -154,10 +178,9 @@ void main() {
     await _pumpPhone(tester);
     await tester.tap(find.widgetWithText(DeckRowMolecule, 'Meridian'));
     await tester.pumpAndSettle();
-    await tester.tap(find.textContaining('Draw a card'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byType(CardRevealOrganism));
-    await tester.pumpAndSettle();
+    // Two draws: the first upgrades the rare, the second adds Quadrant.
+    await _drawAndDismiss(tester);
+    await _drawAndDismiss(tester);
     expect(find.byType(CardTileMolecule), findsNWidgets(5));
 
     // Remount the page, as navigating away and back would. Startup must not
@@ -174,18 +197,18 @@ void main() {
 
     expect(find.byType(CardTileMolecule), findsNWidgets(5),
         reason: 'the drawn card survived the remount');
-    expect(find.textContaining('80 points'), findsOneWidget,
-        reason: 'and so did the points it cost');
+    expect(find.textContaining('520 points'), findsOneWidget,
+        reason: 'and so did the points the two draws cost');
   });
 
   testWidgets('the wallet is visible, so points are never spent invisibly',
       (tester) async {
     await _pumpPhone(tester);
-    expect(find.textContaining('120 points'), findsOneWidget);
+    expect(find.textContaining('600 points'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(DeckRowMolecule, 'Meridian'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('120 points'), findsOneWidget,
+    expect(find.textContaining('600 points'), findsOneWidget,
         reason: 'the wallet must follow the student to where they spend');
   });
 
