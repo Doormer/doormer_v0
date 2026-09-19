@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../domain/entity/card_rarity.dart';
+import '../../domain/entity/holding.dart';
 import '../atoms/collectible_card_atom.dart';
 import '../params/card_detail_params.dart';
 
@@ -20,6 +21,24 @@ class CardDetailOrganism extends StatelessWidget {
   final CardDetailParams params;
 
   const CardDetailOrganism({super.key, required this.params});
+
+  /// How many are held, and how many of those are special.
+  ///
+  /// Three cases, because "3 · 3 special" says the same number twice:
+  ///
+  ///   none special  ->  `3`
+  ///   some special  ->  `3 · 1 special`
+  ///   all special   ->  `3 special`
+  ///
+  /// The count is the printing-agnostic total; the special part only appears
+  /// when there is something to distinguish, so "Now special" leaves a trace
+  /// rather than being announced once and then lost.
+  static String heldLabel(Holding holding) {
+    final total = holding.totalCopies;
+    if (!holding.hasSpecial) return '$total';
+    if (holding.specialCopies == total) return '$total special';
+    return '$total · ${holding.specialCopies} special';
+  }
 
   String _rarityLabel(Rarity rarity) {
     switch (rarity) {
@@ -114,15 +133,7 @@ class CardDetailOrganism extends StatelessWidget {
                         ),
                       ),
                       SizedBox(height: 10.h),
-                      _Fact(
-                        label: 'Held',
-                        // Otherwise "Now special" is announced once at the
-                        // reveal and is then invisible everywhere forever.
-                        value: holding.hasSpecial
-                            ? '${holding.totalCopies}'
-                                ' · ${holding.specialCopies} special'
-                            : '${holding.totalCopies}',
-                      ),
+                      _Fact(label: 'Held', value: heldLabel(holding)),
                       _Fact(label: 'Rarity', value: _rarityLabel(card.rarity)),
                       _Fact(label: 'Deck', value: card.scaleLabel),
                       SizedBox(height: 16.h),

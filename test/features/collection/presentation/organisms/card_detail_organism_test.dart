@@ -117,6 +117,30 @@ void main() {
     expect(find.textContaining('Convert'), findsNothing);
   });
 
+  group('heldLabel', () {
+    Holding held(int standard, int special) => Holding(
+          card: _card,
+          standardCopies: standard,
+          specialCopies: special,
+        );
+
+    test('a plain holding is just the count', () {
+      expect(CardDetailOrganism.heldLabel(held(1, 0)), '1');
+      expect(CardDetailOrganism.heldLabel(held(3, 0)), '3');
+    });
+
+    test('a mixed holding names how many are special', () {
+      expect(CardDetailOrganism.heldLabel(held(1, 1)), '2 · 1 special');
+      expect(CardDetailOrganism.heldLabel(held(2, 2)), '4 · 2 special');
+    });
+
+    test('an all-special holding does not say the number twice', () {
+      // "3 · 3 special" repeats the count for no reason.
+      expect(CardDetailOrganism.heldLabel(held(0, 3)), '3 special');
+      expect(CardDetailOrganism.heldLabel(held(0, 1)), '1 special');
+    });
+  });
+
   testWidgets('a mixed holding can still be traded, and says it is special',
       (tester) async {
     // 540 wide, matching the sibling width test: a 1200-wide viewport makes
