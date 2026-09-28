@@ -14,7 +14,9 @@ const _card = CollectibleCard(
   deckId: 'meridian',
   rarity: Rarity.uncommon,
   scaleLabel: 'Medium',
-  artAsset: 'assets/cards/meridian/astrolabe.png',
+  artUrl: 'https://example.test/astrolabe.jpg',
+  standardShatterQuarks: 11,
+  specialShatterQuarks: 22,
   description: 'Unfolds into a ring wider than itself.',
 );
 

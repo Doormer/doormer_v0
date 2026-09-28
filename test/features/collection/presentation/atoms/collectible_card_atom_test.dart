@@ -11,7 +11,9 @@ CollectibleCard _card(Rarity rarity) => CollectibleCard(
       deckId: 'meridian',
       rarity: rarity,
       scaleLabel: 'Small',
-      artAsset: 'assets/cards/meridian/gnomon.png',
+      artUrl: 'https://example.test/gnomon.jpg',
+      standardShatterQuarks: 5,
+      specialShatterQuarks: 10,
       description: 'd',
     );
 
@@ -26,6 +28,32 @@ void main() {
     await tester.pumpWidget(_host(
       CollectibleCardAtom(card: _card(Rarity.common), width: 104),
     ));
+    expect(find.text('Gnomon'), findsOneWidget);
+  });
+
+  testWidgets('loads the art from the card URL, over a dim panel',
+      (tester) async {
+    await tester.pumpWidget(_host(
+      CollectibleCardAtom(card: _card(Rarity.common), width: 104),
+    ));
+
+    final image = tester.widget<Image>(find.byType(Image));
+    expect(
+        (image.image as NetworkImage).url, 'https://example.test/gnomon.jpg');
+    expect(find.byKey(const Key('card-art-panel')), findsOneWidget);
+  });
+
+  testWidgets('art that fails to load leaves the panel and the name',
+      (tester) async {
+    // flutter_test answers every HTTP request with a 400, so this is the
+    // failure path.
+    await tester.pumpWidget(_host(
+      CollectibleCardAtom(card: _card(Rarity.common), width: 104),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('card-art-panel')), findsOneWidget);
     expect(find.text('Gnomon'), findsOneWidget);
   });
 

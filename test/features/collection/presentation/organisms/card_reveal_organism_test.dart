@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:doormer/src/features/collection/domain/entity/card_rarity.dart';
 import 'package:doormer/src/features/collection/domain/entity/collectible_card.dart';
 import 'package:doormer/src/features/collection/domain/entity/draw_outcome.dart';
@@ -14,7 +17,9 @@ const _card = CollectibleCard(
   deckId: 'meridian',
   rarity: Rarity.common,
   scaleLabel: 'Small',
-  artAsset: 'assets/cards/meridian/gnomon.png',
+  artUrl: 'https://example.test/gnomon.jpg',
+  standardShatterQuarks: 5,
+  specialShatterQuarks: 10,
   description: 'd',
 );
 
@@ -24,7 +29,9 @@ const _rareCard = CollectibleCard(
   deckId: 'meridian',
   rarity: Rarity.rare,
   scaleLabel: 'Capital',
-  artAsset: 'assets/cards/meridian/gnomon.png',
+  artUrl: 'https://example.test/gnomon.jpg',
+  standardShatterQuarks: 19,
+  specialShatterQuarks: 38,
   description: 'd',
 );
 
@@ -50,7 +57,58 @@ DrawOutcome _outcome(
       copiesAfter: copiesAfter,
     );
 
+/// Records the URLs asked for and never answers, so an image stays loading for
+/// as long as a test needs it to.
+class _RecordingHttpClient implements HttpClient {
+  final List<Uri> requested = [];
+
+  @override
+  Future<HttpClientRequest> getUrl(Uri url) {
+    requested.add(url);
+    return Completer<HttpClientRequest>().future;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
+  testWidgets('fetches the art while the card back is still showing',
+      (tester) async {
+    final client = _RecordingHttpClient();
+    debugNetworkImageHttpClientProvider = () => client;
+    // Reset inside the test body: the binding checks it is unset as soon as
+    // the body returns, before any tear-down runs.
+    try {
+      const card = CollectibleCard(
+        id: 'sextant',
+        name: 'Sextant',
+        deckId: 'meridian',
+        rarity: Rarity.common,
+        scaleLabel: 'Small',
+        // Used by no other test, so the image cache cannot already hold it.
+        artUrl: 'https://example.test/reveal-precache-sextant.jpg',
+        standardShatterQuarks: 5,
+        specialShatterQuarks: 10,
+        description: 'd',
+      );
+      await tester.pumpWidget(_host(CardRevealOrganism(
+        params: RevealParams(
+          outcome: _outcome(DrawResult.newCard, card: card),
+          supportingLine: 'Meridian is 5 of 6',
+          onDismiss: () {},
+        ),
+      )));
+      await tester.pump();
+
+      expect(find.text('Sextant'), findsNothing,
+          reason: 'the card has not turned, so its face is not built yet');
+      expect(client.requested, [Uri.parse(card.artUrl)]);
+    } finally {
+      debugNetworkImageHttpClientProvider = null;
+    }
+  });
+
   group('fanCountFor', () {
     test('is the count below the cap, so the fan is readable', () {
       expect(CardRevealOrganism.fanCountFor(1), 1);
@@ -182,7 +240,9 @@ void main() {
               deckId: 'meridian',
               rarity: rarity,
               scaleLabel: 'S',
-              artAsset: 'assets/cards/meridian/gnomon.png',
+              artUrl: 'https://example.test/gnomon.jpg',
+              standardShatterQuarks: 5,
+              specialShatterQuarks: 10,
               description: 'd',
             ),
             variant: CardVariant.standard,
@@ -250,7 +310,9 @@ void main() {
               deckId: 'meridian',
               rarity: rarity,
               scaleLabel: 'S',
-              artAsset: 'assets/cards/meridian/gnomon.png',
+              artUrl: 'https://example.test/gnomon.jpg',
+              standardShatterQuarks: 5,
+              specialShatterQuarks: 10,
               description: 'd',
             ),
             variant: CardVariant.standard,

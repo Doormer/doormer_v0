@@ -62,9 +62,7 @@ class CardDetailOrganism extends StatelessWidget {
     final canShatter = holding.totalCopies > 1;
 
     final variant = holding.variantToShatter;
-    final shatterQuarks = variant == CardVariant.special
-        ? card.rarity.specialShatterQuarks
-        : card.rarity.standardShatterQuarks;
+    final shatterQuarks = card.shatterQuarksFor(variant);
 
     return Center(
       child: ConstrainedBox(

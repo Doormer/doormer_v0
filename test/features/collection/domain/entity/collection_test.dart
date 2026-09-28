@@ -12,7 +12,9 @@ CollectibleCard _card(String id, Rarity rarity, {String deckId = 'meridian'}) {
     deckId: deckId,
     rarity: rarity,
     scaleLabel: 'Small',
-    artAsset: 'a.png',
+    artUrl: 'https://example.test/a.jpg',
+    standardShatterQuarks: 5,
+    specialShatterQuarks: 10,
     description: 'd',
   );
 }

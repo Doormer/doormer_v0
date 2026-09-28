@@ -38,8 +38,8 @@ class _MemoryBundle extends CachingAssetBundle {
     if (key == CollectionLocalDataSourceImpl.mockAssetPath) {
       return ByteData.view(Uint8List.fromList(utf8.encode(_json)).buffer);
     }
-    // Card art: widget tests render a broken-image placeholder rather than
-    // throwing, so an empty payload is enough to exercise layout.
+    // Nothing else on this page comes from the bundle: card art is fetched
+    // from the network.
     return ByteData(0);
   }
 

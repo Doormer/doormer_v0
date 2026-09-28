@@ -11,7 +11,9 @@
           "name": "Gnomon",
           "rarity": "common",
           "scaleLabel": "Small",
-          "artAsset": "assets/cards/meridian/gnomon.png",
+          "artUrl": "https://takadev1cv.blob.core.windows.net/card-art/meridian-01/gnomon.jpg",
+          "standardShatterQuarks": 5,
+          "specialShatterQuarks": 10,
           "description": "Casts a shadow long enough to read a heading from."
         },
         {
@@ -19,7 +21,9 @@
           "name": "Vernier",
           "rarity": "common",
           "scaleLabel": "Small",
-          "artAsset": "assets/cards/meridian/vernier.png",
+          "artUrl": "https://takadev1cv.blob.core.windows.net/card-art/meridian-01/vernier.jpg",
+          "standardShatterQuarks": 5,
+          "specialShatterQuarks": 10,
           "description": "Nested sleeves that slide to split a reading finer."
         },
         {
@@ -27,7 +31,9 @@
           "name": "Lodestone",
           "rarity": "common",
           "scaleLabel": "Small",
-          "artAsset": "assets/cards/meridian/lodeston.png",
+          "artUrl": "https://takadev1cv.blob.core.windows.net/card-art/meridian-01/lodestone.jpg",
+          "standardShatterQuarks": 5,
+          "specialShatterQuarks": 10,
           "description": "Drags a haze of iron filings wherever it turns."
         },
         {
@@ -35,7 +41,9 @@
           "name": "Astrolabe",
           "rarity": "uncommon",
           "scaleLabel": "Medium",
-          "artAsset": "assets/cards/meridian/astrolabe.png",
+          "artUrl": "https://takadev1cv.blob.core.windows.net/card-art/meridian-01/astrolabe.jpg",
+          "standardShatterQuarks": 11,
+          "specialShatterQuarks": 22,
           "description": "Unfolds into a ring wider than itself to take one reading, then folds away."
         },
         {
@@ -43,7 +51,9 @@
           "name": "Quadrant",
           "rarity": "uncommon",
           "scaleLabel": "Medium",
-          "artAsset": "assets/cards/meridian/quadrant.png",
+          "artUrl": "https://takadev1cv.blob.core.windows.net/card-art/meridian-01/quadrant.jpg",
+          "standardShatterQuarks": 11,
+          "specialShatterQuarks": 22,
           "description": "A quarter arc that measures the angle to anything it can see."
         },
         {
@@ -51,7 +61,9 @@
           "name": "The Orrery",
           "rarity": "rare",
           "scaleLabel": "Capital",
-          "artAsset": "assets/cards/meridian/Orrey.png",
+          "artUrl": "https://takadev1cv.blob.core.windows.net/card-art/meridian-01/orrery.jpg",
+          "standardShatterQuarks": 19,
+          "specialShatterQuarks": 38,
           "description": "Carries a working model of the system it is crossing."
         }
       ]
@@ -65,7 +77,9 @@
           "name": "Flint",
           "rarity": "common",
           "scaleLabel": "Small",
-          "artAsset": "assets/cards/cinder/cinder_flint.png",
+          "artUrl": "https://takadev1cv.blob.core.windows.net/card-art/cinder-01/flint.jpg",
+          "standardShatterQuarks": 5,
+          "specialShatterQuarks": 10,
           "description": "Three striker arms that throw sparks to start something bigger."
         },
         {
@@ -73,7 +87,9 @@
           "name": "Wick",
           "rarity": "common",
           "scaleLabel": "Small",
-          "artAsset": "assets/cards/cinder/cinder_wick.png",
+          "artUrl": "https://takadev1cv.blob.core.windows.net/card-art/cinder-01/wick.jpg",
+          "standardShatterQuarks": 5,
+          "specialShatterQuarks": 10,
           "description": "Burns slowly and on purpose."
         },
         {
@@ -81,7 +97,9 @@
           "name": "Rasp",
           "rarity": "common",
           "scaleLabel": "Small",
-          "artAsset": "assets/cards/cinder/cinder_rasp.png",
+          "artUrl": "https://takadev1cv.blob.core.windows.net/card-art/cinder-01/rasp.jpg",
+          "standardShatterQuarks": 5,
+          "specialShatterQuarks": 10,
           "description": "Strips plating off anything it is dragged along."
         },
         {
@@ -89,7 +107,9 @@
           "name": "Scorch",
           "rarity": "uncommon",
           "scaleLabel": "Medium",
-          "artAsset": "assets/cards/cinder/cinder_scorch.png",
+          "artUrl": "https://takadev1cv.blob.core.windows.net/card-art/cinder-01/scorch.jpg",
+          "standardShatterQuarks": 11,
+          "specialShatterQuarks": 22,
           "description": "Leaves a blackened wake it never outruns."
         },
         {
@@ -97,7 +117,9 @@
           "name": "Kiln",
           "rarity": "uncommon",
           "scaleLabel": "Medium",
-          "artAsset": "assets/cards/cinder/cinder_kiln.png",
+          "artUrl": "https://takadev1cv.blob.core.windows.net/card-art/cinder-01/kiln.jpg",
+          "standardShatterQuarks": 11,
+          "specialShatterQuarks": 22,
           "description": "Holds a fire hot enough to reshape what it carries."
         },
         {
@@ -105,7 +127,9 @@
           "name": "The Crucible",
           "rarity": "rare",
           "scaleLabel": "Capital",
-          "artAsset": "assets/cards/cinder/cinder_crucible.png",
+          "artUrl": "https://takadev1cv.blob.core.windows.net/card-art/cinder-01/crucible.jpg",
+          "standardShatterQuarks": 19,
+          "specialShatterQuarks": 38,
           "description": "Everything it takes in comes out as something else."
         }
       ]

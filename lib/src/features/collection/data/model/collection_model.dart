@@ -60,7 +60,9 @@ class CollectionModel {
           deckId: deckId,
           rarity: _rarity(card['rarity'] as String),
           scaleLabel: card['scaleLabel'] as String,
-          artAsset: card['artAsset'] as String,
+          artUrl: card['artUrl'] as String,
+          standardShatterQuarks: card['standardShatterQuarks'] as int,
+          specialShatterQuarks: card['specialShatterQuarks'] as int,
           description: card['description'] as String,
         );
       }).toList();

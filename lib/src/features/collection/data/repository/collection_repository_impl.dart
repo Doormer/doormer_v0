@@ -119,9 +119,7 @@ class CollectionRepositoryImpl implements CollectionRepository {
       throw ValidationFailure("You don't have a spare copy of that card.");
     }
 
-    final shatterQuarks = isSpecial
-        ? holding.card.rarity.specialShatterQuarks
-        : holding.card.rarity.standardShatterQuarks;
+    final shatterQuarks = holding.card.shatterQuarksFor(variant);
 
     final reduced = isSpecial
         ? holding.copyWith(specialCopies: holding.specialCopies - 1)

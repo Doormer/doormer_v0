@@ -10,7 +10,7 @@ import '../../domain/entity/collectible_card.dart';
 /// Rarity is a brass halo whose weight grows with scarcity. **Common has none**,
 /// which is what keeps the halo meaningful — if every card glowed, none would.
 ///
-/// The scrim only reads because every bundled image is dark at its lower edge.
+/// The scrim only reads because every card image is dark at its lower edge.
 /// That is a constraint on the art brief, not something this widget guarantees.
 class CollectibleCardAtom extends StatelessWidget {
   static const double aspectRatio = 2 / 3;
@@ -96,7 +96,17 @@ class CollectibleCardAtom extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Image.asset(card.artAsset, fit: BoxFit.cover),
+            // A dim panel under the art. It shows while the image loads, and
+            // stays if the image fails, so the name and rarity still read.
+            const ColoredBox(
+              key: Key('card-art-panel'),
+              color: QuestPalette.ink,
+            ),
+            Image.network(
+              card.artUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
             const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(

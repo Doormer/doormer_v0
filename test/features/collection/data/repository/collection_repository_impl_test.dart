@@ -15,7 +15,9 @@ const _gnomon = CollectibleCard(
   deckId: 'meridian',
   rarity: Rarity.common,
   scaleLabel: 'Small',
-  artAsset: 'a.png',
+  artUrl: 'https://example.test/a.jpg',
+  standardShatterQuarks: 5,
+  specialShatterQuarks: 10,
   description: 'd',
 );
 const _quadrant = CollectibleCard(
@@ -24,7 +26,9 @@ const _quadrant = CollectibleCard(
   deckId: 'meridian',
   rarity: Rarity.uncommon,
   scaleLabel: 'Medium',
-  artAsset: 'b.png',
+  artUrl: 'https://example.test/b.jpg',
+  standardShatterQuarks: 11,
+  specialShatterQuarks: 22,
   description: 'd',
 );
 const _flint = CollectibleCard(
@@ -33,7 +37,9 @@ const _flint = CollectibleCard(
   deckId: 'cinder',
   rarity: Rarity.common,
   scaleLabel: 'Small',
-  artAsset: 'c.png',
+  artUrl: 'https://example.test/c.jpg',
+  standardShatterQuarks: 5,
+  specialShatterQuarks: 10,
   description: 'd',
 );
 

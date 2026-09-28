@@ -51,12 +51,20 @@ void main() {
     expect(sequence.every((s) => s.card.id.isNotEmpty), isTrue);
   });
 
-  test('every art asset named in the collection actually exists', () async {
+  test('every card has its art on the server and its shatter values', () async {
     final collection = await dataSource.loadCollection();
+    const standard = {Rarity.common: 5, Rarity.uncommon: 11, Rarity.rare: 19};
     for (final deck in collection.decks) {
       for (final card in deck.cards) {
-        // Throws if the asset is missing from the bundle.
-        await rootBundle.load(card.artAsset);
+        expect(
+          card.artUrl,
+          'https://takadev1cv.blob.core.windows.net/card-art/'
+          '${deck.id}-01/${card.id}.jpg',
+        );
+        expect(card.standardShatterQuarks, standard[card.rarity],
+            reason: card.id);
+        expect(card.specialShatterQuarks, standard[card.rarity]! * 2,
+            reason: card.id);
       }
     }
   });

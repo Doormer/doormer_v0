@@ -62,7 +62,12 @@ class CollectionPresenter {
       case DrawResult.upgrade:
         return 'You keep the standard one.';
       case DrawResult.duplicate:
-        return 'Shatter one for ${outcome.card.rarity.standardShatterQuarks} quarks';
+        // The same number the card detail will offer, so it is worked out
+        // from the holding after the draw rather than from the drawn copy.
+        final holding = collection.holdingsByCardId[outcome.card.id];
+        if (holding == null) return 'You can shatter a spare for quarks.';
+        return 'Shatter one for '
+            '${outcome.card.shatterQuarksFor(holding.variantToShatter)} quarks';
     }
   }
 }

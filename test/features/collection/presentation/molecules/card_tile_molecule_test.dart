@@ -13,7 +13,9 @@ const _card = CollectibleCard(
   deckId: 'meridian',
   rarity: Rarity.common,
   scaleLabel: 'Small',
-  artAsset: 'assets/cards/meridian/gnomon.png',
+  artUrl: 'https://example.test/gnomon.jpg',
+  standardShatterQuarks: 5,
+  specialShatterQuarks: 10,
   description: 'd',
 );
 

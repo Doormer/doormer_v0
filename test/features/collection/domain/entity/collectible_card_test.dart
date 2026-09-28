@@ -3,42 +3,36 @@ import 'package:doormer/src/features/collection/domain/entity/card_rarity.dart';
 import 'package:doormer/src/features/collection/domain/entity/collectible_card.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-void main() {
-  group('Rarity', () {
-    test('shatter values match the verified economy', () {
-      expect(Rarity.common.standardShatterQuarks, 5);
-      expect(Rarity.uncommon.standardShatterQuarks, 11);
-      expect(Rarity.rare.standardShatterQuarks, 19);
-    });
+const _gnomon = CollectibleCard(
+  id: 'gnomon',
+  name: 'Gnomon',
+  deckId: 'meridian',
+  rarity: Rarity.common,
+  scaleLabel: 'Small',
+  artUrl: 'https://example.test/gnomon.jpg',
+  standardShatterQuarks: 5,
+  specialShatterQuarks: 10,
+  description: 'Casts a shadow that tells the time.',
+);
 
-    test('a special copy is worth exactly double a standard one', () {
-      for (final r in Rarity.values) {
-        expect(r.specialShatterQuarks, r.standardShatterQuarks * 2);
-      }
-    });
+void main() {
+  test('two cards with the same id are equal', () {
+    const renamed = CollectibleCard(
+      id: 'gnomon',
+      name: 'Gnomon renamed',
+      deckId: 'meridian',
+      rarity: Rarity.rare,
+      scaleLabel: 'Capital',
+      artUrl: 'https://example.test/other.jpg',
+      standardShatterQuarks: 19,
+      specialShatterQuarks: 38,
+      description: 'different',
+    );
+    expect(_gnomon, equals(renamed));
   });
 
-  group('CollectibleCard', () {
-    test('two cards with the same id are equal', () {
-      const a = CollectibleCard(
-        id: 'gnomon',
-        name: 'Gnomon',
-        deckId: 'meridian',
-        rarity: Rarity.common,
-        scaleLabel: 'Small',
-        artAsset: 'assets/cards/meridian/gnomon.png',
-        description: 'Casts a shadow that tells the time.',
-      );
-      const b = CollectibleCard(
-        id: 'gnomon',
-        name: 'Gnomon renamed',
-        deckId: 'meridian',
-        rarity: Rarity.rare,
-        scaleLabel: 'Capital',
-        artAsset: 'other.png',
-        description: 'different',
-      );
-      expect(a, equals(b));
-    });
+  test('shatterQuarksFor gives the value for the printing asked about', () {
+    expect(_gnomon.shatterQuarksFor(CardVariant.standard), 5);
+    expect(_gnomon.shatterQuarksFor(CardVariant.special), 10);
   });
 }

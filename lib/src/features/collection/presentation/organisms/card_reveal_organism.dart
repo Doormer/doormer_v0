@@ -69,6 +69,9 @@ class CardRevealState extends State<CardRevealOrganism>
   /// 0 face-down, 1 face-up.
   double get rotation => _flip.value;
 
+  /// Whether the drawn card's art has been asked for yet.
+  bool _artRequested = false;
+
   late final Animation<double> _flip;
 
   /// The headline's own arrival, after the flip has finished.
@@ -229,6 +232,17 @@ class CardRevealState extends State<CardRevealOrganism>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // The face is only built once the card turns, so fetch its art while the
+    // back is still showing. A failure needs no handling here: the face shows
+    // its dim panel instead.
+    if (!_artRequested) {
+      _artRequested = true;
+      precacheImage(
+        NetworkImage(widget.params.outcome.card.artUrl),
+        context,
+        onError: (_, __) {},
+      );
+    }
     // Duration.zero still *arrives*, which is what keeps the card face up
     // rather than frozen face down when motion is off.
     _controller.duration = MotionPolicy.duration(
