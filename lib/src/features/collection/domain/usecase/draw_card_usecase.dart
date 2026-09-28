@@ -4,7 +4,7 @@ import '../repository/collection_repository.dart';
 
 /// Returns the outcome **and** the collection it produced.
 ///
-/// The outcome alone is not enough: a draw spends points and adds a copy, so a
+/// The outcome alone is not enough: a draw spends quarks and adds a copy, so a
 /// caller given only the outcome would render a stale wallet and a grid missing
 /// the card that was just drawn. Reading `current()` here rather than `load()`
 /// matters — `load()` resets the replay cursor.

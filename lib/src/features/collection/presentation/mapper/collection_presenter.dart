@@ -38,7 +38,7 @@ class CollectionPresenter {
       rarityMix: deck.rarityMix,
       drawCost: collection.drawCost,
       canAfford: collection.canAffordDraw,
-      pointsShort: collection.pointsShortOfDraw,
+      quarksShort: collection.quarksShortOfDraw,
       onDraw: onDraw,
     );
   }
@@ -53,16 +53,16 @@ class CollectionPresenter {
     required Collection collection,
     required DrawOutcome outcome,
   }) {
-    switch (outcome.kind) {
-      case DrawResultKind.newCard:
+    switch (outcome.result) {
+      case DrawResult.newCard:
         final deck =
             collection.decks.firstWhere((d) => d.id == outcome.card.deckId);
         return '${deck.name} is '
             '${collection.heldCountFor(deck.id)} of ${deck.size}';
-      case DrawResultKind.upgrade:
+      case DrawResult.upgrade:
         return 'You keep the standard one.';
-      case DrawResultKind.duplicate:
-        return 'Trade one for ${outcome.card.rarity.conversionValue} points';
+      case DrawResult.duplicate:
+        return 'Shatter one for ${outcome.card.rarity.standardShatterQuarks} quarks';
     }
   }
 }

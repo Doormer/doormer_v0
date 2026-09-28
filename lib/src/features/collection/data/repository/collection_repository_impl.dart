@@ -44,7 +44,7 @@ class CollectionRepositoryImpl implements CollectionRepository {
     final collection = await current();
 
     if (!collection.canAffordDraw) {
-      throw ValidationFailure('Not enough points for a draw.');
+      throw ValidationFailure("You don't have enough quarks for a draw.");
     }
 
     // A draw is always *from* a deck, so only that deck's steps are eligible.
@@ -79,32 +79,32 @@ class CollectionRepositoryImpl implements CollectionRepository {
 
     _collection = collection.copyWith(
       holdingsByCardId: holdings,
-      walletPoints: collection.walletPoints - collection.drawCost,
+      quarkBalance: collection.quarkBalance - collection.drawCost,
     );
 
-    // The kind is derived from what was actually held a moment ago, not taken
+    // The result is derived from what was actually held a moment ago, not taken
     // from the asset. On the second lap of the sequence the asset's own label is
     // stale — a card it calls `newCard` is by then already held — and a reveal
     // reading "A new one" above a badge reading x2 is plainly wrong.
-    final DrawResultKind kind;
+    final DrawResult result;
     if (existing == null) {
-      kind = DrawResultKind.newCard;
+      result = DrawResult.newCard;
     } else if (step.variant == CardVariant.special && !existing.hasSpecial) {
-      kind = DrawResultKind.upgrade;
+      result = DrawResult.upgrade;
     } else {
-      kind = DrawResultKind.duplicate;
+      result = DrawResult.duplicate;
     }
 
     return DrawOutcome(
       card: step.card,
       variant: step.variant,
-      kind: kind,
+      result: result,
       copiesAfter: updated.totalCopies,
     );
   }
 
   @override
-  Future<Collection> convertCopy(String cardId, CardVariant variant) async {
+  Future<Collection> shatterCopy(String cardId, CardVariant variant) async {
     final collection = await current();
     final holding = collection.holdingsByCardId[cardId];
 
@@ -113,14 +113,15 @@ class CollectionRepositoryImpl implements CollectionRepository {
     }
 
     final isSpecial = variant == CardVariant.special;
-    final available = isSpecial ? holding.specialCopies : holding.standardCopies;
+    final available =
+        isSpecial ? holding.specialCopies : holding.standardCopies;
     if (available < 1) {
-      throw ValidationFailure('There is no copy of that kind to trade.');
+      throw ValidationFailure("You don't have a spare copy of that card.");
     }
 
-    final payout = isSpecial
-        ? holding.card.rarity.specialConversionValue
-        : holding.card.rarity.conversionValue;
+    final shatterQuarks = isSpecial
+        ? holding.card.rarity.specialShatterQuarks
+        : holding.card.rarity.standardShatterQuarks;
 
     final reduced = isSpecial
         ? holding.copyWith(specialCopies: holding.specialCopies - 1)
@@ -135,7 +136,7 @@ class CollectionRepositoryImpl implements CollectionRepository {
 
     _collection = collection.copyWith(
       holdingsByCardId: holdings,
-      walletPoints: collection.walletPoints + payout,
+      quarkBalance: collection.quarkBalance + shatterQuarks,
     );
     return _collection!;
   }

@@ -12,9 +12,9 @@ class CollectionLoading extends CollectionState {
   const CollectionLoading();
 }
 
-class CollectionFailed extends CollectionState {
+class CollectionError extends CollectionState {
   final String message;
-  const CollectionFailed(this.message);
+  const CollectionError(this.message);
 
   @override
   List<Object?> get props => [message];

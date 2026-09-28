@@ -5,15 +5,15 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('Rarity', () {
-    test('conversion values match the verified economy', () {
-      expect(Rarity.common.conversionValue, 5);
-      expect(Rarity.uncommon.conversionValue, 11);
-      expect(Rarity.rare.conversionValue, 19);
+    test('shatter values match the verified economy', () {
+      expect(Rarity.common.standardShatterQuarks, 5);
+      expect(Rarity.uncommon.standardShatterQuarks, 11);
+      expect(Rarity.rare.standardShatterQuarks, 19);
     });
 
     test('a special copy is worth exactly double a standard one', () {
       for (final r in Rarity.values) {
-        expect(r.specialConversionValue, r.conversionValue * 2);
+        expect(r.specialShatterQuarks, r.standardShatterQuarks * 2);
       }
     });
   });

@@ -5,12 +5,12 @@ import '../../domain/entity/holding.dart';
 
 class CardDetailParams {
   final Holding holding;
-  final void Function(CardVariant variant) onConvert;
+  final void Function(CardVariant variant) onShatter;
   final VoidCallback onClose;
 
   const CardDetailParams({
     required this.holding,
-    required this.onConvert,
+    required this.onShatter,
     required this.onClose,
   });
 }

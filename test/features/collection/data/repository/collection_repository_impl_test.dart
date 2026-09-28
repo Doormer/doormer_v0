@@ -56,7 +56,7 @@ class _FakeDataSource implements CollectionLocalDataSource {
             specialCopies: 0,
           ),
         },
-        walletPoints: 80,
+        quarkBalance: 80,
         drawCost: 40,
       );
 
@@ -75,7 +75,7 @@ void main() {
       DrawOutcome(
         card: _quadrant,
         variant: CardVariant.standard,
-        kind: DrawResultKind.newCard,
+        result: DrawResult.newCard,
         copiesAfter: 0,
       ),
     ]);
@@ -84,10 +84,10 @@ void main() {
     final outcome = await repo.draw('meridian');
     final after = await repo.current();
 
-    expect(outcome.kind, DrawResultKind.newCard);
+    expect(outcome.result, DrawResult.newCard);
     expect(outcome.copiesAfter, 1);
     expect(after.holdingsByCardId.containsKey('quadrant'), isTrue);
-    expect(after.walletPoints, 40);
+    expect(after.quarkBalance, 40);
   });
 
   test('a duplicate raises the count and reports it', () async {
@@ -95,7 +95,7 @@ void main() {
       DrawOutcome(
         card: _gnomon,
         variant: CardVariant.standard,
-        kind: DrawResultKind.duplicate,
+        result: DrawResult.duplicate,
         copiesAfter: 0,
       ),
     ]);
@@ -113,7 +113,7 @@ void main() {
       DrawOutcome(
         card: _gnomon,
         variant: CardVariant.special,
-        kind: DrawResultKind.upgrade,
+        result: DrawResult.upgrade,
         copiesAfter: 0,
       ),
     ]);
@@ -127,24 +127,24 @@ void main() {
     expect(holding.totalCopies, 3);
   });
 
-  test('drawing without enough points fails and changes nothing', () async {
+  test('drawing without enough quarks fails and changes nothing', () async {
     final repo = _repo(const [
       DrawOutcome(
         card: _quadrant,
         variant: CardVariant.standard,
-        kind: DrawResultKind.newCard,
+        result: DrawResult.newCard,
         copiesAfter: 0,
       ),
       DrawOutcome(
         card: _quadrant,
         variant: CardVariant.standard,
-        kind: DrawResultKind.duplicate,
+        result: DrawResult.duplicate,
         copiesAfter: 0,
       ),
       DrawOutcome(
         card: _quadrant,
         variant: CardVariant.standard,
-        kind: DrawResultKind.duplicate,
+        result: DrawResult.duplicate,
         copiesAfter: 0,
       ),
     ]);
@@ -154,7 +154,7 @@ void main() {
     await repo.draw('meridian'); // 40 -> 0
 
     expect(() => repo.draw('meridian'), throwsA(isA<ValidationFailure>()));
-    expect((await repo.current()).walletPoints, 0);
+    expect((await repo.current()).quarkBalance, 0);
   });
 
   test('the sequence wraps so review never runs dry', () async {
@@ -162,49 +162,49 @@ void main() {
       DrawOutcome(
         card: _quadrant,
         variant: CardVariant.standard,
-        kind: DrawResultKind.newCard,
+        result: DrawResult.newCard,
         copiesAfter: 0,
       ),
     ]);
     await repo.load();
 
     final first = await repo.draw('meridian');
-    // Top the wallet back up by converting, so a second draw is affordable.
-    await repo.convertCopy('gnomon', CardVariant.standard);
-    await repo.convertCopy('gnomon', CardVariant.standard);
+    // Top the wallet back up by shattering, so a second draw is affordable.
+    await repo.shatterCopy('gnomon', CardVariant.standard);
+    await repo.shatterCopy('gnomon', CardVariant.standard);
     final second = await repo.draw('meridian');
 
     expect(first.card.id, 'quadrant');
     expect(second.card.id, 'quadrant', reason: 'sequence restarts at the top');
   });
 
-  test('converting pays the rarity value and removes exactly one copy',
+  test('shattering pays the rarity value and removes exactly one copy',
       () async {
     final repo = _repo(const []);
     await repo.load();
 
-    final after = await repo.convertCopy('gnomon', CardVariant.standard);
+    final after = await repo.shatterCopy('gnomon', CardVariant.standard);
 
-    expect(after.walletPoints, 85, reason: '80 + 5 for a common');
+    expect(after.quarkBalance, 85, reason: '80 + 5 for a common');
     expect(after.holdingsByCardId['gnomon']!.standardCopies, 1);
   });
 
-  test('converting the last copy removes the holding entirely', () async {
+  test('shattering the last copy removes the holding entirely', () async {
     final repo = _repo(const []);
     await repo.load();
 
-    await repo.convertCopy('gnomon', CardVariant.standard);
-    final after = await repo.convertCopy('gnomon', CardVariant.standard);
+    await repo.shatterCopy('gnomon', CardVariant.standard);
+    final after = await repo.shatterCopy('gnomon', CardVariant.standard);
 
     expect(after.holdingsByCardId.containsKey('gnomon'), isFalse);
   });
 
-  test('converting a copy that is not held fails', () async {
+  test('shattering a copy that is not held fails', () async {
     final repo = _repo(const []);
     await repo.load();
 
     expect(
-      () => repo.convertCopy('gnomon', CardVariant.special),
+      () => repo.shatterCopy('gnomon', CardVariant.special),
       throwsA(isA<ValidationFailure>()),
     );
   });
@@ -216,13 +216,13 @@ void main() {
       DrawOutcome(
         card: _flint, // cinder
         variant: CardVariant.standard,
-        kind: DrawResultKind.newCard,
+        result: DrawResult.newCard,
         copiesAfter: 0,
       ),
       DrawOutcome(
         card: _quadrant, // meridian
         variant: CardVariant.standard,
-        kind: DrawResultKind.newCard,
+        result: DrawResult.newCard,
         copiesAfter: 0,
       ),
     ]);
@@ -239,13 +239,13 @@ void main() {
       DrawOutcome(
         card: _quadrant,
         variant: CardVariant.standard,
-        kind: DrawResultKind.newCard,
+        result: DrawResult.newCard,
         copiesAfter: 0,
       ),
       DrawOutcome(
         card: _flint,
         variant: CardVariant.standard,
-        kind: DrawResultKind.newCard,
+        result: DrawResult.newCard,
         copiesAfter: 0,
       ),
     ]);
@@ -265,19 +265,19 @@ void main() {
       DrawOutcome(
         card: _quadrant,
         variant: CardVariant.standard,
-        kind: DrawResultKind.newCard,
+        result: DrawResult.newCard,
         copiesAfter: 0,
       ),
     ]);
     await repo.load();
 
     final first = await repo.draw('meridian');
-    await repo.convertCopy('gnomon', CardVariant.standard);
-    await repo.convertCopy('gnomon', CardVariant.standard);
+    await repo.shatterCopy('gnomon', CardVariant.standard);
+    await repo.shatterCopy('gnomon', CardVariant.standard);
     final second = await repo.draw('meridian');
 
-    expect(first.kind, DrawResultKind.newCard);
-    expect(second.kind, DrawResultKind.duplicate);
+    expect(first.result, DrawResult.newCard);
+    expect(second.result, DrawResult.duplicate);
     expect(second.copiesAfter, 2);
   });
 }

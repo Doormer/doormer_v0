@@ -7,7 +7,7 @@ import 'package:equatable/equatable.dart';
 import '../../domain/entity/card_rarity.dart';
 import '../../domain/entity/collection.dart';
 import '../../domain/entity/draw_outcome.dart';
-import '../../domain/usecase/convert_copy_usecase.dart';
+import '../../domain/usecase/shatter_copy_usecase.dart';
 import '../../domain/usecase/draw_card_usecase.dart';
 import '../../domain/usecase/load_collection_usecase.dart';
 
@@ -17,19 +17,19 @@ part 'collection_state.dart';
 class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
   final LoadCollectionUseCase loadCollection;
   final DrawCardUseCase drawCard;
-  final ConvertCopyUseCase convertCopy;
+  final ShatterCopyUseCase shatterCopy;
 
   CollectionBloc({
     required this.loadCollection,
     required this.drawCard,
-    required this.convertCopy,
+    required this.shatterCopy,
   }) : super(const CollectionLoading()) {
     on<CollectionStarted>(_onStarted);
     on<DeckSelected>(_onDeckSelected);
     on<DeckClosed>(_onDeckClosed);
     on<DrawRequested>(_onDrawRequested);
     on<RevealDismissed>(_onRevealDismissed);
-    on<ConvertCopyRequested>(_onConvertCopyRequested);
+    on<ShatterCopyRequested>(_onShatterCopyRequested);
   }
 
   Future<void> _onStarted(
@@ -40,11 +40,11 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     try {
       emit(CollectionReady(collection: await loadCollection()));
     } on Failure catch (failure) {
-      emit(CollectionFailed(failure.message));
+      emit(CollectionError(failure.message));
     } catch (e, stackTrace) {
       AppLogger.error('Collection load failed',
           error: e, stackTrace: stackTrace);
-      emit(const CollectionFailed('We could not open your collection.'));
+      emit(const CollectionError('We could not open your collection.'));
     }
   }
 
@@ -108,16 +108,16 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     emit(ready.copyWith(clearReveal: true));
   }
 
-  Future<void> _onConvertCopyRequested(
-    ConvertCopyRequested event,
+  Future<void> _onShatterCopyRequested(
+    ShatterCopyRequested event,
     Emitter<CollectionState> emit,
   ) async {
     final ready = state;
     if (ready is! CollectionReady) return;
     try {
-      final collection = await convertCopy(event.cardId, event.variant);
+      final collection = await shatterCopy(event.cardId, event.variant);
       // Same reason as the draw: merge into the latest state so a reveal the
-      // student dismissed mid-convert does not come back.
+      // student dismissed mid-shatter does not come back.
       final latest = state;
       if (latest is! CollectionReady) return;
       emit(latest.copyWith(collection: collection));

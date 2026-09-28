@@ -33,7 +33,7 @@ void main() {
       params: CardDetailParams(
         holding:
             const Holding(card: _card, standardCopies: 2, specialCopies: 0),
-        onConvert: (_) {},
+        onShatter: (_) {},
         onClose: () {},
       ),
     )));
@@ -50,7 +50,7 @@ void main() {
       params: CardDetailParams(
         holding:
             const Holding(card: _card, standardCopies: 2, specialCopies: 0),
-        onConvert: (_) {},
+        onShatter: (_) {},
         onClose: () {},
       ),
     )));
@@ -83,7 +83,7 @@ void main() {
                   standardCopies: 2,
                   specialCopies: 0,
                 ),
-                onConvert: (_) {},
+                onShatter: (_) {},
                 onClose: () {},
               ),
             ),
@@ -96,10 +96,10 @@ void main() {
     expect(tester.takeException(), isNull,
         reason: 'a RenderFlex overflow paints a stripe a student would see');
     expect(find.text('Uncommon'), findsOneWidget);
-    expect(find.text('Trade one'), findsOneWidget);
+    expect(find.text('Shatter one'), findsOneWidget);
   });
 
-  testWidgets('the convert action says Trade one and never says spare',
+  testWidgets('the action says Shatter one and never says spare',
       (tester) async {
     tester.view.physicalSize = const Size(360, 690);
     tester.view.devicePixelRatio = 1;
@@ -108,13 +108,12 @@ void main() {
       params: CardDetailParams(
         holding:
             const Holding(card: _card, standardCopies: 2, specialCopies: 0),
-        onConvert: (_) {},
+        onShatter: (_) {},
         onClose: () {},
       ),
     )));
-    expect(find.text('Trade one'), findsOneWidget);
+    expect(find.text('Shatter one'), findsOneWidget);
     expect(find.textContaining('spare'), findsNothing);
-    expect(find.textContaining('Convert'), findsNothing);
   });
 
   group('heldLabel', () {
@@ -141,7 +140,7 @@ void main() {
     });
   });
 
-  testWidgets('a mixed holding can still be traded, and says it is special',
+  testWidgets('a mixed holding can still be shattered, and says it is special',
       (tester) async {
     // 540 wide, matching the sibling width test: a 1200-wide viewport makes
     // ScreenUtil scale ~3.3x (no ResponsiveAppShell clamp in tests) and the
@@ -151,17 +150,17 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    // The shipped asset holds Astrolabe as 1 standard + 1 special. Judging
-    // tradability on standardCopies alone left this showing "Held 2" with the
-    // only action dead.
-    CardVariant? traded;
+    // 1 standard + 1 special. Judging whether a copy can be shattered on
+    // standardCopies alone left this showing "Held 2" with the only action
+    // dead.
+    CardVariant? shattered;
     await tester.pumpWidget(_host(
         width: 500,
         CardDetailOrganism(
           params: CardDetailParams(
             holding:
                 const Holding(card: _card, standardCopies: 1, specialCopies: 1),
-            onConvert: (v) => traded = v,
+            onShatter: (v) => shattered = v,
             onClose: () {},
           ),
         )));
@@ -170,11 +169,11 @@ void main() {
         reason: '"Now special" must remain visible after the reveal');
 
     await tester.tap(find.byType(AppButtonAtom));
-    expect(traded, CardVariant.standard,
-        reason: 'trade the plainer printing, keep the special one');
+    expect(shattered, CardVariant.standard,
+        reason: 'shatter the plainer printing, keep the special one');
   });
 
-  testWidgets('a holding of only special copies trades a special one',
+  testWidgets('a holding of only special copies shatters a special one',
       (tester) async {
     // 540 wide, matching the sibling width test: a 1200-wide viewport makes
     // ScreenUtil scale ~3.3x (no ResponsiveAppShell clamp in tests) and the
@@ -184,56 +183,57 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    CardVariant? traded;
+    CardVariant? shattered;
     await tester.pumpWidget(_host(
         width: 500,
         CardDetailOrganism(
           params: CardDetailParams(
             holding:
                 const Holding(card: _card, standardCopies: 0, specialCopies: 2),
-            onConvert: (v) => traded = v,
+            onShatter: (v) => shattered = v,
             onClose: () {},
           ),
         )));
 
     await tester.tap(find.byType(AppButtonAtom));
-    expect(traded, CardVariant.special);
+    expect(shattered, CardVariant.special);
     // An uncommon special is worth double: 11 -> 22.
     expect(find.textContaining('22'), findsOneWidget);
   });
 
-  testWidgets('a single copy cannot be traded away', (tester) async {
+  testWidgets('a single copy cannot be shattered', (tester) async {
     tester.view.physicalSize = const Size(360, 690);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
-    var converts = 0;
+    var shatters = 0;
     await tester.pumpWidget(_host(CardDetailOrganism(
       params: CardDetailParams(
         holding:
             const Holding(card: _card, standardCopies: 1, specialCopies: 0),
-        onConvert: (_) => converts++,
+        onShatter: (_) => shatters++,
         onClose: () {},
       ),
     )));
     await tester.tap(find.byType(AppButtonAtom));
-    expect(converts, 0, reason: 'trading the only copy would empty the grid');
+    expect(shatters, 0,
+        reason: 'shattering the only copy would empty the grid');
   });
 
-  testWidgets('trading reports the variant', (tester) async {
+  testWidgets('shattering reports the variant', (tester) async {
     tester.view.physicalSize = const Size(360, 690);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
-    CardVariant? traded;
+    CardVariant? shattered;
     await tester.pumpWidget(_host(CardDetailOrganism(
       params: CardDetailParams(
         holding:
             const Holding(card: _card, standardCopies: 3, specialCopies: 0),
-        onConvert: (v) => traded = v,
+        onShatter: (v) => shattered = v,
         onClose: () {},
       ),
     )));
     await tester.tap(find.byType(AppButtonAtom));
-    expect(traded, CardVariant.standard);
+    expect(shattered, CardVariant.standard);
   });
 
   testWidgets('can be closed', (tester) async {
@@ -245,7 +245,7 @@ void main() {
       params: CardDetailParams(
         holding:
             const Holding(card: _card, standardCopies: 2, specialCopies: 0),
-        onConvert: (_) {},
+        onShatter: (_) {},
         onClose: () => closed++,
       ),
     )));

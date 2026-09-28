@@ -34,14 +34,14 @@ class CollectionModel {
     }
   }
 
-  static DrawResultKind _kind(String raw) {
+  static DrawResult _result(String raw) {
     switch (raw) {
       case 'newCard':
-        return DrawResultKind.newCard;
+        return DrawResult.newCard;
       case 'upgrade':
-        return DrawResultKind.upgrade;
+        return DrawResult.upgrade;
       case 'duplicate':
-        return DrawResultKind.duplicate;
+        return DrawResult.duplicate;
       default:
         throw FormatException('Unknown draw result: $raw');
     }
@@ -93,7 +93,7 @@ class CollectionModel {
     return Collection(
       decks: decks,
       holdingsByCardId: holdings,
-      walletPoints: json['walletPoints'] as int,
+      quarkBalance: json['quarkBalance'] as int,
       drawCost: json['drawCost'] as int,
     );
   }
@@ -118,7 +118,7 @@ class CollectionModel {
       return DrawOutcome(
         card: card,
         variant: _variant(step['variant'] as String),
-        kind: _kind(step['kind'] as String),
+        result: _result(step['result'] as String),
         copiesAfter: 0,
       );
     }).toList();

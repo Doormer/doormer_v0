@@ -1,5 +1,5 @@
 {
-  "walletPoints": 600,
+  "quarkBalance": 600,
   "drawCost": 40,
   "decks": [
     {
@@ -137,77 +137,77 @@
     {
       "cardId": "orrery",
       "variant": "special",
-      "kind": "upgrade"
+      "result": "upgrade"
     },
     {
       "cardId": "quadrant",
       "variant": "standard",
-      "kind": "newCard"
+      "result": "newCard"
     },
     {
       "cardId": "gnomon",
       "variant": "standard",
-      "kind": "duplicate"
+      "result": "duplicate"
     },
     {
       "cardId": "lodestone",
       "variant": "standard",
-      "kind": "newCard"
+      "result": "newCard"
     },
     {
       "cardId": "orrery",
       "variant": "standard",
-      "kind": "duplicate"
+      "result": "duplicate"
     },
     {
       "cardId": "vernier",
       "variant": "special",
-      "kind": "upgrade"
+      "result": "upgrade"
     },
     {
       "cardId": "astrolabe",
       "variant": "standard",
-      "kind": "duplicate"
+      "result": "duplicate"
     },
     {
       "cardId": "crucible",
       "variant": "standard",
-      "kind": "newCard"
+      "result": "newCard"
     },
     {
       "cardId": "flint",
       "variant": "standard",
-      "kind": "newCard"
+      "result": "newCard"
     },
     {
       "cardId": "scorch",
       "variant": "standard",
-      "kind": "newCard"
+      "result": "newCard"
     },
     {
       "cardId": "crucible",
       "variant": "special",
-      "kind": "upgrade"
+      "result": "upgrade"
     },
     {
       "cardId": "kiln",
       "variant": "standard",
-      "kind": "newCard"
+      "result": "newCard"
     },
     {
       "cardId": "flint",
       "variant": "standard",
-      "kind": "duplicate"
+      "result": "duplicate"
     },
     {
       "cardId": "wick",
       "variant": "standard",
-      "kind": "newCard"
+      "result": "newCard"
     },
     {
       "cardId": "rasp",
       "variant": "standard",
-      "kind": "newCard"
+      "result": "newCard"
     }
   ]
 }

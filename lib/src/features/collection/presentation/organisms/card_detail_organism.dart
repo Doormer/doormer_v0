@@ -8,7 +8,7 @@ import '../../domain/entity/holding.dart';
 import '../atoms/collectible_card_atom.dart';
 import '../params/card_detail_params.dart';
 
-/// One card, with its facts and the option to trade a copy.
+/// One card, with its facts and the option to shatter a copy.
 ///
 /// **Capped at [maxWidth].** A Flutter `Dialog` expands to its child, so without
 /// an explicit constraint the card drifts away from its facts on a wide window.
@@ -56,19 +56,15 @@ class CardDetailOrganism extends StatelessWidget {
     final holding = params.holding;
     final card = holding.card;
 
-    // Never trade away the last copy: that would empty the grid slot the
+    // Never shatter the last copy: that would empty the grid slot the
     // student just filled. Any copy beyond the first is fair game, whichever
     // printing it is.
-    final canTrade = holding.totalCopies > 1;
+    final canShatter = holding.totalCopies > 1;
 
-    // Trade the plainer printing first, so a student keeps the special one.
-    // Judging this on `standardCopies > 1` instead would leave a holding of
-    // one standard and one special showing "Held 2" with the action dead.
-    final tradeVariant =
-        holding.standardCopies > 0 ? CardVariant.standard : CardVariant.special;
-    final payout = tradeVariant == CardVariant.special
-        ? card.rarity.specialConversionValue
-        : card.rarity.conversionValue;
+    final variant = holding.variantToShatter;
+    final shatterQuarks = variant == CardVariant.special
+        ? card.rarity.specialShatterQuarks
+        : card.rarity.standardShatterQuarks;
 
     return Center(
       child: ConstrainedBox(
@@ -139,19 +135,19 @@ class CardDetailOrganism extends StatelessWidget {
                       SizedBox(height: 16.h),
                       Center(
                         child: AppButtonAtom(
-                          label: 'Trade one',
+                          label: 'Shatter one',
                           variant: AppButtonVariant.accent,
-                          onPressed: canTrade
-                              ? () => params.onConvert(tradeVariant)
+                          onPressed: canShatter
+                              ? () => params.onShatter(variant)
                               : null,
                         ),
                       ),
-                      if (canTrade)
+                      if (canShatter)
                         Padding(
                           padding: EdgeInsets.only(top: 6.h),
                           child: Center(
                             child: Text(
-                              '+$payout points',
+                              '+$shatterQuarks quarks',
                               style: TextStyle(
                                 fontSize: 10.5.sp,
                                 color: QuestPalette.mint,

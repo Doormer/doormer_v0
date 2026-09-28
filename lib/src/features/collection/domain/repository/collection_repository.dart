@@ -6,12 +6,12 @@ abstract class CollectionRepository {
   /// Reads the collection for the first time.
   Future<Collection> load();
 
-  /// The collection as it stands after any draws and conversions this session.
+  /// The collection as it stands after any draws and shatters this session.
   Future<Collection> current();
 
   /// Spends [Collection.drawCost] and advances the replayed sequence.
   Future<DrawOutcome> draw(String deckId);
 
-  /// Trades one held copy for points.
-  Future<Collection> convertCopy(String cardId, CardVariant variant);
+  /// Shatters one held copy for quarks.
+  Future<Collection> shatterCopy(String cardId, CardVariant variant);
 }

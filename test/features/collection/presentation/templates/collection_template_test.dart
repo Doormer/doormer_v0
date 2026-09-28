@@ -32,7 +32,7 @@ Collection _collection() => const Collection(
           specialCopies: 0,
         ),
       },
-      walletPoints: 120,
+      quarkBalance: 120,
       drawCost: 40,
     );
 

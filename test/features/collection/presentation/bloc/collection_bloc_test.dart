@@ -8,7 +8,7 @@ import 'package:doormer/src/features/collection/domain/entity/deck.dart';
 import 'package:doormer/src/features/collection/domain/entity/draw_outcome.dart';
 import 'package:doormer/src/features/collection/domain/entity/holding.dart';
 import 'package:doormer/src/features/collection/domain/repository/collection_repository.dart';
-import 'package:doormer/src/features/collection/domain/usecase/convert_copy_usecase.dart';
+import 'package:doormer/src/features/collection/domain/usecase/shatter_copy_usecase.dart';
 import 'package:doormer/src/features/collection/domain/usecase/draw_card_usecase.dart';
 import 'package:doormer/src/features/collection/domain/usecase/load_collection_usecase.dart';
 import 'package:doormer/src/features/collection/presentation/bloc/collection_bloc.dart';
@@ -35,7 +35,7 @@ Collection _collection({int wallet = 120}) => Collection(
           specialCopies: 0,
         ),
       },
-      walletPoints: wallet,
+      quarkBalance: wallet,
       drawCost: 40,
     );
 
@@ -54,18 +54,20 @@ class _FakeRepository implements CollectionRepository {
   @override
   Future<DrawOutcome> draw(String deckId) async {
     drawCalls++;
-    if (failDraw) throw ValidationFailure('Not enough points for a draw.');
+    if (failDraw) {
+      throw ValidationFailure("You don't have enough quarks for a draw.");
+    }
     _wallet -= 40;
     return const DrawOutcome(
       card: _gnomon,
       variant: CardVariant.standard,
-      kind: DrawResultKind.duplicate,
+      result: DrawResult.duplicate,
       copiesAfter: 2,
     );
   }
 
   @override
-  Future<Collection> convertCopy(String cardId, CardVariant variant) async =>
+  Future<Collection> shatterCopy(String cardId, CardVariant variant) async =>
       _collection(wallet: 125);
 }
 
@@ -74,7 +76,7 @@ void main() {
   CollectionBloc build() => CollectionBloc(
         loadCollection: LoadCollectionUseCase(repository),
         drawCard: DrawCardUseCase(repository),
-        convertCopy: ConvertCopyUseCase(repository),
+        shatterCopy: ShatterCopyUseCase(repository),
       );
 
   setUp(() => repository = _FakeRepository());
@@ -111,8 +113,8 @@ void main() {
       isA<CollectionReady>().having((s) => s.isDrawing, 'isDrawing', isTrue),
       isA<CollectionReady>()
           .having((s) => s.isDrawing, 'isDrawing', isFalse)
-          .having((s) => s.pendingReveal?.kind, 'reveal kind',
-              DrawResultKind.duplicate),
+          .having((s) => s.pendingReveal?.result, 'reveal result',
+              DrawResult.duplicate),
     ],
   );
 
@@ -125,7 +127,7 @@ void main() {
       pendingReveal: const DrawOutcome(
         card: _gnomon,
         variant: CardVariant.standard,
-        kind: DrawResultKind.newCard,
+        result: DrawResult.newCard,
         copiesAfter: 1,
       ),
     ),
@@ -136,8 +138,8 @@ void main() {
           .having((s) => s.pendingReveal, 'pendingReveal', isNull),
       isA<CollectionReady>()
           .having((s) => s.isDrawing, 'isDrawing', isFalse)
-          .having((s) => s.pendingReveal?.kind, 'reveal kind',
-              DrawResultKind.duplicate),
+          .having((s) => s.pendingReveal?.result, 'reveal result',
+              DrawResult.duplicate),
     ],
   );
 
@@ -173,10 +175,10 @@ void main() {
     skip: 1,
     expect: () => [
       isA<CollectionReady>().having(
-        (s) => s.collection.walletPoints,
-        'walletPoints',
+        (s) => s.collection.quarkBalance,
+        'quarkBalance',
         80,
-        // The repository spent the points; emitting the seeded collection here
+        // The repository spent the quarks; emitting the seeded collection here
         // would show 120 and the card just drawn would be missing.
       ),
     ],
@@ -191,7 +193,7 @@ void main() {
       pendingReveal: const DrawOutcome(
         card: _gnomon,
         variant: CardVariant.standard,
-        kind: DrawResultKind.newCard,
+        result: DrawResult.newCard,
         copiesAfter: 1,
       ),
     ),
@@ -217,7 +219,7 @@ void main() {
           .having((s) => s.isDrawing, 'isDrawing', isFalse)
           .having((s) => s.pendingReveal, 'pendingReveal', isNull)
           .having((s) => s.errorMessage, 'errorMessage',
-              'Not enough points for a draw.'),
+              "You don't have enough quarks for a draw."),
     ],
   );
 

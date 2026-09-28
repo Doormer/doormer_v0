@@ -7,14 +7,14 @@ enum Rarity {
   uncommon(11),
   rare(19);
 
-  const Rarity(this.conversionValue);
+  const Rarity(this.standardShatterQuarks);
 
-  /// Points paid for converting one standard copy.
-  final int conversionValue;
+  /// Quarks paid for shattering one standard copy.
+  final int standardShatterQuarks;
 
   /// A special copy is worth exactly double. Kept derived rather than stored so
   /// the two can never drift apart.
-  int get specialConversionValue => conversionValue * 2;
+  int get specialShatterQuarks => standardShatterQuarks * 2;
 }
 
 /// Which printing of a card this is. `special` is the upgraded finish; both are

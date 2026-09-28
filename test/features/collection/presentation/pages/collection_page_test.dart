@@ -198,18 +198,18 @@ void main() {
 
     expect(find.byType(CardTileMolecule), findsNWidgets(5),
         reason: 'the drawn card survived the remount');
-    expect(find.textContaining('520 points'), findsOneWidget,
-        reason: 'and so did the points the two draws cost');
+    expect(find.textContaining('520 quarks'), findsOneWidget,
+        reason: 'and so did the quarks the two draws cost');
   });
 
-  testWidgets('the wallet is visible, so points are never spent invisibly',
+  testWidgets('the wallet is visible, so quarks are never spent invisibly',
       (tester) async {
     await _pumpPhone(tester);
-    expect(find.textContaining('600 points'), findsOneWidget);
+    expect(find.textContaining('600 quarks'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(DeckRowMolecule, 'Meridian'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('600 points'), findsOneWidget,
+    expect(find.textContaining('600 quarks'), findsOneWidget,
         reason: 'the wallet must follow the student to where they spend');
   });
 
@@ -244,7 +244,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 1700));
     expect(find.text('Another one'), findsOneWidget);
-    expect(find.text('Trade one for 5 points'), findsOneWidget);
+    expect(find.text('Shatter one for 5 quarks'), findsOneWidget);
   });
 
   testWidgets('an upgrade is still visible after the reveal is dismissed',

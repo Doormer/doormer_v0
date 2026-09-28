@@ -421,7 +421,7 @@ class CardRevealState extends State<CardRevealOrganism>
                     Opacity(
                       opacity: _landing.value,
                       child: Text(
-                        outcome.kind.headline,
+                        outcome.result.headline,
                         style: TextStyle(
                           fontSize: 19.sp,
                           fontWeight: FontWeight.w800,
@@ -458,12 +458,12 @@ class CardRevealState extends State<CardRevealOrganism>
   }
 
   Color _headlineColour(DrawOutcome outcome) {
-    switch (outcome.kind) {
-      case DrawResultKind.newCard:
+    switch (outcome.result) {
+      case DrawResult.newCard:
         return QuestPalette.mint;
-      case DrawResultKind.upgrade:
+      case DrawResult.upgrade:
         return QuestPalette.amber;
-      case DrawResultKind.duplicate:
+      case DrawResult.duplicate:
         return QuestPalette.body;
     }
   }

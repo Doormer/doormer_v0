@@ -8,21 +8,20 @@ import 'holding.dart';
 class Collection extends Equatable {
   final List<Deck> decks;
   final Map<String, Holding> holdingsByCardId;
-  final int walletPoints;
+  final int quarkBalance;
   final int drawCost;
 
   const Collection({
     required this.decks,
     required this.holdingsByCardId,
-    required this.walletPoints,
+    required this.quarkBalance,
     required this.drawCost,
   });
 
-  bool get canAffordDraw => walletPoints >= drawCost;
+  bool get canAffordDraw => quarkBalance >= drawCost;
 
-  /// Points still needed before a draw is possible. Zero when affordable.
-  int get pointsShortOfDraw =>
-      canAffordDraw ? 0 : drawCost - walletPoints;
+  /// Quarks still needed before a draw is possible. Zero when affordable.
+  int get quarksShortOfDraw => canAffordDraw ? 0 : drawCost - quarkBalance;
 
   /// Held cards for one deck, in the deck's own card order so the grid is
   /// stable as it fills rather than reordering on every draw.
@@ -38,16 +37,16 @@ class Collection extends Equatable {
 
   Collection copyWith({
     Map<String, Holding>? holdingsByCardId,
-    int? walletPoints,
+    int? quarkBalance,
   }) {
     return Collection(
       decks: decks,
       holdingsByCardId: holdingsByCardId ?? this.holdingsByCardId,
-      walletPoints: walletPoints ?? this.walletPoints,
+      quarkBalance: quarkBalance ?? this.quarkBalance,
       drawCost: drawCost,
     );
   }
 
   @override
-  List<Object?> get props => [decks, holdingsByCardId, walletPoints, drawCost];
+  List<Object?> get props => [decks, holdingsByCardId, quarkBalance, drawCost];
 }

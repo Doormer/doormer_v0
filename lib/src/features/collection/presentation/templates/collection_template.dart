@@ -193,7 +193,7 @@ class CollectionTemplate extends StatelessWidget {
             padding: EdgeInsets.only(top: 9.h),
             child: Center(
               child: Text(
-                '${collection.pointsShortOfDraw} more points to draw',
+                '${collection.quarksShortOfDraw} more quarks to draw',
                 style: TextStyle(fontSize: 11.sp, color: QuestPalette.amber),
               ),
             ),
@@ -204,7 +204,7 @@ class CollectionTemplate extends StatelessWidget {
 
   /// The wallet, shown wherever a student might be about to spend.
   ///
-  /// It was computed from the first task and rendered nowhere, so points could
+  /// It was computed from the first task and rendered nowhere, so quarks could
   /// be earned and spent entirely invisibly.
   Widget _wallet() {
     return Row(
@@ -221,7 +221,7 @@ class CollectionTemplate extends StatelessWidget {
         SizedBox(width: 6.w),
         Flexible(
           child: Text(
-            '${collection.walletPoints} points',
+            '${collection.quarkBalance} quarks',
             overflow: TextOverflow.ellipsis,
             style: TextStyle(fontSize: 11.5.sp, color: QuestPalette.dim),
           ),

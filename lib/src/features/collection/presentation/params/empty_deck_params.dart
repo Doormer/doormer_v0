@@ -8,8 +8,8 @@ class EmptyDeckParams {
   final int drawCost;
   final bool canAfford;
 
-  /// Points still needed. Zero when [canAfford].
-  final int pointsShort;
+  /// Quarks still needed. Zero when [canAfford].
+  final int quarksShort;
 
   final VoidCallback onDraw;
 
@@ -18,7 +18,7 @@ class EmptyDeckParams {
     required this.rarityMix,
     required this.drawCost,
     required this.canAfford,
-    required this.pointsShort,
+    required this.quarksShort,
     required this.onDraw,
   });
 }

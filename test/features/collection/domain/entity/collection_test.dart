@@ -61,7 +61,7 @@ void main() {
         holdingsByCardId: {
           'gnomon': Holding(card: gnomon, standardCopies: 5, specialCopies: 0),
         },
-        walletPoints: 120,
+        quarkBalance: 120,
         drawCost: 40,
       );
       expect(collection.heldCountFor('meridian'), 1);
@@ -77,7 +77,7 @@ void main() {
               cards: [_card('flint', Rarity.common, deckId: 'cinder')])
         ],
         holdingsByCardId: const {},
-        walletPoints: 15,
+        quarkBalance: 15,
         drawCost: 40,
       );
       expect(collection.heldCountFor('cinder'), 0);
@@ -88,7 +88,7 @@ void main() {
       const collection = Collection(
         decks: [Deck(id: 'meridian', name: 'Meridian', cards: [])],
         holdingsByCardId: {},
-        walletPoints: 120,
+        quarkBalance: 120,
         drawCost: 40,
       );
       expect(() => collection.holdingsForDeck('nope'), throwsStateError);

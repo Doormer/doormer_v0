@@ -4,7 +4,7 @@ import 'package:get_it/get_it.dart';
 import '../data/datasource/collection_local_datasource.dart';
 import '../data/repository/collection_repository_impl.dart';
 import '../domain/repository/collection_repository.dart';
-import '../domain/usecase/convert_copy_usecase.dart';
+import '../domain/usecase/shatter_copy_usecase.dart';
 import '../domain/usecase/draw_card_usecase.dart';
 import '../domain/usecase/load_collection_usecase.dart';
 import '../presentation/bloc/collection_bloc.dart';
@@ -31,14 +31,14 @@ void initCollectionModule() {
     () => DrawCardUseCase(serviceLocator<CollectionRepository>()),
   );
   serviceLocator.registerLazySingleton(
-    () => ConvertCopyUseCase(serviceLocator<CollectionRepository>()),
+    () => ShatterCopyUseCase(serviceLocator<CollectionRepository>()),
   );
 
   serviceLocator.registerFactory(
     () => CollectionBloc(
       loadCollection: serviceLocator<LoadCollectionUseCase>(),
       drawCard: serviceLocator<DrawCardUseCase>(),
-      convertCopy: serviceLocator<ConvertCopyUseCase>(),
+      shatterCopy: serviceLocator<ShatterCopyUseCase>(),
     ),
   );
 }

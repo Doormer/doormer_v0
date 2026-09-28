@@ -31,7 +31,7 @@ class _CollectionView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<CollectionBloc, CollectionState>(
-      // A draw or trade that fails was previously silent: the bloc set
+      // A draw or shatter that fails was previously silent: the bloc set
       // `errorMessage` and nothing ever read it, so the student tapped and
       // simply nothing happened.
       listenWhen: (previous, current) =>
@@ -49,7 +49,7 @@ class _CollectionView extends StatelessWidget {
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        if (state is CollectionFailed) {
+        if (state is CollectionError) {
           return Scaffold(body: Center(child: Text(state.message)));
         }
 
@@ -71,9 +71,9 @@ class _CollectionView extends StatelessWidget {
                   child: CardDetailOrganism(
                     params: CardDetailParams(
                       holding: holding,
-                      onConvert: (variant) {
+                      onShatter: (variant) {
                         bloc.add(
-                          ConvertCopyRequested(holding.card.id, variant),
+                          ShatterCopyRequested(holding.card.id, variant),
                         );
                         Navigator.of(dialogContext).pop();
                       },

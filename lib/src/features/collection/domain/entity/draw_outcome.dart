@@ -12,12 +12,12 @@ import 'collectible_card.dart';
 ///
 /// `duplicate` is the engine's word for the third case and must never reach a
 /// student — it is clinical, and it names the thing as redundant.
-enum DrawResultKind {
+enum DrawResult {
   newCard('A new one'),
   upgrade('Now special'),
   duplicate('Another one');
 
-  const DrawResultKind(this.headline);
+  const DrawResult(this.headline);
 
   final String headline;
 }
@@ -25,7 +25,7 @@ enum DrawResultKind {
 class DrawOutcome extends Equatable {
   final CollectibleCard card;
   final CardVariant variant;
-  final DrawResultKind kind;
+  final DrawResult result;
 
   /// Copies held *after* this draw. Drives the fan and the badge.
   final int copiesAfter;
@@ -33,10 +33,10 @@ class DrawOutcome extends Equatable {
   const DrawOutcome({
     required this.card,
     required this.variant,
-    required this.kind,
+    required this.result,
     required this.copiesAfter,
   });
 
   @override
-  List<Object?> get props => [card, variant, kind, copiesAfter];
+  List<Object?> get props => [card, variant, result, copiesAfter];
 }
