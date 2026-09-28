@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 const _gnomon = CollectibleCard(
   id: 'gnomon',
   name: 'Gnomon',
-  deckId: 'meridian',
   rarity: Rarity.common,
   scaleLabel: 'Small',
   artUrl: 'https://example.test/gnomon.jpg',
@@ -20,7 +19,6 @@ void main() {
     const renamed = CollectibleCard(
       id: 'gnomon',
       name: 'Gnomon renamed',
-      deckId: 'meridian',
       rarity: Rarity.rare,
       scaleLabel: 'Capital',
       artUrl: 'https://example.test/other.jpg',

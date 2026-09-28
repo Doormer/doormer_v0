@@ -6,20 +6,31 @@ import 'package:equatable/equatable.dart';
 
 import '../../domain/entity/card_rarity.dart';
 import '../../domain/entity/collection.dart';
+import '../../domain/entity/deck_progress.dart';
 import '../../domain/entity/draw_outcome.dart';
-import '../../domain/usecase/shatter_copy_usecase.dart';
 import '../../domain/usecase/draw_card_usecase.dart';
 import '../../domain/usecase/load_collection_usecase.dart';
+import '../../domain/usecase/load_decks_usecase.dart';
+import '../../domain/usecase/shatter_copy_usecase.dart';
 
 part 'collection_event.dart';
 part 'collection_state.dart';
 
+/// Bloc handlers run concurrently, so every handler that awaits applies its
+/// answer to the state as it stands *after* the await, never to the snapshot
+/// taken before it. An answer about a deck that is no longer open updates the
+/// balance and the deck list, but never the open deck: passing a null
+/// `collection` to `copyWith` keeps what the open deck is showing.
 class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
+  static const _somethingWentWrong = 'Something went wrong. Try again.';
+
+  final LoadDecksUseCase loadDecks;
   final LoadCollectionUseCase loadCollection;
   final DrawCardUseCase drawCard;
   final ShatterCopyUseCase shatterCopy;
 
   CollectionBloc({
+    required this.loadDecks,
     required this.loadCollection,
     required this.drawCard,
     required this.shatterCopy,
@@ -38,26 +49,53 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
   ) async {
     emit(const CollectionLoading());
     try {
-      emit(CollectionReady(collection: await loadCollection()));
-    } on Failure catch (failure) {
-      emit(CollectionError(failure.message));
+      final list = await loadDecks();
+      emit(CollectionReady(quarkBalance: list.quarkBalance, decks: list.decks));
     } catch (e, stackTrace) {
-      AppLogger.error('Collection load failed',
-          error: e, stackTrace: stackTrace);
-      emit(const CollectionError('We could not open your collection.'));
+      emit(CollectionError(_messageFor(e, stackTrace)));
     }
   }
 
-  void _onDeckSelected(DeckSelected event, Emitter<CollectionState> emit) {
+  Future<void> _onDeckSelected(
+    DeckSelected event,
+    Emitter<CollectionState> emit,
+  ) async {
     final ready = state;
     if (ready is! CollectionReady) return;
-    emit(ready.copyWith(selectedDeckId: event.deckId));
+    emit(ready.copyWith(
+      selectedDeckId: event.deckId,
+      clearCollection: true,
+      clearDeckError: true,
+    ));
+
+    try {
+      final read = await _readDeck(event.deckId);
+      final latest = state;
+      if (latest is! CollectionReady) return;
+      emit(latest.copyWith(
+        quarkBalance: read.quarkBalance,
+        decks: read.decks,
+        collection:
+            latest.selectedDeckId == event.deckId ? read.collection : null,
+      ));
+    } catch (e, stackTrace) {
+      final message = _messageFor(e, stackTrace);
+      final latest = state;
+      if (latest is! CollectionReady) return;
+      if (latest.selectedDeckId != event.deckId) return;
+      emit(latest.copyWith(deckErrorMessage: message));
+    }
   }
 
   void _onDeckClosed(DeckClosed event, Emitter<CollectionState> emit) {
     final ready = state;
     if (ready is! CollectionReady) return;
-    emit(ready.copyWith(clearSelectedDeck: true, clearReveal: true));
+    emit(ready.copyWith(
+      clearSelectedDeck: true,
+      clearCollection: true,
+      clearDeckError: true,
+      clearReveal: true,
+    ));
   }
 
   Future<void> _onDrawRequested(
@@ -67,34 +105,58 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     final ready = state;
     if (ready is! CollectionReady) return;
 
-    // A second tap while a draw is in flight must not spend twice.
-    if (ready.isDrawing) return;
+    // One action at a time: a second tap must not spend twice, and a draw's
+    // read must not overwrite the counts from a newer shatter.
+    if (ready.isDrawing || ready.isShattering) return;
 
-    final deckId = ready.selectedDeckId;
-    if (deckId == null) return;
+    // Nothing to draw from until the open deck has loaded.
+    final deck = ready.collection?.deck;
+    if (deck == null) return;
 
     emit(ready.copyWith(isDrawing: true, clearReveal: true));
+
+    final ({int quarkBalance, DrawOutcome outcome}) drawn;
     try {
-      final result = await drawCard(deckId);
-      // Merge into the state as it stands NOW, not the snapshot taken before
-      // the await. Bloc handlers run concurrently, so a DeckClosed or
-      // RevealDismissed that arrived mid-draw would otherwise be silently
-      // undone — the deck would reopen itself under the student.
+      drawn = await drawCard(deck.id);
+    } catch (e, stackTrace) {
+      final message = _messageFor(e, stackTrace);
+      final latest = state;
+      if (latest is! CollectionReady) return;
+      emit(latest.copyWith(isDrawing: false, errorMessage: message));
+      return;
+    }
+
+    // The card is paid for, so the reveal plays even when the read fails.
+    // `isDrawing` stays set until then, so the button keeps its spinner.
+    try {
+      final read = await _readDeck(deck.id);
       final latest = state;
       if (latest is! CollectionReady) return;
       emit(latest.copyWith(
-        collection: result.collection,
         isDrawing: false,
-        pendingReveal: result.outcome,
+        quarkBalance: read.quarkBalance,
+        decks: read.decks,
+        collection: latest.selectedDeckId == deck.id ? read.collection : null,
+        pendingReveal: PendingReveal(
+          outcome: drawn.outcome,
+          deckName: deck.name,
+          collectionAfterDraw: read.collection,
+        ),
       ));
-    } on Failure catch (failure) {
+    } catch (e, stackTrace) {
+      final message = _messageFor(e, stackTrace);
       final latest = state;
       if (latest is! CollectionReady) return;
+      final isOpen = latest.selectedDeckId == deck.id;
       emit(latest.copyWith(
         isDrawing: false,
-        clearReveal: true,
-        errorMessage: failure.message,
-        clearError: false,
+        quarkBalance: drawn.quarkBalance,
+        clearCollection: isOpen,
+        deckErrorMessage: isOpen ? message : null,
+        pendingReveal: PendingReveal(
+          outcome: drawn.outcome,
+          deckName: deck.name,
+        ),
       ));
     }
   }
@@ -114,17 +176,58 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
   ) async {
     final ready = state;
     if (ready is! CollectionReady) return;
+    if (ready.isDrawing || ready.isShattering) return;
+
+    final deckId = ready.collection?.deck.id;
+    if (deckId == null) return;
+
+    emit(ready.copyWith(isShattering: true));
     try {
-      final collection = await shatterCopy(event.cardId, event.variant);
-      // Same reason as the draw: merge into the latest state so a reveal the
-      // student dismissed mid-shatter does not come back.
+      final shattered = await shatterCopy(deckId, event.cardId, event.variant);
       final latest = state;
       if (latest is! CollectionReady) return;
-      emit(latest.copyWith(collection: collection));
-    } on Failure catch (failure) {
+      final open = latest.collection;
+      // Nothing is re-read: the answer carries everything that changes, and
+      // the deck list cannot change, because the last copy of a card can never
+      // be shattered.
+      emit(latest.copyWith(
+        isShattering: false,
+        quarkBalance: shattered.quarkBalance,
+        collection: open != null && open.deck.id == deckId
+            ? open.withCopies(
+                event.cardId,
+                standardCopies: shattered.standardCopies,
+                specialCopies: shattered.specialCopies,
+              )
+            : null,
+      ));
+    } catch (e, stackTrace) {
+      final message = _messageFor(e, stackTrace);
       final latest = state;
       if (latest is! CollectionReady) return;
-      emit(latest.copyWith(errorMessage: failure.message, clearError: false));
+      emit(latest.copyWith(isShattering: false, errorMessage: message));
     }
+  }
+
+  /// Reads one deck and then the deck list, so the list shown beside the deck
+  /// can never lag behind it. Either read failing fails both.
+  Future<({int quarkBalance, List<DeckProgress> decks, Collection collection})>
+      _readDeck(String deckId) async {
+    final opened = await loadCollection(deckId);
+    final list = await loadDecks();
+    return (
+      quarkBalance: opened.quarkBalance,
+      decks: list.decks,
+      collection: opened.collection,
+    );
+  }
+
+  /// A [Failure] already carries a message a student can read. Anything else
+  /// is a bug: it is logged, and the student is told something plain.
+  static String _messageFor(Object error, StackTrace stackTrace) {
+    if (error is Failure) return error.message;
+    AppLogger.error('Collection failed unexpectedly',
+        error: error, stackTrace: stackTrace);
+    return _somethingWentWrong;
   }
 }

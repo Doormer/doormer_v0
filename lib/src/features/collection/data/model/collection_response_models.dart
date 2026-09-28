@@ -1,10 +1,15 @@
 import '../../domain/entity/card_rarity.dart';
+import '../../domain/entity/collectible_card.dart';
+import '../../domain/entity/collection.dart';
+import '../../domain/entity/deck.dart';
+import '../../domain/entity/deck_progress.dart';
 import '../../domain/entity/draw_outcome.dart';
+import '../../domain/entity/holding.dart';
 
 // The collection API's responses, one class per API type and named after it.
 // Each `fromJson` throws when a field is missing, has the wrong type, or holds
 // a value the app does not know; the data source reports that as an
-// unreadable response.
+// unreadable response. `toEntity` turns a response into the domain's terms.
 
 Rarity _rarity(String raw) => switch (raw) {
       'common' => Rarity.common,
@@ -47,6 +52,13 @@ class DeckProgressModel {
         name: json['name'] as String,
         cardsHeld: json['cards_held'] as int,
         cardsTotal: json['cards_total'] as int,
+      );
+
+  DeckProgress toEntity() => DeckProgress(
+        deckId: deckId,
+        name: name,
+        cardsHeld: cardsHeld,
+        cardsTotal: cardsTotal,
       );
 }
 
@@ -109,6 +121,19 @@ class HeldCardModel {
       specialShatterQuarks: json['special_shatter_quarks'] as int,
     );
   }
+
+  /// The card alone. Its copy counts become a [Holding] in
+  /// [CardsResponseModel.toEntity].
+  CollectibleCard toEntity() => CollectibleCard(
+        id: cardId,
+        name: name,
+        rarity: rarity,
+        scaleLabel: scaleLabel,
+        artUrl: artUrl,
+        standardShatterQuarks: standardShatterQuarks,
+        specialShatterQuarks: specialShatterQuarks,
+        description: description,
+      );
 }
 
 /// The deck a `cards` response is about.
@@ -153,6 +178,33 @@ class CardsResponseModel {
             HeldCardModel.fromJson(card as Map<String, dynamic>),
         ],
       );
+
+  /// Every card goes into the deck, but only a card with copies gets a
+  /// holding, so the grid stays free of empty frames.
+  Collection toEntity() {
+    final deckCards = <CollectibleCard>[];
+    final holdingsByCardId = <String, Holding>{};
+    for (final held in cards) {
+      final card = held.toEntity();
+      deckCards.add(card);
+      if (held.standardCopies + held.specialCopies > 0) {
+        holdingsByCardId[card.id] = Holding(
+          card: card,
+          standardCopies: held.standardCopies,
+          specialCopies: held.specialCopies,
+        );
+      }
+    }
+    return Collection(
+      deck: Deck(
+        id: deck.deckId,
+        name: deck.name,
+        drawCost: deck.drawCost,
+        cards: deckCards,
+      ),
+      holdingsByCardId: holdingsByCardId,
+    );
+  }
 }
 
 class DrawResponseModel {
@@ -180,6 +232,13 @@ class DrawResponseModel {
         variant: _variant(json['variant'] as String),
         result: _result(json['result'] as String),
         copiesAfter: json['copies_after'] as int,
+      );
+
+  DrawOutcome toEntity() => DrawOutcome(
+        card: card.toEntity(),
+        variant: variant,
+        result: result,
+        copiesAfter: copiesAfter,
       );
 }
 

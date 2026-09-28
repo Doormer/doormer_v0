@@ -55,12 +55,16 @@ class _CollectionView extends StatelessWidget {
 
         final ready = state as CollectionReady;
         final bloc = context.read<CollectionBloc>();
+        final reveal = ready.pendingReveal;
 
         return Stack(
           children: [
             CollectionTemplate(
-              collection: ready.collection,
+              quarkBalance: ready.quarkBalance,
+              decks: ready.decks,
               selectedDeckId: ready.selectedDeckId,
+              collection: ready.collection,
+              deckErrorMessage: ready.deckErrorMessage,
               onSelectDeck: (deckId) => bloc.add(DeckSelected(deckId)),
               onCloseDeck: () => bloc.add(const DeckClosed()),
               onDraw: () => bloc.add(const DrawRequested()),
@@ -83,14 +87,15 @@ class _CollectionView extends StatelessWidget {
                 ),
               ),
             ),
-            if (ready.pendingReveal != null)
+            if (reveal != null)
               Positioned.fill(
                 child: CardRevealOrganism(
                   params: RevealParams(
-                    outcome: ready.pendingReveal!,
+                    outcome: reveal.outcome,
                     supportingLine: CollectionPresenter.revealSupportingLine(
-                      collection: ready.collection,
-                      outcome: ready.pendingReveal!,
+                      outcome: reveal.outcome,
+                      deckName: reveal.deckName,
+                      collectionAfterDraw: reveal.collectionAfterDraw,
                     ),
                     onDismiss: () => bloc.add(const RevealDismissed()),
                   ),

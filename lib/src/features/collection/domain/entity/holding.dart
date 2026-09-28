@@ -28,14 +28,6 @@ class Holding extends Equatable {
   CardVariant get variantToShatter =>
       standardCopies > 0 ? CardVariant.standard : CardVariant.special;
 
-  Holding copyWith({int? standardCopies, int? specialCopies}) {
-    return Holding(
-      card: card,
-      standardCopies: standardCopies ?? this.standardCopies,
-      specialCopies: specialCopies ?? this.specialCopies,
-    );
-  }
-
   @override
   List<Object?> get props => [card, standardCopies, specialCopies];
 }

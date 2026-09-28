@@ -11,7 +11,6 @@ import 'package:flutter_test/flutter_test.dart';
 const _card = CollectibleCard(
   id: 'astrolabe',
   name: 'Astrolabe',
-  deckId: 'meridian',
   rarity: Rarity.uncommon,
   scaleLabel: 'Medium',
   artUrl: 'https://example.test/astrolabe.jpg',

@@ -8,9 +8,19 @@ import 'collectible_card.dart';
 class Deck extends Equatable {
   final String id;
   final String name;
+
+  /// Quarks one draw from this deck costs. Each deck sets its own.
+  final int drawCost;
+
+  /// Every card in the deck, held or not.
   final List<CollectibleCard> cards;
 
-  const Deck({required this.id, required this.name, required this.cards});
+  const Deck({
+    required this.id,
+    required this.name,
+    required this.drawCost,
+    required this.cards,
+  });
 
   int get size => cards.length;
 
@@ -24,6 +34,12 @@ class Deck extends Equatable {
     }
     return mix;
   }
+
+  bool canAffordDraw(int quarkBalance) => quarkBalance >= drawCost;
+
+  /// Quarks still needed before a draw is possible. Zero when affordable.
+  int quarksShortOfDraw(int quarkBalance) =>
+      canAffordDraw(quarkBalance) ? 0 : drawCost - quarkBalance;
 
   @override
   List<Object?> get props => [id];

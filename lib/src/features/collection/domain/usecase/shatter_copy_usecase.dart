@@ -1,5 +1,4 @@
 import '../entity/card_rarity.dart';
-import '../entity/collection.dart';
 import '../repository/collection_repository.dart';
 
 class ShatterCopyUseCase {
@@ -7,6 +6,10 @@ class ShatterCopyUseCase {
 
   ShatterCopyUseCase(this.repository);
 
-  Future<Collection> call(String cardId, CardVariant variant) =>
-      repository.shatterCopy(cardId, variant);
+  Future<({int quarkBalance, int standardCopies, int specialCopies})> call(
+    String deckId,
+    String cardId,
+    CardVariant variant,
+  ) =>
+      repository.shatterCopy(deckId, cardId, variant);
 }

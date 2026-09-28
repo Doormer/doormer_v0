@@ -30,7 +30,6 @@ void main() {
         card: const CollectibleCard(
           id: 'gnomon',
           name: 'Gnomon',
-          deckId: 'meridian',
           rarity: Rarity.common,
           scaleLabel: 'Small',
           artUrl: 'https://example.test/a.jpg',

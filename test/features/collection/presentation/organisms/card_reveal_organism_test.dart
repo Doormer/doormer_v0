@@ -14,7 +14,6 @@ import 'package:flutter_test/flutter_test.dart';
 const _card = CollectibleCard(
   id: 'gnomon',
   name: 'Gnomon',
-  deckId: 'meridian',
   rarity: Rarity.common,
   scaleLabel: 'Small',
   artUrl: 'https://example.test/gnomon.jpg',
@@ -26,7 +25,6 @@ const _card = CollectibleCard(
 const _rareCard = CollectibleCard(
   id: 'orrery',
   name: 'The Orrery',
-  deckId: 'meridian',
   rarity: Rarity.rare,
   scaleLabel: 'Capital',
   artUrl: 'https://example.test/gnomon.jpg',
@@ -83,7 +81,6 @@ void main() {
       const card = CollectibleCard(
         id: 'sextant',
         name: 'Sextant',
-        deckId: 'meridian',
         rarity: Rarity.common,
         scaleLabel: 'Small',
         // Used by no other test, so the image cache cannot already hold it.
@@ -237,7 +234,6 @@ void main() {
             card: CollectibleCard(
               id: 'x',
               name: 'X',
-              deckId: 'meridian',
               rarity: rarity,
               scaleLabel: 'S',
               artUrl: 'https://example.test/gnomon.jpg',
@@ -307,7 +303,6 @@ void main() {
             card: CollectibleCard(
               id: 'x',
               name: 'X',
-              deckId: 'meridian',
               rarity: rarity,
               scaleLabel: 'S',
               artUrl: 'https://example.test/gnomon.jpg',

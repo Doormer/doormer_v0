@@ -10,7 +10,6 @@ import 'package:flutter_test/flutter_test.dart';
 const _card = CollectibleCard(
   id: 'gnomon',
   name: 'Gnomon',
-  deckId: 'meridian',
   rarity: Rarity.common,
   scaleLabel: 'Small',
   artUrl: 'https://example.test/gnomon.jpg',

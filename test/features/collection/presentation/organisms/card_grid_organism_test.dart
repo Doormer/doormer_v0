@@ -12,7 +12,6 @@ Holding _holding(String id, {int copies = 1}) => Holding(
       card: CollectibleCard(
         id: id,
         name: id,
-        deckId: 'meridian',
         rarity: Rarity.common,
         scaleLabel: 'Small',
         artUrl: 'https://example.test/gnomon.jpg',

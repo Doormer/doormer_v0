@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../domain/entity/collection.dart';
+import '../../domain/entity/deck_progress.dart';
 import '../../domain/entity/holding.dart';
 import '../mapper/collection_presenter.dart';
 import '../organisms/card_grid_organism.dart';
@@ -29,8 +30,16 @@ class CollectionTemplate extends StatelessWidget {
 
   static const double railWidth = 190;
 
-  final Collection collection;
+  final int quarkBalance;
+  final List<DeckProgress> decks;
   final String? selectedDeckId;
+
+  /// The open deck. Null while it loads, or after reading it failed.
+  final Collection? collection;
+
+  /// Why the open deck could not load.
+  final String? deckErrorMessage;
+
   final void Function(String deckId) onSelectDeck;
   final VoidCallback onCloseDeck;
   final VoidCallback onDraw;
@@ -38,8 +47,11 @@ class CollectionTemplate extends StatelessWidget {
 
   const CollectionTemplate({
     super.key,
-    required this.collection,
+    required this.quarkBalance,
+    required this.decks,
     required this.selectedDeckId,
+    required this.collection,
+    required this.deckErrorMessage,
     required this.onSelectDeck,
     required this.onCloseDeck,
     required this.onDraw,
@@ -64,7 +76,7 @@ class CollectionTemplate extends StatelessWidget {
   Widget _deckList({required bool isRail}) {
     return DeckListOrganism(
       rows: CollectionPresenter.deckRows(
-        collection: collection,
+        decks: decks,
         selectedDeckId: selectedDeckId,
         isRail: isRail,
         onSelect: onSelectDeck,
@@ -100,7 +112,7 @@ class CollectionTemplate extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  '${collection.decks.length} decks',
+                  '${decks.length} decks',
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: 11.5.sp, color: QuestPalette.dim),
                 ),
@@ -124,19 +136,29 @@ class CollectionTemplate extends StatelessWidget {
     bool showBack = false,
     bool isWide = false,
   }) {
-    final deckId = selectedDeckId!;
-    final holdings = collection.holdingsForDeck(deckId);
-    final deck = collection.decks.firstWhere((d) => d.id == deckId);
+    final collection = this.collection;
+    if (collection == null) {
+      return Column(
+        children: [
+          if (showBack) _backRow(_openDeckName),
+          Expanded(child: Center(child: _deckLoadingOrError())),
+        ],
+      );
+    }
+
+    final deck = collection.deck;
+    final holdings = collection.holdings;
+    final canAffordDraw = deck.canAffordDraw(quarkBalance);
 
     if (holdings.isEmpty) {
       return Column(
         children: [
-          if (showBack) _backRow(deck.name),
+          if (showBack) _backRow(_openDeckName),
           Expanded(
             child: EmptyDeckOrganism(
               params: CollectionPresenter.emptyDeck(
-                collection: collection,
-                deckId: deckId,
+                deck: deck,
+                quarkBalance: quarkBalance,
                 onDraw: onDraw,
               ),
             ),
@@ -148,7 +170,7 @@ class CollectionTemplate extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (showBack) _backRow(deck.name),
+        if (showBack) _backRow(_openDeckName),
         // Flexible on both sides: a Row of two plain Texts overflows the moment
         // the type scales up, which is the same defect the facts list had.
         Row(
@@ -156,7 +178,7 @@ class CollectionTemplate extends StatelessWidget {
           children: [
             Flexible(
               child: Text(
-                '${collection.heldCountFor(deckId)} of ${deck.size} held',
+                '${collection.cardsHeld} of ${deck.size} held',
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontSize: 11.5.sp, color: QuestPalette.dim),
               ),
@@ -181,19 +203,19 @@ class CollectionTemplate extends StatelessWidget {
         ),
         SizedBox(height: 14.h),
         AppButtonAtom(
-          label: 'Draw a card · ${collection.drawCost}',
+          label: 'Draw a card · ${deck.drawCost}',
           expand: true,
-          onPressed: collection.canAffordDraw ? onDraw : null,
+          onPressed: canAffordDraw ? onDraw : null,
         ),
         // A greyed-out button with no explanation reads as broken. The empty
         // deck already says how far short the student is; a filled one owes
         // them the same answer.
-        if (!collection.canAffordDraw)
+        if (!canAffordDraw)
           Padding(
             padding: EdgeInsets.only(top: 9.h),
             child: Center(
               child: Text(
-                '${collection.quarksShortOfDraw} more quarks to draw',
+                '${deck.quarksShortOfDraw(quarkBalance)} more quarks to draw',
                 style: TextStyle(fontSize: 11.sp, color: QuestPalette.amber),
               ),
             ),
@@ -221,12 +243,27 @@ class CollectionTemplate extends StatelessWidget {
         SizedBox(width: 6.w),
         Flexible(
           child: Text(
-            '${collection.quarkBalance} quarks',
+            '$quarkBalance quarks',
             overflow: TextOverflow.ellipsis,
             style: TextStyle(fontSize: 11.5.sp, color: QuestPalette.dim),
           ),
         ),
       ],
+    );
+  }
+
+  /// Taken from the deck list, because the open deck may not have loaded yet.
+  String get _openDeckName =>
+      decks.firstWhere((d) => d.deckId == selectedDeckId).name;
+
+  /// The open deck before it can be shown: loading, or why it could not load.
+  Widget _deckLoadingOrError() {
+    final message = deckErrorMessage;
+    if (message == null) return const CircularProgressIndicator();
+    return Text(
+      message,
+      textAlign: TextAlign.center,
+      style: TextStyle(fontSize: 12.sp, color: QuestPalette.muted),
     );
   }
 

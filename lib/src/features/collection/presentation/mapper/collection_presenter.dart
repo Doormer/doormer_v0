@@ -1,44 +1,47 @@
 import '../../domain/entity/collection.dart';
+import '../../domain/entity/deck.dart';
+import '../../domain/entity/deck_progress.dart';
 import '../../domain/entity/draw_outcome.dart';
 import '../params/deck_row_params.dart';
 import '../params/empty_deck_params.dart';
 
 /// Turns entities into the plain holders the widgets take. Pure, and invoked
-/// from the page only — nothing below the page builds its own params.
+/// from the page and the template only — nothing below them builds its own
+/// params.
 class CollectionPresenter {
   const CollectionPresenter._();
 
   static List<DeckRowParams> deckRows({
-    required Collection collection,
+    required List<DeckProgress> decks,
     required String? selectedDeckId,
     required bool isRail,
     required void Function(String deckId) onSelect,
   }) {
-    return collection.decks.map((deck) {
-      return DeckRowParams(
-        deckId: deck.id,
-        name: deck.name,
-        held: collection.heldCountFor(deck.id),
-        total: deck.size,
-        isSelected: deck.id == selectedDeckId,
-        showFlag: !isRail,
-        onTap: () => onSelect(deck.id),
-      );
-    }).toList();
+    return [
+      for (final deck in decks)
+        DeckRowParams(
+          deckId: deck.deckId,
+          name: deck.name,
+          held: deck.cardsHeld,
+          total: deck.cardsTotal,
+          isSelected: deck.deckId == selectedDeckId,
+          showFlag: !isRail,
+          onTap: () => onSelect(deck.deckId),
+        ),
+    ];
   }
 
   static EmptyDeckParams emptyDeck({
-    required Collection collection,
-    required String deckId,
+    required Deck deck,
+    required int quarkBalance,
     required void Function() onDraw,
   }) {
-    final deck = collection.decks.firstWhere((d) => d.id == deckId);
     return EmptyDeckParams(
       deckSize: deck.size,
       rarityMix: deck.rarityMix,
-      drawCost: collection.drawCost,
-      canAfford: collection.canAffordDraw,
-      quarksShort: collection.quarksShortOfDraw,
+      drawCost: deck.drawCost,
+      canAfford: deck.canAffordDraw(quarkBalance),
+      quarksShort: deck.quarksShortOfDraw(quarkBalance),
       onDraw: onDraw,
     );
   }
@@ -48,26 +51,27 @@ class CollectionPresenter {
   /// Transcribed from the mockup's three outcomes: deck progress for a new
   /// card, reassurance that the plain copy survives an upgrade, and what a
   /// spare is worth for a duplicate. The headline says what happened; this
-  /// says what it means.
+  /// says what it means. [collectionAfterDraw] is null when reading the deck
+  /// after the draw failed, and each line then says only what it still knows.
   static String revealSupportingLine({
-    required Collection collection,
     required DrawOutcome outcome,
+    required String deckName,
+    required Collection? collectionAfterDraw,
   }) {
     switch (outcome.result) {
       case DrawResult.newCard:
-        final deck =
-            collection.decks.firstWhere((d) => d.id == outcome.card.deckId);
-        return '${deck.name} is '
-            '${collection.heldCountFor(deck.id)} of ${deck.size}';
+        if (collectionAfterDraw == null) return 'Added to $deckName';
+        return '$deckName is ${collectionAfterDraw.cardsHeld} '
+            'of ${collectionAfterDraw.deck.size}';
       case DrawResult.upgrade:
         return 'You keep the standard one.';
       case DrawResult.duplicate:
         // The same number the card detail will offer, so it is worked out
         // from the holding after the draw rather than from the drawn copy.
-        final holding = collection.holdingsByCardId[outcome.card.id];
+        final holding = collectionAfterDraw?.holdingOf(outcome.card.id);
         if (holding == null) return 'You can shatter a spare for quarks.';
         return 'Shatter one for '
-            '${outcome.card.shatterQuarksFor(holding.variantToShatter)} quarks';
+            '${holding.card.shatterQuarksFor(holding.variantToShatter)} quarks';
     }
   }
 }

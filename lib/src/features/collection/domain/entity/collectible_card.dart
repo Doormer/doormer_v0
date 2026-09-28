@@ -8,7 +8,6 @@ import 'card_rarity.dart';
 class CollectibleCard extends Equatable {
   final String id;
   final String name;
-  final String deckId;
   final Rarity rarity;
 
   /// Free text such as `Small` or `Capital`. Deliberately not an enum: decks
@@ -27,7 +26,6 @@ class CollectibleCard extends Equatable {
   const CollectibleCard({
     required this.id,
     required this.name,
-    required this.deckId,
     required this.rarity,
     required this.scaleLabel,
     required this.artUrl,
