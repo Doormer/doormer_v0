@@ -223,7 +223,9 @@ class CollectionTemplate extends StatelessWidget {
             padding: EdgeInsets.only(top: 9.h),
             child: Center(
               child: Text(
-                '${deck.quarksShortOfDraw(quarkBalance)} more quarks to draw',
+                CollectionPresenter.quarksShortLabel(
+                  deck.quarksShortOfDraw(quarkBalance),
+                ),
                 style: TextStyle(fontSize: 11.sp, color: QuestPalette.amber),
               ),
             ),
@@ -251,7 +253,7 @@ class CollectionTemplate extends StatelessWidget {
         SizedBox(width: 6.w),
         Flexible(
           child: Text(
-            '$quarkBalance quarks',
+            CollectionPresenter.quarkBalanceLabel(quarkBalance),
             overflow: TextOverflow.ellipsis,
             style: TextStyle(fontSize: 11.5.sp, color: QuestPalette.dim),
           ),

@@ -180,6 +180,24 @@ void main() {
         isTrue);
   });
 
+  testWidgets('a wallet of one quark says quark, not quarks', (tester) async {
+    await _pumpAt(tester, _phone, _template(quarkBalance: 1));
+    expect(find.text('1 quark'), findsOneWidget);
+  });
+
+  testWidgets('one quark short of a draw is said in the singular',
+      (tester) async {
+    await _pumpAt(
+        tester,
+        _phone,
+        _template(
+          quarkBalance: 39,
+          selectedDeckId: 'meridian',
+          collection: _meridian,
+        ));
+    expect(find.text('1 more quark to draw'), findsOneWidget);
+  });
+
   testWidgets('a draw the student cannot afford says how far short they are',
       (tester) async {
     await _pumpAt(

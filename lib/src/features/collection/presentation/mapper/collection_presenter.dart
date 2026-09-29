@@ -42,11 +42,22 @@ class CollectionPresenter {
       rarityMix: deck.rarityMix,
       drawCost: deck.drawCost,
       canAfford: deck.canAffordDraw(quarkBalance),
-      quarksShort: deck.quarksShortOfDraw(quarkBalance),
+      quarksShortLabel: quarksShortLabel(deck.quarksShortOfDraw(quarkBalance)),
       isDrawing: isDrawing,
       onDraw: onDraw,
     );
   }
+
+  /// The wallet: "40 quarks", or "1 quark".
+  static String quarkBalanceLabel(int quarkBalance) =>
+      '$quarkBalance ${_quarkWord(quarkBalance)}';
+
+  /// Under a draw button the student can't afford yet: "25 more quarks to
+  /// draw", or "1 more quark to draw".
+  static String quarksShortLabel(int quarksShort) =>
+      '$quarksShort more ${_quarkWord(quarksShort)} to draw';
+
+  static String _quarkWord(int count) => count == 1 ? 'quark' : 'quarks';
 
   /// The quiet line under a reveal's headline.
   ///

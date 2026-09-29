@@ -87,8 +87,19 @@ void main() {
     expect(params.deckSize, 2);
     expect(params.drawCost, 40);
     expect(params.canAfford, isFalse);
-    expect(params.quarksShort, 25);
+    expect(params.quarksShortLabel, '25 more quarks to draw');
     expect(params.isDrawing, isFalse);
+  });
+
+  test('the wallet says quark for one, and quarks for any other count', () {
+    expect(CollectionPresenter.quarkBalanceLabel(1), '1 quark');
+    expect(CollectionPresenter.quarkBalanceLabel(0), '0 quarks');
+    expect(CollectionPresenter.quarkBalanceLabel(40), '40 quarks');
+  });
+
+  test('one quark short of a draw is said in the singular', () {
+    expect(CollectionPresenter.quarksShortLabel(1), '1 more quark to draw');
+    expect(CollectionPresenter.quarksShortLabel(25), '25 more quarks to draw');
   });
 
   test('the empty deck is told when a draw is in flight', () {

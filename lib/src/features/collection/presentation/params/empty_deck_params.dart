@@ -8,8 +8,9 @@ class EmptyDeckParams {
   final int drawCost;
   final bool canAfford;
 
-  /// Quarks still needed. Zero when [canAfford].
-  final int quarksShort;
+  /// How far short of a draw the student is, as the screen says it:
+  /// "25 more quarks to draw". Shown only when not [canAfford].
+  final String quarksShortLabel;
 
   /// A draw is in flight, so the button shows a spinner.
   final bool isDrawing;
@@ -21,7 +22,7 @@ class EmptyDeckParams {
     required this.rarityMix,
     required this.drawCost,
     required this.canAfford,
-    required this.quarksShort,
+    required this.quarksShortLabel,
     required this.isDrawing,
     required this.onDraw,
   });

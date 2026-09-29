@@ -84,7 +84,7 @@ class EmptyDeckOrganism extends StatelessWidget {
         if (!params.canAfford) ...[
           SizedBox(height: 9.h),
           Text(
-            '${params.quarksShort} more quarks to draw',
+            params.quarksShortLabel,
             style: TextStyle(fontSize: 11.sp, color: QuestPalette.amber),
           ),
         ],
