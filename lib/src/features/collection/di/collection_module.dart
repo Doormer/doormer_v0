@@ -20,6 +20,8 @@ void initCollectionModule() {
     () => CollectionRemoteDataSourceImpl(dio: serviceLocator<Dio>()),
   );
 
+  // A singleton on purpose: the idempotency keys it keeps for lost answers
+  // have to survive leaving and reopening the page.
   serviceLocator.registerLazySingleton<CollectionRepository>(
     () => CollectionRepositoryImpl(
       remoteDataSource: serviceLocator<CollectionRemoteDataSource>(),

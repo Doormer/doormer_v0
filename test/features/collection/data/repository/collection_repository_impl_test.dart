@@ -19,6 +19,10 @@ const _gnomon = HeldCardModel(
   specialShatterQuarks: 10,
 );
 
+final _noConnection =
+    NetworkFailure("We couldn't connect. Check your connection and try again.");
+final _serverError = ServerFailure('Something went wrong. Try again.');
+
 /// Answers like the API, and keeps every idempotency key it is sent. Set
 /// [failure] to make every call fail with it instead.
 class _FakeRemoteDataSource implements CollectionRemoteDataSource {
@@ -101,6 +105,15 @@ void main() {
     );
   });
 
+  /// Makes the next call fail with [failure], and checks that the failure
+  /// reaches the caller unchanged.
+  Future<void> failOnce(
+      Failure failure, Future<Object?> Function() call) async {
+    remote.failure = failure;
+    await expectLater(call(), throwsA(same(failure)));
+    remote.failure = null;
+  }
+
   test('the deck list comes back as progress through each deck', () async {
     final list = await repository.loadDecks();
 
@@ -143,6 +156,80 @@ void main() {
     await repository.shatterCopy('meridian-01', 'gnomon', CardVariant.standard);
 
     expect(remote.keysSent, ['key-1', 'key-2', 'key-3']);
+  });
+
+  test('a draw whose answer was lost sends the same key when repeated',
+      () async {
+    await failOnce(_noConnection, () => repository.draw('meridian-01'));
+    await failOnce(_serverError, () => repository.draw('meridian-01'));
+    await repository.draw('meridian-01');
+
+    expect(remote.keysSent, ['key-1', 'key-1', 'key-1']);
+  });
+
+  test('a shatter whose answer was lost sends the same key when repeated',
+      () async {
+    await failOnce(
+      _noConnection,
+      () =>
+          repository.shatterCopy('meridian-01', 'gnomon', CardVariant.standard),
+    );
+    await repository.shatterCopy('meridian-01', 'gnomon', CardVariant.standard);
+
+    expect(remote.keysSent, ['key-1', 'key-1']);
+  });
+
+  test('a kept draw key is sent only for a draw on the same deck', () async {
+    await failOnce(_noConnection, () => repository.draw('meridian-01'));
+    await repository.draw('cinder-01');
+    await repository.shatterCopy('meridian-01', 'gnomon', CardVariant.standard);
+    await repository.draw('meridian-01');
+
+    expect(remote.keysSent, ['key-1', 'key-2', 'key-3', 'key-1']);
+  });
+
+  test('a kept shatter key is sent only for the same deck, card and variant',
+      () async {
+    await failOnce(
+      _noConnection,
+      () =>
+          repository.shatterCopy('meridian-01', 'gnomon', CardVariant.standard),
+    );
+    await repository.shatterCopy('meridian-01', 'gnomon', CardVariant.special);
+    await repository.shatterCopy(
+        'meridian-01', 'quadrant', CardVariant.standard);
+    await repository.shatterCopy('cinder-01', 'gnomon', CardVariant.standard);
+    await repository.draw('meridian-01');
+    await repository.shatterCopy('meridian-01', 'gnomon', CardVariant.standard);
+
+    expect(
+      remote.keysSent,
+      ['key-1', 'key-2', 'key-3', 'key-4', 'key-5', 'key-1'],
+    );
+  });
+
+  test('an answer retires the kept key', () async {
+    await failOnce(_noConnection, () => repository.draw('meridian-01'));
+    await repository.draw('meridian-01');
+    await repository.draw('meridian-01');
+
+    expect(remote.keysSent, ['key-1', 'key-1', 'key-2']);
+  });
+
+  final definiteFailures = <String, Failure>{
+    'a 409': ValidationFailure("You don't have enough quarks for a draw."),
+    'a 404': ApiFailure(404, 'Something went wrong. Try again.'),
+    'a 401': AuthFailure(),
+    'an unreadable answer': UnknownFailure('Something went wrong. Try again.'),
+  };
+  definiteFailures.forEach((answer, failure) {
+    test('$answer retires the kept key', () async {
+      await failOnce(_noConnection, () => repository.draw('meridian-01'));
+      await failOnce(failure, () => repository.draw('meridian-01'));
+      await repository.draw('meridian-01');
+
+      expect(remote.keysSent, ['key-1', 'key-1', 'key-2']);
+    });
   });
 
   test('a failure reaches the caller unchanged', () async {
