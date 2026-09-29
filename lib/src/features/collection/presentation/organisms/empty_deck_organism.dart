@@ -78,6 +78,7 @@ class EmptyDeckOrganism extends StatelessWidget {
           // rather than disappearing when it cannot be afforded.
           label: 'Draw a card · ${params.drawCost}',
           expand: true,
+          isLoading: params.isDrawing,
           onPressed: params.canAfford ? params.onDraw : null,
         ),
         if (!params.canAfford) ...[

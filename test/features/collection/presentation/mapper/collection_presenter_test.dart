@@ -80,6 +80,7 @@ void main() {
     final params = CollectionPresenter.emptyDeck(
       deck: _deck,
       quarkBalance: 15,
+      isDrawing: false,
       onDraw: () {},
     );
 
@@ -87,6 +88,18 @@ void main() {
     expect(params.drawCost, 40);
     expect(params.canAfford, isFalse);
     expect(params.quarksShort, 25);
+    expect(params.isDrawing, isFalse);
+  });
+
+  test('the empty deck is told when a draw is in flight', () {
+    final params = CollectionPresenter.emptyDeck(
+      deck: _deck,
+      quarkBalance: 40,
+      isDrawing: true,
+      onDraw: () {},
+    );
+
+    expect(params.isDrawing, isTrue);
   });
 
   group('the reveal line', () {

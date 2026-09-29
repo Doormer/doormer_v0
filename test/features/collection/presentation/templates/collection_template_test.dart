@@ -6,6 +6,7 @@ import 'package:doormer/src/features/collection/domain/entity/deck_progress.dart
 import 'package:doormer/src/features/collection/domain/entity/holding.dart';
 import 'package:doormer/src/features/collection/presentation/organisms/card_grid_organism.dart';
 import 'package:doormer/src/features/collection/presentation/organisms/deck_list_organism.dart';
+import 'package:doormer/src/features/collection/presentation/organisms/empty_deck_organism.dart';
 import 'package:doormer/src/features/collection/presentation/templates/collection_template.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,17 @@ const _gnomon = CollectibleCard(
   rarity: Rarity.common,
   scaleLabel: 'Small',
   artUrl: 'https://example.test/gnomon.jpg',
+  standardShatterQuarks: 5,
+  specialShatterQuarks: 10,
+  description: 'd',
+);
+
+const _flint = CollectibleCard(
+  id: 'flint',
+  name: 'Flint',
+  rarity: Rarity.common,
+  scaleLabel: 'Small',
+  artUrl: 'https://example.test/flint.jpg',
   standardShatterQuarks: 5,
   specialShatterQuarks: 10,
   description: 'd',
@@ -36,11 +48,19 @@ const _meridian = Collection(
   },
 );
 
+/// Cinder, holding nothing yet.
+const _cinder = Collection(
+  deck: Deck(id: 'cinder', name: 'Cinder', drawCost: 40, cards: [_flint]),
+  holdingsByCardId: {},
+);
+
 CollectionTemplate _template({
   int quarkBalance = 120,
   String? selectedDeckId,
   Collection? collection,
   String? deckErrorMessage,
+  bool isDrawing = false,
+  void Function(String deckId)? onSelectDeck,
 }) =>
     CollectionTemplate(
       quarkBalance: quarkBalance,
@@ -48,7 +68,8 @@ CollectionTemplate _template({
       selectedDeckId: selectedDeckId,
       collection: collection,
       deckErrorMessage: deckErrorMessage,
-      onSelectDeck: (_) {},
+      isDrawing: isDrawing,
+      onSelectDeck: onSelectDeck ?? (_) {},
       onCloseDeck: () {},
       onDraw: () {},
       onCardTap: (_) {},
@@ -111,17 +132,52 @@ void main() {
     expect(find.byType(CardGridOrganism), findsNothing);
   });
 
-  testWidgets('a deck that could not load says why', (tester) async {
+  testWidgets('a deck that could not load says why, and Retry opens it again',
+      (tester) async {
+    final opened = <String>[];
     await _pumpAt(
         tester,
         _phone,
         _template(
           selectedDeckId: 'meridian',
           deckErrorMessage: 'Something went wrong. Try again.',
+          onSelectDeck: opened.add,
         ));
     expect(find.text('Something went wrong. Try again.'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.byType(CardGridOrganism), findsNothing);
+
+    await tester.tap(find.text('Retry'));
+    expect(opened, ['meridian']);
+  });
+
+  testWidgets('while a draw is in flight the draw button spins',
+      (tester) async {
+    await _pumpAt(
+        tester,
+        _phone,
+        _template(
+          selectedDeckId: 'meridian',
+          collection: _meridian,
+          isDrawing: true,
+        ));
+    expect(tester.widget<AppButtonAtom>(find.byType(AppButtonAtom)).isLoading,
+        isTrue);
+  });
+
+  testWidgets('while a draw is in flight the empty deck\'s draw button spins',
+      (tester) async {
+    await _pumpAt(
+        tester,
+        _phone,
+        _template(
+          selectedDeckId: 'cinder',
+          collection: _cinder,
+          isDrawing: true,
+        ));
+    expect(find.byType(EmptyDeckOrganism), findsOneWidget);
+    expect(tester.widget<AppButtonAtom>(find.byType(AppButtonAtom)).isLoading,
+        isTrue);
   });
 
   testWidgets('a draw the student cannot afford says how far short they are',

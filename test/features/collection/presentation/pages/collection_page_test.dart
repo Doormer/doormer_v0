@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/features/collection/di/collection_module.dart';
 import 'package:doormer/src/features/collection/domain/entity/card_rarity.dart';
 import 'package:doormer/src/features/collection/domain/entity/collectible_card.dart';
@@ -16,6 +19,7 @@ import 'package:doormer/src/features/collection/presentation/organisms/card_reve
 import 'package:doormer/src/features/collection/presentation/organisms/deck_list_organism.dart';
 import 'package:doormer/src/features/collection/presentation/organisms/empty_deck_organism.dart';
 import 'package:doormer/src/features/collection/presentation/pages/collection_page.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -67,13 +71,17 @@ final _decks = {
     deck.id: deck,
 };
 
+final _noConnection =
+    NetworkFailure("We couldn't connect. Check your connection and try again.");
+
 CollectibleCard _cardOf(String cardId) => _decks.values
     .expand((deck) => deck.cards)
     .firstWhere((card) => card.id == cardId);
 
 /// The server, played in memory. It starts where the bundled mock used to:
 /// 600 quarks, 4 of Meridian's 6 cards, and nothing in Cinder. Each deck
-/// draws in a fixed order, so every journey knows what comes next.
+/// draws in a fixed order, so every journey knows what comes next. A test can
+/// make the next load fail, or hold back a draw's answer.
 class _InMemoryCollectionRepository implements CollectionRepository {
   static const _drawOrder = {
     'meridian': [
@@ -86,6 +94,18 @@ class _InMemoryCollectionRepository implements CollectionRepository {
     ],
     'cinder': [('flint', CardVariant.standard)],
   };
+
+  /// When set, the next load fails with it.
+  Failure? failNextLoadWith;
+
+  /// When set, every draw waits for it before it answers.
+  Future<void>? drawWaitsFor;
+
+  void _failLoadIfAsked() {
+    final failure = failNextLoadWith;
+    failNextLoadWith = null;
+    if (failure != null) throw failure;
+  }
 
   int _quarkBalance = 600;
   final Map<String, int> _drawsMade = {};
@@ -124,27 +144,35 @@ class _InMemoryCollectionRepository implements CollectionRepository {
   }
 
   @override
-  Future<({int quarkBalance, List<DeckProgress> decks})> loadDecks() async => (
-        quarkBalance: _quarkBalance,
-        decks: [
-          for (final deck in _decks.values)
-            DeckProgress(
-              deckId: deck.id,
-              name: deck.name,
-              cardsHeld: _collectionOf(deck.id).cardsHeld,
-              cardsTotal: deck.size,
-            ),
-        ],
-      );
+  Future<({int quarkBalance, List<DeckProgress> decks})> loadDecks() async {
+    _failLoadIfAsked();
+    return (
+      quarkBalance: _quarkBalance,
+      decks: [
+        for (final deck in _decks.values)
+          DeckProgress(
+            deckId: deck.id,
+            name: deck.name,
+            cardsHeld: _collectionOf(deck.id).cardsHeld,
+            cardsTotal: deck.size,
+          ),
+      ],
+    );
+  }
 
   @override
   Future<({int quarkBalance, Collection collection})> loadCollection(
     String deckId,
-  ) async =>
-      (quarkBalance: _quarkBalance, collection: _collectionOf(deckId));
+  ) async {
+    _failLoadIfAsked();
+    return (quarkBalance: _quarkBalance, collection: _collectionOf(deckId));
+  }
 
   @override
   Future<({int quarkBalance, DrawOutcome outcome})> draw(String deckId) async {
+    final wait = drawWaitsFor;
+    if (wait != null) await wait;
+
     final order = _drawOrder[deckId]!;
     final drawsMade = _drawsMade[deckId] ?? 0;
     _drawsMade[deckId] = drawsMade + 1;
@@ -224,6 +252,8 @@ Future<void> _drawAndDismiss(WidgetTester tester) async {
 /// the data source, the response models and the repository have their own
 /// tests.
 void main() {
+  late _InMemoryCollectionRepository server;
+
   setUp(() async {
     // A fresh container per test, so one test's draws never carry into the
     // next. `reset` is async — not awaiting it lets the wipe land after the
@@ -232,9 +262,8 @@ void main() {
     initCollectionModule();
 
     await GetIt.instance.unregister<CollectionRepository>();
-    GetIt.instance.registerSingleton<CollectionRepository>(
-      _InMemoryCollectionRepository(),
-    );
+    server = _InMemoryCollectionRepository();
+    GetIt.instance.registerSingleton<CollectionRepository>(server);
   });
 
   tearDown(() async => GetIt.instance.reset());
@@ -432,5 +461,57 @@ void main() {
 
     expect(find.byType(DeckListOrganism), findsOneWidget);
     expect(find.byType(CardGridOrganism), findsNothing);
+  });
+
+  testWidgets('when the decks cannot load, Retry loads them', (tester) async {
+    server.failNextLoadWith = _noConnection;
+    await _pumpPhone(tester);
+
+    expect(find.text(_noConnection.message), findsOneWidget);
+    expect(find.byType(DeckListOrganism), findsNothing);
+
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DeckListOrganism), findsOneWidget);
+    expect(find.textContaining('600 quarks'), findsOneWidget);
+  });
+
+  testWidgets('when a deck cannot load, Retry opens it again', (tester) async {
+    await _pumpPhone(tester);
+    server.failNextLoadWith = _noConnection;
+    await _openDeck(tester, 'Meridian');
+
+    expect(find.text(_noConnection.message), findsOneWidget);
+    expect(find.byType(CardGridOrganism), findsNothing);
+
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CardTileMolecule), findsNWidgets(4));
+  });
+
+  testWidgets('the draw button spins until the drawn card is ready',
+      (tester) async {
+    await _pumpPhone(tester);
+    await _openDeck(tester, 'Meridian');
+    final answer = Completer<void>();
+    server.drawWaitsFor = answer.future;
+    AppButtonAtom drawButton() =>
+        tester.widget<AppButtonAtom>(find.byType(AppButtonAtom));
+
+    await tester.tap(find.textContaining('Draw a card'));
+    await tester.pump();
+    expect(drawButton().isLoading, isTrue);
+
+    answer.complete();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1700));
+    expect(find.byType(CardRevealOrganism), findsOneWidget);
+
+    await tester.tap(find.byType(CardRevealOrganism));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(drawButton().isLoading, isFalse);
   });
 }

@@ -7,6 +7,7 @@ import '../../domain/entity/collection.dart';
 import '../../domain/entity/deck_progress.dart';
 import '../../domain/entity/holding.dart';
 import '../mapper/collection_presenter.dart';
+import '../molecules/error_with_retry_molecule.dart';
 import '../organisms/card_grid_organism.dart';
 import '../organisms/deck_list_organism.dart';
 import '../organisms/empty_deck_organism.dart';
@@ -40,6 +41,10 @@ class CollectionTemplate extends StatelessWidget {
   /// Why the open deck could not load.
   final String? deckErrorMessage;
 
+  /// A draw is in flight. Both draw buttons show a spinner until the drawn
+  /// card is ready.
+  final bool isDrawing;
+
   final void Function(String deckId) onSelectDeck;
   final VoidCallback onCloseDeck;
   final VoidCallback onDraw;
@@ -52,6 +57,7 @@ class CollectionTemplate extends StatelessWidget {
     required this.selectedDeckId,
     required this.collection,
     required this.deckErrorMessage,
+    required this.isDrawing,
     required this.onSelectDeck,
     required this.onCloseDeck,
     required this.onDraw,
@@ -159,6 +165,7 @@ class CollectionTemplate extends StatelessWidget {
               params: CollectionPresenter.emptyDeck(
                 deck: deck,
                 quarkBalance: quarkBalance,
+                isDrawing: isDrawing,
                 onDraw: onDraw,
               ),
             ),
@@ -205,6 +212,7 @@ class CollectionTemplate extends StatelessWidget {
         AppButtonAtom(
           label: 'Draw a card · ${deck.drawCost}',
           expand: true,
+          isLoading: isDrawing,
           onPressed: canAffordDraw ? onDraw : null,
         ),
         // A greyed-out button with no explanation reads as broken. The empty
@@ -257,13 +265,13 @@ class CollectionTemplate extends StatelessWidget {
       decks.firstWhere((d) => d.deckId == selectedDeckId).name;
 
   /// The open deck before it can be shown: loading, or why it could not load.
+  /// Retry opens the deck again, which reads it again.
   Widget _deckLoadingOrError() {
     final message = deckErrorMessage;
     if (message == null) return const CircularProgressIndicator();
-    return Text(
-      message,
-      textAlign: TextAlign.center,
-      style: TextStyle(fontSize: 12.sp, color: QuestPalette.muted),
+    return ErrorWithRetryMolecule(
+      message: message,
+      onRetry: () => onSelectDeck(selectedDeckId!),
     );
   }
 

@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 EmptyDeckParams _params({
   bool canAfford = true,
   int quarksShort = 0,
+  bool isDrawing = false,
   VoidCallback? onDraw,
 }) =>
     EmptyDeckParams(
@@ -17,6 +18,7 @@ EmptyDeckParams _params({
       drawCost: 40,
       canAfford: canAfford,
       quarksShort: quarksShort,
+      isDrawing: isDrawing,
       onDraw: onDraw ?? () {},
     );
 
@@ -91,6 +93,7 @@ void main() {
         drawCost: 40,
         canAfford: true,
         quarksShort: 0,
+        isDrawing: false,
         onDraw: () {},
       ),
     )));
@@ -140,6 +143,20 @@ void main() {
         reason: 'hiding it would hide the price');
     expect(find.text('25 more quarks to draw'), findsOneWidget);
 
+    await tester.tap(find.byType(AppButtonAtom));
+    expect(draws, 0);
+  });
+
+  testWidgets('while a draw is in flight the button spins and cannot be tapped',
+      (tester) async {
+    _pinDesignViewport(tester);
+    var draws = 0;
+    await tester.pumpWidget(_host(EmptyDeckOrganism(
+      params: _params(isDrawing: true, onDraw: () => draws++),
+    )));
+
+    expect(tester.widget<AppButtonAtom>(find.byType(AppButtonAtom)).isLoading,
+        isTrue);
     await tester.tap(find.byType(AppButtonAtom));
     expect(draws, 0);
   });

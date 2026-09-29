@@ -34,6 +34,7 @@ class CollectionPresenter {
   static EmptyDeckParams emptyDeck({
     required Deck deck,
     required int quarkBalance,
+    required bool isDrawing,
     required void Function() onDraw,
   }) {
     return EmptyDeckParams(
@@ -42,6 +43,7 @@ class CollectionPresenter {
       drawCost: deck.drawCost,
       canAfford: deck.canAffordDraw(quarkBalance),
       quarksShort: deck.quarksShortOfDraw(quarkBalance),
+      isDrawing: isDrawing,
       onDraw: onDraw,
     );
   }

@@ -11,6 +11,9 @@ class EmptyDeckParams {
   /// Quarks still needed. Zero when [canAfford].
   final int quarksShort;
 
+  /// A draw is in flight, so the button shows a spinner.
+  final bool isDrawing;
+
   final VoidCallback onDraw;
 
   const EmptyDeckParams({
@@ -19,6 +22,7 @@ class EmptyDeckParams {
     required this.drawCost,
     required this.canAfford,
     required this.quarksShort,
+    required this.isDrawing,
     required this.onDraw,
   });
 }

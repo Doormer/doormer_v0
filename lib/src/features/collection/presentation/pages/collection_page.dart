@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../bloc/collection_bloc.dart';
+import '../molecules/error_with_retry_molecule.dart';
 import '../organisms/card_detail_organism.dart';
 import '../organisms/card_reveal_organism.dart';
 import '../params/card_detail_params.dart';
@@ -50,7 +51,16 @@ class _CollectionView extends StatelessWidget {
           );
         }
         if (state is CollectionError) {
-          return Scaffold(body: Center(child: Text(state.message)));
+          return Scaffold(
+            body: Center(
+              child: ErrorWithRetryMolecule(
+                message: state.message,
+                onRetry: () => context
+                    .read<CollectionBloc>()
+                    .add(const CollectionStarted()),
+              ),
+            ),
+          );
         }
 
         final ready = state as CollectionReady;
@@ -65,6 +75,7 @@ class _CollectionView extends StatelessWidget {
               selectedDeckId: ready.selectedDeckId,
               collection: ready.collection,
               deckErrorMessage: ready.deckErrorMessage,
+              isDrawing: ready.isDrawing,
               onSelectDeck: (deckId) => bloc.add(DeckSelected(deckId)),
               onCloseDeck: () => bloc.add(const DeckClosed()),
               onDraw: () => bloc.add(const DrawRequested()),
