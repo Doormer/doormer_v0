@@ -355,14 +355,16 @@ void main() {
         reason: 'and so did the quarks the two draws cost');
   });
 
-  testWidgets('the wallet is visible, so quarks are never spent invisibly',
+  testWidgets(
+      'the quark balance is visible, so quarks are never spent invisibly',
       (tester) async {
     await _pumpPhone(tester);
     expect(find.textContaining('600 quarks'), findsOneWidget);
 
     await _openDeck(tester, 'Meridian');
     expect(find.textContaining('600 quarks'), findsOneWidget,
-        reason: 'the wallet must follow the student to where they spend');
+        reason:
+            'the quark balance must follow the student to where they spend');
   });
 
   testWidgets('every reveal pairs its headline with a supporting line',

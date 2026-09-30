@@ -180,7 +180,7 @@ void main() {
         isTrue);
   });
 
-  testWidgets('a wallet of one quark says quark, not quarks', (tester) async {
+  testWidgets('a quark balance of one says quark, not quarks', (tester) async {
     await _pumpAt(tester, _phone, _template(quarkBalance: 1));
     expect(find.text('1 quark'), findsOneWidget);
   });

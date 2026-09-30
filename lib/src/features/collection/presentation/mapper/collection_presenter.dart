@@ -5,9 +5,10 @@ import '../../domain/entity/draw_outcome.dart';
 import '../params/deck_row_params.dart';
 import '../params/empty_deck_params.dart';
 
-/// Turns entities into the plain holders the widgets take. Pure, and invoked
-/// from the page and the template only — nothing below them builds its own
-/// params.
+/// Turns entities into the plain holders the widgets take. Pure. Only the page
+/// and the template build params with it. `QuarkBalanceAtom` also uses
+/// [quarkBalanceLabel], so a balance that counts up says every number the way
+/// the page does.
 class CollectionPresenter {
   const CollectionPresenter._();
 
@@ -48,7 +49,7 @@ class CollectionPresenter {
     );
   }
 
-  /// The wallet: "40 quarks", or "1 quark".
+  /// The quark balance: "40 quarks", or "1 quark".
   static String quarkBalanceLabel(int quarkBalance) =>
       '$quarkBalance ${_quarkWord(quarkBalance)}';
 

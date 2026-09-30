@@ -91,7 +91,8 @@ void main() {
     expect(params.isDrawing, isFalse);
   });
 
-  test('the wallet says quark for one, and quarks for any other count', () {
+  test('the quark balance says quark for one, and quarks for any other count',
+      () {
     expect(CollectionPresenter.quarkBalanceLabel(1), '1 quark');
     expect(CollectionPresenter.quarkBalanceLabel(0), '0 quarks');
     expect(CollectionPresenter.quarkBalanceLabel(40), '40 quarks');

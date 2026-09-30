@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../domain/entity/collection.dart';
 import '../../domain/entity/deck_progress.dart';
 import '../../domain/entity/holding.dart';
+import '../atoms/quark_balance_atom.dart';
 import '../mapper/collection_presenter.dart';
 import '../molecules/error_with_retry_molecule.dart';
 import '../organisms/card_grid_organism.dart';
@@ -124,7 +125,7 @@ class CollectionTemplate extends StatelessWidget {
                 ),
               ),
               SizedBox(width: 10.w),
-              Flexible(child: _wallet()),
+              Flexible(child: QuarkBalanceAtom(quarkBalance: quarkBalance)),
             ],
           ),
           SizedBox(height: 12.h),
@@ -191,7 +192,7 @@ class CollectionTemplate extends StatelessWidget {
               ),
             ),
             SizedBox(width: 10.w),
-            Flexible(child: _wallet()),
+            Flexible(child: QuarkBalanceAtom(quarkBalance: quarkBalance)),
           ],
         ),
         SizedBox(height: 14.h),
@@ -230,34 +231,6 @@ class CollectionTemplate extends StatelessWidget {
               ),
             ),
           ),
-      ],
-    );
-  }
-
-  /// The wallet, shown wherever a student might be about to spend.
-  ///
-  /// It was computed from the first task and rendered nowhere, so quarks could
-  /// be earned and spent entirely invisibly.
-  Widget _wallet() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 6.w,
-          height: 6.w,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: QuestPalette.amber,
-          ),
-        ),
-        SizedBox(width: 6.w),
-        Flexible(
-          child: Text(
-            CollectionPresenter.quarkBalanceLabel(quarkBalance),
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 11.5.sp, color: QuestPalette.dim),
-          ),
-        ),
       ],
     );
   }
