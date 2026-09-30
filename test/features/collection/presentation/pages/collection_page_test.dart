@@ -101,6 +101,9 @@ class _InMemoryCollectionRepository implements CollectionRepository {
   /// When set, every draw waits for it before it answers.
   Future<void>? drawWaitsFor;
 
+  /// When set, the next shatter fails with it.
+  Failure? failNextShatterWith;
+
   void _failLoadIfAsked() {
     final failure = failNextLoadWith;
     failNextLoadWith = null;
@@ -200,6 +203,9 @@ class _InMemoryCollectionRepository implements CollectionRepository {
   @override
   Future<({int quarkBalance, int standardCopies, int specialCopies})>
       shatterCopy(String deckId, String cardId, CardVariant variant) async {
+    final failure = failNextShatterWith;
+    failNextShatterWith = null;
+    if (failure != null) throw failure;
     final after = _addCopies(cardId, variant, -1);
     _quarkBalance += after.card.shatterQuarksFor(variant);
     return (
@@ -434,7 +440,7 @@ void main() {
         reason: 'the detail must not be a dead end');
   });
 
-  testWidgets('shattering a spare pays its quarks and keeps the card',
+  testWidgets('shattering a spare pays its quarks, and the window stays open',
       (tester) async {
     await _pumpPhone(tester);
     await _openDeck(tester, 'Meridian');
@@ -445,12 +451,60 @@ void main() {
     await tester.tap(find.text('Shatter one'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(CardDetailOrganism), findsNothing);
-    expect(find.text('605 quarks'), findsOneWidget,
-        reason: 'a common spare is worth 5 quarks');
+    final window = find.byType(CardDetailOrganism);
+    expect(window, findsOneWidget,
+        reason: 'the next spare can be shattered straight away');
+    expect(
+        find.descendant(of: window, matching: find.text('2')), findsOneWidget,
+        reason: 'Held drops from 3 to 2');
+    expect(find.text('605 quarks'), findsNWidgets(2),
+        reason: 'a common spare is worth 5 quarks, and the window and the '
+            'page behind it both say so');
     final gnomon =
         tester.widget<CardTileMolecule>(find.byType(CardTileMolecule).first);
     expect(gnomon.holding.totalCopies, 2);
+  });
+
+  testWidgets('a shatter that fails says why in the window', (tester) async {
+    await _pumpPhone(tester);
+    await _openDeck(tester, 'Meridian');
+    server.failNextShatterWith = _noConnection;
+
+    await tester.tap(find.byType(CardTileMolecule).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Shatter one'));
+    await tester.pumpAndSettle();
+
+    final window = find.byType(CardDetailOrganism);
+    expect(
+        find.descendant(of: window, matching: find.text(_noConnection.message)),
+        findsOneWidget);
+    expect(find.text('600 quarks'), findsNWidgets(2),
+        reason: 'nothing broke, so nothing was paid');
+  });
+
+  testWidgets('a failed shatter is not repeated when the window opens again',
+      (tester) async {
+    await _pumpPhone(tester);
+    await _openDeck(tester, 'Meridian');
+    server.failNextShatterWith = _noConnection;
+    await tester.tap(find.byType(CardTileMolecule).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Shatter one'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('card-detail-close')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(CardTileMolecule).first);
+    await tester.pumpAndSettle();
+
+    final window = find.byType(CardDetailOrganism);
+    expect(
+        find.descendant(of: window, matching: find.text(_noConnection.message)),
+        findsNothing,
+        reason: 'the failure belongs to the window that was closed');
+    expect(find.descendant(of: window, matching: find.text('+5 quarks')),
+        findsOneWidget);
   });
 
   testWidgets('going back from a deck returns to the list', (tester) async {

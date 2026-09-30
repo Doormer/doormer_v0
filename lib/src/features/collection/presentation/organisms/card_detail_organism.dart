@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../domain/entity/card_rarity.dart';
 import '../../domain/entity/holding.dart';
 import '../atoms/collectible_card_atom.dart';
+import '../atoms/quark_balance_atom.dart';
 import '../params/card_detail_params.dart';
 
 /// One card, with its facts and the option to shatter a copy.
@@ -49,6 +50,28 @@ class CardDetailOrganism extends StatelessWidget {
       case Rarity.rare:
         return 'Rare';
     }
+  }
+
+  /// Why the last shatter failed, what the next one pays, or why there is
+  /// nothing to shatter. Always exactly one line, so the window never changes
+  /// height.
+  Widget _lineUnderButton({
+    required bool canShatter,
+    required int shatterQuarks,
+  }) {
+    final errorMessage = params.errorMessage;
+    final (text, colour) = errorMessage != null
+        ? (errorMessage, QuestPalette.muted)
+        : canShatter
+            ? ('+$shatterQuarks quarks', QuestPalette.mint)
+            : ("You can't shatter your only copy.", QuestPalette.muted);
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.center,
+      style: TextStyle(fontSize: 10.5.sp, color: colour),
+    );
   }
 
   @override
@@ -96,15 +119,24 @@ class CardDetailOrganism extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: IconButton(
-                  key: const Key('card-detail-close'),
-                  onPressed: params.onClose,
-                  icon: Icon(Icons.close, size: 18.w),
-                  color: QuestPalette.muted,
-                  tooltip: 'Close',
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: QuarkBalanceAtom(
+                        quarkBalance: params.quarkBalance,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    key: const Key('card-detail-close'),
+                    onPressed: params.onClose,
+                    icon: Icon(Icons.close, size: 18.w),
+                    color: QuestPalette.muted,
+                    tooltip: 'Close',
+                  ),
+                ],
               ),
               LayoutBuilder(
                 builder: (context, constraints) {
@@ -135,24 +167,21 @@ class CardDetailOrganism extends StatelessWidget {
                         child: AppButtonAtom(
                           label: 'Shatter one',
                           variant: AppButtonVariant.accent,
+                          isLoading: params.isShattering,
                           onPressed: canShatter
                               ? () => params.onShatter(variant)
                               : null,
                         ),
                       ),
-                      if (canShatter)
-                        Padding(
-                          padding: EdgeInsets.only(top: 6.h),
-                          child: Center(
-                            child: Text(
-                              '+$shatterQuarks quarks',
-                              style: TextStyle(
-                                fontSize: 10.5.sp,
-                                color: QuestPalette.mint,
-                              ),
-                            ),
+                      Padding(
+                        padding: EdgeInsets.only(top: 6.h),
+                        child: Center(
+                          child: _lineUnderButton(
+                            canShatter: canShatter,
+                            shatterQuarks: shatterQuarks,
                           ),
                         ),
+                      ),
                     ],
                   );
 

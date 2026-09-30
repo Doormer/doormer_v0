@@ -79,24 +79,44 @@ class _CollectionView extends StatelessWidget {
               onSelectDeck: (deckId) => bloc.add(DeckSelected(deckId)),
               onCloseDeck: () => bloc.add(const DeckClosed()),
               onDraw: () => bloc.add(const DrawRequested()),
-              onCardTap: (holding) => showDialog<void>(
-                context: context,
-                builder: (dialogContext) => Dialog(
-                  backgroundColor: Colors.transparent,
-                  child: CardDetailOrganism(
-                    params: CardDetailParams(
-                      holding: holding,
-                      onShatter: (variant) {
-                        bloc.add(
-                          ShatterCopyRequested(holding.card.id, variant),
+              onCardTap: (tapped) {
+                // An error already in the state when the window opens is
+                // about something else: a draw, or a shatter in a window since
+                // closed. The window only says why its own shatters failed.
+                final stateWhenOpened = bloc.state;
+                showDialog<void>(
+                  context: context,
+                  builder: (dialogContext) => Dialog(
+                    backgroundColor: Colors.transparent,
+                    // The window stays open and rebuilds as copies are
+                    // shattered. It sits on the root navigator, outside this
+                    // page's BlocProvider, so the bloc is handed in.
+                    child: BlocBuilder<CollectionBloc, CollectionState>(
+                      bloc: bloc,
+                      buildWhen: (_, current) => current is CollectionReady,
+                      builder: (context, state) {
+                        final latest = state as CollectionReady;
+                        return CardDetailOrganism(
+                          params: CardDetailParams(
+                            holding:
+                                latest.collection?.holdingOf(tapped.card.id) ??
+                                    tapped,
+                            quarkBalance: latest.quarkBalance,
+                            isShattering: latest.isShattering,
+                            errorMessage: identical(latest, stateWhenOpened)
+                                ? null
+                                : latest.errorMessage,
+                            onShatter: (variant) => bloc.add(
+                              ShatterCopyRequested(tapped.card.id, variant),
+                            ),
+                            onClose: () => Navigator.of(dialogContext).pop(),
+                          ),
                         );
-                        Navigator.of(dialogContext).pop();
                       },
-                      onClose: () => Navigator.of(dialogContext).pop(),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
             if (reveal != null)
               Positioned.fill(
