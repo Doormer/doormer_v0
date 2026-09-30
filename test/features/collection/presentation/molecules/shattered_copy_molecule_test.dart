@@ -160,11 +160,24 @@ void main() {
       expect(find.textContaining('quarks'), findsNothing);
     });
 
-    test('the quark dots land one after another, the last at 0.9', () {
-      expect(ShatteredCopyMolecule.quarkDotsLandedAt(0.5, 6), 0);
-      expect(ShatteredCopyMolecule.quarkDotsLandedAt(0.8, 6), 2);
-      expect(ShatteredCopyMolecule.quarkDotsLandedAt(0.91, 6), 6);
-      expect(ShatteredCopyMolecule.quarkDotsLandedAt(1, 11), 11);
+    testWidgets(
+        'the quark dots land during quarkDotsLanding: the first as it '
+        'starts, the last as it ends', (tester) async {
+      const landing = ShatteredCopyMolecule.quarkDotsLanding;
+      Future<int> inFlightAt(double progress) async {
+        await _pumpAt(tester, progress);
+        return find
+            .byWidgetPredicate((widget) =>
+                widget.key is ValueKey<String> &&
+                (widget.key as ValueKey<String>).value.startsWith('quark-dot-'))
+            .evaluate()
+            .length;
+      }
+
+      expect(await inFlightAt(landing.begin - 0.001), 6);
+      expect(await inFlightAt(landing.begin + 0.001), 5);
+      expect(await inFlightAt(landing.end - 0.001), 1);
+      expect(await inFlightAt(landing.end + 0.001), 0);
     });
   });
 }

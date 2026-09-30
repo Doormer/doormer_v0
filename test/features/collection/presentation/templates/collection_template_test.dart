@@ -4,6 +4,7 @@ import 'package:doormer/src/features/collection/domain/entity/collection.dart';
 import 'package:doormer/src/features/collection/domain/entity/deck.dart';
 import 'package:doormer/src/features/collection/domain/entity/deck_progress.dart';
 import 'package:doormer/src/features/collection/domain/entity/holding.dart';
+import 'package:doormer/src/features/collection/presentation/molecules/quark_balance_molecule.dart';
 import 'package:doormer/src/features/collection/presentation/organisms/card_grid_organism.dart';
 import 'package:doormer/src/features/collection/presentation/organisms/deck_list_organism.dart';
 import 'package:doormer/src/features/collection/presentation/organisms/empty_deck_organism.dart';
@@ -61,9 +62,11 @@ CollectionTemplate _template({
   String? deckErrorMessage,
   bool isDrawing = false,
   void Function(String deckId)? onSelectDeck,
+  Key? quarkDotKey,
 }) =>
     CollectionTemplate(
       quarkBalance: quarkBalance,
+      quarkDotKey: quarkDotKey,
       decks: _decks,
       selectedDeckId: selectedDeckId,
       collection: collection,
@@ -121,6 +124,27 @@ void main() {
     await _pumpAt(tester, _wideWindow,
         _template(selectedDeckId: 'meridian', collection: _meridian));
     expect(find.byType(Scaffold), findsOneWidget);
+  });
+
+  testWidgets(
+      "the open deck's balance carries quarkDotKey, so a card window can aim "
+      'its quark dots there', (tester) async {
+    final quarkDotKey = GlobalKey();
+    await _pumpAt(
+        tester,
+        _phone,
+        _template(
+          selectedDeckId: 'meridian',
+          collection: _meridian,
+          quarkDotKey: quarkDotKey,
+        ));
+
+    expect(
+      find.descendant(
+          of: find.byType(QuarkBalanceMolecule),
+          matching: find.byKey(quarkDotKey)),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a deck still loading shows its name and a spinner',

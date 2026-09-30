@@ -25,6 +25,9 @@ const _card = CollectibleCard(
 const _noConnection =
     "We couldn't connect. Check your connection and try again.";
 
+/// Stands in for the quark dot of the page's balance, behind the window.
+final _pageQuarkDot = GlobalKey();
+
 CardDetailParams _params({
   int standardCopies = 2,
   int specialCopies = 0,
@@ -41,16 +44,30 @@ CardDetailParams _params({
         specialCopies: specialCopies,
       ),
       quarkBalance: quarkBalance,
+      quarkDotKey: _pageQuarkDot,
       isShattering: isShattering,
       errorMessage: errorMessage,
       onShatter: onShatter ?? (_) {},
       onClose: onClose ?? () {},
     );
 
+/// The window over a page whose balance sits at the top right.
 Widget _host(Widget child, {double width = 1200}) => ScreenUtilInit(
       designSize: const Size(360, 690),
       builder: (_, __) => MaterialApp(
-          home: Scaffold(body: SizedBox(width: width, child: child))),
+        home: Scaffold(
+          body: Stack(
+            children: [
+              Positioned(
+                top: 12,
+                right: 16,
+                child: SizedBox(key: _pageQuarkDot, width: 6, height: 6),
+              ),
+              SizedBox(width: width, child: child),
+            ],
+          ),
+        ),
+      ),
     );
 
 void _phone(WidgetTester tester) {
@@ -256,12 +273,13 @@ void main() {
     expect(closed, 1);
   });
 
-  testWidgets('shows the quark balance, because the page is behind it',
+  testWidgets("has no quark balance of its own: the page's is behind it",
       (tester) async {
     _phone(tester);
     await tester.pumpWidget(_host(CardDetailOrganism(params: _params())));
 
-    expect(find.text('600 quarks'), findsOneWidget);
+    expect(find.byType(QuarkBalanceAtom), findsNothing);
+    expect(find.text('600 quarks'), findsNothing);
   });
 
   testWidgets('the button spins while a shatter waits for its answer',
@@ -314,12 +332,11 @@ void main() {
       expect(find.byType(ShatteredCopyMolecule), findsNothing,
           reason: 'opening a card is not a shatter');
       expect(tester.hasRunningAnimations, isFalse);
-      expect(find.text('600 quarks'), findsOneWidget);
     });
 
     testWidgets(
-        'plays when the answer takes a copy and pays quarks, and the balance '
-        'counts up to the new one', (tester) async {
+        "plays when the answer takes a copy and pays quarks, and flies them "
+        "to the page's balance", (tester) async {
       _phone(tester);
       await tester.pumpWidget(
           _host(CardDetailOrganism(params: _params(standardCopies: 3))));
@@ -337,11 +354,10 @@ void main() {
           reason: 'an uncommon breaks into 8 shards');
       expect(molecule.quarksGained, 11);
       expect(find.text('2'), findsOneWidget, reason: 'Held drops at once');
-      expect(find.text('600 quarks'), findsOneWidget,
-          reason: 'no quark dot has landed yet');
 
       // The layer starts where the body does. At 0 the shards sit exactly on
-      // the card, and the quark dots are aimed at the balance's quark dot.
+      // the card, and the quark dots are aimed at the page balance's quark
+      // dot, outside the window.
       final body = find.byKey(const Key('card-detail-body'));
       final layerTopLeft = tester.getTopLeft(body);
       expect(
@@ -351,9 +367,7 @@ void main() {
       );
       expect(
         molecule.quarkDotCentre + layerTopLeft,
-        offsetMoreOrLessEquals(tester.getCenter(find.descendant(
-            of: find.byType(QuarkBalanceAtom),
-            matching: find.byType(Container)))),
+        offsetMoreOrLessEquals(tester.getCenter(find.byKey(_pageQuarkDot))),
       );
 
       await tester.pump(const Duration(milliseconds: 500));
@@ -363,15 +377,9 @@ void main() {
               matching: find.text('+11 quarks')),
           findsOneWidget);
 
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('604 quarks'), findsOneWidget,
-          reason: 'at 0.8, 3 of the 8 quark dots have landed: '
-              '600 + 11 × 3 ÷ 8, rounded down');
-
       await tester.pumpAndSettle();
       expect(find.byType(ShatteredCopyMolecule), findsNothing,
           reason: 'the layer goes once the shatter ends');
-      expect(find.text('611 quarks'), findsOneWidget);
     });
 
     testWidgets('its shards show the printing that broke', (tester) async {
@@ -420,7 +428,6 @@ void main() {
 
       expect(find.byType(ShatteredCopyMolecule), findsNothing);
       expect(tester.hasRunningAnimations, isFalse);
-      expect(find.text('611 quarks'), findsOneWidget);
       expect(find.text('2'), findsOneWidget);
     });
 
@@ -435,8 +442,9 @@ void main() {
         )),
       );
       await tester.pump(const Duration(milliseconds: 500));
-      expect(find.text('600 quarks'), findsOneWidget,
-          reason: 'halfway, no quark dot has landed');
+      ShatteredCopyMolecule playing() => tester
+          .widget<ShatteredCopyMolecule>(find.byType(ShatteredCopyMolecule));
+      expect(playing().progress, 0.5, reason: 'the first is halfway');
 
       await _answer(
         tester,
@@ -444,13 +452,13 @@ void main() {
           params: _params(standardCopies: 2, quarkBalance: 622),
         )),
       );
-      expect(find.text('611 quarks'), findsOneWidget,
-          reason: 'the first shatter jumps to its end, and keeps its quarks');
-      expect(find.byType(ShatteredCopyMolecule), findsOneWidget,
-          reason: 'the next one starts');
+      expect(playing().progress, 0,
+          reason: 'the next one starts from the beginning');
+      expect(playing().quarksGained, 11,
+          reason: 'and pays its own quarks, not the first one\'s as well');
 
       await tester.pumpAndSettle();
-      expect(find.text('622 quarks'), findsOneWidget);
+      expect(find.byType(ShatteredCopyMolecule), findsNothing);
     });
   });
 }

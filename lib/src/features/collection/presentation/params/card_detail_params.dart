@@ -6,8 +6,14 @@ import '../../domain/entity/holding.dart';
 class CardDetailParams {
   final Holding holding;
 
-  /// The page's balance is behind the window, so the window shows its own.
+  /// The student's quarks. The window doesn't show them: the page's balance
+  /// is behind it. A rebuild with a higher balance and one fewer copy is a
+  /// shatter, and the difference is what it paid.
   final int quarkBalance;
+
+  /// On the quark dot of the page's balance, behind the window. A shatter's
+  /// quark dots fly there.
+  final GlobalKey quarkDotKey;
 
   /// A shatter is waiting for the API's answer.
   final bool isShattering;
@@ -22,6 +28,7 @@ class CardDetailParams {
   const CardDetailParams({
     required this.holding,
     required this.quarkBalance,
+    required this.quarkDotKey,
     required this.isShattering,
     this.errorMessage,
     required this.onShatter,

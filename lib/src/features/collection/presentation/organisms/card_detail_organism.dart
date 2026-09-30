@@ -8,7 +8,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../domain/entity/card_rarity.dart';
 import '../../domain/entity/holding.dart';
 import '../atoms/collectible_card_atom.dart';
-import '../atoms/quark_balance_atom.dart';
 import '../molecules/shattered_copy_molecule.dart';
 import '../params/card_detail_params.dart';
 
@@ -19,8 +18,9 @@ import '../params/card_detail_params.dart';
 ///
 /// **Plays each shatter.** The window stays open while copies are shattered.
 /// When a rebuild shows the same card with one fewer copy and a higher
-/// balance, a copy breaks over the card and its quarks fly into the balance
-/// at the top of the window. With motion off, the numbers simply change.
+/// balance, a copy breaks over the card and its quarks fly out of the window
+/// to the page's balance behind it. With motion off, the numbers simply
+/// change.
 class CardDetailOrganism extends StatefulWidget {
   static const double maxWidth = 520;
 
@@ -58,11 +58,9 @@ class _CardDetailOrganismState extends State<CardDetailOrganism>
   /// The layer the shards fly on, over the window's body.
   final _layerKey = GlobalKey();
   final _cardKey = GlobalKey();
-  final _quarkDotKey = GlobalKey();
 
-  /// Runs each shatter from 0 to 1. The shards, the quark dots, the rising
-  /// "+N quarks" and the balance's count all read it, so none of them can
-  /// drift out of step.
+  /// Runs each shatter from 0 to 1. The shards, the quark dots and the rising
+  /// "+N quarks" all read it, so none of them can drift out of step.
   late final AnimationController _shatter;
 
   /// The shatter now playing, or null.
@@ -93,7 +91,6 @@ class _CardDetailOrganismState extends State<CardDetailOrganism>
 
     final card = after.holding.card;
     _playing = _Shatter(
-      balanceBefore: before.quarkBalance,
       quarksGained: after.quarkBalance - before.quarkBalance,
       isSpecial: before.holding.variantToShatter == CardVariant.special,
       shards: ShatteredCopyMolecule.shardsFor(
@@ -101,20 +98,22 @@ class _CardDetailOrganismState extends State<CardDetailOrganism>
         ShatteredCopyMolecule.seedFor(card.id, after.holding.totalCopies),
       ),
     );
-    // Back to the start. A shatter still playing is cut short, and loses none
-    // of its quarks: they are already in the balance this one counts up from.
+    // Back to the start. A shatter still playing is cut short.
     _shatter.value = 0;
-    // Where the card and the balance's quark dot sit is known after layout.
+    // Where the card and the page balance's quark dot sit is known after
+    // layout.
     WidgetsBinding.instance.addPostFrameCallback((_) => _play());
   }
 
-  /// Measures where the card and the balance's quark dot sit, then plays.
+  /// Measures where the card and the page balance's quark dot sit, then
+  /// plays.
   void _play() {
     final playing = _playing;
     if (!mounted || playing == null) return;
     final layer = _layerKey.currentContext?.findRenderObject();
     final card = _cardKey.currentContext?.findRenderObject();
-    final quarkDot = _quarkDotKey.currentContext?.findRenderObject();
+    final quarkDot =
+        widget.params.quarkDotKey.currentContext?.findRenderObject();
     final cardAtom = _cardKey.currentWidget;
     if (layer is! RenderBox ||
         card is! RenderBox ||
@@ -123,7 +122,7 @@ class _CardDetailOrganismState extends State<CardDetailOrganism>
         !layer.hasSize ||
         !card.hasSize ||
         !quarkDot.hasSize) {
-      // Nowhere to draw it. The numbers must still arrive.
+      // Nowhere to draw it.
       setState(() => _playing = null);
       return;
     }
@@ -183,29 +182,6 @@ class _CardDetailOrganismState extends State<CardDetailOrganism>
     );
   }
 
-  /// The balance. While a shatter plays, it counts up as each quark dot lands.
-  Widget _quarkBalance() {
-    return AnimatedBuilder(
-      animation: _shatter,
-      builder: (context, _) {
-        final playing = _playing;
-        final progress = _shatter.value;
-        final shown =
-            playing?.balanceAt(progress) ?? widget.params.quarkBalance;
-        // One punch, as the last quark dot lands. A punch at every quark dot
-        // would restart every frame or two, and the balance would flicker.
-        final punchTrigger =
-            playing == null || playing.allQuarkDotsLandedAt(progress)
-                ? shown
-                : playing.balanceBefore;
-        return PunchAtom(
-          trigger: punchTrigger,
-          child: QuarkBalanceAtom(quarkBalance: shown, dotKey: _quarkDotKey),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final params = widget.params;
@@ -262,22 +238,15 @@ class _CardDetailOrganismState extends State<CardDetailOrganism>
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: _quarkBalance(),
-                        ),
-                      ),
-                      IconButton(
-                        key: const Key('card-detail-close'),
-                        onPressed: params.onClose,
-                        icon: Icon(Icons.close, size: 18.w),
-                        color: QuestPalette.muted,
-                        tooltip: 'Close',
-                      ),
-                    ],
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: IconButton(
+                      key: const Key('card-detail-close'),
+                      onPressed: params.onClose,
+                      icon: Icon(Icons.close, size: 18.w),
+                      color: QuestPalette.muted,
+                      tooltip: 'Close',
+                    ),
                   ),
                   LayoutBuilder(
                     builder: (context, constraints) {
@@ -398,7 +367,6 @@ class _CardDetailOrganismState extends State<CardDetailOrganism>
 
 /// A shatter the window is playing.
 class _Shatter {
-  final int balanceBefore;
   final int quarksGained;
 
   /// Whether the copy that broke was the special printing.
@@ -407,28 +375,15 @@ class _Shatter {
   final List<Shard> shards;
 
   /// Where the card sits on the layer, the width it is drawn at, and where
-  /// the balance's quark dot sits. Null until the window has laid out after
-  /// the answer.
+  /// the page balance's quark dot sits. Null until the window has laid out
+  /// after the answer.
   ({Rect cardRect, double cardWidth, Offset quarkDotCentre})? measured;
 
   _Shatter({
-    required this.balanceBefore,
     required this.quarksGained,
     required this.isSpecial,
     required this.shards,
   });
-
-  /// The balance at [progress]: a share of the quarks gained is added as
-  /// each quark dot lands.
-  int balanceAt(double progress) {
-    final landed =
-        ShatteredCopyMolecule.quarkDotsLandedAt(progress, shards.length);
-    return balanceBefore + quarksGained * landed ~/ shards.length;
-  }
-
-  bool allQuarkDotsLandedAt(double progress) =>
-      ShatteredCopyMolecule.quarkDotsLandedAt(progress, shards.length) ==
-      shards.length;
 }
 
 class _Fact extends StatelessWidget {

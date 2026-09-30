@@ -45,6 +45,11 @@ class Shard {
 class ShatteredCopyMolecule extends StatelessWidget {
   static const Duration duration = Duration(milliseconds: 1000);
 
+  /// When the first quark dot lands in the balance, and when the last one
+  /// does, as shares of the whole shatter. The balance counts its quarks in
+  /// over this.
+  static const Interval quarkDotsLanding = Interval(0.75, 0.90);
+
   /// How long one quark dot takes to reach the balance, as a share of the
   /// whole shatter.
   static const double _quarkDotFlight = 0.20;
@@ -161,22 +166,15 @@ class ShatteredCopyMolecule extends StatelessWidget {
     return seed;
   }
 
-  /// How many of [dotCount] quark dots have reached the balance by
-  /// [progress]. The window counts the balance up by this.
-  static int quarkDotsLandedAt(double progress, int dotCount) {
-    var landed = 0;
-    for (var dot = 0; dot < dotCount; dot++) {
-      if (progress >= _quarkDotLeaves(dot, dotCount) + _quarkDotFlight) {
-        landed++;
-      }
-    }
-    return landed;
+  /// When quark dot [dot] leaves for the balance, so that the first lands as
+  /// [quarkDotsLanding] starts and the last as it ends.
+  static double _quarkDotLeaves(int dot, int dotCount) {
+    const landing = quarkDotsLanding;
+    final lands = dotCount == 1
+        ? landing.end
+        : landing.begin + (landing.end - landing.begin) * dot / (dotCount - 1);
+    return lands - _quarkDotFlight;
   }
-
-  /// When quark dot [dot] leaves for the balance. The first leaves at 0.55
-  /// and the last at 0.70, so the last lands at 0.90.
-  static double _quarkDotLeaves(int dot, int dotCount) =>
-      dotCount == 1 ? 0.70 : 0.55 + 0.15 * dot / (dotCount - 1);
 
   /// Where [progress] is between [start] and [end], from 0 to 1.
   static double _between(double progress, double start, double end) =>

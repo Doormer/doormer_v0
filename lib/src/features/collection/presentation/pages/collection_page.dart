@@ -26,8 +26,17 @@ class CollectionPage extends StatelessWidget {
   }
 }
 
-class _CollectionView extends StatelessWidget {
+class _CollectionView extends StatefulWidget {
   const _CollectionView();
+
+  @override
+  State<_CollectionView> createState() => _CollectionViewState();
+}
+
+class _CollectionViewState extends State<_CollectionView> {
+  /// On the open deck balance's quark dot. A card window aims a shatter's
+  /// quark dots there.
+  final _quarkDotKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -71,6 +80,7 @@ class _CollectionView extends StatelessWidget {
           children: [
             CollectionTemplate(
               quarkBalance: ready.quarkBalance,
+              quarkDotKey: _quarkDotKey,
               decks: ready.decks,
               selectedDeckId: ready.selectedDeckId,
               collection: ready.collection,
@@ -102,6 +112,7 @@ class _CollectionView extends StatelessWidget {
                                 latest.collection?.holdingOf(tapped.card.id) ??
                                     tapped,
                             quarkBalance: latest.quarkBalance,
+                            quarkDotKey: _quarkDotKey,
                             isShattering: latest.isShattering,
                             errorMessage: identical(latest, stateWhenOpened)
                                 ? null

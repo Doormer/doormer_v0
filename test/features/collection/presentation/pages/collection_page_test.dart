@@ -11,8 +11,11 @@ import 'package:doormer/src/features/collection/domain/entity/draw_outcome.dart'
 import 'package:doormer/src/features/collection/domain/entity/holding.dart';
 import 'package:doormer/src/features/collection/domain/repository/collection_repository.dart';
 import 'package:doormer/src/features/collection/presentation/atoms/collectible_card_atom.dart';
+import 'package:doormer/src/features/collection/presentation/atoms/quark_balance_atom.dart';
 import 'package:doormer/src/features/collection/presentation/molecules/card_tile_molecule.dart';
 import 'package:doormer/src/features/collection/presentation/molecules/deck_row_molecule.dart';
+import 'package:doormer/src/features/collection/presentation/molecules/quark_balance_molecule.dart';
+import 'package:doormer/src/features/collection/presentation/molecules/shattered_copy_molecule.dart';
 import 'package:doormer/src/features/collection/presentation/organisms/card_detail_organism.dart';
 import 'package:doormer/src/features/collection/presentation/organisms/card_grid_organism.dart';
 import 'package:doormer/src/features/collection/presentation/organisms/card_reveal_organism.dart';
@@ -457,12 +460,46 @@ void main() {
     expect(
         find.descendant(of: window, matching: find.text('2')), findsOneWidget,
         reason: 'Held drops from 3 to 2');
-    expect(find.text('605 quarks'), findsNWidgets(2),
-        reason: 'a common spare is worth 5 quarks, and the window and the '
-            'page behind it both say so');
+    expect(find.text('605 quarks'), findsOneWidget,
+        reason: "a common spare is worth 5 quarks, and the page's balance, "
+            'the only one, says so');
     final gnomon =
         tester.widget<CardTileMolecule>(find.byType(CardTileMolecule).first);
     expect(gnomon.holding.totalCopies, 2);
+  });
+
+  testWidgets(
+      "a shatter's quark dots fly to the page's balance, which counts them "
+      'in', (tester) async {
+    await _pumpPhone(tester);
+    await _openDeck(tester, 'Meridian');
+    await tester.tap(find.byType(CardTileMolecule).first);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Shatter one'));
+    await tester.pump(); // The server answers at once.
+    await tester.pump(); // The shatter's clock starts.
+
+    final window = find.byType(CardDetailOrganism);
+    expect(find.descendant(of: window, matching: find.byType(QuarkBalanceAtom)),
+        findsNothing,
+        reason: 'the window has no balance of its own');
+    expect(find.text('600 quarks'), findsOneWidget,
+        reason: "the page's balance holds until the quark dots land");
+
+    final shatter = tester
+        .widget<ShatteredCopyMolecule>(find.byType(ShatteredCopyMolecule));
+    final layerTopLeft =
+        tester.getTopLeft(find.byKey(const Key('card-detail-body')));
+    expect(
+      shatter.quarkDotCentre + layerTopLeft,
+      offsetMoreOrLessEquals(tester.getCenter(find.descendant(
+          of: find.byType(QuarkBalanceMolecule),
+          matching: find.byType(Container)))),
+    );
+
+    await tester.pumpAndSettle();
+    expect(find.text('605 quarks'), findsOneWidget);
   });
 
   testWidgets('a shatter that fails says why in the window', (tester) async {
@@ -479,7 +516,7 @@ void main() {
     expect(
         find.descendant(of: window, matching: find.text(_noConnection.message)),
         findsOneWidget);
-    expect(find.text('600 quarks'), findsNWidgets(2),
+    expect(find.text('600 quarks'), findsOneWidget,
         reason: 'nothing broke, so nothing was paid');
   });
 

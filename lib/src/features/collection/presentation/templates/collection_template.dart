@@ -9,6 +9,7 @@ import '../../domain/entity/holding.dart';
 import '../atoms/quark_balance_atom.dart';
 import '../mapper/collection_presenter.dart';
 import '../molecules/error_with_retry_molecule.dart';
+import '../molecules/quark_balance_molecule.dart';
 import '../organisms/card_grid_organism.dart';
 import '../organisms/deck_list_organism.dart';
 import '../organisms/empty_deck_organism.dart';
@@ -33,6 +34,11 @@ class CollectionTemplate extends StatelessWidget {
   static const double railWidth = 190;
 
   final int quarkBalance;
+
+  /// Put on the open deck balance's quark dot, so a card window can aim a
+  /// shatter's quark dots at it.
+  final Key? quarkDotKey;
+
   final List<DeckProgress> decks;
   final String? selectedDeckId;
 
@@ -54,6 +60,7 @@ class CollectionTemplate extends StatelessWidget {
   const CollectionTemplate({
     super.key,
     required this.quarkBalance,
+    this.quarkDotKey,
     required this.decks,
     required this.selectedDeckId,
     required this.collection,
@@ -192,7 +199,12 @@ class CollectionTemplate extends StatelessWidget {
               ),
             ),
             SizedBox(width: 10.w),
-            Flexible(child: QuarkBalanceAtom(quarkBalance: quarkBalance)),
+            Flexible(
+              child: QuarkBalanceMolecule(
+                quarkBalance: quarkBalance,
+                dotKey: quarkDotKey,
+              ),
+            ),
           ],
         ),
         SizedBox(height: 14.h),
