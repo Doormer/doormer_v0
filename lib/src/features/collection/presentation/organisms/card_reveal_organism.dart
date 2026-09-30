@@ -152,12 +152,9 @@ class CardRevealState extends State<CardRevealOrganism>
     return _piecewise(t, const [0.0, 0.40, 0.66, 1.0], [peak, peak, peak, 1.0]);
   }
 
-  /// Brass for rare and uncommon; a common draw settles in the pale lavender
-  /// the mockup uses, `rgba(185,174,230,…)`, which is [QuestPalette.dim].
-  /// Brass is the rarity language everywhere else, so a common draw must not
-  /// borrow it.
-  Color get tellColour =>
-      _rarity == Rarity.common ? QuestPalette.dim : QuestPalette.amber;
+  /// The rarity's colour. A common draw settles in the pale lavender the
+  /// mockup uses, `rgba(185,174,230,…)`, which is [QuestPalette.dim].
+  Color get tellColour => CollectibleCardAtom.rarityColour(_rarity);
 
   /// Peak glow strength for this rarity, kept for callers that only need the
   /// ladder rather than the curve.

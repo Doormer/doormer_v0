@@ -64,6 +64,12 @@ class CollectibleCardAtom extends StatelessWidget {
     }
   }
 
+  /// The colour a rarity flashes in: lavender for a common, brass for an
+  /// uncommon or a rare. The draw's reveal and the shatter both use it. Brass
+  /// is the rarity colour everywhere else, so a common must not borrow it.
+  static Color rarityColour(Rarity rarity) =>
+      rarity == Rarity.common ? QuestPalette.dim : QuestPalette.amber;
+
   @override
   Widget build(BuildContext context) {
     final w = width.w;

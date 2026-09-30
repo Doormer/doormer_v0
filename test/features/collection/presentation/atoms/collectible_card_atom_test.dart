@@ -1,3 +1,4 @@
+import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/collection/domain/entity/card_rarity.dart';
 import 'package:doormer/src/features/collection/domain/entity/collectible_card.dart';
 import 'package:doormer/src/features/collection/presentation/atoms/collectible_card_atom.dart';
@@ -135,5 +136,13 @@ void main() {
     ));
     final box = tester.getSize(find.byType(CollectibleCardAtom));
     expect(box.height / box.width, closeTo(3 / 2, 0.01));
+  });
+
+  test('a common flashes lavender, and an uncommon or a rare flashes brass',
+      () {
+    expect(CollectibleCardAtom.rarityColour(Rarity.common), QuestPalette.dim);
+    expect(
+        CollectibleCardAtom.rarityColour(Rarity.uncommon), QuestPalette.amber);
+    expect(CollectibleCardAtom.rarityColour(Rarity.rare), QuestPalette.amber);
   });
 }
