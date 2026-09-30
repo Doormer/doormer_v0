@@ -1,6 +1,9 @@
 import 'package:doormer/src/features/collection/domain/entity/card_rarity.dart';
 import 'package:doormer/src/features/collection/domain/entity/collectible_card.dart';
 import 'package:doormer/src/features/collection/domain/entity/holding.dart';
+import 'package:doormer/src/features/collection/presentation/atoms/collectible_card_atom.dart';
+import 'package:doormer/src/features/collection/presentation/atoms/quark_balance_atom.dart';
+import 'package:doormer/src/features/collection/presentation/molecules/shattered_copy_molecule.dart';
 import 'package:doormer/src/features/collection/presentation/organisms/card_detail_organism.dart';
 import 'package:doormer/src/features/collection/presentation/params/card_detail_params.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
@@ -54,6 +57,26 @@ void _phone(WidgetTester tester) {
   tester.view.physicalSize = const Size(360, 690);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
+}
+
+/// The window with motion off, as a student who asked for less motion sees it.
+Widget _stillHost(Widget child) => _host(
+      Builder(
+        builder: (context) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          child: child,
+        ),
+      ),
+    );
+
+/// Rebuilds the window as the API's answer leaves it.
+///
+/// The first frame lays the window out, and the window measures itself once
+/// that frame ends. The second frame starts the shatter's clock, so a
+/// `pump(const Duration(milliseconds: 800))` after this lands at 0.8.
+Future<void> _answer(WidgetTester tester, Widget window) async {
+  await tester.pumpWidget(window);
+  await tester.pump();
 }
 
 void main() {
@@ -280,5 +303,154 @@ void main() {
         reason: 'a long message must not wrap onto a second line');
     expect(await heightWith(_params(standardCopies: 1)), paying,
         reason: 'the reason takes the place of "+11 quarks"');
+  });
+
+  group('a shatter', () {
+    testWidgets('never plays on the first build', (tester) async {
+      _phone(tester);
+      await tester.pumpWidget(_host(CardDetailOrganism(params: _params())));
+      await tester.pump();
+
+      expect(find.byType(ShatteredCopyMolecule), findsNothing,
+          reason: 'opening a card is not a shatter');
+      expect(tester.hasRunningAnimations, isFalse);
+      expect(find.text('600 quarks'), findsOneWidget);
+    });
+
+    testWidgets(
+        'plays when the answer takes a copy and pays quarks, and the balance '
+        'counts up to the new one', (tester) async {
+      _phone(tester);
+      await tester.pumpWidget(
+          _host(CardDetailOrganism(params: _params(standardCopies: 3))));
+
+      await _answer(
+        tester,
+        _host(CardDetailOrganism(
+          params: _params(standardCopies: 2, quarkBalance: 611),
+        )),
+      );
+
+      final molecule = tester
+          .widget<ShatteredCopyMolecule>(find.byType(ShatteredCopyMolecule));
+      expect(molecule.shards, hasLength(8),
+          reason: 'an uncommon breaks into 8 shards');
+      expect(molecule.quarksGained, 11);
+      expect(find.text('2'), findsOneWidget, reason: 'Held drops at once');
+      expect(find.text('600 quarks'), findsOneWidget,
+          reason: 'no quark dot has landed yet');
+
+      // The layer starts where the body does. At 0 the shards sit exactly on
+      // the card, and the quark dots are aimed at the balance's quark dot.
+      final body = find.byKey(const Key('card-detail-body'));
+      final layerTopLeft = tester.getTopLeft(body);
+      expect(
+        molecule.cardRect.shift(layerTopLeft),
+        rectMoreOrLessEquals(tester.getRect(find.descendant(
+            of: body, matching: find.byType(CollectibleCardAtom)))),
+      );
+      expect(
+        molecule.quarkDotCentre + layerTopLeft,
+        offsetMoreOrLessEquals(tester.getCenter(find.descendant(
+            of: find.byType(QuarkBalanceAtom),
+            matching: find.byType(Container)))),
+      );
+
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+          find.descendant(
+              of: find.byType(ShatteredCopyMolecule),
+              matching: find.text('+11 quarks')),
+          findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('604 quarks'), findsOneWidget,
+          reason: 'at 0.8, 3 of the 8 quark dots have landed: '
+              '600 + 11 × 3 ÷ 8, rounded down');
+
+      await tester.pumpAndSettle();
+      expect(find.byType(ShatteredCopyMolecule), findsNothing,
+          reason: 'the layer goes once the shatter ends');
+      expect(find.text('611 quarks'), findsOneWidget);
+    });
+
+    testWidgets('its shards show the printing that broke', (tester) async {
+      _phone(tester);
+      // Two standard copies and one special: the plainer printing breaks.
+      await tester.pumpWidget(_host(CardDetailOrganism(
+        params: _params(standardCopies: 2, specialCopies: 1),
+      )));
+
+      await _answer(
+        tester,
+        _host(CardDetailOrganism(
+          params: _params(
+            standardCopies: 1,
+            specialCopies: 1,
+            quarkBalance: 611,
+          ),
+        )),
+      );
+
+      final molecule = tester
+          .widget<ShatteredCopyMolecule>(find.byType(ShatteredCopyMolecule));
+      final card = tester.widget<CollectibleCardAtom>(find.descendant(
+          of: find.byKey(const Key('card-detail-body')),
+          matching: find.byType(CollectibleCardAtom)));
+      expect(molecule.isSpecial, isFalse, reason: 'a standard copy broke');
+      expect(card.isSpecial, isTrue,
+          reason: 'the card shows what is still held, and that includes a '
+              'special');
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+        'with motion off, the numbers change at once and nothing '
+        'breaks', (tester) async {
+      _phone(tester);
+      await tester.pumpWidget(
+          _stillHost(CardDetailOrganism(params: _params(standardCopies: 3))));
+
+      await _answer(
+        tester,
+        _stillHost(CardDetailOrganism(
+          params: _params(standardCopies: 2, quarkBalance: 611),
+        )),
+      );
+
+      expect(find.byType(ShatteredCopyMolecule), findsNothing);
+      expect(tester.hasRunningAnimations, isFalse);
+      expect(find.text('611 quarks'), findsOneWidget);
+      expect(find.text('2'), findsOneWidget);
+    });
+
+    testWidgets('the next answer cuts a running shatter short', (tester) async {
+      _phone(tester);
+      await tester.pumpWidget(
+          _host(CardDetailOrganism(params: _params(standardCopies: 4))));
+      await _answer(
+        tester,
+        _host(CardDetailOrganism(
+          params: _params(standardCopies: 3, quarkBalance: 611),
+        )),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('600 quarks'), findsOneWidget,
+          reason: 'halfway, no quark dot has landed');
+
+      await _answer(
+        tester,
+        _host(CardDetailOrganism(
+          params: _params(standardCopies: 2, quarkBalance: 622),
+        )),
+      );
+      expect(find.text('611 quarks'), findsOneWidget,
+          reason: 'the first shatter jumps to its end, and keeps its quarks');
+      expect(find.byType(ShatteredCopyMolecule), findsOneWidget,
+          reason: 'the next one starts');
+
+      await tester.pumpAndSettle();
+      expect(find.text('622 quarks'), findsOneWidget);
+    });
   });
 }
