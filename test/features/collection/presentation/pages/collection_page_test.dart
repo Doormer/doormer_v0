@@ -498,8 +498,19 @@ void main() {
           matching: find.byType(Container)))),
     );
 
+    await tester.pump(const Duration(milliseconds: 850));
+    const liftedKey = Key('quark-balance-lifted');
+    final lifted = find.byKey(liftedKey);
+    expect(lifted, findsOneWidget,
+        reason: 'as the quark dots land, the balance lights up');
+    final barriersAndLifted = find.byWidgetPredicate(
+        (widget) => widget is ModalBarrier || widget.key == liftedKey);
+    expect(tester.widgetList(barriersAndLifted).last.key, liftedKey,
+        reason: "it is drawn above the card window's dark overlay");
+
     await tester.pumpAndSettle();
     expect(find.text('605 quarks'), findsOneWidget);
+    expect(lifted, findsNothing, reason: 'it settles back under the overlay');
   });
 
   testWidgets('a shatter that fails says why in the window', (tester) async {
