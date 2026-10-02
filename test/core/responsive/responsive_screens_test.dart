@@ -14,6 +14,7 @@ import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
+import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
@@ -51,6 +52,13 @@ class _FakeQuestionsRepository implements QuestionsRepository {
         topic: 'Geometry - Area',
         questionTitle: 'Road through a field',
       );
+
+  @override
+  Future<int> loadQuarkBalance() async => 120;
+
+  @override
+  Future<AnswerReward> revealAnswer(String questionId) =>
+      Completer<AnswerReward>().future;
 }
 
 final Uint8List _pngBytes = base64Decode(
