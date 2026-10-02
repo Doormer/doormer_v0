@@ -70,9 +70,22 @@ class _FakeRepository implements CollectionRepository {
   Completer<void>? heldDraw;
   Completer<void>? heldShatter;
 
+  /// Holds the next deck-list read open until the test completes it. Only
+  /// that one read: the ones after it answer at once.
+  Completer<void>? heldDecks;
+
   int decksCalls = 0;
   int drawCalls = 0;
   int shatterCalls = 0;
+
+  /// What the collection opens on. A test sets it to play an earlier visit.
+  @override
+  ({int quarkBalance, List<DeckProgress> decks})? lastDeckList;
+
+  @override
+  void forgetLastDeckList() {
+    lastDeckList = null;
+  }
 
   Collection collectionOf(String deckId) => Collection(
         deck: _decks[deckId]!,
@@ -96,6 +109,9 @@ class _FakeRepository implements CollectionRepository {
   @override
   Future<({int quarkBalance, List<DeckProgress> decks})> loadDecks() async {
     decksCalls++;
+    final held = heldDecks;
+    heldDecks = null;
+    if (held != null) await held.future;
     _throwIfSet(decksError);
     return (quarkBalance: quarkBalance, decks: deckList);
   }
@@ -232,6 +248,72 @@ void main() {
         isA<CollectionLoading>(),
         const CollectionError('Something went wrong. Try again.'),
       ],
+    );
+  });
+
+  // A visit after the first: the repository remembers the deck list from
+  // last time, and the server has moved on since (120 quarks now, not 80).
+  group('opening on the remembered deck list', () {
+    setUp(() {
+      repository.lastDeckList = (quarkBalance: 80, decks: repository.deckList);
+    });
+
+    CollectionReady remembered() =>
+        CollectionReady(quarkBalance: 80, decks: repository.deckList);
+
+    test('opens on it, with no loading', () async {
+      final bloc = build();
+      addTearDown(bloc.close);
+
+      expect(bloc.state, remembered());
+    });
+
+    blocTest<CollectionBloc, CollectionState>(
+      'reads the deck list afresh behind it, with no loading',
+      build: build,
+      act: (bloc) => bloc.add(const CollectionStarted()),
+      expect: () => [deckList()],
+    );
+
+    blocTest<CollectionBloc, CollectionState>(
+      'a failed fresh read keeps it up, with no error',
+      build: () {
+        repository.decksError = NetworkFailure(
+            "We couldn't connect. Check your connection and try again.");
+        return build();
+      },
+      act: (bloc) => bloc.add(const CollectionStarted()),
+      expect: () => const <CollectionState>[],
+      verify: (bloc) => expect(bloc.state, remembered()),
+    );
+
+    blocTest<CollectionBloc, CollectionState>(
+      'a fresh read that lands after a deck was opened is dropped',
+      build: () {
+        repository.heldDecks = Completer<void>();
+        return build();
+      },
+      act: (bloc) async {
+        final freshRead = repository.heldDecks!;
+        bloc.add(const CollectionStarted());
+        await _answersArrive();
+        bloc.add(const DeckSelected('meridian'));
+        await _answersArrive();
+        freshRead.complete();
+        await _answersArrive();
+      },
+      expect: () => [
+        isA<CollectionReady>()
+            .having((s) => s.selectedDeckId, 'selectedDeckId', 'meridian')
+            .having((s) => s.collection, 'collection', isNull),
+        isA<CollectionReady>()
+            .having((s) => s.collection?.deck.id, 'collection', 'meridian'),
+      ],
+      verify: (bloc) => expect(
+        (bloc.state as CollectionReady).selectedDeckId,
+        'meridian',
+        reason: 'a late deck list must not close the open deck',
+      ),
     );
   });
 

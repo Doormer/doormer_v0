@@ -111,6 +111,15 @@ class _InMemoryCollectionRepository implements CollectionRepository {
   /// When set, the next shatter fails with it.
   Failure? failNextShatterWith;
 
+  /// The deck list as last read, as the real repository remembers it.
+  @override
+  ({int quarkBalance, List<DeckProgress> decks})? lastDeckList;
+
+  @override
+  void forgetLastDeckList() {
+    lastDeckList = null;
+  }
+
   void _failLoadIfAsked() {
     final failure = failNextLoadWith;
     failNextLoadWith = null;
@@ -156,7 +165,7 @@ class _InMemoryCollectionRepository implements CollectionRepository {
   @override
   Future<({int quarkBalance, List<DeckProgress> decks})> loadDecks() async {
     _failLoadIfAsked();
-    return (
+    return lastDeckList = (
       quarkBalance: _quarkBalance,
       decks: [
         for (final deck in _decks.values)
@@ -366,6 +375,28 @@ void main() {
         reason: 'the drawn card survived the remount');
     expect(find.textContaining('520 quarks'), findsOneWidget,
         reason: 'and so did the quarks the two draws cost');
+  });
+
+  testWidgets('coming back opens straight onto the deck list, with no spinner',
+      (tester) async {
+    await _pumpPhone(tester);
+
+    // Leave and come back, as switching between Solve and Cards does.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(_app());
+
+    // The visit's first frame. A spinner turns with no value; the deck rows'
+    // progress rings are CircularProgressIndicators too, but with a value.
+    final spinner = find.byWidgetPredicate((widget) =>
+        widget is CircularProgressIndicator && widget.value == null);
+    expect(spinner, findsNothing);
+    expect(find.byType(DeckListOrganism), findsOneWidget);
+    expect(find.text('Meridian'), findsOneWidget);
+
+    // Let the fresh read land.
+    await tester.pump();
+    await tester.pumpAndSettle();
   });
 
   testWidgets(

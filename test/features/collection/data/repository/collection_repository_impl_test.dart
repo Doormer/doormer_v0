@@ -240,4 +240,54 @@ void main() {
     await expectLater(repository.draw('meridian-01'), throwsA(same(refused)));
     await expectLater(repository.loadDecks(), throwsA(same(refused)));
   });
+
+  group('the last deck list', () {
+    test('is nothing before the first read', () {
+      expect(repository.lastDeckList, isNull);
+    });
+
+    test('is the deck list as it was read', () async {
+      await repository.loadDecks();
+
+      expect(repository.lastDeckList?.quarkBalance, 40);
+      expect(repository.lastDeckList?.decks.single.deckId, 'meridian-01');
+    });
+
+    test('takes the balance of every later answer, and keeps its decks',
+        () async {
+      final decks = (await repository.loadDecks()).decks;
+
+      await repository.draw('meridian-01');
+      expect(repository.lastDeckList?.quarkBalance, 0, reason: 'a draw');
+
+      await repository.loadCollection('meridian-01');
+      expect(repository.lastDeckList?.quarkBalance, 40,
+          reason: 'opening a deck');
+
+      await repository.shatterCopy(
+          'meridian-01', 'gnomon', CardVariant.standard);
+      expect(repository.lastDeckList?.quarkBalance, 45, reason: 'a shatter');
+
+      expect(repository.lastDeckList?.decks, same(decks),
+          reason: 'only reading the deck list changes the decks');
+    });
+
+    test('stays as it was when a call fails', () async {
+      await repository.loadDecks();
+
+      await failOnce(_noConnection, repository.loadDecks);
+      await failOnce(_noConnection, () => repository.draw('meridian-01'));
+
+      expect(repository.lastDeckList?.quarkBalance, 40);
+    });
+
+    test('is forgotten, and later answers do not bring it back', () async {
+      await repository.loadDecks();
+
+      repository.forgetLastDeckList();
+      await repository.draw('meridian-01');
+
+      expect(repository.lastDeckList, isNull);
+    });
+  });
 }

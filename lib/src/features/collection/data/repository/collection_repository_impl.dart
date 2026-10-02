@@ -15,12 +15,18 @@ import '../datasource/collection_remote_datasource.dart';
 /// Every draw and every shatter sends an idempotency key. When the answer is
 /// lost, the key is kept, so repeating the same action sends it again and the
 /// server returns its first result instead of acting twice.
+///
+/// It also remembers the deck list it last read, so the collection can open
+/// on it at the student's next visit. Every later answer keeps its balance
+/// current.
 class CollectionRepositoryImpl implements CollectionRepository {
   final CollectionRemoteDataSource remoteDataSource;
   final String Function() idempotencyKeyFactory;
 
   /// The key of each action whose answer was lost.
   final Map<String, String> _keptKeys = {};
+
+  ({int quarkBalance, List<DeckProgress> decks})? _lastDeckList;
 
   CollectionRepositoryImpl({
     required this.remoteDataSource,
@@ -30,10 +36,19 @@ class CollectionRepositoryImpl implements CollectionRepository {
   @override
   Future<({int quarkBalance, List<DeckProgress> decks})> loadDecks() async {
     final response = await remoteDataSource.decks();
-    return (
+    return _lastDeckList = (
       quarkBalance: response.quarkBalance,
       decks: [for (final deck in response.decks) deck.toEntity()],
     );
+  }
+
+  @override
+  ({int quarkBalance, List<DeckProgress> decks})? get lastDeckList =>
+      _lastDeckList;
+
+  @override
+  void forgetLastDeckList() {
+    _lastDeckList = null;
   }
 
   @override
@@ -41,6 +56,7 @@ class CollectionRepositoryImpl implements CollectionRepository {
     String deckId,
   ) async {
     final response = await remoteDataSource.cards(deckId);
+    _rememberBalance(response.quarkBalance);
     return (
       quarkBalance: response.quarkBalance,
       collection: response.toEntity(),
@@ -53,6 +69,7 @@ class CollectionRepositoryImpl implements CollectionRepository {
       'draw $deckId',
       (key) => remoteDataSource.draw(deckId, idempotencyKey: key),
     );
+    _rememberBalance(response.quarkBalance);
     return (quarkBalance: response.quarkBalance, outcome: response.toEntity());
   }
 
@@ -68,11 +85,20 @@ class CollectionRepositoryImpl implements CollectionRepository {
         idempotencyKey: key,
       ),
     );
+    _rememberBalance(response.quarkBalance);
     return (
       quarkBalance: response.quarkBalance,
       standardCopies: response.standardCopies,
       specialCopies: response.specialCopies,
     );
+  }
+
+  /// Puts [quarkBalance], from the latest answer, into the remembered deck
+  /// list. With no deck list remembered, there is nothing to put it in.
+  void _rememberBalance(int quarkBalance) {
+    final last = _lastDeckList;
+    if (last == null) return;
+    _lastDeckList = (quarkBalance: quarkBalance, decks: last.decks);
   }
 
   /// Sends [action] with its kept key, or with a fresh one. The key is kept

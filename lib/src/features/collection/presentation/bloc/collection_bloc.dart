@@ -34,7 +34,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     required this.loadCollection,
     required this.drawCard,
     required this.shatterCopy,
-  }) : super(const CollectionLoading()) {
+  }) : super(_openingState(loadDecks.lastDeckList)) {
     on<CollectionStarted>(_onStarted);
     on<DeckSelected>(_onDeckSelected);
     on<DeckClosed>(_onDeckClosed);
@@ -43,10 +43,41 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     on<ShatterCopyRequested>(_onShatterCopyRequested);
   }
 
+  /// The remembered deck list, so a visit after the first opens straight onto
+  /// it. It has to be the first state, not an emit: a handler runs only after
+  /// the first frame, and that frame would show the spinner.
+  static CollectionState _openingState(
+    ({int quarkBalance, List<DeckProgress> decks})? lastDeckList,
+  ) =>
+      lastDeckList == null
+          ? const CollectionLoading()
+          : CollectionReady(
+              quarkBalance: lastDeckList.quarkBalance,
+              decks: lastDeckList.decks,
+            );
+
   Future<void> _onStarted(
     CollectionStarted event,
     Emitter<CollectionState> emit,
   ) async {
+    final opened = state;
+    if (opened is CollectionReady) {
+      // Opened on the remembered deck list: read afresh behind it, and show
+      // the answer only if the student hasn't changed anything since.
+      // Whatever they opened reads afresh itself.
+      try {
+        final list = await loadDecks();
+        if (state != opened) return;
+        emit(CollectionReady(
+            quarkBalance: list.quarkBalance, decks: list.decks));
+      } catch (e, stackTrace) {
+        // The remembered deck list stays up.
+        AppLogger.info(
+            'Deck list not refreshed: ${_messageFor(e, stackTrace)}');
+      }
+      return;
+    }
+
     emit(const CollectionLoading());
     try {
       final list = await loadDecks();
