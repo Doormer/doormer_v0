@@ -35,6 +35,8 @@ flutter test
 
 See `lib/src/core/config/app_config.dart` for all config values.
 
+To check the UI in a real browser, follow `.agents/skills/browser-testing/SKILL.md`.
+
 ## Architecture — Clean Architecture
 
 Each feature has three layers: **data → domain → presentation**, plus a feature-level DI module.
