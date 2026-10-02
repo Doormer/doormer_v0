@@ -124,7 +124,8 @@ class _StubRepository implements QuestionsRepository {
   return (bloc: bloc, repository: repository);
 }
 
-SolutionReaderBloc _bloc({PhotoQuestionSolveOutcome? outcome, Failure? failure}) {
+SolutionReaderBloc _bloc(
+    {PhotoQuestionSolveOutcome? outcome, Failure? failure}) {
   return _blocWithRepository(outcome: outcome, failure: failure).bloc;
 }
 
@@ -141,7 +142,8 @@ void main() {
         const SolutionReaderReady(document: _document),
         isA<SolutionReaderReady>()
             .having((s) => s.quarkBalance, 'quarkBalance', 128),
-        isA<SolutionReaderReady>().having((s) => s.profile, 'profile', isNotNull),
+        isA<SolutionReaderReady>()
+            .having((s) => s.profile, 'profile', isNotNull),
       ],
     );
 
@@ -515,7 +517,8 @@ void main() {
         const SolutionReaderReady(document: _document),
         isA<SolutionReaderReady>()
             .having((s) => s.quarkBalance, 'quarkBalance', 128),
-        isA<SolutionReaderReady>().having((s) => s.profile, 'profile', isNotNull),
+        isA<SolutionReaderReady>()
+            .having((s) => s.profile, 'profile', isNotNull),
       ],
     );
 
@@ -632,6 +635,50 @@ void main() {
             .having((s) => s.note, 'note', 'The width is derived.')
             .having((s) => s.profile, 'profile', isNotNull),
       ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'keeps the topic and the method handed over from a solve',
+      build: _bloc,
+      act: (bloc) => bloc.add(const SolutionReaderStarted(
+        document: _document,
+        topic: 'Algebra - Linear equations',
+        method: 'Inverse operations',
+      )),
+      verify: (bloc) {
+        expect(
+          bloc.state,
+          isA<SolutionReaderReady>()
+              .having((s) => s.topic, 'topic', 'Algebra - Linear equations')
+              .having((s) => s.method, 'method', 'Inverse operations'),
+        );
+      },
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'keeps the topic and the method loaded from the sample',
+      build: () => _bloc(
+        outcome: const PhotoQuestionSolveOutcome(
+          status: PhotoQuestionSolveStatus.solved,
+          questionId: '57',
+          solution: _document,
+          topic: 'Geometry - Area',
+          method: 'Trigonometry and parallelogram area',
+        ),
+      ),
+      act: (bloc) => bloc.add(const SolutionReaderStarted()),
+      verify: (bloc) {
+        expect(
+          bloc.state,
+          isA<SolutionReaderReady>()
+              .having((s) => s.topic, 'topic', 'Geometry - Area')
+              .having(
+                (s) => s.method,
+                'method',
+                'Trigonometry and parallelogram area',
+              ),
+        );
+      },
     );
   });
 }

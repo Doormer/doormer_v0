@@ -43,6 +43,8 @@ class SolutionReaderBloc
         document: handedOver,
         onBriefing: handedOver.approach.body.isNotEmpty,
         note: event.note,
+        topic: event.topic,
+        method: event.method,
       ));
       await _attachQuarkBalance(emit);
       await _attachProfile(emit);
@@ -61,6 +63,8 @@ class SolutionReaderBloc
         document: solution,
         onBriefing: solution.approach.body.isNotEmpty,
         note: outcome.note,
+        topic: outcome.topic,
+        method: outcome.method,
       ));
       await _attachQuarkBalance(emit);
       await _attachProfile(emit);

@@ -22,10 +22,22 @@ class SolutionReaderStarted extends SolutionReaderEvent {
   /// outcome it loads.
   final String note;
 
-  const SolutionReaderStarted({this.document, this.note = '', this.questionId});
+  /// Topic handed over alongside [document]. Ignored when [document] is null.
+  final String topic;
+
+  /// Method handed over alongside [document]. Ignored when [document] is null.
+  final String method;
+
+  const SolutionReaderStarted({
+    this.document,
+    this.note = '',
+    this.topic = '',
+    this.method = '',
+    this.questionId,
+  });
 
   @override
-  List<Object?> get props => [document, note, questionId];
+  List<Object?> get props => [document, note, topic, method, questionId];
 }
 
 class SolutionReaderAdvanced extends SolutionReaderEvent {

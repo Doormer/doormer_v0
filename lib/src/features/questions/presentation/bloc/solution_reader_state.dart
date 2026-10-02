@@ -28,6 +28,12 @@ class SolutionReaderReady extends SolutionReaderState {
 
   final String note;
 
+  /// Where the question sits. Empty when unnamed.
+  final String topic;
+
+  /// The theory or rule the solution relies on. Empty when unnamed.
+  final String method;
+
   /// Null until the mock standing loads. The reader draws without it rather
   /// than holding the solution back for a decoration.
   final QuestProfile? profile;
@@ -52,6 +58,8 @@ class SolutionReaderReady extends SolutionReaderState {
     this.answerRevealed = false,
     this.onBriefing = false,
     this.note = '',
+    this.topic = '',
+    this.method = '',
     this.profile,
     this.quarkBalance,
     this.quarksEarned = 0,
@@ -70,6 +78,8 @@ class SolutionReaderReady extends SolutionReaderState {
     bool? rationaleVisible,
     bool? answerRevealed,
     bool? onBriefing,
+    String? topic,
+    String? method,
     QuestProfile? profile,
     int? quarkBalance,
     bool clearQuarkBalance = false,
@@ -84,6 +94,8 @@ class SolutionReaderReady extends SolutionReaderState {
       answerRevealed: answerRevealed ?? this.answerRevealed,
       onBriefing: onBriefing ?? this.onBriefing,
       note: note,
+      topic: topic ?? this.topic,
+      method: method ?? this.method,
       profile: profile ?? this.profile,
       quarkBalance:
           clearQuarkBalance ? null : (quarkBalance ?? this.quarkBalance),
@@ -103,6 +115,8 @@ class SolutionReaderReady extends SolutionReaderState {
         answerRevealed,
         onBriefing,
         note,
+        topic,
+        method,
         profile,
         quarkBalance,
         quarksEarned,

@@ -18,6 +18,7 @@ import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bl
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -163,6 +164,32 @@ void main() {
     expect(find.text('Handed over from the solve.'), findsOneWidget);
   });
 
+  testWidgets('carries handed-over topic and method from a solve',
+      (tester) async {
+    final outcome = await _AssetRepository().loadSampleSolution();
+
+    await tester.pumpWidget(_app(
+      solvedState: AskByPhotoSolved(
+        questionId: '57',
+        solution: outcome.solution!,
+        topic: 'Algebra - Linear equations',
+        method: 'Inverse operations',
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final blocContext = tester.element(
+      find.byType(BlocBuilder<SolutionReaderBloc, SolutionReaderState>),
+    );
+
+    expect(
+      blocContext.read<SolutionReaderBloc>().state,
+      isA<SolutionReaderReady>()
+          .having((s) => s.topic, 'topic', 'Algebra - Linear equations')
+          .having((s) => s.method, 'method', 'Inverse operations'),
+    );
+  });
+
   testWidgets('lands at the top of step one after a scrolled briefing',
       (tester) async {
     tester.view.physicalSize = const Size(360, 690);
@@ -191,7 +218,8 @@ void main() {
         .position;
 
     expect(position.pixels, 0);
-    expect(tester.getTopLeft(find.textContaining('LEVEL 1')).dy, greaterThanOrEqualTo(0),
+    expect(tester.getTopLeft(find.textContaining('LEVEL 1')).dy,
+        greaterThanOrEqualTo(0),
         reason: 'the step heading must not start scrolled off the top');
   });
 

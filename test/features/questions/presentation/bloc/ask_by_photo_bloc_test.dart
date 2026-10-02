@@ -65,11 +65,15 @@ class _FakeQuestionsRepository implements QuestionsRepository {
 PhotoQuestionSolveOutcome _outcome(
   PhotoQuestionSolveStatus status, {
   String note = '',
+  String topic = '',
+  String method = '',
 }) {
   return PhotoQuestionSolveOutcome(
     status: status,
     questionId: 'q_${status.name}',
     note: note,
+    topic: topic,
+    method: method,
     solution: status == PhotoQuestionSolveStatus.solved
         ? const SolutionDocument(
             schemaVersion: '1.0',
@@ -119,6 +123,29 @@ void main() {
         'note',
         'The rectangle width is derived, not printed.',
       ),
+    ],
+  );
+
+  blocTest<AskByPhotoBloc, AskByPhotoState>(
+    'carries the topic and the method across the solve handoff',
+    build: () => _blocFor(_FakeQuestionsRepository(
+      outcome: _outcome(
+        PhotoQuestionSolveStatus.solved,
+        topic: 'Algebra - Linear equations',
+        method: 'Inverse operations',
+      ),
+    )),
+    seed: () => AskByPhotoPhotoSelected(
+      imageBytes: validBytes,
+      fileName: 'problem.jpg',
+      mimeType: 'image/jpeg',
+    ),
+    act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+    expect: () => [
+      AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.jpg'),
+      isA<AskByPhotoSolved>()
+          .having((state) => state.topic, 'topic', 'Algebra - Linear equations')
+          .having((state) => state.method, 'method', 'Inverse operations'),
     ],
   );
 

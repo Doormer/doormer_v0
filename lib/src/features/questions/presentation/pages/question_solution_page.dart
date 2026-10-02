@@ -29,6 +29,8 @@ class QuestionSolutionPage extends StatelessWidget {
         ..add(SolutionReaderStarted(
           document: solvedState?.solution,
           note: solvedState?.note ?? '',
+          topic: solvedState?.topic ?? '',
+          method: solvedState?.method ?? '',
           questionId: solvedState == null ? null : questionId,
         )),
       child: BlocBuilder<SolutionReaderBloc, SolutionReaderState>(

@@ -130,6 +130,8 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
           questionId: outcome.questionId,
           solution: solution,
           note: outcome.note,
+          topic: outcome.topic,
+          method: outcome.method,
         ));
       case PhotoQuestionSolveStatus.unreadable:
         emit(AskByPhotoUnreadable(
