@@ -27,7 +27,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   /// Handles the SignupRequested event
   Future<void> _onSignupRequested(
       SignupRequested event, Emitter<AuthState> emit) async {
-    AppLogger.info('SignupRequested event received: email=${event.email}');
+    AppLogger.info('SignupRequested event received');
 
     // Emit loading state before performing signup
     emit(AuthLoading());
@@ -59,7 +59,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   /// Handles the LoginRequested event
   Future<void> _onLoginRequested(
       LoginRequested event, Emitter<AuthState> emit) async {
-    AppLogger.info('LoginRequested event received: email=${event.email}');
+    AppLogger.info('LoginRequested event received');
 
     // Emit loading state before performing login
     emit(AuthLoading());

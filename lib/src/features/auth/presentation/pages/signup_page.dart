@@ -1,6 +1,6 @@
 import 'package:universal_html/html.dart' as html;
 import 'package:doormer/src/core/theme/app_theme_context.dart';
-import 'package:doormer/src/core/utils/app_logger.dart';
+import 'package:doormer/src/features/auth/domain/auth_messages.dart';
 import 'package:doormer/src/features/auth/presentation/widget/agreement_text_widget.dart';
 import 'package:doormer/src/features/auth/presentation/widget/signup_button.dart';
 import 'package:doormer/src/features/auth/utils/auth_validators.dart';
@@ -27,7 +27,6 @@ class SignUpPageWeb extends StatelessWidget {
     if (_formKey.currentState?.validate() ?? false) {
       final email = _emailController.text;
       final password = _passwordController.text;
-      AppLogger.info('Dispatching SignupRequested event with email: $email');
       authBloc.add(SignupRequested(
         email: email,
         password: password,
@@ -83,14 +82,12 @@ class SignUpPageWeb extends StatelessWidget {
                             }
                           }
                         }
-
                         if (state is AuthError) {
-                          final errorMsg = state.error.toString().toLowerCase();
-                          if (errorMsg.contains('user is already registered')) {
+                          if (state.error == AuthMessages.emailTaken) {
                             CustomToast.show(
                               context,
                               message:
-                                  'An account with this email already exists. Redirecting to login...',
+                                  '${AuthMessages.emailTaken} Taking you to log in…',
                               type: ToastificationType.warning,
                             );
                             Future.delayed(const Duration(seconds: 2), () {
@@ -99,7 +96,7 @@ class SignUpPageWeb extends StatelessWidget {
                           } else {
                             CustomToast.show(
                               context,
-                              message: 'Sign Up Failed.',
+                              message: state.error,
                               type: ToastificationType.error,
                             );
                           }

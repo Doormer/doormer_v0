@@ -4,6 +4,7 @@ import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/services/sessions/session_service.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/auth/data/model/login_response_model.dart';
+import 'package:doormer/src/features/auth/domain/auth_messages.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthRemoteDataSource {
@@ -36,6 +37,9 @@ class AuthRemoteDataSource {
       return loginResponseModel;
     } on DioException catch (e, stackTrace) {
       AppLogger.error('Signup failed', error: e, stackTrace: stackTrace);
+      if (_isBadRequestSaying(e, ['user is already registered'])) {
+        throw ValidationFailure(AuthMessages.emailTaken);
+      }
       throw dioExceptionToFailure(e,
           userFacingMessage: 'Sign up failed. Please try again.');
     }
@@ -48,7 +52,6 @@ class AuthRemoteDataSource {
         'email': email,
         'password': password,
       });
-      AppLogger.info('Requesting Login: $formData');
       final response = await dio.post(
         '/v1/login',
         data: formData,
@@ -57,13 +60,25 @@ class AuthRemoteDataSource {
         ),
       );
 
-      AppLogger.info('Passing to UserModel.fromJson: ${response.data}');
       return LoginResponseModel.fromJson(response.data);
     } on DioException catch (e, stackTrace) {
       AppLogger.error('Login failed', error: e, stackTrace: stackTrace);
+      if (_isBadRequestSaying(
+          e, ['wrong email or password', 'user not found'])) {
+        throw AuthFailure(AuthMessages.wrongCredentials);
+      }
       throw dioExceptionToFailure(e,
-          userFacingMessage: 'Login failed. Please check your credentials.');
+          userFacingMessage: 'Login failed. Please try again.');
     }
+  }
+
+  /// The backend answers a bad login or a taken email with a 400 and a
+  /// plain-text reason. The reason only picks the failure type; it is never
+  /// shown.
+  static bool _isBadRequestSaying(DioException e, List<String> reasons) {
+    if (e.response?.statusCode != 400) return false;
+    final body = e.response?.data?.toString().toLowerCase() ?? '';
+    return reasons.any(body.contains);
   }
 
   Future<void> verifyEmail(String email, String code) async {
@@ -81,7 +96,6 @@ class AuthRemoteDataSource {
   }
 
   Future<LoginResponseModel> verifyGoogleIdToken(String googleIdToken) async {
-    AppLogger.info('Google Id Token: $googleIdToken');
     try {
       final formData = FormData.fromMap({
         'auth_type': 2,

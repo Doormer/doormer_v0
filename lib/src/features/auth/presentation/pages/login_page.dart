@@ -1,6 +1,5 @@
 import 'package:universal_html/html.dart' as html;
 import 'package:doormer/src/core/theme/app_theme_context.dart';
-import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/auth/presentation/widget/auth_textfield_web.dart';
 import 'package:doormer/src/features/auth/presentation/widget/google_signin_button.dart';
 import 'package:doormer/src/features/auth/presentation/widget/signup_button.dart';
@@ -26,7 +25,6 @@ class LoginPageWeb extends StatelessWidget {
     if (_formKey.currentState?.validate() ?? false) {
       final email = _emailController.text;
       final password = _passwordController.text;
-      AppLogger.info('Dispatching LoginRequested event with email: $email');
       authBloc.add(LoginRequested(
         email: email,
         password: password,
@@ -84,20 +82,11 @@ class LoginPageWeb extends StatelessWidget {
                         }
 
                         if (state is AuthError) {
-                          final errorMsg = state.error.toString().toLowerCase();
-                          if (errorMsg.contains('wrong email or password')) {
-                            CustomToast.show(
-                              context,
-                              message: 'Wrong Email Or Password',
-                              type: ToastificationType.error,
-                            );
-                          } else {
-                            CustomToast.show(
-                              context,
-                              message: 'Login Failed.',
-                              type: ToastificationType.error,
-                            );
-                          }
+                          CustomToast.show(
+                            context,
+                            message: state.error,
+                            type: ToastificationType.error,
+                          );
                         }
                       },
                       builder: (context, state) {
