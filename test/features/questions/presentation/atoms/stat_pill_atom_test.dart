@@ -27,6 +27,15 @@ Widget _pump({required bool alive, bool motion = true}) {
   );
 }
 
+Widget _host(Widget child) {
+  return ScreenUtilInit(
+    designSize: const Size(360, 690),
+    builder: (_, __) => MaterialApp(
+      home: Scaffold(body: Center(child: child)),
+    ),
+  );
+}
+
 double _lift(WidgetTester tester) => tester
     .widgetList<Transform>(find.ancestor(
       of: find.byKey(const Key('pill_emblem')),
@@ -65,7 +74,8 @@ void main() {
       await tester.pump();
 
       expect(await _travel(tester), 0.0,
-          reason: 'banked XP cannot be lost, so it has no reason to fidget');
+          reason: 'a running total is not at risk, so it has no reason to '
+              'fidget');
     });
 
     testWidgets('the flicker stops', (tester) async {
@@ -86,6 +96,18 @@ void main() {
       await tester.pump();
 
       expect(await _travel(tester), 0.0);
+    });
+
+    testWidgets('can render a custom leading widget instead of an icon',
+        (tester) async {
+      await tester.pumpWidget(_host(const StatPillAtom(
+        leading: SizedBox(key: Key('quark_dot'), width: 6, height: 6),
+        label: '128 quarks',
+        accent: QuestPalette.amber,
+      )));
+
+      expect(find.byKey(const Key('quark_dot')), findsOneWidget);
+      expect(find.text('128 quarks'), findsOneWidget);
     });
   });
 }

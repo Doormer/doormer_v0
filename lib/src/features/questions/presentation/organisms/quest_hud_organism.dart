@@ -10,8 +10,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// The page's standing bar: where this question sits, what it is called, and
 /// what the student is carrying.
 ///
-/// The pills are absent, not zeroed, until the standing loads. A "0 XP" that
-/// silently becomes "120 XP" a frame later reads as losing something.
+/// The pills are absent, not zeroed, until each has loaded. A "0 quarks" that
+/// silently becomes "120 quarks" a frame later reads as losing something.
 class QuestHudOrganism extends StatelessWidget {
   final QuestHudParams params;
 
@@ -57,16 +57,23 @@ class QuestHudOrganism extends StatelessWidget {
               ],
             ),
           ),
-          if (params.xpLabel.isNotEmpty) ...[
+          if (params.quarkBalanceLabel.isNotEmpty) ...[
             SizedBox(width: 8.w),
             PunchAtom(
-              trigger: params.xpTrigger,
+              trigger: params.quarkTrigger,
               child: StatPillAtom(
-                key: const Key('hud_xp'),
-                iconKey: params.xpKey,
-                icon: Icons.bolt_rounded,
-                label: params.xpLabel,
-                accent: QuestPalette.mint,
+                key: const Key('hud_quarks'),
+                leading: Container(
+                  key: params.quarkKey,
+                  width: 7.w,
+                  height: 7.w,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: QuestPalette.amber,
+                  ),
+                ),
+                label: params.quarkBalanceLabel,
+                accent: QuestPalette.amber,
               ),
             ),
           ],

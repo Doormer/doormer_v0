@@ -295,11 +295,11 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
                       // The banked total, not the live one: while a pellet is in
                       // flight the counter has not been paid yet, and a number that
                       // updates before the reward arrives makes the flight a lie.
-                      xpLabel: _bankedXpLabel,
+                      quarkBalanceLabel: content.quarkBalanceLabel,
                       streakLabel: content.streakLabel,
                       streakAtStake: content.streakAtStake,
-                      xpKey: _chipKey,
-                      xpTrigger: _landings,
+                      quarkKey: _chipKey,
+                      quarkTrigger: _landings,
                     ),
                   ),
                   if (!asRail)

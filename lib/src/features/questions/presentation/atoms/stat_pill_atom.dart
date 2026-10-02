@@ -6,10 +6,10 @@ import 'package:doormer/src/shared/design/atomic/atoms/idle_beat_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// A small stat pill — the XP total, the streak.
+/// A small stat pill — the quark balance, the streak.
 ///
-/// Colour is the meaning: mint for what has been banked, amber for what is at
-/// stake. Nothing else on the page may use those two for anything else.
+/// [accent] colours the whole pill. Quarks are amber here, as they are in the
+/// collection.
 class StatPillAtom extends StatefulWidget {
   /// The pop, and the flame's flare, when the streak comes under threat.
   static const Duration stakeDuration = Duration(milliseconds: 800);
@@ -17,7 +17,10 @@ class StatPillAtom extends StatefulWidget {
   /// The pill finishes settling before the emblem has finished arriving.
   static const Duration popDuration = Duration(milliseconds: 700);
 
-  final IconData icon;
+  final IconData? icon;
+
+  /// Custom emblem. Used for the quark dot, which is not an icon.
+  final Widget? leading;
 
   /// Marks the icon so something can be aimed at the pill's emblem rather than
   /// at the pill's centre, which drifts as the label's digits grow.
@@ -38,13 +41,14 @@ class StatPillAtom extends StatefulWidget {
 
   const StatPillAtom({
     super.key,
-    required this.icon,
+    this.icon,
+    this.leading,
     this.iconKey,
     required this.label,
     required this.accent,
     this.alive = false,
     this.atStake = false,
-  });
+  }) : assert(icon != null || leading != null);
 
   @override
   State<StatPillAtom> createState() => _StatPillAtomState();
@@ -137,8 +141,9 @@ class _StatPillAtomState extends State<StatPillAtom>
   }
 
   Widget _emblem() {
-    final icon = Icon(widget.icon,
-        key: widget.iconKey, size: 12.sp, color: widget.accent);
+    final icon = widget.leading ??
+        Icon(widget.icon,
+            key: widget.iconKey, size: 12.sp, color: widget.accent);
 
     return AnimatedBuilder(
       animation: _stake,
