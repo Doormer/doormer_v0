@@ -1,3 +1,6 @@
+import 'package:doormer/src/core/di/service_locator.dart';
+import 'package:doormer/src/core/routes/route_guard.dart';
+import 'package:doormer/src/core/utils/token_storage/token_storage.dart';
 import 'package:doormer/src/features/auth/presentation/pages/login_page.dart';
 import 'package:doormer/src/features/auth/presentation/pages/signup_page.dart';
 import 'package:doormer/src/core/routes/destination_routes.dart';
@@ -19,6 +22,13 @@ WebRouter defines the routing structure and logic specifically for the web platf
 class WebRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/auth',
+    redirect: (context, state) async {
+      final token = await serviceLocator<TokenStorage>().getAccessToken();
+      return redirectFor(
+        state.uri.path,
+        isSignedIn: token != null && token.isNotEmpty,
+      );
+    },
     routes: [
       // Authentication Routes (Only for users NOT logged in)
       GoRoute(
