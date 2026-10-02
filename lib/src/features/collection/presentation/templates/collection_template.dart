@@ -83,7 +83,7 @@ class CollectionTemplate extends StatelessWidget {
     final isWide = MediaQuery.sizeOf(context).width >= railBreakpoint;
 
     return Scaffold(
-      backgroundColor: QuestPalette.night,
+      backgroundColor: background,
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.all(14.w),
@@ -93,6 +93,14 @@ class CollectionTemplate extends StatelessWidget {
       bottomNavigationBar: navigationBar(navigationBarParams),
     );
   }
+
+  /// The colour every collection screen paints behind it: loading, error and
+  /// the decks alike.
+  ///
+  /// The app paints a purple backdrop behind every page; the collection covers
+  /// it. A screen that let it show through flashed purple before the decks
+  /// arrived.
+  static const Color background = QuestPalette.night;
 
   /// The bar as every collection screen places it: at the foot of the
   /// Scaffold, which lays the body out above it, with home's margins.

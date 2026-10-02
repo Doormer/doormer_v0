@@ -70,6 +70,7 @@ class _CollectionViewState extends State<_CollectionView> {
       builder: (context, state) {
         if (state is CollectionLoading) {
           return Scaffold(
+            backgroundColor: CollectionTemplate.background,
             body: const Center(child: CircularProgressIndicator()),
             bottomNavigationBar:
                 CollectionTemplate.navigationBar(navigationBarParams),
@@ -77,6 +78,7 @@ class _CollectionViewState extends State<_CollectionView> {
         }
         if (state is CollectionError) {
           return Scaffold(
+            backgroundColor: CollectionTemplate.background,
             body: Center(
               child: ErrorWithRetryMolecule(
                 message: state.message,
