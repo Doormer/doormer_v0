@@ -30,6 +30,9 @@ class SolutionVaultOrganism extends StatefulWidget {
 
   /// What the student is told they just did, once it is open.
   final String solvedLabel;
+
+  /// Reward copy such as "+3 quarks". Empty when the reveal paid nothing.
+  final String rewardLabel;
   final String checkTitle;
   final List<OrderedSegment> checkBody;
   final List<OrderedSegment> answerBody;
@@ -44,6 +47,7 @@ class SolutionVaultOrganism extends StatefulWidget {
     this.resisting = false,
     required this.lockedLabel,
     required this.solvedLabel,
+    this.rewardLabel = '',
     required this.checkTitle,
     required this.checkBody,
     required this.answerBody,
@@ -292,6 +296,29 @@ class _SolutionVaultOrganismState extends State<SolutionVaultOrganism>
               color: QuestPalette.dim,
             ),
           ),
+          if (widget.rewardLabel.isNotEmpty) ...[
+            SizedBox(height: 8.h),
+            Container(
+              key: const Key('vault_reward_label'),
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+              decoration: BoxDecoration(
+                color: QuestPalette.amber.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(999.r),
+                border: Border.all(
+                  color: QuestPalette.amber.withValues(alpha: 0.55),
+                ),
+              ),
+              child: Text(
+                widget.rewardLabel,
+                style: TextStyle(
+                  fontFamily: kDisplayFont,
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w700,
+                  color: QuestPalette.amber,
+                ),
+              ),
+            ),
+          ],
           SizedBox(height: 6.h),
           SegmentListOrganism(
             segments: widget.answerBody,

@@ -151,8 +151,8 @@ Widget _pump(
   );
 }
 
-/// A three-step run with a standing already banked, so every move pays a
-/// different amount and the counter has somewhere to climb from.
+/// A three-step run. On its last step the vault is open, so a paid reveal has
+/// somewhere to fly from.
 const _paidDocument = SolutionDocument(
   schemaVersion: '3.0',
   steps: [
@@ -193,7 +193,7 @@ SolutionReaderParams _params(
 }
 
 void main() {
-  _xpFlightTests();
+  _quarkFlightTests();
   _revealResistTests();
   testWidgets('owns exactly one Scaffold and pins the trail and the CTA',
       (tester) async {
@@ -457,33 +457,6 @@ void main() {
     });
   });
 
-  group('the escaping XP sticker', () {
-    testWidgets('is not clipped by the top of the scroll view', (tester) async {
-      tester.view.physicalSize = const Size(360, 690);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
-
-      await tester.pumpWidget(
-        _pump(_params(const SolutionReaderReady(document: _document))),
-      );
-      await tester.pumpAndSettle();
-
-      final sticker = find.byKey(const Key('step_xp_sticker'));
-      expect(sticker, findsOneWidget);
-
-      final stickerTop = tester.getTopLeft(sticker).dy;
-      final scrollTop =
-          tester.getTopLeft(find.byKey(const Key('solution_scroll'))).dy;
-
-      expect(
-        stickerTop,
-        greaterThanOrEqualTo(scrollTop),
-        reason: 'the sticker sits above the card, so the scroll view must '
-            'reserve headroom for it or the viewport cuts the tag in half',
-      );
-    });
-  });
-
   group('revealing the answer', () {
     testWidgets('brings the vault into view', (tester) async {
       tester.view.physicalSize = const Size(360, 690);
@@ -525,100 +498,116 @@ void main() {
   group('where the trail goes', _trailPlacementTests);
 }
 
-void _xpFlightTests() {
-  group('XP flight', () {
-    testWidgets('holds the counter until the reward actually arrives',
+void _quarkFlightTests() {
+  group('quark reward flight', () {
+    testWidgets('holds the HUD balance until the reward actually arrives',
         (tester) async {
-      await tester.pumpWidget(_pump(_params(_atStep(0))));
+      await tester.pumpWidget(_pump(_params(const SolutionReaderReady(
+        document: _paidDocument,
+        stepIndex: 2,
+        answerRevealed: true,
+        quarkBalance: 128,
+      ))));
       await tester.pumpAndSettle();
-      expect(find.text('120 XP'), findsOneWidget);
+      expect(find.text('128 quarks'), findsOneWidget);
 
-      await tester.pumpWidget(_pump(_params(_atStep(1))));
+      await tester.pumpWidget(_pump(_params(const SolutionReaderReady(
+        document: _paidDocument,
+        stepIndex: 2,
+        answerRevealed: true,
+        quarkBalance: 131,
+        quarksEarned: 3,
+        rewardFlightId: 1,
+      ))));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byKey(const Key('xp_pellet')), findsOneWidget);
-      expect(find.text('120 XP'), findsOneWidget,
-          reason: 'a counter that pays before the pellet lands makes the '
+      expect(find.byKey(const Key('quark_reward')), findsOneWidget);
+      expect(find.text('128 quarks'), findsOneWidget,
+          reason: 'a balance that pays before the reward lands makes the '
               'flight a lie');
+      expect(find.text('+3 quarks'), findsWidgets);
 
       await tester.pumpAndSettle();
-      expect(find.text('130 XP'), findsOneWidget);
-      expect(find.byKey(const Key('xp_pellet')), findsNothing);
+      expect(find.text('131 quarks'), findsOneWidget);
+      expect(find.byKey(const Key('quark_reward')), findsNothing);
     });
 
-    testWidgets('the pellet carries what was banked, not the next reward',
+    testWidgets('does not fly when reveal earned zero', (tester) async {
+      await tester.pumpWidget(_pump(_params(const SolutionReaderReady(
+        document: _paidDocument,
+        stepIndex: 2,
+        answerRevealed: true,
+        quarkBalance: 128,
+      ))));
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(_pump(_params(const SolutionReaderReady(
+        document: _paidDocument,
+        stepIndex: 2,
+        answerRevealed: true,
+        quarkBalance: 128,
+        quarksEarned: 0,
+        rewardFlightId: 0,
+      ))));
+      await tester.pump();
+
+      expect(find.byKey(const Key('quark_reward')), findsNothing);
+      expect(find.text('128 quarks'), findsOneWidget);
+    });
+
+    testWidgets(
+        'does not fly when the pill was absent, but shows the new balance',
         (tester) async {
-      await tester.pumpWidget(_pump(_params(_atStep(0))));
+      await tester.pumpWidget(_pump(_params(const SolutionReaderReady(
+        document: _paidDocument,
+        stepIndex: 2,
+        answerRevealed: true,
+      ))));
       await tester.pumpAndSettle();
+      expect(find.byKey(const Key('hud_quarks')), findsNothing);
 
-      await tester.pumpWidget(_pump(_params(_atStep(1))));
+      await tester.pumpWidget(_pump(_params(const SolutionReaderReady(
+        document: _paidDocument,
+        stepIndex: 2,
+        answerRevealed: true,
+        quarkBalance: 131,
+        quarksEarned: 3,
+        rewardFlightId: 0,
+      ))));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('+15 XP'), findsOneWidget,
-          reason: 'the sticker advertises the step now on screen');
-      expect(
-        find.descendant(
-          of: find.byKey(const Key('xp_pellet')),
-          matching: find.text('+10 XP'),
-        ),
-        findsOneWidget,
-        reason: 'reading the sticker would pay a pellet of 15 while the '
-            'counter climbed 10',
-      );
-
-      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('quark_reward')), findsNothing);
+      expect(find.text('131 quarks'), findsOneWidget);
     });
 
-    testWidgets('lands the number with no pellet under reduced motion',
+    testWidgets('lands the balance with no flight under reduced motion',
         (tester) async {
-      await tester.pumpWidget(_pump(_params(_atStep(0)), motion: false));
+      await tester.pumpWidget(_pump(
+          _params(const SolutionReaderReady(
+            document: _paidDocument,
+            stepIndex: 2,
+            answerRevealed: true,
+            quarkBalance: 128,
+          )),
+          motion: false));
       await tester.pumpAndSettle();
 
-      await tester.pumpWidget(_pump(_params(_atStep(1)), motion: false));
+      await tester.pumpWidget(_pump(
+          _params(const SolutionReaderReady(
+            document: _paidDocument,
+            stepIndex: 2,
+            answerRevealed: true,
+            quarkBalance: 131,
+            quarksEarned: 3,
+            rewardFlightId: 1,
+          )),
+          motion: false));
       await tester.pump();
       await tester.pump();
 
-      expect(find.byKey(const Key('xp_pellet')), findsNothing);
-      expect(find.text('130 XP'), findsOneWidget,
-          reason: 'the pellet is decoration; the total is not');
-    });
-
-    testWidgets('banks the first award when a second overtakes it',
-        (tester) async {
-      await tester.pumpWidget(_pump(_params(_atStep(0))));
-      await tester.pumpAndSettle();
-
-      await tester.pumpWidget(_pump(_params(_atStep(1))));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('120 XP'), findsOneWidget);
-
-      await tester.pumpWidget(_pump(_params(_atStep(2))));
-      await tester.pump();
-      await tester.pump();
-
-      expect(find.text('130 XP'), findsOneWidget,
-          reason: 'skipping ahead may cost the animation, never the XP');
-
-      await tester.pumpAndSettle();
-      expect(find.text('145 XP'), findsOneWidget);
-    });
-
-    testWidgets('travelling back never pays again', (tester) async {
-      await tester.pumpWidget(_pump(_params(_atStep(2))));
-      await tester.pumpAndSettle();
-      expect(find.text('145 XP'), findsOneWidget);
-
-      await tester.pumpWidget(_pump(_params(_atStep(0))));
-      await tester.pump();
-      await tester.pump();
-
-      expect(find.byKey(const Key('xp_pellet')), findsNothing);
-      expect(find.text('120 XP'), findsOneWidget,
-          reason: 'the total is derived from where the student is, so going '
-              'back gives it back');
+      expect(find.byKey(const Key('quark_reward')), findsNothing);
+      expect(find.text('131 quarks'), findsOneWidget);
     });
   });
 }
