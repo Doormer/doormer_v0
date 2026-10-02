@@ -4,10 +4,8 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
-import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
-import 'package:doormer/src/features/questions/domain/usecase/load_quest_profile_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
@@ -88,13 +86,6 @@ class _StubRepository implements QuestionsRepository {
   }
 
   @override
-  Future<QuestProfile> loadQuestProfile() async => const QuestProfile(
-        streakDays: 3,
-        topic: 'Geometry - Area',
-        questionTitle: 'Road through a field',
-      );
-
-  @override
   Future<int> loadQuarkBalance() async {
     final error = balanceError;
     if (error != null) throw error;
@@ -117,7 +108,6 @@ class _StubRepository implements QuestionsRepository {
   final repository = _StubRepository(outcome: outcome, failure: failure);
   final bloc = SolutionReaderBloc(
     loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
-    loadQuestProfileUseCase: LoadQuestProfileUseCase(repository),
     loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(repository),
     revealAnswerUseCase: RevealAnswerUseCase(repository),
   );
@@ -135,15 +125,13 @@ void main() {
       'uses the handed-over document without touching the usecase',
       build: () => _bloc(failure: DatabaseFailure('must not be called')),
       act: (bloc) => bloc.add(const SolutionReaderStarted(document: _document)),
-      // The solution lands first; the quark balance and the standing follow.
+      // The solution lands first; the quark balance follows.
       // Holding the solution back until either resolves would make a slow
       // call cost the student the thing they came for.
       expect: () => [
         const SolutionReaderReady(document: _document),
         isA<SolutionReaderReady>()
             .having((s) => s.quarkBalance, 'quarkBalance', 128),
-        isA<SolutionReaderReady>()
-            .having((s) => s.profile, 'profile', isNotNull),
       ],
     );
 
@@ -164,8 +152,6 @@ void main() {
             .having((s) => s.stepIndex, 'stepIndex', 0),
         isA<SolutionReaderReady>()
             .having((s) => s.quarkBalance, 'quarkBalance', 128),
-        isA<SolutionReaderReady>()
-            .having((s) => s.profile?.streakDays, 'streakDays', 3),
       ],
     );
 
@@ -203,8 +189,6 @@ void main() {
         const SolutionReaderReady(document: _document),
         isA<SolutionReaderReady>()
             .having((s) => s.quarkBalance, 'quarkBalance', 128),
-        isA<SolutionReaderReady>()
-            .having((s) => s.profile, 'profile', isNotNull),
       ],
     );
 
@@ -226,9 +210,6 @@ void main() {
         isA<SolutionReaderLoading>(),
         isA<SolutionReaderReady>()
             .having((s) => s.quarkBalance, 'quarkBalance', isNull),
-        isA<SolutionReaderReady>()
-            .having((s) => s.quarkBalance, 'quarkBalance', isNull)
-            .having((s) => s.profile, 'profile', isNotNull),
       ],
     );
   });
@@ -501,8 +482,6 @@ void main() {
         isA<SolutionReaderReady>()
             .having((s) => s.quarkBalance, 'quarkBalance', 128)
             .having((s) => s.onBriefing, 'onBriefing', isTrue),
-        isA<SolutionReaderReady>()
-            .having((s) => s.onBriefing, 'onBriefing', isTrue),
       ],
     );
 
@@ -510,15 +489,13 @@ void main() {
       'opens on step one when the document has no approach',
       build: _bloc,
       act: (bloc) => bloc.add(const SolutionReaderStarted(document: _document)),
-      // The solution lands first; the quark balance and the standing follow.
+      // The solution lands first; the quark balance follows.
       // Holding the solution back until either resolves would make a slow
       // call cost the student the thing they came for.
       expect: () => [
         const SolutionReaderReady(document: _document),
         isA<SolutionReaderReady>()
             .having((s) => s.quarkBalance, 'quarkBalance', 128),
-        isA<SolutionReaderReady>()
-            .having((s) => s.profile, 'profile', isNotNull),
       ],
     );
 
@@ -608,8 +585,6 @@ void main() {
         isA<SolutionReaderReady>()
             .having((s) => s.quarkBalance, 'quarkBalance', 128)
             .having((s) => s.note, 'note', 'The width is derived.'),
-        isA<SolutionReaderReady>()
-            .having((s) => s.note, 'note', 'The width is derived.'),
       ],
     );
 
@@ -631,9 +606,6 @@ void main() {
         isA<SolutionReaderReady>()
             .having((s) => s.quarkBalance, 'quarkBalance', 128)
             .having((s) => s.note, 'note', 'The width is derived.'),
-        isA<SolutionReaderReady>()
-            .having((s) => s.note, 'note', 'The width is derived.')
-            .having((s) => s.profile, 'profile', isNotNull),
       ],
     );
 

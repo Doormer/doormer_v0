@@ -34,10 +34,6 @@ class SolutionReaderReady extends SolutionReaderState {
   /// The theory or rule the solution relies on. Empty when unnamed.
   final String method;
 
-  /// Null until the mock standing loads. The reader draws without it rather
-  /// than holding the solution back for a decoration.
-  final QuestProfile? profile;
-
   /// Null until the balance loads. Null keeps the quark pill hidden.
   final int? quarkBalance;
 
@@ -60,7 +56,6 @@ class SolutionReaderReady extends SolutionReaderState {
     this.note = '',
     this.topic = '',
     this.method = '',
-    this.profile,
     this.quarkBalance,
     this.quarksEarned = 0,
     this.rewardFlightId = 0,
@@ -80,7 +75,6 @@ class SolutionReaderReady extends SolutionReaderState {
     bool? onBriefing,
     String? topic,
     String? method,
-    QuestProfile? profile,
     int? quarkBalance,
     bool clearQuarkBalance = false,
     int? quarksEarned,
@@ -96,7 +90,6 @@ class SolutionReaderReady extends SolutionReaderState {
       note: note,
       topic: topic ?? this.topic,
       method: method ?? this.method,
-      profile: profile ?? this.profile,
       quarkBalance:
           clearQuarkBalance ? null : (quarkBalance ?? this.quarkBalance),
       quarksEarned: quarksEarned ?? this.quarksEarned,
@@ -117,7 +110,6 @@ class SolutionReaderReady extends SolutionReaderState {
         note,
         topic,
         method,
-        profile,
         quarkBalance,
         quarksEarned,
         rewardFlightId,

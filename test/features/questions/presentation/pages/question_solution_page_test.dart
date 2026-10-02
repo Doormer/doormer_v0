@@ -8,10 +8,8 @@ import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
-import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
-import 'package:doormer/src/features/questions/domain/usecase/load_quest_profile_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
@@ -39,13 +37,6 @@ class _AssetRepository implements QuestionsRepository {
   }) {
     throw UnimplementedError();
   }
-
-  @override
-  Future<QuestProfile> loadQuestProfile() async => const QuestProfile(
-        streakDays: 3,
-        topic: 'Geometry - Area',
-        questionTitle: 'Road through a field',
-      );
 
   @override
   Future<int> loadQuarkBalance() async => 128;
@@ -95,7 +86,6 @@ void main() {
     serviceLocator.registerFactory<SolutionReaderBloc>(
       () => SolutionReaderBloc(
         loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
-        loadQuestProfileUseCase: LoadQuestProfileUseCase(repository),
         loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(repository),
         revealAnswerUseCase: RevealAnswerUseCase(repository),
       ),
@@ -235,7 +225,6 @@ void main() {
     serviceLocator.registerFactory<SolutionReaderBloc>(
       () => SolutionReaderBloc(
         loadSampleSolutionUseCase: LoadSampleSolutionUseCase(solvedRepository),
-        loadQuestProfileUseCase: LoadQuestProfileUseCase(solvedRepository),
         loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(solvedRepository),
         revealAnswerUseCase: RevealAnswerUseCase(solvedRepository),
       ),
@@ -261,7 +250,6 @@ void main() {
     serviceLocator.registerFactory<SolutionReaderBloc>(
       () => SolutionReaderBloc(
         loadSampleSolutionUseCase: LoadSampleSolutionUseCase(sampleRepository),
-        loadQuestProfileUseCase: LoadQuestProfileUseCase(sampleRepository),
         loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(sampleRepository),
         revealAnswerUseCase: RevealAnswerUseCase(sampleRepository),
       ),
