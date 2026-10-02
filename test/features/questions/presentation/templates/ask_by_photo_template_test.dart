@@ -2,12 +2,12 @@ import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/photo_upload_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solve_status_presenter.dart';
-import 'package:doormer/src/features/questions/presentation/organisms/navigation_bar_organism.dart';
-import 'package:doormer/src/features/questions/presentation/params/bottom_action_bar_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/templates/ask_by_photo_template.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
+import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -45,13 +45,7 @@ void main() {
               onRetake: _noop,
               onTypeInstead: _noop,
             ),
-            bottomBarParams: BottomActionBarParams(
-              onCopy: () {},
-              onAiChat: () {},
-              onUpload: () {},
-              onChat: () {},
-              onProfile: () {},
-            ),
+            navigationBarParams: _navigationBarParams,
           ),
         ),
       ),
@@ -94,13 +88,7 @@ void main() {
               onRetake: _noop,
               onTypeInstead: _noop,
             ),
-            bottomBarParams: BottomActionBarParams(
-              onCopy: () {},
-              onAiChat: () {},
-              onUpload: () {},
-              onChat: () {},
-              onProfile: () {},
-            ),
+            navigationBarParams: _navigationBarParams,
           ),
         ),
       ),
@@ -166,13 +154,7 @@ void main() {
               onRetake: _noop,
               onTypeInstead: _noop,
             ),
-            bottomBarParams: BottomActionBarParams(
-              onCopy: () {},
-              onAiChat: () {},
-              onUpload: () {},
-              onChat: () {},
-              onProfile: () {},
-            ),
+            navigationBarParams: _navigationBarParams,
           ),
         ),
       );
@@ -201,7 +183,7 @@ void main() {
           'Saved',
           'AI Tutor',
           'Solve',
-          'Discuss',
+          'Cards',
           'Profile',
         ]) {
           expect(find.text(name), findsOneWidget);
@@ -222,3 +204,12 @@ void main() {
 }
 
 void _noop() {}
+
+const _navigationBarParams = NavigationBarParams(
+  current: AppDestination.solve,
+  onSaved: _noop,
+  onAiTutor: _noop,
+  onSolve: _noop,
+  onCards: _noop,
+  onProfile: _noop,
+);

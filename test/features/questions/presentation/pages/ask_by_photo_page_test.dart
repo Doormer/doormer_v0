@@ -28,6 +28,7 @@ import 'package:doormer/src/features/questions/presentation/bloc/solution_reader
 import 'package:doormer/src/features/questions/presentation/molecules/photo_preview_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
 import 'package:doormer/src/features/questions/presentation/templates/solution_reader_template.dart';
 import 'package:flutter/material.dart';
@@ -140,6 +141,10 @@ void main() {
         GoRoute(
           path: '/questions/photo',
           builder: (_, __) => const AskByPhotoPage(),
+        ),
+        GoRoute(
+          path: '/collection',
+          builder: (_, __) => const Scaffold(body: Text('Cards page')),
         ),
         GoRoute(
           path: '/questions/:questionId/solution',
@@ -493,6 +498,61 @@ void main() {
 
     expect(find.text('Open camera'), findsNothing);
     expect(find.text('Choose from gallery'), findsNothing);
+
+    pending.complete(_outcome(PhotoQuestionSolveStatus.solved));
+    await tester.pump();
+    await tester.pump();
+    await drainToasts(tester);
+  });
+
+  testWidgets('the Cards action opens the collection', (tester) async {
+    repository = _FakeQuestionsRepository(
+      outcome: _outcome(PhotoQuestionSolveStatus.solved),
+    );
+    registerBloc();
+    await pumpPage(tester);
+
+    await tester.tap(find.byIcon(Icons.style_outlined));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cards page'), findsOneWidget);
+    expect(find.byType(AskByPhotoPage), findsNothing);
+  });
+
+  testWidgets('the Cards action stays on home mid-solve, and says why',
+      (tester) async {
+    // Leaving would lose the answer, and photographing the same question again
+    // would then count as a repeat and pay nothing.
+    final pending = Completer<PhotoQuestionSolveOutcome>();
+    repository = _FakeQuestionsRepository(pending: pending);
+    registerBloc();
+    await pumpPage(tester);
+
+    await selectPhoto(tester);
+    await tester.ensureVisible(
+      find.widgetWithText(FilledButton, 'Submit to solver'),
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.byIcon(Icons.style_outlined));
+    // Not pumpAndSettle: the submit button's spinner animates for as long as
+    // the solve runs. The first toast waits 300ms for its overlay, then grows
+    // from zero height, and finders skip it until it has some.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Cards page'), findsNothing);
+    expect(find.byType(AskByPhotoPage), findsOneWidget);
+    expect(find.text('Still solving your last photo. One moment.'),
+        findsOneWidget);
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      AppDestination.solve.index,
+      reason: 'a refused tap must not leave Cards lit',
+    );
 
     pending.complete(_outcome(PhotoQuestionSolveStatus.solved));
     await tester.pump();

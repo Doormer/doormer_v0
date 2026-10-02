@@ -1,24 +1,24 @@
 import 'package:doormer/src/features/questions/presentation/molecules/ask_by_photo_header_molecule.dart';
-import 'package:doormer/src/features/questions/presentation/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/photo_upload_panel_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solve_status_panel_organism.dart';
-import 'package:doormer/src/features/questions/presentation/params/bottom_action_bar_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
+import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 
 class AskByPhotoTemplate extends StatelessWidget {
   final PhotoUploadPanelParams uploadParams;
   final SolveStatusPanelParams statusParams;
-  final BottomActionBarParams bottomBarParams;
+  final NavigationBarParams navigationBarParams;
 
   const AskByPhotoTemplate({
     super.key,
     required this.uploadParams,
     required this.statusParams,
-    required this.bottomBarParams,
+    required this.navigationBarParams,
   });
 
   @override
@@ -63,7 +63,7 @@ class AskByPhotoTemplate extends StatelessWidget {
               left: 20.w,
               right: 20.w,
               bottom: 20.h,
-              child: NavigationBarOrganism(params: bottomBarParams),
+              child: NavigationBarOrganism(params: navigationBarParams),
             ),
           ],
         ),

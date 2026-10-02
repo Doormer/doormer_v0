@@ -4,10 +4,10 @@ import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/photo_upload_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solve_status_presenter.dart';
-import 'package:doormer/src/features/questions/presentation/params/bottom_action_bar_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/templates/ask_by_photo_template.dart';
+import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:doormer/src/shared/widget/custom_toast.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -74,11 +74,7 @@ class AskByPhotoPage extends StatelessWidget {
     bool isSolving = false,
   }) async {
     if (isSolving) {
-      CustomToast.show(
-        context,
-        message: 'Still solving your last photo. One moment.',
-        type: ToastificationType.info,
-      );
+      _showStillSolving(context);
       return;
     }
 
@@ -109,6 +105,28 @@ class AskByPhotoPage extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  /// Opens the collection, unless a solve is still running.
+  ///
+  /// Leaving mid-solve would lose the answer, and photographing the same
+  /// question again would then count as a repeat and pay nothing.
+  void _openCards(BuildContext context, {required bool isSolving}) {
+    if (isSolving) {
+      _showStillSolving(context);
+      return;
+    }
+    context.go('/collection');
+  }
+
+  /// Says a solve is still running, so the tap has to wait. Solve and Cards
+  /// both use it, so their wording cannot drift apart.
+  void _showStillSolving(BuildContext context) {
+    CustomToast.show(
+      context,
+      message: 'Still solving your last photo. One moment.',
+      type: ToastificationType.info,
     );
   }
 
@@ -223,13 +241,13 @@ class AskByPhotoPage extends StatelessWidget {
                   .read<AskByPhotoBloc>()
                   .add(const AskByPhotoTypeInsteadRequested()),
             ),
-            bottomBarParams: BottomActionBarParams(
-              selectedIndex: 2,
-              onCopy: () => AppLogger.info('Saved questions'),
-              onAiChat: () => AppLogger.info('AI chat'),
-              onUpload: () =>
+            navigationBarParams: NavigationBarParams(
+              current: AppDestination.solve,
+              onSaved: () => AppLogger.info('Saved questions'),
+              onAiTutor: () => AppLogger.info('AI chat'),
+              onSolve: () =>
                   _showPhotoSourceOptions(context, isSolving: isLoading),
-              onChat: () => AppLogger.info('Discussions'),
+              onCards: () => _openCards(context, isSolving: isLoading),
               onProfile: () => AppLogger.info('Profile'),
             ),
           );

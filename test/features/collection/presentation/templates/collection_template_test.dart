@@ -10,6 +10,8 @@ import 'package:doormer/src/features/collection/presentation/organisms/deck_list
 import 'package:doormer/src/features/collection/presentation/organisms/empty_deck_organism.dart';
 import 'package:doormer/src/features/collection/presentation/templates/collection_template.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
+import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -55,6 +57,17 @@ const _cinder = Collection(
   holdingsByCardId: {},
 );
 
+void _noop() {}
+
+const _navigationBarParams = NavigationBarParams(
+  current: AppDestination.cards,
+  onSaved: _noop,
+  onAiTutor: _noop,
+  onSolve: _noop,
+  onCards: _noop,
+  onProfile: _noop,
+);
+
 CollectionTemplate _template({
   int quarkBalance = 120,
   List<DeckProgress> decks = _decks,
@@ -63,6 +76,7 @@ CollectionTemplate _template({
   String? deckErrorMessage,
   bool isDrawing = false,
   void Function(String deckId)? onSelectDeck,
+  VoidCallback? onDraw,
   Key? quarkDotKey,
 }) =>
     CollectionTemplate(
@@ -75,8 +89,9 @@ CollectionTemplate _template({
       isDrawing: isDrawing,
       onSelectDeck: onSelectDeck ?? (_) {},
       onCloseDeck: () {},
-      onDraw: () {},
+      onDraw: onDraw ?? _noop,
       onCardTap: (_) {},
+      navigationBarParams: _navigationBarParams,
     );
 
 const _phone = Size(390, 800);
@@ -241,5 +256,45 @@ void main() {
     expect(find.text('25 more quarks to draw'), findsOneWidget);
     expect(tester.widget<AppButtonAtom>(find.byType(AppButtonAtom)).onPressed,
         isNull);
+  });
+
+  for (final window
+      in const {'phone': _phone, 'wide window': _wideWindow}.entries) {
+    testWidgets('the bar sits at the foot on a ${window.key}, with Cards lit',
+        (tester) async {
+      await _pumpAt(tester, window.value, _template());
+
+      expect(find.byType(NavigationBarOrganism), findsOneWidget);
+      expect(
+        tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+        AppDestination.cards.index,
+      );
+      expect(
+        tester.getRect(find.byType(NavigationBar)).bottom,
+        moreOrLessEquals(window.value.height - 20.h),
+        reason: 'with the same margin under it as on home',
+      );
+    });
+  }
+
+  testWidgets(
+      'on a phone the Draw button ends above the bar, so it can be '
+      'tapped', (tester) async {
+    var draws = 0;
+    await _pumpAt(
+        tester,
+        _phone,
+        _template(
+          selectedDeckId: 'meridian',
+          collection: _meridian,
+          onDraw: () => draws++,
+        ));
+
+    expect(
+      tester.getRect(find.byType(AppButtonAtom)).bottom,
+      lessThanOrEqualTo(tester.getRect(find.byType(NavigationBar)).top),
+    );
+    await tester.tap(find.byType(AppButtonAtom));
+    expect(draws, 1);
   });
 }

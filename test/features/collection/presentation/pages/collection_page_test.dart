@@ -22,11 +22,15 @@ import 'package:doormer/src/features/collection/presentation/organisms/card_reve
 import 'package:doormer/src/features/collection/presentation/organisms/deck_list_organism.dart';
 import 'package:doormer/src/features/collection/presentation/organisms/empty_deck_organism.dart';
 import 'package:doormer/src/features/collection/presentation/pages/collection_page.dart';
+import 'package:doormer/src/features/collection/presentation/templates/collection_template.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
+import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:go_router/go_router.dart';
 
 CollectibleCard _card(String id, String name, Rarity rarity) {
   const scaleLabels = {
@@ -224,11 +228,11 @@ Widget _app() => ScreenUtilInit(
       builder: (_, __) => const MaterialApp(home: CollectionPage()),
     );
 
-Future<void> _pumpPhone(WidgetTester tester) async {
+Future<void> _pumpPhone(WidgetTester tester, {Widget? app}) async {
   tester.view.physicalSize = const Size(360, 690);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(_app());
+  await tester.pumpWidget(app ?? _app());
 
   // Not pumpAndSettle while loading: the spinner schedules frames forever, so
   // settling is impossible until the deck list has arrived. Pump the async
@@ -617,5 +621,114 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(drawButton().isLoading, isFalse);
+  });
+
+  group('the bar', () {
+    AppDestination lit(WidgetTester tester) => AppDestination.values[
+        tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex];
+
+    testWidgets('shows while the decks load', (tester) async {
+      tester.view.physicalSize = const Size(360, 690);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(_app());
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget,
+          reason: 'the decks are still loading');
+      expect(find.byType(NavigationBarOrganism), findsOneWidget);
+      expect(lit(tester), AppDestination.cards);
+
+      // Let the load finish, so the spinner stops asking for frames.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('shows when the decks cannot load, as the way home',
+        (tester) async {
+      server.failNextLoadWith = _noConnection;
+      await _pumpPhone(tester);
+
+      expect(find.text(_noConnection.message), findsOneWidget);
+      expect(find.byType(NavigationBarOrganism), findsOneWidget);
+      expect(lit(tester), AppDestination.cards);
+    });
+
+    testWidgets('shows with the decks, with Cards lit', (tester) async {
+      await _pumpPhone(tester);
+
+      expect(find.byType(DeckListOrganism), findsOneWidget);
+      expect(find.byType(NavigationBarOrganism), findsOneWidget);
+      expect(lit(tester), AppDestination.cards);
+    });
+
+    testWidgets('Solve goes home', (tester) async {
+      final router = GoRouter(
+        initialLocation: '/collection',
+        routes: [
+          GoRoute(
+            path: '/collection',
+            builder: (_, __) => const CollectionPage(),
+          ),
+          GoRoute(
+            path: '/questions/photo',
+            builder: (_, __) => const Scaffold(body: Text('Home page')),
+          ),
+        ],
+      );
+      await _pumpPhone(
+        tester,
+        app: ScreenUtilInit(
+          designSize: const Size(360, 690),
+          builder: (_, __) => MaterialApp.router(routerConfig: router),
+        ),
+      );
+
+      await tester.tap(find.byIcon(Icons.document_scanner_outlined));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Home page'), findsOneWidget);
+      expect(find.byType(CollectionPage), findsNothing);
+    });
+  });
+
+  // The decks paint the collection's dark background. The loading and error
+  // screens painted none, so the app's purple backdrop showed through, and
+  // arriving on Cards flashed purple before the decks turned it dark.
+  group('the background', () {
+    Color? painted(WidgetTester tester) =>
+        tester.widget<Scaffold>(find.byType(Scaffold).first).backgroundColor;
+
+    testWidgets("is the collection's while the decks load", (tester) async {
+      tester.view.physicalSize = const Size(360, 690);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(_app());
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget,
+          reason: 'the decks are still loading');
+      expect(painted(tester), CollectionTemplate.background);
+
+      // Let the load finish, so the spinner stops asking for frames.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets("is the collection's when the decks cannot load",
+        (tester) async {
+      server.failNextLoadWith = _noConnection;
+      await _pumpPhone(tester);
+
+      expect(find.text(_noConnection.message), findsOneWidget);
+      expect(painted(tester), CollectionTemplate.background);
+    });
+
+    testWidgets("is the collection's with the decks", (tester) async {
+      await _pumpPhone(tester);
+
+      expect(find.byType(DeckListOrganism), findsOneWidget);
+      expect(painted(tester), CollectionTemplate.background);
+    });
   });
 }

@@ -1,7 +1,10 @@
 // lib/src/features/collection/presentation/pages/collection_page.dart
 import 'package:doormer/src/core/di/service_locator.dart';
+import 'package:doormer/src/core/utils/app_logger.dart';
+import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../bloc/collection_bloc.dart';
 import '../molecules/error_with_retry_molecule.dart';
@@ -40,6 +43,17 @@ class _CollectionViewState extends State<_CollectionView> {
 
   @override
   Widget build(BuildContext context) {
+    // One set for all three screens: loading, error and ready.
+    final navigationBarParams = NavigationBarParams(
+      current: AppDestination.cards,
+      onSaved: () => AppLogger.info('Saved questions'),
+      onAiTutor: () => AppLogger.info('AI chat'),
+      onSolve: () => context.go('/questions/photo'),
+      // Already here.
+      onCards: () {},
+      onProfile: () => AppLogger.info('Profile'),
+    );
+
     return BlocConsumer<CollectionBloc, CollectionState>(
       // A draw or shatter that fails was previously silent: the bloc set
       // `errorMessage` and nothing ever read it, so the student tapped and
@@ -55,12 +69,16 @@ class _CollectionViewState extends State<_CollectionView> {
       },
       builder: (context, state) {
         if (state is CollectionLoading) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+          return Scaffold(
+            backgroundColor: CollectionTemplate.background,
+            body: const Center(child: CircularProgressIndicator()),
+            bottomNavigationBar:
+                CollectionTemplate.navigationBar(navigationBarParams),
           );
         }
         if (state is CollectionError) {
           return Scaffold(
+            backgroundColor: CollectionTemplate.background,
             body: Center(
               child: ErrorWithRetryMolecule(
                 message: state.message,
@@ -69,6 +87,8 @@ class _CollectionViewState extends State<_CollectionView> {
                     .add(const CollectionStarted()),
               ),
             ),
+            bottomNavigationBar:
+                CollectionTemplate.navigationBar(navigationBarParams),
           );
         }
 
@@ -128,6 +148,7 @@ class _CollectionViewState extends State<_CollectionView> {
                   ),
                 );
               },
+              navigationBarParams: navigationBarParams,
             ),
             if (reveal != null)
               Positioned.fill(
