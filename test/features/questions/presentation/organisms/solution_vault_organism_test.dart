@@ -21,6 +21,7 @@ Widget _pump({
   VoidCallback? onReveal,
   bool motion = false,
   bool resisting = false,
+  String rewardLabel = '',
 }) {
   return ScreenUtilInit(
     designSize: const Size(360, 690),
@@ -36,6 +37,7 @@ Widget _pump({
             resisting: resisting,
             lockedLabel: 'Answer unlocks after step 3',
             solvedLabel: 'You solved it in 3 steps',
+            rewardLabel: rewardLabel,
             checkTitle: 'Check it',
             checkBody: _check,
             answerBody: _answer,
@@ -72,6 +74,24 @@ void _openedVaultTests() {
         reason: 'the working backs up the answer, so it belongs with it',
       );
       expect(find.text('Both routes give the same figure.'), findsNothing);
+    });
+
+    testWidgets('shows the earned quarks chip when the answer is revealed',
+        (tester) async {
+      await tester.pumpWidget(
+          _pump(revealed: true, unlockable: true, rewardLabel: '+3 quarks'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('+3 quarks'), findsOneWidget);
+      expect(find.byKey(const Key('vault_reward_label')), findsOneWidget);
+    });
+
+    testWidgets('does not show a reward chip for a zero reward',
+        (tester) async {
+      await tester.pumpWidget(_pump(revealed: true, unlockable: true));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('vault_reward_label')), findsNothing);
     });
   });
 }

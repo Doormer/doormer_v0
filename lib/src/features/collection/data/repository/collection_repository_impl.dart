@@ -1,142 +1,96 @@
 import 'package:doormer/src/core/errors/failure.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../domain/entity/card_rarity.dart';
 import '../../domain/entity/collection.dart';
+import '../../domain/entity/deck_progress.dart';
 import '../../domain/entity/draw_outcome.dart';
-import '../../domain/entity/holding.dart';
 import '../../domain/repository/collection_repository.dart';
-import '../datasource/collection_local_datasource.dart';
+import '../datasource/collection_remote_datasource.dart';
 
-/// Holds the session's mutated collection in memory.
+/// Turns the API's responses into the domain's terms. The data source has
+/// already turned every problem into a `Failure` a student can read, so
+/// failures pass straight through.
 ///
-/// There is no backend and no persistence in this build, so everything a
-/// student does is lost on reload. That is deliberate and is the single place
-/// this feature is openly a prototype.
+/// Every draw and every shatter sends an idempotency key. When the answer is
+/// lost, the key is kept, so repeating the same action sends it again and the
+/// server returns its first result instead of acting twice.
 class CollectionRepositoryImpl implements CollectionRepository {
-  final CollectionLocalDataSource dataSource;
+  final CollectionRemoteDataSource remoteDataSource;
+  final String Function() idempotencyKeyFactory;
 
-  Collection? _collection;
-  List<DrawOutcome> _sequence = const [];
+  /// The key of each action whose answer was lost.
+  final Map<String, String> _keptKeys = {};
 
-  /// One cursor per deck. A single shared cursor would let a draw from one deck
-  /// award a card belonging to another, because the bundled sequence interleaves
-  /// decks.
-  final Map<String, int> _cursors = <String, int>{};
-
-  CollectionRepositoryImpl({required this.dataSource});
-
-  @override
-  Future<Collection> load() async {
-    final collection = await dataSource.loadCollection();
-    _collection = collection;
-    _sequence = await dataSource.loadDrawSequence();
-    _cursors.clear();
-    return collection;
-  }
+  CollectionRepositoryImpl({
+    required this.remoteDataSource,
+    String Function()? idempotencyKeyFactory,
+  }) : idempotencyKeyFactory = idempotencyKeyFactory ?? _newIdempotencyKey;
 
   @override
-  Future<Collection> current() async {
-    return _collection ?? await load();
-  }
-
-  @override
-  Future<DrawOutcome> draw(String deckId) async {
-    final collection = await current();
-
-    if (!collection.canAffordDraw) {
-      throw ValidationFailure('Not enough points for a draw.');
-    }
-
-    // A draw is always *from* a deck, so only that deck's steps are eligible.
-    final deckSteps =
-        _sequence.where((s) => s.card.deckId == deckId).toList(growable: false);
-    if (deckSteps.isEmpty) {
-      throw ValidationFailure('There is nothing left to draw.');
-    }
-
-    // Wrap rather than run dry: this is a review build and someone will draw
-    // more times than the sequence has entries.
-    final cursor = _cursors[deckId] ?? 0;
-    final step = deckSteps[cursor % deckSteps.length];
-    _cursors[deckId] = cursor + 1;
-
-    final existing = collection.holdingsByCardId[step.card.id];
-    final Holding updated;
-    if (existing == null) {
-      updated = Holding(
-        card: step.card,
-        standardCopies: step.variant == CardVariant.standard ? 1 : 0,
-        specialCopies: step.variant == CardVariant.special ? 1 : 0,
-      );
-    } else if (step.variant == CardVariant.special) {
-      updated = existing.copyWith(specialCopies: existing.specialCopies + 1);
-    } else {
-      updated = existing.copyWith(standardCopies: existing.standardCopies + 1);
-    }
-
-    final holdings = Map<String, Holding>.from(collection.holdingsByCardId)
-      ..[step.card.id] = updated;
-
-    _collection = collection.copyWith(
-      holdingsByCardId: holdings,
-      walletPoints: collection.walletPoints - collection.drawCost,
-    );
-
-    // The kind is derived from what was actually held a moment ago, not taken
-    // from the asset. On the second lap of the sequence the asset's own label is
-    // stale — a card it calls `newCard` is by then already held — and a reveal
-    // reading "A new one" above a badge reading x2 is plainly wrong.
-    final DrawResultKind kind;
-    if (existing == null) {
-      kind = DrawResultKind.newCard;
-    } else if (step.variant == CardVariant.special && !existing.hasSpecial) {
-      kind = DrawResultKind.upgrade;
-    } else {
-      kind = DrawResultKind.duplicate;
-    }
-
-    return DrawOutcome(
-      card: step.card,
-      variant: step.variant,
-      kind: kind,
-      copiesAfter: updated.totalCopies,
+  Future<({int quarkBalance, List<DeckProgress> decks})> loadDecks() async {
+    final response = await remoteDataSource.decks();
+    return (
+      quarkBalance: response.quarkBalance,
+      decks: [for (final deck in response.decks) deck.toEntity()],
     );
   }
 
   @override
-  Future<Collection> convertCopy(String cardId, CardVariant variant) async {
-    final collection = await current();
-    final holding = collection.holdingsByCardId[cardId];
-
-    if (holding == null) {
-      throw ValidationFailure('That card is not held.');
-    }
-
-    final isSpecial = variant == CardVariant.special;
-    final available = isSpecial ? holding.specialCopies : holding.standardCopies;
-    if (available < 1) {
-      throw ValidationFailure('There is no copy of that kind to trade.');
-    }
-
-    final payout = isSpecial
-        ? holding.card.rarity.specialConversionValue
-        : holding.card.rarity.conversionValue;
-
-    final reduced = isSpecial
-        ? holding.copyWith(specialCopies: holding.specialCopies - 1)
-        : holding.copyWith(standardCopies: holding.standardCopies - 1);
-
-    final holdings = Map<String, Holding>.from(collection.holdingsByCardId);
-    if (reduced.totalCopies == 0) {
-      holdings.remove(cardId);
-    } else {
-      holdings[cardId] = reduced;
-    }
-
-    _collection = collection.copyWith(
-      holdingsByCardId: holdings,
-      walletPoints: collection.walletPoints + payout,
+  Future<({int quarkBalance, Collection collection})> loadCollection(
+    String deckId,
+  ) async {
+    final response = await remoteDataSource.cards(deckId);
+    return (
+      quarkBalance: response.quarkBalance,
+      collection: response.toEntity(),
     );
-    return _collection!;
+  }
+
+  @override
+  Future<({int quarkBalance, DrawOutcome outcome})> draw(String deckId) async {
+    final response = await _withKey(
+      'draw $deckId',
+      (key) => remoteDataSource.draw(deckId, idempotencyKey: key),
+    );
+    return (quarkBalance: response.quarkBalance, outcome: response.toEntity());
+  }
+
+  @override
+  Future<({int quarkBalance, int standardCopies, int specialCopies})>
+      shatterCopy(String deckId, String cardId, CardVariant variant) async {
+    final response = await _withKey(
+      'shatter $deckId $cardId ${variant.name}',
+      (key) => remoteDataSource.shatter(
+        deckId,
+        cardId,
+        variant,
+        idempotencyKey: key,
+      ),
+    );
+    return (
+      quarkBalance: response.quarkBalance,
+      standardCopies: response.standardCopies,
+      specialCopies: response.specialCopies,
+    );
+  }
+
+  /// Sends [action] with its kept key, or with a fresh one. The key is kept
+  /// only when the answer was lost: a timeout, no connection, or a 5xx.
+  /// Every other answer retires it.
+  Future<T> _withKey<T>(
+    String action,
+    Future<T> Function(String key) send,
+  ) async {
+    final key = _keptKeys.remove(action) ?? idempotencyKeyFactory();
+    try {
+      return await send(key);
+    } on Failure catch (failure) {
+      final answerLost = failure is NetworkFailure || failure is ServerFailure;
+      if (answerLost) _keptKeys[action] = key;
+      rethrow;
+    }
   }
 }
+
+String _newIdempotencyKey() => const Uuid().v4();

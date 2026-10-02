@@ -32,6 +32,19 @@ class SolutionReaderReady extends SolutionReaderState {
   /// than holding the solution back for a decoration.
   final QuestProfile? profile;
 
+  /// Null until the balance loads. Null keeps the quark pill hidden.
+  final int? quarkBalance;
+
+  /// The reward returned by the reveal endpoint. Zero means no reward chip.
+  final int quarksEarned;
+
+  /// Increments only when a visible balance receives an earned reward.
+  final int rewardFlightId;
+
+  /// True once this page has asked reveal-answer. Prevents a second tab/tap in
+  /// the same page from sending the request twice.
+  final bool revealRewardRequested;
+
   const SolutionReaderReady({
     required this.document,
     this.stepIndex = 0,
@@ -40,6 +53,10 @@ class SolutionReaderReady extends SolutionReaderState {
     this.onBriefing = false,
     this.note = '',
     this.profile,
+    this.quarkBalance,
+    this.quarksEarned = 0,
+    this.rewardFlightId = 0,
+    this.revealRewardRequested = false,
   });
 
   bool get isFirstStep => stepIndex == 0;
@@ -54,6 +71,11 @@ class SolutionReaderReady extends SolutionReaderState {
     bool? answerRevealed,
     bool? onBriefing,
     QuestProfile? profile,
+    int? quarkBalance,
+    bool clearQuarkBalance = false,
+    int? quarksEarned,
+    int? rewardFlightId,
+    bool? revealRewardRequested,
   }) {
     return SolutionReaderReady(
       document: document,
@@ -63,6 +85,12 @@ class SolutionReaderReady extends SolutionReaderState {
       onBriefing: onBriefing ?? this.onBriefing,
       note: note,
       profile: profile ?? this.profile,
+      quarkBalance:
+          clearQuarkBalance ? null : (quarkBalance ?? this.quarkBalance),
+      quarksEarned: quarksEarned ?? this.quarksEarned,
+      rewardFlightId: rewardFlightId ?? this.rewardFlightId,
+      revealRewardRequested:
+          revealRewardRequested ?? this.revealRewardRequested,
     );
   }
 
@@ -76,6 +104,10 @@ class SolutionReaderReady extends SolutionReaderState {
         onBriefing,
         note,
         profile,
+        quarkBalance,
+        quarksEarned,
+        rewardFlightId,
+        revealRewardRequested,
       ];
 }
 

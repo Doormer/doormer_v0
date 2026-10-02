@@ -10,7 +10,7 @@ Widget _pump(Object? trigger, {bool motion = true}) {
         body: Center(
           child: PunchAtom(
             trigger: trigger,
-            child: const Text('130 XP'),
+            child: const Text('130 quarks'),
           ),
         ),
       ),
@@ -21,7 +21,7 @@ Widget _pump(Object? trigger, {bool motion = true}) {
 double _scaleOf(WidgetTester tester) {
   final transforms = tester.widgetList<Transform>(
     find.ancestor(
-      of: find.text('130 XP'),
+      of: find.text('130 quarks'),
       matching: find.byType(Transform),
     ),
   );

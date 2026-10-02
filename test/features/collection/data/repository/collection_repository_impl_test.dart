@@ -1,283 +1,243 @@
 import 'package:doormer/src/core/errors/failure.dart';
-import 'package:doormer/src/features/collection/data/datasource/collection_local_datasource.dart';
+import 'package:doormer/src/features/collection/data/datasource/collection_remote_datasource.dart';
+import 'package:doormer/src/features/collection/data/model/collection_response_models.dart';
 import 'package:doormer/src/features/collection/data/repository/collection_repository_impl.dart';
 import 'package:doormer/src/features/collection/domain/entity/card_rarity.dart';
-import 'package:doormer/src/features/collection/domain/entity/collectible_card.dart';
-import 'package:doormer/src/features/collection/domain/entity/collection.dart';
-import 'package:doormer/src/features/collection/domain/entity/deck.dart';
 import 'package:doormer/src/features/collection/domain/entity/draw_outcome.dart';
-import 'package:doormer/src/features/collection/domain/entity/holding.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-const _gnomon = CollectibleCard(
-  id: 'gnomon',
+const _gnomon = HeldCardModel(
+  cardId: 'gnomon',
   name: 'Gnomon',
-  deckId: 'meridian',
   rarity: Rarity.common,
+  artUrl: 'https://example.test/gnomon.jpg',
   scaleLabel: 'Small',
-  artAsset: 'a.png',
   description: 'd',
-);
-const _quadrant = CollectibleCard(
-  id: 'quadrant',
-  name: 'Quadrant',
-  deckId: 'meridian',
-  rarity: Rarity.uncommon,
-  scaleLabel: 'Medium',
-  artAsset: 'b.png',
-  description: 'd',
-);
-const _flint = CollectibleCard(
-  id: 'flint',
-  name: 'Flint',
-  deckId: 'cinder',
-  rarity: Rarity.common,
-  scaleLabel: 'Small',
-  artAsset: 'c.png',
-  description: 'd',
+  standardCopies: 2,
+  specialCopies: 0,
+  standardShatterQuarks: 5,
+  specialShatterQuarks: 10,
 );
 
-/// Hand-written fake, matching the repo's existing test style. `mockito` is in
-/// `pubspec.yaml` but no test in this repo uses it.
-class _FakeDataSource implements CollectionLocalDataSource {
-  final List<DrawOutcome> sequence;
-  _FakeDataSource(this.sequence);
+final _noConnection =
+    NetworkFailure("We couldn't connect. Check your connection and try again.");
+final _serverError = ServerFailure('Something went wrong. Try again.');
+
+/// Answers like the API, and keeps every idempotency key it is sent. Set
+/// [failure] to make every call fail with it instead.
+class _FakeRemoteDataSource implements CollectionRemoteDataSource {
+  Failure? failure;
+  final List<String> keysSent = [];
+  String? shatteredWith;
+
+  void _failIfAsked() {
+    final failure = this.failure;
+    if (failure != null) throw failure;
+  }
 
   @override
-  Future<Collection> loadCollection() async => const Collection(
-        decks: [
-          Deck(id: 'meridian', name: 'Meridian', cards: [_gnomon, _quadrant]),
-          Deck(id: 'cinder', name: 'Cinder', cards: [_flint]),
-        ],
-        holdingsByCardId: {
-          'gnomon': Holding(
-            card: _gnomon,
-            standardCopies: 2,
-            specialCopies: 0,
-          ),
-        },
-        walletPoints: 80,
-        drawCost: 40,
-      );
+  Future<DecksResponseModel> decks() async {
+    _failIfAsked();
+    return const DecksResponseModel(quarkBalance: 40, decks: [
+      DeckProgressModel(
+        deckId: 'meridian-01',
+        name: 'Meridian',
+        cardsHeld: 1,
+        cardsTotal: 6,
+      ),
+    ]);
+  }
 
   @override
-  Future<List<DrawOutcome>> loadDrawSequence() async => sequence;
-}
+  Future<CardsResponseModel> cards(String deckId) async {
+    _failIfAsked();
+    return CardsResponseModel(
+      quarkBalance: 40,
+      deck: DeckSummaryModel(deckId: deckId, name: 'Meridian', drawCost: 40),
+      cards: const [_gnomon],
+    );
+  }
 
-CollectionRepositoryImpl _repo(List<DrawOutcome> sequence) {
-  return CollectionRepositoryImpl(dataSource: _FakeDataSource(sequence));
+  @override
+  Future<DrawResponseModel> draw(
+    String deckId, {
+    required String idempotencyKey,
+  }) async {
+    keysSent.add(idempotencyKey);
+    _failIfAsked();
+    return const DrawResponseModel(
+      quarkBalance: 0,
+      card: _gnomon,
+      variant: CardVariant.standard,
+      result: DrawResult.duplicate,
+      copiesAfter: 3,
+    );
+  }
+
+  @override
+  Future<ShatterResponseModel> shatter(
+    String deckId,
+    String cardId,
+    CardVariant variant, {
+    required String idempotencyKey,
+  }) async {
+    keysSent.add(idempotencyKey);
+    shatteredWith = '$deckId $cardId ${variant.name}';
+    _failIfAsked();
+    return const ShatterResponseModel(
+      quarkBalance: 45,
+      standardCopies: 1,
+      specialCopies: 0,
+    );
+  }
 }
 
 void main() {
-  test('a new card appears in the collection and costs the draw price',
-      () async {
-    final repo = _repo(const [
-      DrawOutcome(
-        card: _quadrant,
-        variant: CardVariant.standard,
-        kind: DrawResultKind.newCard,
-        copiesAfter: 0,
-      ),
-    ]);
-    await repo.load();
+  late _FakeRemoteDataSource remote;
+  late CollectionRepositoryImpl repository;
 
-    final outcome = await repo.draw('meridian');
-    final after = await repo.current();
-
-    expect(outcome.kind, DrawResultKind.newCard);
-    expect(outcome.copiesAfter, 1);
-    expect(after.holdingsByCardId.containsKey('quadrant'), isTrue);
-    expect(after.walletPoints, 40);
-  });
-
-  test('a duplicate raises the count and reports it', () async {
-    final repo = _repo(const [
-      DrawOutcome(
-        card: _gnomon,
-        variant: CardVariant.standard,
-        kind: DrawResultKind.duplicate,
-        copiesAfter: 0,
-      ),
-    ]);
-    await repo.load();
-
-    final outcome = await repo.draw('meridian');
-
-    expect(outcome.copiesAfter, 3);
-    expect(
-        (await repo.current()).holdingsByCardId['gnomon']!.standardCopies, 3);
-  });
-
-  test('an upgrade adds a special copy and keeps the standard one', () async {
-    final repo = _repo(const [
-      DrawOutcome(
-        card: _gnomon,
-        variant: CardVariant.special,
-        kind: DrawResultKind.upgrade,
-        copiesAfter: 0,
-      ),
-    ]);
-    await repo.load();
-
-    await repo.draw('meridian');
-    final holding = (await repo.current()).holdingsByCardId['gnomon']!;
-
-    expect(holding.standardCopies, 2, reason: 'the standard copy is kept');
-    expect(holding.specialCopies, 1);
-    expect(holding.totalCopies, 3);
-  });
-
-  test('drawing without enough points fails and changes nothing', () async {
-    final repo = _repo(const [
-      DrawOutcome(
-        card: _quadrant,
-        variant: CardVariant.standard,
-        kind: DrawResultKind.newCard,
-        copiesAfter: 0,
-      ),
-      DrawOutcome(
-        card: _quadrant,
-        variant: CardVariant.standard,
-        kind: DrawResultKind.duplicate,
-        copiesAfter: 0,
-      ),
-      DrawOutcome(
-        card: _quadrant,
-        variant: CardVariant.standard,
-        kind: DrawResultKind.duplicate,
-        copiesAfter: 0,
-      ),
-    ]);
-    await repo.load();
-
-    await repo.draw('meridian'); // 80 -> 40
-    await repo.draw('meridian'); // 40 -> 0
-
-    expect(() => repo.draw('meridian'), throwsA(isA<ValidationFailure>()));
-    expect((await repo.current()).walletPoints, 0);
-  });
-
-  test('the sequence wraps so review never runs dry', () async {
-    final repo = _repo(const [
-      DrawOutcome(
-        card: _quadrant,
-        variant: CardVariant.standard,
-        kind: DrawResultKind.newCard,
-        copiesAfter: 0,
-      ),
-    ]);
-    await repo.load();
-
-    final first = await repo.draw('meridian');
-    // Top the wallet back up by converting, so a second draw is affordable.
-    await repo.convertCopy('gnomon', CardVariant.standard);
-    await repo.convertCopy('gnomon', CardVariant.standard);
-    final second = await repo.draw('meridian');
-
-    expect(first.card.id, 'quadrant');
-    expect(second.card.id, 'quadrant', reason: 'sequence restarts at the top');
-  });
-
-  test('converting pays the rarity value and removes exactly one copy',
-      () async {
-    final repo = _repo(const []);
-    await repo.load();
-
-    final after = await repo.convertCopy('gnomon', CardVariant.standard);
-
-    expect(after.walletPoints, 85, reason: '80 + 5 for a common');
-    expect(after.holdingsByCardId['gnomon']!.standardCopies, 1);
-  });
-
-  test('converting the last copy removes the holding entirely', () async {
-    final repo = _repo(const []);
-    await repo.load();
-
-    await repo.convertCopy('gnomon', CardVariant.standard);
-    final after = await repo.convertCopy('gnomon', CardVariant.standard);
-
-    expect(after.holdingsByCardId.containsKey('gnomon'), isFalse);
-  });
-
-  test('converting a copy that is not held fails', () async {
-    final repo = _repo(const []);
-    await repo.load();
-
-    expect(
-      () => repo.convertCopy('gnomon', CardVariant.special),
-      throwsA(isA<ValidationFailure>()),
+  setUp(() {
+    remote = _FakeRemoteDataSource();
+    var keys = 0;
+    repository = CollectionRepositoryImpl(
+      remoteDataSource: remote,
+      idempotencyKeyFactory: () => 'key-${++keys}',
     );
   });
 
-  test('a draw never awards a card from another deck', () async {
-    // The bundled asset interleaves decks; a shared cursor would leak one
-    // deck's card into another deck's draw.
-    final repo = _repo(const [
-      DrawOutcome(
-        card: _flint, // cinder
-        variant: CardVariant.standard,
-        kind: DrawResultKind.newCard,
-        copiesAfter: 0,
-      ),
-      DrawOutcome(
-        card: _quadrant, // meridian
-        variant: CardVariant.standard,
-        kind: DrawResultKind.newCard,
-        copiesAfter: 0,
-      ),
-    ]);
-    await repo.load();
+  /// Makes the next call fail with [failure], and checks that the failure
+  /// reaches the caller unchanged.
+  Future<void> failOnce(
+      Failure failure, Future<Object?> Function() call) async {
+    remote.failure = failure;
+    await expectLater(call(), throwsA(same(failure)));
+    remote.failure = null;
+  }
 
-    final outcome = await repo.draw('meridian');
+  test('the deck list comes back as progress through each deck', () async {
+    final list = await repository.loadDecks();
 
-    expect(outcome.card.deckId, 'meridian');
-    expect(outcome.card.id, 'quadrant');
+    expect(list.quarkBalance, 40);
+    expect(list.decks.single.deckId, 'meridian-01');
+    expect(list.decks.single.cardsHeld, 1);
+    expect(list.decks.single.cardsTotal, 6);
   });
 
-  test('each deck keeps its own place in the sequence', () async {
-    final repo = _repo(const [
-      DrawOutcome(
-        card: _quadrant,
-        variant: CardVariant.standard,
-        kind: DrawResultKind.newCard,
-        copiesAfter: 0,
-      ),
-      DrawOutcome(
-        card: _flint,
-        variant: CardVariant.standard,
-        kind: DrawResultKind.newCard,
-        copiesAfter: 0,
-      ),
-    ]);
-    await repo.load();
+  test('a deck comes back as the collection of that deck', () async {
+    final read = await repository.loadCollection('meridian-01');
 
-    final first = await repo.draw('meridian');
-    final second = await repo.draw('cinder');
-
-    expect(first.card.id, 'quadrant');
-    expect(second.card.id, 'flint');
+    expect(read.quarkBalance, 40);
+    expect(read.collection.deck.id, 'meridian-01');
+    expect(read.collection.holdingOf('gnomon')?.standardCopies, 2);
   });
 
-  test('a repeated card stops claiming to be new', () async {
-    // Second lap of a one-step sequence: the asset still says newCard, but the
-    // card is held by then.
-    final repo = _repo(const [
-      DrawOutcome(
-        card: _quadrant,
-        variant: CardVariant.standard,
-        kind: DrawResultKind.newCard,
-        copiesAfter: 0,
-      ),
-    ]);
-    await repo.load();
+  test('a draw comes back as the outcome and the balance it left', () async {
+    final drawn = await repository.draw('meridian-01');
 
-    final first = await repo.draw('meridian');
-    await repo.convertCopy('gnomon', CardVariant.standard);
-    await repo.convertCopy('gnomon', CardVariant.standard);
-    final second = await repo.draw('meridian');
+    expect(drawn.quarkBalance, 0);
+    expect(drawn.outcome.card.id, 'gnomon');
+    expect(drawn.outcome.result, DrawResult.duplicate);
+    expect(drawn.outcome.copiesAfter, 3);
+  });
 
-    expect(first.kind, DrawResultKind.newCard);
-    expect(second.kind, DrawResultKind.duplicate);
-    expect(second.copiesAfter, 2);
+  test('a shatter names the copy and comes back as the copies left', () async {
+    final shattered = await repository.shatterCopy(
+        'meridian-01', 'gnomon', CardVariant.standard);
+
+    expect(remote.shatteredWith, 'meridian-01 gnomon standard');
+    expect(shattered.quarkBalance, 45);
+    expect(shattered.standardCopies, 1);
+    expect(shattered.specialCopies, 0);
+  });
+
+  test('every draw and every shatter sends a key of its own', () async {
+    await repository.draw('meridian-01');
+    await repository.draw('meridian-01');
+    await repository.shatterCopy('meridian-01', 'gnomon', CardVariant.standard);
+
+    expect(remote.keysSent, ['key-1', 'key-2', 'key-3']);
+  });
+
+  test('a draw whose answer was lost sends the same key when repeated',
+      () async {
+    await failOnce(_noConnection, () => repository.draw('meridian-01'));
+    await failOnce(_serverError, () => repository.draw('meridian-01'));
+    await repository.draw('meridian-01');
+
+    expect(remote.keysSent, ['key-1', 'key-1', 'key-1']);
+  });
+
+  test('a shatter whose answer was lost sends the same key when repeated',
+      () async {
+    await failOnce(
+      _noConnection,
+      () =>
+          repository.shatterCopy('meridian-01', 'gnomon', CardVariant.standard),
+    );
+    await repository.shatterCopy('meridian-01', 'gnomon', CardVariant.standard);
+
+    expect(remote.keysSent, ['key-1', 'key-1']);
+  });
+
+  test('a kept draw key is sent only for a draw on the same deck', () async {
+    await failOnce(_noConnection, () => repository.draw('meridian-01'));
+    await repository.draw('cinder-01');
+    await repository.shatterCopy('meridian-01', 'gnomon', CardVariant.standard);
+    await repository.draw('meridian-01');
+
+    expect(remote.keysSent, ['key-1', 'key-2', 'key-3', 'key-1']);
+  });
+
+  test('a kept shatter key is sent only for the same deck, card and variant',
+      () async {
+    await failOnce(
+      _noConnection,
+      () =>
+          repository.shatterCopy('meridian-01', 'gnomon', CardVariant.standard),
+    );
+    await repository.shatterCopy('meridian-01', 'gnomon', CardVariant.special);
+    await repository.shatterCopy(
+        'meridian-01', 'quadrant', CardVariant.standard);
+    await repository.shatterCopy('cinder-01', 'gnomon', CardVariant.standard);
+    await repository.draw('meridian-01');
+    await repository.shatterCopy('meridian-01', 'gnomon', CardVariant.standard);
+
+    expect(
+      remote.keysSent,
+      ['key-1', 'key-2', 'key-3', 'key-4', 'key-5', 'key-1'],
+    );
+  });
+
+  test('an answer retires the kept key', () async {
+    await failOnce(_noConnection, () => repository.draw('meridian-01'));
+    await repository.draw('meridian-01');
+    await repository.draw('meridian-01');
+
+    expect(remote.keysSent, ['key-1', 'key-1', 'key-2']);
+  });
+
+  final definiteFailures = <String, Failure>{
+    'a 409': ValidationFailure("You don't have enough quarks for a draw."),
+    'a 404': ApiFailure(404, 'Something went wrong. Try again.'),
+    'a 401': AuthFailure(),
+    'an unreadable answer': UnknownFailure('Something went wrong. Try again.'),
+  };
+  definiteFailures.forEach((answer, failure) {
+    test('$answer retires the kept key', () async {
+      await failOnce(_noConnection, () => repository.draw('meridian-01'));
+      await failOnce(failure, () => repository.draw('meridian-01'));
+      await repository.draw('meridian-01');
+
+      expect(remote.keysSent, ['key-1', 'key-1', 'key-2']);
+    });
+  });
+
+  test('a failure reaches the caller unchanged', () async {
+    final refused =
+        ValidationFailure("You don't have enough quarks for a draw.");
+    remote.failure = refused;
+
+    await expectLater(repository.draw('meridian-01'), throwsA(same(refused)));
+    await expectLater(repository.loadDecks(), throwsA(same(refused)));
   });
 }

@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/motion/motion_policy.dart';
-import 'package:doormer/src/features/questions/presentation/atoms/xp_pellet_atom.dart';
+import 'package:doormer/src/features/questions/presentation/atoms/quark_reward_atom.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_reader_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solution_trail_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/quest_hud_organism.dart';
@@ -42,12 +42,6 @@ class SolutionReaderTemplate extends StatefulWidget {
 
 class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
     with SingleTickerProviderStateMixin {
-  /// Headroom inside the scroll view for the XP sticker, which is positioned
-  /// 9px above the card's top edge and so sits outside it. With a zero top
-  /// padding the viewport clipped the sticker in half — the tag read as a torn
-  /// mint strip rather than a reward.
-  static const double _stickerHeadroom = 14;
-
   /// Below this a sideways drag is browsing, not a decision.
   static const double _swipeVelocity = 320;
 
@@ -65,14 +59,14 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
 
   final GlobalKey _vaultKey = GlobalKey();
 
-  /// The pellet's two ends, and the box it flies across.
-  final GlobalKey _stickerKey = GlobalKey();
-  final GlobalKey _chipKey = GlobalKey();
+  /// Where the reward lands, and the box it flies across. It leaves from the
+  /// vault.
+  final GlobalKey _quarkDotKey = GlobalKey();
   final GlobalKey _stageKey = GlobalKey();
 
-  /// 190ms of nothing, then 640ms of flight. The wait lets the new card finish
-  /// arriving — a pellet launched into a card still popping in reads as part of
-  /// the card rather than as a reward leaving it.
+  /// 190ms of nothing, then 640ms of flight. The wait lets the vault finish
+  /// opening — a reward launched from a vault still popping in reads as part of
+  /// the vault rather than as a reward leaving it.
   static const double _flightLead = 190 / 830;
 
   late final AnimationController _flight = AnimationController(
@@ -80,25 +74,23 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
     duration: const Duration(milliseconds: 830),
   );
 
-  /// What the counter is *showing*, which lags the truth while a pellet is on
-  /// its way. Held as the presenter's own pair so this never formats copy.
-  String _bankedXpLabel = '';
-  int _bankedXp = 0;
+  /// What the HUD balance is *showing*, which lags the truth while a reward is
+  /// on its way. Held as the presenter's own label so this never formats copy.
+  String _shownQuarkBalanceLabel = '';
 
-  /// The pellet in flight: what it carries and where it is going. Null between
+  /// The reward in flight: what it reads and where it is going. Null between
   /// flights.
-  int? _pelletAmount;
+  String? _flyingRewardLabel;
   Offset _pelletFrom = Offset.zero;
   Offset _pelletTo = Offset.zero;
 
-  /// What a pellet in flight is going to bank when it lands. Held apart from
-  /// the live content so a flight that is overtaken still commits the number it
-  /// set out with.
-  String? _pendingXpLabel;
-  int? _pendingXp;
+  /// What a reward in flight is going to show when it lands. Held apart from
+  /// the live content so a flight that is overtaken still commits the balance
+  /// it set out with.
+  String? _pendingQuarkBalanceLabel;
 
-  /// Bumped every time XP lands, to punch the counter.
-  int _landings = 0;
+  /// Bumped every time quarks land, to punch the balance.
+  int _quarkLandings = 0;
 
   /// Identifies which screen is showing. The level label already encodes the
   /// step, so this changes on exactly the transitions that should start at the
@@ -111,12 +103,11 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
   @override
   void initState() {
     super.initState();
-    // Arriving with a standing already earned is not an award. Whatever the
-    // first frame says is simply what the student walked in carrying.
-    _bankedXpLabel = widget.params.content.xpLabel;
-    _bankedXp = widget.params.content.xpTotal;
+    // Arriving with quarks already earned is not an award. Whatever the first
+    // frame says is simply what the student walked in carrying.
+    _shownQuarkBalanceLabel = widget.params.content.quarkBalanceLabel;
     _flight.addStatusListener((status) {
-      if (status == AnimationStatus.completed) _landXp();
+      if (status == AnimationStatus.completed) _landQuarks();
     });
   }
 
@@ -126,54 +117,49 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
   /// Never keep the total inside the animation. The pellet is decoration — it
   /// does not run under reduced motion, and another award can cut it short —
   /// but the counter must arrive at the truth either way.
-  void _landXp() {
+  void _landQuarks() {
     if (!mounted) return;
     _flight.stop();
-    final label = _pendingXpLabel ?? widget.params.content.xpLabel;
-    final total = _pendingXp ?? widget.params.content.xpTotal;
+    final label =
+        _pendingQuarkBalanceLabel ?? widget.params.content.quarkBalanceLabel;
     setState(() {
-      _pelletAmount = null;
-      _pendingXpLabel = null;
-      _pendingXp = null;
-      _bankedXpLabel = label;
-      _bankedXp = total;
-      _landings++;
+      _flyingRewardLabel = null;
+      _pendingQuarkBalanceLabel = null;
+      _shownQuarkBalanceLabel = label;
+      _quarkLandings++;
     });
   }
 
-  /// Sends what a step just banked from its sticker to the counter.
+  /// Sends the quarks a reveal just earned from the vault to the HUD balance.
   ///
-  /// The pellet carries the difference actually banked, not the sticker's own
-  /// text: the sticker shows the reward for the step now on screen, which is
-  /// the next one. Reading it would send "+15" while the counter climbed 10.
-  void _awardXp() {
-    // A second award mid-flight commits the first. Skipping ahead may cost the
-    // student the animation, but it must never cost them the XP.
-    if (_pendingXp != null) _landXp();
+  /// Nothing flies for a reveal that paid nothing, or to a balance that was not
+  /// showing yet: the new number simply lands.
+  void _awardQuarks() {
+    // A second award mid-flight commits the first. It may cost the student the
+    // animation, but it must never cost them the quarks.
+    if (_pendingQuarkBalanceLabel != null) _landQuarks();
 
     final content = widget.params.content;
-    final delta = content.xpTotal - _bankedXp;
+    _pendingQuarkBalanceLabel = content.quarkBalanceLabel;
 
-    if (delta <= 0 || !MotionPolicy.of(context)) {
-      _pendingXpLabel = content.xpLabel;
-      _pendingXp = content.xpTotal;
-      _landXp();
+    if (content.rewardLabel.isEmpty ||
+        _shownQuarkBalanceLabel.isEmpty ||
+        !MotionPolicy.of(context)) {
+      _landQuarks();
       return;
     }
 
     final stage = _stageKey.currentContext?.findRenderObject();
-    final sticker = _stickerKey.currentContext?.findRenderObject();
-    final chip = _chipKey.currentContext?.findRenderObject();
-    _pendingXpLabel = content.xpLabel;
-    _pendingXp = content.xpTotal;
+    final vault = _vaultKey.currentContext?.findRenderObject();
+    final dot = _quarkDotKey.currentContext?.findRenderObject();
 
     if (stage is! RenderBox ||
-        sticker is! RenderBox ||
-        chip is! RenderBox ||
+        vault is! RenderBox ||
+        dot is! RenderBox ||
         !stage.hasSize ||
-        !sticker.hasSize ||
-        !chip.hasSize) {
-      _landXp();
+        !vault.hasSize ||
+        !dot.hasSize) {
+      _landQuarks();
       return;
     }
 
@@ -181,9 +167,9 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
         stage.globalToLocal(box.localToGlobal(box.size.center(Offset.zero)));
 
     setState(() {
-      _pelletAmount = delta;
-      _pelletFrom = centreIn(sticker);
-      _pelletTo = centreIn(chip);
+      _flyingRewardLabel = content.rewardLabel;
+      _pelletFrom = centreIn(vault);
+      _pelletTo = centreIn(dot);
     });
     _flight.forward(from: 0);
   }
@@ -192,13 +178,16 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
   void didUpdateWidget(SolutionReaderTemplate oldWidget) {
     super.didUpdateWidget(oldWidget);
     final previous = oldWidget.params.content;
-    final movedOn = _screenIdOf(previous) != _screenId;
-    if (movedOn) {
-      // Geometry is only true once the new step has laid out.
+    final current = widget.params.content;
+    final quarksChanged = previous.rewardLabel != current.rewardLabel ||
+        previous.quarkBalanceLabel != current.quarkBalanceLabel;
+    if (quarksChanged) {
+      // Geometry is only true once the opened vault has laid out.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _awardXp();
+        if (mounted) _awardQuarks();
       });
     }
+    final movedOn = _screenIdOf(previous) != _screenId;
     if (movedOn && _scrollController.hasClients) {
       _scrollController.jumpTo(0);
       return;
@@ -292,14 +281,14 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
                     params: QuestHudParams(
                       topic: content.topic,
                       questionTitle: content.questionTitle,
-                      // The banked total, not the live one: while a pellet is in
-                      // flight the counter has not been paid yet, and a number that
+                      // The shown balance, not the live one: while a reward is in
+                      // flight the balance has not been paid yet, and a number that
                       // updates before the reward arrives makes the flight a lie.
-                      xpLabel: _bankedXpLabel,
+                      quarkBalanceLabel: _shownQuarkBalanceLabel,
                       streakLabel: content.streakLabel,
                       streakAtStake: content.streakAtStake,
-                      xpKey: _chipKey,
-                      xpTrigger: _landings,
+                      quarkKey: _quarkDotKey,
+                      quarkTrigger: _quarkLandings,
                     ),
                   ),
                   if (!asRail)
@@ -343,7 +332,7 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
                 ],
               ),
             ),
-            if (_pelletAmount != null) _buildPellet(),
+            if (_flyingRewardLabel != null) _buildPellet(),
           ],
         ),
       ),
@@ -368,7 +357,7 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
       child: SingleChildScrollView(
         key: const Key('solution_scroll'),
         controller: _scrollController,
-        padding: EdgeInsets.fromLTRB(16.w, _stickerHeadroom.h, 16.w, 16.h),
+        padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 16.h),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: _screenChildren(content),
@@ -412,8 +401,6 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
         hasRationale: content.hasRationale,
         rationaleVisible: content.rationaleVisible,
         rationaleToggleLabel: content.rationaleToggleLabel,
-        xpLabel: content.stepXpLabel,
-        xpStickerKey: _stickerKey,
         onToggleRationale: widget.params.onToggleRationale,
         onEnlargeVisual: widget.params.onEnlargeVisual,
         imageProviderBuilder: widget.params.imageProviderBuilder,
@@ -428,6 +415,7 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
       unlockable: content.isLastStep,
       lockedLabel: content.vaultLockedLabel,
       solvedLabel: content.vaultSolvedLabel,
+      rewardLabel: content.rewardLabel,
       checkTitle: content.checkTitle,
       checkBody: content.checkBody,
       answerBody: content.answerBody,
@@ -439,8 +427,8 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
   }
 
   /// The pellet's arc: out past the midpoint, rising, then shrinking into the
-  /// counter. A straight fade would say the XP evaporated; the arc says it was
-  /// carried somewhere and put away.
+  /// balance. A straight fade would say the quarks evaporated; the arc says
+  /// they were carried somewhere and put away.
   Widget _buildPellet() {
     return AnimatedBuilder(
       animation: _flight,
@@ -486,8 +474,8 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
         );
       },
       child: IgnorePointer(
-        key: const Key('xp_pellet'),
-        child: XpPelletAtom(amount: _pelletAmount ?? 0),
+        key: const Key('quark_reward'),
+        child: QuarkRewardAtom(label: _flyingRewardLabel ?? ''),
       ),
     );
   }

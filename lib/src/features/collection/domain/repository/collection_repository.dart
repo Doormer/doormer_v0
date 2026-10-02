@@ -1,17 +1,25 @@
 import '../entity/card_rarity.dart';
 import '../entity/collection.dart';
+import '../entity/deck_progress.dart';
 import '../entity/draw_outcome.dart';
 
+/// The student's collection, as the server holds it. Every read and every
+/// action answers with the student's quark balance.
+///
+/// Every method throws a `Failure` whose message a student can read.
 abstract class CollectionRepository {
-  /// Reads the collection for the first time.
-  Future<Collection> load();
+  Future<({int quarkBalance, List<DeckProgress> decks})> loadDecks();
 
-  /// The collection as it stands after any draws and conversions this session.
-  Future<Collection> current();
+  /// One deck, with every card in it, held or not.
+  Future<({int quarkBalance, Collection collection})> loadCollection(
+    String deckId,
+  );
 
-  /// Spends [Collection.drawCost] and advances the replayed sequence.
-  Future<DrawOutcome> draw(String deckId);
+  /// Spends the deck's draw cost on one card from it.
+  Future<({int quarkBalance, DrawOutcome outcome})> draw(String deckId);
 
-  /// Trades one held copy for points.
-  Future<Collection> convertCopy(String cardId, CardVariant variant);
+  /// Shatters one copy of [variant] for quarks, and answers with the copies of
+  /// the card that are left.
+  Future<({int quarkBalance, int standardCopies, int specialCopies})>
+      shatterCopy(String deckId, String cardId, CardVariant variant);
 }

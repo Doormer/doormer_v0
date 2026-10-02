@@ -476,71 +476,16 @@ void main() {
 
   group('standing', () {
     const profile = QuestProfile(
-      bankedXp: 120,
       streakDays: 3,
       topic: 'Geometry - Area',
       questionTitle: 'Road through a field',
     );
-
-    test('banks XP for the steps already read, not for the one in hand', () {
-      // 3 steps, so step values are 10, 15, 20. Arriving at step 2 means one
-      // step is read; arriving at step 3 means two are.
-      final opening = solutionReaderContent(
-        const SolutionReaderReady(document: _document, profile: profile),
-      );
-      final second = solutionReaderContent(
-        const SolutionReaderReady(
-          document: _document,
-          stepIndex: 1,
-          profile: profile,
-        ),
-      );
-      final third = solutionReaderContent(
-        const SolutionReaderReady(
-          document: _document,
-          stepIndex: 2,
-          profile: profile,
-        ),
-      );
-
-      expect(opening.xpLabel, '120 XP');
-      expect(second.xpLabel, '130 XP');
-      expect(third.xpLabel, '145 XP');
-    });
-
-    test('prices the first step cheap and the last step dear', () {
-      expect(stepXpValue(0, 3), 10);
-      expect(stepXpValue(1, 3), 15);
-      expect(stepXpValue(2, 3), 20);
-    });
-
-    test('shows what the step in hand is worth, but not on the briefing', () {
-      final onStep = solutionReaderContent(
-        const SolutionReaderReady(
-          document: _document,
-          stepIndex: 1,
-          profile: profile,
-        ),
-      );
-      final onBriefing = solutionReaderContent(
-        const SolutionReaderReady(
-          document: _briefedDocument,
-          onBriefing: true,
-          profile: profile,
-        ),
-      );
-
-      expect(onStep.stepXpLabel, '+15 XP');
-      expect(onBriefing.stepXpLabel, '',
-          reason: 'you are not paid for arriving');
-    });
 
     test('leaves the standing copy empty until the standing loads', () {
       final content = solutionReaderContent(
         const SolutionReaderReady(document: _document),
       );
 
-      expect(content.xpLabel, '');
       expect(content.streakLabel, '');
       expect(content.topic, '');
       expect(content.questionTitle, '');
@@ -554,6 +499,54 @@ void main() {
       expect(content.streakLabel, '3-day');
       expect(content.topic, 'Geometry - Area');
       expect(content.questionTitle, 'Road through a field');
+    });
+  });
+
+  group('quarks', () {
+    test('shows the loaded quark balance using the collection singular rule',
+        () {
+      final content = solutionReaderContent(
+        const SolutionReaderReady(
+          document: _document,
+          quarkBalance: 128,
+        ),
+      );
+
+      expect(content.quarkBalanceLabel, '128 quarks');
+
+      final singular = solutionReaderContent(
+        const SolutionReaderReady(
+          document: _document,
+          quarkBalance: 1,
+        ),
+      );
+      expect(singular.quarkBalanceLabel, '1 quark');
+    });
+
+    test('leaves the quark balance label empty until the balance loads', () {
+      final content = solutionReaderContent(
+        const SolutionReaderReady(document: _document),
+      );
+
+      expect(content.quarkBalanceLabel, '');
+    });
+
+    test('shows the reward label only when quarks were earned', () {
+      final paid = solutionReaderContent(
+        const SolutionReaderReady(
+          document: _document,
+          quarksEarned: 3,
+        ),
+      );
+      final unpaid = solutionReaderContent(
+        const SolutionReaderReady(
+          document: _document,
+          quarksEarned: 0,
+        ),
+      );
+
+      expect(paid.rewardLabel, '+3 quarks');
+      expect(unpaid.rewardLabel, '');
     });
   });
 }

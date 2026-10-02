@@ -2,8 +2,11 @@ import 'dart:typed_data';
 
 import 'package:doormer/src/features/questions/data/datasource/questions_local_datasource.dart';
 import 'package:doormer/src/features/questions/data/datasource/questions_remote_datasource.dart';
+import 'package:doormer/src/features/questions/data/model/answer_reward_model.dart';
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
+import 'package:doormer/src/features/questions/data/model/quark_balance_model.dart';
 import 'package:doormer/src/features/questions/data/repository/questions_repository_impl.dart';
+import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +16,8 @@ class _FakeQuestionsRemoteDataSource implements QuestionsRemoteDataSource {
   Uint8List? imageBytes;
   String? contentType;
   String? idempotencyKey;
+  String? revealedQuestionId;
+  int balanceCalls = 0;
 
   @override
   Future<PhotoQuestionResponseModel> submitPhotoQuestion({
@@ -28,6 +33,18 @@ class _FakeQuestionsRemoteDataSource implements QuestionsRemoteDataSource {
       'status': 'timeout',
       'question_id': 'q_timeout',
     });
+  }
+
+  @override
+  Future<AnswerRewardModel> revealAnswer(String questionId) async {
+    revealedQuestionId = questionId;
+    return const AnswerRewardModel(quarksEarned: 3, quarkBalance: 131);
+  }
+
+  @override
+  Future<QuarkBalanceModel> loadQuarkBalance() async {
+    balanceCalls++;
+    return const QuarkBalanceModel(quarkBalance: 128);
   }
 }
 
@@ -50,7 +67,6 @@ class _FakeQuestionsLocalDataSource implements QuestionsLocalDataSource {
 
   @override
   Future<QuestProfile> loadQuestProfile() async => const QuestProfile(
-        bankedXp: 120,
         streakDays: 3,
         topic: 'Geometry - Area',
         questionTitle: 'Road through a field',
@@ -91,5 +107,35 @@ void main() {
 
     expect(local.callCount, 1);
     expect(outcome.questionId, 'sample');
+  });
+
+  test('revealAnswer delegates to the remote datasource and maps the reward',
+      () async {
+    final remote = _FakeQuestionsRemoteDataSource();
+    final repository = QuestionsRepositoryImpl(
+      remoteDataSource: remote,
+      localDataSource: _FakeQuestionsLocalDataSource(),
+    );
+
+    final reward = await repository.revealAnswer('123');
+
+    expect(remote.revealedQuestionId, '123');
+    expect(
+      reward,
+      const AnswerReward(quarksEarned: 3, quarkBalance: 131),
+    );
+  });
+
+  test('loadQuarkBalance delegates to the remote datasource', () async {
+    final remote = _FakeQuestionsRemoteDataSource();
+    final repository = QuestionsRepositoryImpl(
+      remoteDataSource: remote,
+      localDataSource: _FakeQuestionsLocalDataSource(),
+    );
+
+    final balance = await repository.loadQuarkBalance();
+
+    expect(remote.balanceCalls, 1);
+    expect(balance, 128);
   });
 }

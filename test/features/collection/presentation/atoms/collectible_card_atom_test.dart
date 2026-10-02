@@ -1,3 +1,4 @@
+import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/collection/domain/entity/card_rarity.dart';
 import 'package:doormer/src/features/collection/domain/entity/collectible_card.dart';
 import 'package:doormer/src/features/collection/presentation/atoms/collectible_card_atom.dart';
@@ -8,10 +9,11 @@ import 'package:flutter_test/flutter_test.dart';
 CollectibleCard _card(Rarity rarity) => CollectibleCard(
       id: 'gnomon',
       name: 'Gnomon',
-      deckId: 'meridian',
       rarity: rarity,
       scaleLabel: 'Small',
-      artAsset: 'assets/cards/meridian/gnomon.png',
+      artUrl: 'https://example.test/gnomon.jpg',
+      standardShatterQuarks: 5,
+      specialShatterQuarks: 10,
       description: 'd',
     );
 
@@ -26,6 +28,32 @@ void main() {
     await tester.pumpWidget(_host(
       CollectibleCardAtom(card: _card(Rarity.common), width: 104),
     ));
+    expect(find.text('Gnomon'), findsOneWidget);
+  });
+
+  testWidgets('loads the art from the card URL, over a dim panel',
+      (tester) async {
+    await tester.pumpWidget(_host(
+      CollectibleCardAtom(card: _card(Rarity.common), width: 104),
+    ));
+
+    final image = tester.widget<Image>(find.byType(Image));
+    expect(
+        (image.image as NetworkImage).url, 'https://example.test/gnomon.jpg');
+    expect(find.byKey(const Key('card-art-panel')), findsOneWidget);
+  });
+
+  testWidgets('art that fails to load leaves the panel and the name',
+      (tester) async {
+    // flutter_test answers every HTTP request with a 400, so this is the
+    // failure path.
+    await tester.pumpWidget(_host(
+      CollectibleCardAtom(card: _card(Rarity.common), width: 104),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('card-art-panel')), findsOneWidget);
     expect(find.text('Gnomon'), findsOneWidget);
   });
 
@@ -108,5 +136,13 @@ void main() {
     ));
     final box = tester.getSize(find.byType(CollectibleCardAtom));
     expect(box.height / box.width, closeTo(3 / 2, 0.01));
+  });
+
+  test('a common flashes lavender, and an uncommon or a rare flashes brass',
+      () {
+    expect(CollectibleCardAtom.rarityColour(Rarity.common), QuestPalette.dim);
+    expect(
+        CollectibleCardAtom.rarityColour(Rarity.uncommon), QuestPalette.amber);
+    expect(CollectibleCardAtom.rarityColour(Rarity.rare), QuestPalette.amber);
   });
 }

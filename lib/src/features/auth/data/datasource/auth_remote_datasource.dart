@@ -26,7 +26,7 @@ class AuthRemoteDataSource {
       });
 
       final response = await dio.post(
-        '/signup',
+        '/v1/signup',
         data: formData,
         options: Options(
           extra: {'skipAuth': true},
@@ -50,7 +50,7 @@ class AuthRemoteDataSource {
       });
       AppLogger.info('Requesting Login: $formData');
       final response = await dio.post(
-        '/login',
+        '/v1/login',
         data: formData,
         options: Options(
           extra: {'skipAuth': true},
@@ -89,7 +89,7 @@ class AuthRemoteDataSource {
       });
 
       final response = await dio.post(
-        '/signup',
+        '/v1/signup',
         data: formData,
         options: Options(extra: {'skipAuth': true}),
       );
@@ -102,7 +102,7 @@ class AuthRemoteDataSource {
     } on DioException catch (e, stackTrace) {
       if (e.response?.statusCode == 400 &&
           e.response!.data.toString().contains('user is already registered')) {
-        AppLogger.warn('User already registered, retrying with /login');
+        AppLogger.warn('User already registered, retrying with /v1/login');
         return _retryWithLogin(googleIdToken);
       }
       AppLogger.error('Google ID token exchange failed',
@@ -120,7 +120,7 @@ class AuthRemoteDataSource {
       });
 
       final response = await dio.post(
-        '/login',
+        '/v1/login',
         data: formData,
         options: Options(extra: {'skipAuth': true}),
       );

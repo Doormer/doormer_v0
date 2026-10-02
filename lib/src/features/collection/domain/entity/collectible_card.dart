@@ -8,25 +8,35 @@ import 'card_rarity.dart';
 class CollectibleCard extends Equatable {
   final String id;
   final String name;
-  final String deckId;
   final Rarity rarity;
 
   /// Free text such as `Small` or `Capital`. Deliberately not an enum: decks
   /// are unbounded and a future deck may not have hulls at all.
   final String scaleLabel;
 
-  final String artAsset;
+  final String artUrl;
+
+  /// Quarks paid for shattering one copy of each printing. They come with the
+  /// card from the server, so the app never works them out for itself.
+  final int standardShatterQuarks;
+  final int specialShatterQuarks;
+
   final String description;
 
   const CollectibleCard({
     required this.id,
     required this.name,
-    required this.deckId,
     required this.rarity,
     required this.scaleLabel,
-    required this.artAsset,
+    required this.artUrl,
+    required this.standardShatterQuarks,
+    required this.specialShatterQuarks,
     required this.description,
   });
+
+  int shatterQuarksFor(CardVariant variant) => variant == CardVariant.special
+      ? specialShatterQuarks
+      : standardShatterQuarks;
 
   @override
   List<Object?> get props => [id];

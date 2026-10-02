@@ -6,27 +6,27 @@ class QuestHudParams {
   final String topic;
   final String questionTitle;
 
-  /// Empty while the standing has not loaded — the pill is then absent rather
+  /// Empty while the balance has not loaded — the pill is then absent rather
   /// than showing a zero it is about to replace.
-  final String xpLabel;
+  final String quarkBalanceLabel;
   final String streakLabel;
 
   /// Marks the streak as losable right now, so the pill can say so once.
   final bool streakAtStake;
 
-  /// Locates the XP pill so a pellet can be aimed at it.
-  final Key? xpKey;
+  /// Locates the quark dot so a reward chip can be aimed at it.
+  final Key? quarkKey;
 
-  /// Changes when XP lands, so the pill can react to being paid.
-  final Object? xpTrigger;
+  /// Changes when quarks land, so the pill can react to being paid.
+  final Object? quarkTrigger;
 
   const QuestHudParams({
     required this.topic,
     required this.questionTitle,
-    required this.xpLabel,
+    required this.quarkBalanceLabel,
     required this.streakLabel,
     this.streakAtStake = false,
-    this.xpKey,
-    this.xpTrigger,
+    this.quarkKey,
+    this.quarkTrigger,
   });
 }

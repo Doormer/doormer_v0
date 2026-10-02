@@ -2,11 +2,14 @@ import 'dart:typed_data';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:doormer/src/core/errors/failure.dart';
+import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_quest_profile_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
+import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -62,6 +65,11 @@ const _oneStepBriefedDocument = SolutionDocument(
 class _StubRepository implements QuestionsRepository {
   final PhotoQuestionSolveOutcome? outcome;
   final Failure? failure;
+  int balance = 128;
+  AnswerReward reward = const AnswerReward(quarksEarned: 3, quarkBalance: 131);
+  Object? balanceError;
+  Object? revealError;
+  final List<String> revealedIds = [];
 
   _StubRepository({this.outcome, this.failure});
 
@@ -81,19 +89,43 @@ class _StubRepository implements QuestionsRepository {
 
   @override
   Future<QuestProfile> loadQuestProfile() async => const QuestProfile(
-        bankedXp: 120,
         streakDays: 3,
         topic: 'Geometry - Area',
         questionTitle: 'Road through a field',
       );
+
+  @override
+  Future<int> loadQuarkBalance() async {
+    final error = balanceError;
+    if (error != null) throw error;
+    return balance;
+  }
+
+  @override
+  Future<AnswerReward> revealAnswer(String questionId) async {
+    revealedIds.add(questionId);
+    final error = revealError;
+    if (error != null) throw error;
+    return reward;
+  }
+}
+
+({SolutionReaderBloc bloc, _StubRepository repository}) _blocWithRepository({
+  PhotoQuestionSolveOutcome? outcome,
+  Failure? failure,
+}) {
+  final repository = _StubRepository(outcome: outcome, failure: failure);
+  final bloc = SolutionReaderBloc(
+    loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
+    loadQuestProfileUseCase: LoadQuestProfileUseCase(repository),
+    loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(repository),
+    revealAnswerUseCase: RevealAnswerUseCase(repository),
+  );
+  return (bloc: bloc, repository: repository);
 }
 
 SolutionReaderBloc _bloc({PhotoQuestionSolveOutcome? outcome, Failure? failure}) {
-  final repository = _StubRepository(outcome: outcome, failure: failure);
-  return SolutionReaderBloc(
-    loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
-    loadQuestProfileUseCase: LoadQuestProfileUseCase(repository),
-  );
+  return _blocWithRepository(outcome: outcome, failure: failure).bloc;
 }
 
 void main() {
@@ -102,11 +134,13 @@ void main() {
       'uses the handed-over document without touching the usecase',
       build: () => _bloc(failure: DatabaseFailure('must not be called')),
       act: (bloc) => bloc.add(const SolutionReaderStarted(document: _document)),
-      // The solution lands first and the standing follows. Holding the
-      // solution back until a decorative XP pill resolves would make a
-      // slow profile call cost the student the thing they came for.
+      // The solution lands first; the quark balance and the standing follow.
+      // Holding the solution back until either resolves would make a slow
+      // call cost the student the thing they came for.
       expect: () => [
         const SolutionReaderReady(document: _document),
+        isA<SolutionReaderReady>()
+            .having((s) => s.quarkBalance, 'quarkBalance', 128),
         isA<SolutionReaderReady>().having((s) => s.profile, 'profile', isNotNull),
       ],
     );
@@ -127,7 +161,8 @@ void main() {
             .having((s) => s.document.steps, 'steps', hasLength(3))
             .having((s) => s.stepIndex, 'stepIndex', 0),
         isA<SolutionReaderReady>()
-            .having((s) => s.profile?.bankedXp, 'bankedXp', 120)
+            .having((s) => s.quarkBalance, 'quarkBalance', 128),
+        isA<SolutionReaderReady>()
             .having((s) => s.profile?.streakDays, 'streakDays', 3),
       ],
     );
@@ -155,6 +190,43 @@ void main() {
       expect: () => [
         isA<SolutionReaderLoading>(),
         isA<SolutionReaderError>(),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'loads the quark balance after the solution opens',
+      build: () => _bloc(failure: DatabaseFailure('must not be called')),
+      act: (bloc) => bloc.add(const SolutionReaderStarted(document: _document)),
+      expect: () => [
+        const SolutionReaderReady(document: _document),
+        isA<SolutionReaderReady>()
+            .having((s) => s.quarkBalance, 'quarkBalance', 128),
+        isA<SolutionReaderReady>()
+            .having((s) => s.profile, 'profile', isNotNull),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'a balance failure leaves the pill hidden and keeps the solution open',
+      build: () {
+        final built = _blocWithRepository(
+          outcome: const PhotoQuestionSolveOutcome(
+            status: PhotoQuestionSolveStatus.solved,
+            questionId: '57',
+            solution: _document,
+          ),
+        );
+        built.repository.balanceError = ServerFailure('Something went wrong.');
+        return built.bloc;
+      },
+      act: (bloc) => bloc.add(const SolutionReaderStarted()),
+      expect: () => [
+        isA<SolutionReaderLoading>(),
+        isA<SolutionReaderReady>()
+            .having((s) => s.quarkBalance, 'quarkBalance', isNull),
+        isA<SolutionReaderReady>()
+            .having((s) => s.quarkBalance, 'quarkBalance', isNull)
+            .having((s) => s.profile, 'profile', isNotNull),
       ],
     );
   });
@@ -303,6 +375,114 @@ void main() {
         ),
       ],
     );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'calls reveal-answer once with the question id',
+      build: () {
+        final built = _blocWithRepository();
+        addTearDown(() {
+          expect(built.repository.revealedIds, ['123']);
+        });
+        return built.bloc;
+      },
+      seed: () => const SolutionReaderReady(
+        document: _document,
+        stepIndex: 2,
+        quarkBalance: 128,
+      ),
+      act: (bloc) => bloc
+        ..add(const SolutionReaderAnswerRevealed(questionId: '123'))
+        ..add(const SolutionReaderAnswerRevealed(questionId: '123')),
+      wait: const Duration(milliseconds: 1),
+      expect: () => [
+        const SolutionReaderReady(
+          document: _document,
+          stepIndex: 2,
+          answerRevealed: true,
+          quarkBalance: 128,
+          revealRewardRequested: true,
+        ),
+        const SolutionReaderReady(
+          document: _document,
+          stepIndex: 2,
+          answerRevealed: true,
+          quarkBalance: 131,
+          quarksEarned: 3,
+          rewardFlightId: 1,
+          revealRewardRequested: true,
+        ),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'never calls reveal-answer without a question id',
+      build: () {
+        final built = _blocWithRepository();
+        addTearDown(() => expect(built.repository.revealedIds, isEmpty));
+        return built.bloc;
+      },
+      seed: () => const SolutionReaderReady(document: _document, stepIndex: 2),
+      act: (bloc) => bloc.add(const SolutionReaderAnswerRevealed()),
+      expect: () => const [
+        SolutionReaderReady(
+          document: _document,
+          stepIndex: 2,
+          answerRevealed: true,
+        ),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'a reveal failure still opens the answer and changes nothing else',
+      build: () {
+        final built = _blocWithRepository();
+        built.repository.revealError = ServerFailure('Something went wrong.');
+        return built.bloc;
+      },
+      seed: () => const SolutionReaderReady(
+        document: _document,
+        stepIndex: 2,
+        quarkBalance: 128,
+      ),
+      act: (bloc) =>
+          bloc.add(const SolutionReaderAnswerRevealed(questionId: '123')),
+      wait: const Duration(milliseconds: 1),
+      expect: () => const [
+        SolutionReaderReady(
+          document: _document,
+          stepIndex: 2,
+          answerRevealed: true,
+          quarkBalance: 128,
+          revealRewardRequested: true,
+        ),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'when the balance pill was hidden, reveal sets the balance but starts no flight',
+      build: () => _bloc(),
+      seed: () => const SolutionReaderReady(document: _document, stepIndex: 2),
+      act: (bloc) =>
+          bloc.add(const SolutionReaderAnswerRevealed(questionId: '123')),
+      wait: const Duration(milliseconds: 1),
+      expect: () => const [
+        SolutionReaderReady(
+          document: _document,
+          stepIndex: 2,
+          answerRevealed: true,
+          revealRewardRequested: true,
+        ),
+        SolutionReaderReady(
+          document: _document,
+          stepIndex: 2,
+          answerRevealed: true,
+          quarkBalance: 131,
+          quarksEarned: 3,
+          rewardFlightId: 0,
+          revealRewardRequested: true,
+        ),
+      ],
+    );
   });
 
   group('briefing', () {
@@ -317,6 +497,9 @@ void main() {
           onBriefing: true,
         ),
         isA<SolutionReaderReady>()
+            .having((s) => s.quarkBalance, 'quarkBalance', 128)
+            .having((s) => s.onBriefing, 'onBriefing', isTrue),
+        isA<SolutionReaderReady>()
             .having((s) => s.onBriefing, 'onBriefing', isTrue),
       ],
     );
@@ -325,11 +508,13 @@ void main() {
       'opens on step one when the document has no approach',
       build: _bloc,
       act: (bloc) => bloc.add(const SolutionReaderStarted(document: _document)),
-      // The solution lands first and the standing follows. Holding the
-      // solution back until a decorative XP pill resolves would make a
-      // slow profile call cost the student the thing they came for.
+      // The solution lands first; the quark balance and the standing follow.
+      // Holding the solution back until either resolves would make a slow
+      // call cost the student the thing they came for.
       expect: () => [
         const SolutionReaderReady(document: _document),
+        isA<SolutionReaderReady>()
+            .having((s) => s.quarkBalance, 'quarkBalance', 128),
         isA<SolutionReaderReady>().having((s) => s.profile, 'profile', isNotNull),
       ],
     );
@@ -418,6 +603,9 @@ void main() {
           note: 'The width is derived.',
         ),
         isA<SolutionReaderReady>()
+            .having((s) => s.quarkBalance, 'quarkBalance', 128)
+            .having((s) => s.note, 'note', 'The width is derived.'),
+        isA<SolutionReaderReady>()
             .having((s) => s.note, 'note', 'The width is derived.'),
       ],
     );
@@ -436,6 +624,9 @@ void main() {
       expect: () => [
         isA<SolutionReaderLoading>(),
         isA<SolutionReaderReady>()
+            .having((s) => s.note, 'note', 'The width is derived.'),
+        isA<SolutionReaderReady>()
+            .having((s) => s.quarkBalance, 'quarkBalance', 128)
             .having((s) => s.note, 'note', 'The width is derived.'),
         isA<SolutionReaderReady>()
             .having((s) => s.note, 'note', 'The width is derived.')

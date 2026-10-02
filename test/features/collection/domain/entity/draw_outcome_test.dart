@@ -5,20 +5,20 @@ import 'package:doormer/src/features/collection/domain/entity/draw_outcome.dart'
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('DrawResultKind headlines', () {
+  group('DrawResult headlines', () {
     test('are exactly the approved wording', () {
-      expect(DrawResultKind.newCard.headline, 'A new one');
-      expect(DrawResultKind.upgrade.headline, 'Now special');
-      expect(DrawResultKind.duplicate.headline, 'Another one');
+      expect(DrawResult.newCard.headline, 'A new one');
+      expect(DrawResult.upgrade.headline, 'Now special');
+      expect(DrawResult.duplicate.headline, 'Another one');
     });
 
     test('never name a ship, hull or fleet and never say duplicate', () {
       const banned = ['ship', 'hull', 'fleet', 'duplicate', 'copy', 'spare'];
-      for (final kind in DrawResultKind.values) {
-        final lower = kind.headline.toLowerCase();
+      for (final result in DrawResult.values) {
+        final lower = result.headline.toLowerCase();
         for (final word in banned) {
           expect(lower.contains(word), isFalse,
-              reason: '"${kind.headline}" must not contain "$word"');
+              reason: '"${result.headline}" must not contain "$word"');
         }
       }
     });
@@ -30,18 +30,19 @@ void main() {
         card: const CollectibleCard(
           id: 'gnomon',
           name: 'Gnomon',
-          deckId: 'meridian',
           rarity: Rarity.common,
           scaleLabel: 'Small',
-          artAsset: 'a.png',
+          artUrl: 'https://example.test/a.jpg',
+          standardShatterQuarks: 5,
+          specialShatterQuarks: 10,
           description: 'd',
         ),
         variant: CardVariant.standard,
-        kind: DrawResultKind.duplicate,
+        result: DrawResult.duplicate,
         copiesAfter: 3,
       );
       expect(outcome.copiesAfter, 3);
-      expect(outcome.kind.headline, 'Another one');
+      expect(outcome.result.headline, 'Another one');
     });
   });
 }

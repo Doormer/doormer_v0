@@ -3,51 +3,49 @@ import 'package:equatable/equatable.dart';
 import 'deck.dart';
 import 'holding.dart';
 
-/// Everything a student has, across every deck, plus the wallet the draw is
-/// paid from.
+/// One student's cards in one deck.
 class Collection extends Equatable {
-  final List<Deck> decks;
+  final Deck deck;
+
+  /// Only cards with at least one copy. A card never held has no holding,
+  /// which is what keeps the grid free of empty frames.
   final Map<String, Holding> holdingsByCardId;
-  final int walletPoints;
-  final int drawCost;
 
-  const Collection({
-    required this.decks,
-    required this.holdingsByCardId,
-    required this.walletPoints,
-    required this.drawCost,
-  });
+  const Collection({required this.deck, required this.holdingsByCardId});
 
-  bool get canAffordDraw => walletPoints >= drawCost;
+  /// Held cards in the deck's own card order, so the grid is stable as it
+  /// fills rather than reordering on every draw.
+  List<Holding> get holdings => deck.cards
+      .map((c) => holdingsByCardId[c.id])
+      .whereType<Holding>()
+      .toList();
 
-  /// Points still needed before a draw is possible. Zero when affordable.
-  int get pointsShortOfDraw =>
-      canAffordDraw ? 0 : drawCost - walletPoints;
+  /// Cards held, not copies held.
+  int get cardsHeld => holdings.length;
 
-  /// Held cards for one deck, in the deck's own card order so the grid is
-  /// stable as it fills rather than reordering on every draw.
-  List<Holding> holdingsForDeck(String deckId) {
-    final deck = decks.firstWhere((d) => d.id == deckId);
-    return deck.cards
-        .map((c) => holdingsByCardId[c.id])
-        .whereType<Holding>()
-        .toList();
-  }
+  Holding? holdingOf(String cardId) => holdingsByCardId[cardId];
 
-  int heldCountFor(String deckId) => holdingsForDeck(deckId).length;
-
-  Collection copyWith({
-    Map<String, Holding>? holdingsByCardId,
-    int? walletPoints,
+  /// The collection after a shatter left [cardId] with these copy counts. A
+  /// card left with no copies loses its holding.
+  Collection withCopies(
+    String cardId, {
+    required int standardCopies,
+    required int specialCopies,
   }) {
-    return Collection(
-      decks: decks,
-      holdingsByCardId: holdingsByCardId ?? this.holdingsByCardId,
-      walletPoints: walletPoints ?? this.walletPoints,
-      drawCost: drawCost,
-    );
+    final card = deck.cards.firstWhere((c) => c.id == cardId);
+    final holdings = Map<String, Holding>.of(holdingsByCardId);
+    if (standardCopies + specialCopies == 0) {
+      holdings.remove(cardId);
+    } else {
+      holdings[cardId] = Holding(
+        card: card,
+        standardCopies: standardCopies,
+        specialCopies: specialCopies,
+      );
+    }
+    return Collection(deck: deck, holdingsByCardId: holdings);
   }
 
   @override
-  List<Object?> get props => [decks, holdingsByCardId, walletPoints, drawCost];
+  List<Object?> get props => [deck, holdingsByCardId];
 }

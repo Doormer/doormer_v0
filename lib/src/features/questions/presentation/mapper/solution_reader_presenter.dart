@@ -58,25 +58,21 @@ class SolutionReaderContent {
   final String vaultSolvedLabel;
   final String checkTitle;
 
-  /// Standing bar copy. XP and streak are empty until the mock standing loads.
+  /// Standing bar copy. The streak is empty until the mock standing loads.
   final String topic;
   final String questionTitle;
-  final String xpLabel;
-
-  /// The number behind [xpLabel]. The counter lags the label while the pellet
-  /// is in flight, and it needs the two as a pair to know what has landed and
-  /// what is still on its way.
-  final int xpTotal;
   final String streakLabel;
+
+  /// Quark balance pill copy. Empty until the real balance loads.
+  final String quarkBalanceLabel;
+
+  /// Reward chip copy. Empty when the reveal paid nothing or has not happened.
+  final String rewardLabel;
 
   /// True once the student is on the step that decides the day. The streak is
   /// the only thing on the page that can go backwards, and it is worth saying
   /// so at the moment it becomes true rather than leaving it to a colour.
   final bool streakAtStake;
-
-  /// What this step is worth, as it appears on the card sticker. Empty on the
-  /// briefing and on the vault — you are not paid for arriving.
-  final String stepXpLabel;
 
   /// Empty until the answer is revealed — a check read before the answer is
   /// just another step.
@@ -109,26 +105,22 @@ class SolutionReaderContent {
     required this.checkBody,
     required this.topic,
     required this.questionTitle,
-    required this.xpLabel,
-    required this.xpTotal,
     required this.streakLabel,
+    required this.quarkBalanceLabel,
+    required this.rewardLabel,
     required this.streakAtStake,
-    required this.stepXpLabel,
   });
 }
 
-/// What one step is worth.
-///
-/// Taken from the prototype: the first step is cheap because it is free, the
-/// last is dear because it is the one that gets abandoned. A flat rate makes
-/// the middle of a long solution feel like the same nothing every time.
-int stepXpValue(int index, int stepCount) {
-  if (index == 0) return 10;
-  if (index == stepCount - 1) return 20;
-  return 15;
-}
+/// `1 quark`, `128 quarks`. Mirrors the collection's copy, because questions
+/// does not import from collection.
+String quarkCountLabel(int count) =>
+    '$count ${count == 1 ? 'quark' : 'quarks'}';
 
-/// XP banked by reading every step before [index].
+/// `+3 quarks`, or empty when the reveal paid nothing.
+String rewardQuarkLabel(int count) =>
+    count <= 0 ? '' : '+${quarkCountLabel(count)}';
+
 /// The vault is strapped with three chains and the working breaks them. Tying
 /// them to progress rather than to the unlock means the student watches the
 /// answer come loose as they work, instead of only at the end.
@@ -144,14 +136,6 @@ int _chainsBroken({
   if (stepCount <= 1) return 3;
   final progress = stepIndex / (stepCount - 1);
   return (progress * 3 + 0.0001).floor().clamp(0, 3);
-}
-
-int _xpBankedBefore(int index, int stepCount) {
-  var total = 0;
-  for (var i = 0; i < index; i++) {
-    total += stepXpValue(i, stepCount);
-  }
-  return total;
 }
 
 /// Turns reader state into display copy. Page-invoked only — nothing below the
@@ -177,10 +161,6 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
   final bool answerRevealed = isLastStep && state.answerRevealed;
 
   final profile = state.profile;
-  // XP banks on arrival, not on completion: reaching step 3 means steps 1 and
-  // 2 are read. The briefing banks nothing, so it shows the opening total.
-  final earnedXp = (profile?.bankedXp ?? 0) +
-      (onBriefing ? 0 : _xpBankedBefore(state.stepIndex, stepCount));
 
   return SolutionReaderContent(
     // "of N" is load-bearing: the number alone says where the student is, but
@@ -271,11 +251,10 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
         : const [],
     topic: profile?.topic ?? '',
     questionTitle: profile?.questionTitle ?? '',
-    xpLabel: profile == null ? '' : '$earnedXp XP',
-    xpTotal: earnedXp,
     streakLabel: profile == null ? '' : '${profile.streakDays}-day',
+    quarkBalanceLabel:
+        state.quarkBalance == null ? '' : quarkCountLabel(state.quarkBalance!),
+    rewardLabel: rewardQuarkLabel(state.quarksEarned),
     streakAtStake: !onBriefing && state.isLastStep,
-    stepXpLabel:
-        onBriefing ? '' : '+${stepXpValue(state.stepIndex, stepCount)} XP',
   );
 }

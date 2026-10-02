@@ -12,10 +12,11 @@ Holding _holding(String id, {int copies = 1}) => Holding(
       card: CollectibleCard(
         id: id,
         name: id,
-        deckId: 'meridian',
         rarity: Rarity.common,
         scaleLabel: 'Small',
-        artAsset: 'assets/cards/meridian/gnomon.png',
+        artUrl: 'https://example.test/gnomon.jpg',
+        standardShatterQuarks: 5,
+        specialShatterQuarks: 10,
         description: 'd',
       ),
       standardCopies: copies,

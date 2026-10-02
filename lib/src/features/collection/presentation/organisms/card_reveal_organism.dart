@@ -69,6 +69,9 @@ class CardRevealState extends State<CardRevealOrganism>
   /// 0 face-down, 1 face-up.
   double get rotation => _flip.value;
 
+  /// Whether the drawn card's art has been asked for yet.
+  bool _artRequested = false;
+
   late final Animation<double> _flip;
 
   /// The headline's own arrival, after the flip has finished.
@@ -149,12 +152,9 @@ class CardRevealState extends State<CardRevealOrganism>
     return _piecewise(t, const [0.0, 0.40, 0.66, 1.0], [peak, peak, peak, 1.0]);
   }
 
-  /// Brass for rare and uncommon; a common draw settles in the pale lavender
-  /// the mockup uses, `rgba(185,174,230,…)`, which is [QuestPalette.dim].
-  /// Brass is the rarity language everywhere else, so a common draw must not
-  /// borrow it.
-  Color get tellColour =>
-      _rarity == Rarity.common ? QuestPalette.dim : QuestPalette.amber;
+  /// The rarity's colour. A common draw settles in the pale lavender the
+  /// mockup uses, `rgba(185,174,230,…)`, which is [QuestPalette.dim].
+  Color get tellColour => CollectibleCardAtom.rarityColour(_rarity);
 
   /// Peak glow strength for this rarity, kept for callers that only need the
   /// ladder rather than the curve.
@@ -229,6 +229,17 @@ class CardRevealState extends State<CardRevealOrganism>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // The face is only built once the card turns, so fetch its art while the
+    // back is still showing. A failure needs no handling here: the face shows
+    // its dim panel instead.
+    if (!_artRequested) {
+      _artRequested = true;
+      precacheImage(
+        NetworkImage(widget.params.outcome.card.artUrl),
+        context,
+        onError: (_, __) {},
+      );
+    }
     // Duration.zero still *arrives*, which is what keeps the card face up
     // rather than frozen face down when motion is off.
     _controller.duration = MotionPolicy.duration(
@@ -421,7 +432,7 @@ class CardRevealState extends State<CardRevealOrganism>
                     Opacity(
                       opacity: _landing.value,
                       child: Text(
-                        outcome.kind.headline,
+                        outcome.result.headline,
                         style: TextStyle(
                           fontSize: 19.sp,
                           fontWeight: FontWeight.w800,
@@ -458,12 +469,12 @@ class CardRevealState extends State<CardRevealOrganism>
   }
 
   Color _headlineColour(DrawOutcome outcome) {
-    switch (outcome.kind) {
-      case DrawResultKind.newCard:
+    switch (outcome.result) {
+      case DrawResult.newCard:
         return QuestPalette.mint;
-      case DrawResultKind.upgrade:
+      case DrawResult.upgrade:
         return QuestPalette.amber;
-      case DrawResultKind.duplicate:
+      case DrawResult.duplicate:
         return QuestPalette.body;
     }
   }

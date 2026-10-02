@@ -55,7 +55,7 @@ class EmptyDeckOrganism extends StatelessWidget {
         SizedBox(height: 6.h),
         Text(
           // Digits, never words: deck sizes are unbounded.
-          '${params.deckSize} cards to find',
+          '${params.deckSize} ${params.deckSize == 1 ? 'card' : 'cards'} to find',
           style: TextStyle(fontSize: 12.sp, color: QuestPalette.muted),
         ),
         SizedBox(height: 11.h),
@@ -78,12 +78,13 @@ class EmptyDeckOrganism extends StatelessWidget {
           // rather than disappearing when it cannot be afforded.
           label: 'Draw a card · ${params.drawCost}',
           expand: true,
+          isLoading: params.isDrawing,
           onPressed: params.canAfford ? params.onDraw : null,
         ),
         if (!params.canAfford) ...[
           SizedBox(height: 9.h),
           Text(
-            '${params.pointsShort} more points to draw',
+            params.quarksShortLabel,
             style: TextStyle(fontSize: 11.sp, color: QuestPalette.amber),
           ),
         ],

@@ -1,6 +1,5 @@
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/quest_card_atom.dart';
-import 'package:doormer/src/features/questions/presentation/atoms/xp_sticker_atom.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/rationale_reveal_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/segment_list_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/solution_step_params.dart';
@@ -20,12 +19,6 @@ class SolutionStepOrganism extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return QuestCardAtom(
-      sticker: params.xpLabel.isEmpty
-          ? null
-          : XpStickerAtom(
-              key: params.xpStickerKey,
-              label: params.xpLabel,
-            ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         // Kicker, then heading, then body: the card arrives in the order it

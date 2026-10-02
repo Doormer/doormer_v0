@@ -10,7 +10,7 @@ import '../../domain/entity/collectible_card.dart';
 /// Rarity is a brass halo whose weight grows with scarcity. **Common has none**,
 /// which is what keeps the halo meaningful — if every card glowed, none would.
 ///
-/// The scrim only reads because every bundled image is dark at its lower edge.
+/// The scrim only reads because every card image is dark at its lower edge.
 /// That is a constraint on the art brief, not something this widget guarantees.
 class CollectibleCardAtom extends StatelessWidget {
   static const double aspectRatio = 2 / 3;
@@ -64,6 +64,12 @@ class CollectibleCardAtom extends StatelessWidget {
     }
   }
 
+  /// The colour a rarity flashes in: lavender for a common, brass for an
+  /// uncommon or a rare. The draw's reveal and the shatter both use it. Brass
+  /// is the rarity colour everywhere else, so a common must not borrow it.
+  static Color rarityColour(Rarity rarity) =>
+      rarity == Rarity.common ? QuestPalette.dim : QuestPalette.amber;
+
   @override
   Widget build(BuildContext context) {
     final w = width.w;
@@ -96,7 +102,17 @@ class CollectibleCardAtom extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Image.asset(card.artAsset, fit: BoxFit.cover),
+            // A dim panel under the art. It shows while the image loads, and
+            // stays if the image fails, so the name and rarity still read.
+            const ColoredBox(
+              key: Key('card-art-panel'),
+              color: QuestPalette.ink,
+            ),
+            Image.network(
+              card.artUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
             const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(

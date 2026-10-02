@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 /// Punches its child whenever [trigger] changes.
 ///
-/// A number that changes silently is easy to miss, and the point of banking XP
+/// A number that changes silently is easy to miss, and the point of a reward
 /// is that the student notices it. The punch is what turns a new value into an
 /// event. It never fires on first build: arriving at a page is not an event.
 class PunchAtom extends StatefulWidget {

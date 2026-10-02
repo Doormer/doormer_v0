@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../bloc/collection_bloc.dart';
+import '../molecules/error_with_retry_molecule.dart';
 import '../organisms/card_detail_organism.dart';
 import '../organisms/card_reveal_organism.dart';
 import '../params/card_detail_params.dart';
@@ -25,13 +26,22 @@ class CollectionPage extends StatelessWidget {
   }
 }
 
-class _CollectionView extends StatelessWidget {
+class _CollectionView extends StatefulWidget {
   const _CollectionView();
+
+  @override
+  State<_CollectionView> createState() => _CollectionViewState();
+}
+
+class _CollectionViewState extends State<_CollectionView> {
+  /// On the open deck balance's quark dot. A card window aims a shatter's
+  /// quark dots there.
+  final _quarkDotKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<CollectionBloc, CollectionState>(
-      // A draw or trade that fails was previously silent: the bloc set
+      // A draw or shatter that fails was previously silent: the bloc set
       // `errorMessage` and nothing ever read it, so the student tapped and
       // simply nothing happened.
       listenWhen: (previous, current) =>
@@ -49,48 +59,85 @@ class _CollectionView extends StatelessWidget {
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        if (state is CollectionFailed) {
-          return Scaffold(body: Center(child: Text(state.message)));
+        if (state is CollectionError) {
+          return Scaffold(
+            body: Center(
+              child: ErrorWithRetryMolecule(
+                message: state.message,
+                onRetry: () => context
+                    .read<CollectionBloc>()
+                    .add(const CollectionStarted()),
+              ),
+            ),
+          );
         }
 
         final ready = state as CollectionReady;
         final bloc = context.read<CollectionBloc>();
+        final reveal = ready.pendingReveal;
 
         return Stack(
           children: [
             CollectionTemplate(
-              collection: ready.collection,
+              quarkBalance: ready.quarkBalance,
+              quarkDotKey: _quarkDotKey,
+              decks: ready.decks,
               selectedDeckId: ready.selectedDeckId,
+              collection: ready.collection,
+              deckErrorMessage: ready.deckErrorMessage,
+              isDrawing: ready.isDrawing,
               onSelectDeck: (deckId) => bloc.add(DeckSelected(deckId)),
               onCloseDeck: () => bloc.add(const DeckClosed()),
               onDraw: () => bloc.add(const DrawRequested()),
-              onCardTap: (holding) => showDialog<void>(
-                context: context,
-                builder: (dialogContext) => Dialog(
-                  backgroundColor: Colors.transparent,
-                  child: CardDetailOrganism(
-                    params: CardDetailParams(
-                      holding: holding,
-                      onConvert: (variant) {
-                        bloc.add(
-                          ConvertCopyRequested(holding.card.id, variant),
+              onCardTap: (tapped) {
+                // An error already in the state when the window opens is
+                // about something else: a draw, or a shatter in a window since
+                // closed. The window only says why its own shatters failed.
+                final stateWhenOpened = bloc.state;
+                showDialog<void>(
+                  context: context,
+                  builder: (dialogContext) => Dialog(
+                    backgroundColor: Colors.transparent,
+                    // The window stays open and rebuilds as copies are
+                    // shattered. It sits on the root navigator, outside this
+                    // page's BlocProvider, so the bloc is handed in.
+                    child: BlocBuilder<CollectionBloc, CollectionState>(
+                      bloc: bloc,
+                      buildWhen: (_, current) => current is CollectionReady,
+                      builder: (context, state) {
+                        final latest = state as CollectionReady;
+                        return CardDetailOrganism(
+                          params: CardDetailParams(
+                            holding:
+                                latest.collection?.holdingOf(tapped.card.id) ??
+                                    tapped,
+                            quarkBalance: latest.quarkBalance,
+                            quarkDotKey: _quarkDotKey,
+                            isShattering: latest.isShattering,
+                            errorMessage: identical(latest, stateWhenOpened)
+                                ? null
+                                : latest.errorMessage,
+                            onShatter: (variant) => bloc.add(
+                              ShatterCopyRequested(tapped.card.id, variant),
+                            ),
+                            onClose: () => Navigator.of(dialogContext).pop(),
+                          ),
                         );
-                        Navigator.of(dialogContext).pop();
                       },
-                      onClose: () => Navigator.of(dialogContext).pop(),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
-            if (ready.pendingReveal != null)
+            if (reveal != null)
               Positioned.fill(
                 child: CardRevealOrganism(
                   params: RevealParams(
-                    outcome: ready.pendingReveal!,
+                    outcome: reveal.outcome,
                     supportingLine: CollectionPresenter.revealSupportingLine(
-                      collection: ready.collection,
-                      outcome: ready.pendingReveal!,
+                      outcome: reveal.outcome,
+                      deckName: reveal.deckName,
+                      collectionAfterDraw: reveal.collectionAfterDraw,
                     ),
                     onDismiss: () => bloc.add(const RevealDismissed()),
                   ),

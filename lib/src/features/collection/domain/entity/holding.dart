@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import 'card_rarity.dart';
 import 'collectible_card.dart';
 
 /// What a student holds of one card. A holding only exists once at least one
@@ -20,13 +21,12 @@ class Holding extends Equatable {
 
   bool get hasSpecial => specialCopies > 0;
 
-  Holding copyWith({int? standardCopies, int? specialCopies}) {
-    return Holding(
-      card: card,
-      standardCopies: standardCopies ?? this.standardCopies,
-      specialCopies: specialCopies ?? this.specialCopies,
-    );
-  }
+  /// The printing a shatter takes: the standard one while any is held, so the
+  /// student keeps the special one. Judging this on `standardCopies > 1`
+  /// instead would leave a holding of one standard and one special showing
+  /// "Held 2" with the action dead.
+  CardVariant get variantToShatter =>
+      standardCopies > 0 ? CardVariant.standard : CardVariant.special;
 
   @override
   List<Object?> get props => [card, standardCopies, specialCopies];

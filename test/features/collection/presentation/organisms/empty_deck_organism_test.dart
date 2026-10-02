@@ -7,16 +7,18 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 EmptyDeckParams _params({
+  int deckSize = 6,
   bool canAfford = true,
-  int pointsShort = 0,
+  bool isDrawing = false,
   VoidCallback? onDraw,
 }) =>
     EmptyDeckParams(
-      deckSize: 6,
+      deckSize: deckSize,
       rarityMix: const {Rarity.common: 3, Rarity.uncommon: 2, Rarity.rare: 1},
       drawCost: 40,
       canAfford: canAfford,
-      pointsShort: pointsShort,
+      quarksShortLabel: '25 more quarks to draw',
+      isDrawing: isDrawing,
       onDraw: onDraw ?? () {},
     );
 
@@ -50,6 +52,13 @@ void main() {
     _pinDesignViewport(tester);
     await tester.pumpWidget(_host(EmptyDeckOrganism(params: _params())));
     expect(find.text('6 cards to find'), findsOneWidget);
+  });
+
+  testWidgets('says card, not cards, for a deck of one', (tester) async {
+    _pinDesignViewport(tester);
+    await tester
+        .pumpWidget(_host(EmptyDeckOrganism(params: _params(deckSize: 1))));
+    expect(find.text('1 card to find'), findsOneWidget);
   });
 
   testWidgets('shows the mix as composition, never as odds', (tester) async {
@@ -90,7 +99,8 @@ void main() {
         rarityMix: const {Rarity.common: 3, Rarity.uncommon: 0, Rarity.rare: 0},
         drawCost: 40,
         canAfford: true,
-        pointsShort: 0,
+        quarksShortLabel: '',
+        isDrawing: false,
         onDraw: () {},
       ),
     )));
@@ -103,7 +113,7 @@ void main() {
       (tester) async {
     _pinDesignViewport(tester);
     await tester.pumpWidget(_host(
-      EmptyDeckOrganism(params: _params(canAfford: false, pointsShort: 25)),
+      EmptyDeckOrganism(params: _params(canAfford: false)),
     ));
     expect(find.textContaining('40'), findsWidgets,
         reason: 'disabling the button must not hide what a draw costs');
@@ -125,7 +135,7 @@ void main() {
     ));
     await tester.tap(find.byType(AppButtonAtom));
     expect(draws, 1);
-    expect(find.textContaining('more points'), findsNothing);
+    expect(find.textContaining('more quarks'), findsNothing);
   });
 
   testWidgets('when unaffordable the button stays visible but disabled',
@@ -133,21 +143,35 @@ void main() {
     _pinDesignViewport(tester);
     var draws = 0;
     await tester.pumpWidget(_host(EmptyDeckOrganism(
-      params: _params(canAfford: false, pointsShort: 25, onDraw: () => draws++),
+      params: _params(canAfford: false, onDraw: () => draws++),
     )));
 
     expect(find.byType(AppButtonAtom), findsOneWidget,
         reason: 'hiding it would hide the price');
-    expect(find.text('25 more points to draw'), findsOneWidget);
+    expect(find.text('25 more quarks to draw'), findsOneWidget);
 
     await tester.tap(find.byType(AppButtonAtom));
     expect(draws, 0);
   });
 
-  testWidgets('never tells the student how to earn points', (tester) async {
+  testWidgets('while a draw is in flight the button spins and cannot be tapped',
+      (tester) async {
+    _pinDesignViewport(tester);
+    var draws = 0;
+    await tester.pumpWidget(_host(EmptyDeckOrganism(
+      params: _params(isDrawing: true, onDraw: () => draws++),
+    )));
+
+    expect(tester.widget<AppButtonAtom>(find.byType(AppButtonAtom)).isLoading,
+        isTrue);
+    await tester.tap(find.byType(AppButtonAtom));
+    expect(draws, 0);
+  });
+
+  testWidgets('never tells the student how to earn quarks', (tester) async {
     _pinDesignViewport(tester);
     await tester.pumpWidget(_host(
-      EmptyDeckOrganism(params: _params(canAfford: false, pointsShort: 25)),
+      EmptyDeckOrganism(params: _params(canAfford: false)),
     ));
     for (final banned in ['Ask', 'question', 'earn']) {
       expect(find.textContaining(banned), findsNothing);

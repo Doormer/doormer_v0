@@ -33,10 +33,10 @@ class RevealDismissed extends CollectionEvent {
   const RevealDismissed();
 }
 
-class ConvertCopyRequested extends CollectionEvent {
+class ShatterCopyRequested extends CollectionEvent {
   final String cardId;
   final CardVariant variant;
-  const ConvertCopyRequested(this.cardId, this.variant);
+  const ShatterCopyRequested(this.cardId, this.variant);
 
   @override
   List<Object?> get props => [cardId, variant];
