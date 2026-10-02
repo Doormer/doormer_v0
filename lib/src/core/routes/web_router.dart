@@ -33,12 +33,15 @@ class WebRouter {
       // Authentication Routes (Only for users NOT logged in)
       GoRoute(
         path: '/auth',
-        builder: (context, state) => SignUpPageWeb(),
+        builder: (context, state) => const SignUpPageWeb(),
         routes: [
-          GoRoute(path: 'signup', builder: (context, state) => SignUpPageWeb()),
+          GoRoute(
+            path: 'signup',
+            builder: (context, state) => const SignUpPageWeb(),
+          ),
           GoRoute(
             path: 'login',
-            builder: (context, state) => LoginPageWeb(),
+            builder: (context, state) => const LoginPageWeb(),
           ),
           GoRoute(
               path: 'registration',

@@ -15,12 +15,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in_web/google_sign_in_web.dart';
 import 'package:toastification/toastification.dart';
+import 'package:flutter/services.dart';
 
-class SignUpPageWeb extends StatelessWidget {
-  SignUpPageWeb({super.key});
+class SignUpPageWeb extends StatefulWidget {
+  const SignUpPageWeb({super.key});
 
+  @override
+  State<SignUpPageWeb> createState() => _SignUpPageWebState();
+}
+
+class _SignUpPageWebState extends State<SignUpPageWeb> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final FocusNode _passwordFocus = FocusNode();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   void _signUp(BuildContext context, AuthBloc authBloc) {
@@ -31,7 +38,16 @@ class SignUpPageWeb extends StatelessWidget {
         email: email,
         password: password,
       ));
+      TextInput.finishAutofillContext();
     }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _passwordFocus.dispose();
+    super.dispose();
   }
 
   @override
@@ -109,7 +125,8 @@ class SignUpPageWeb extends StatelessWidget {
                           width: containerWidth,
                           padding: const EdgeInsets.all(24.0),
                           decoration: BoxDecoration(
-                            border: Border.all(color: colorScheme.outlineVariant),
+                            border:
+                                Border.all(color: colorScheme.outlineVariant),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Form(
@@ -151,10 +168,11 @@ class SignUpPageWeb extends StatelessWidget {
                                 Row(
                                   children: [
                                     Expanded(
-                                        child: Divider(color: colorScheme.outlineVariant)),
+                                        child: Divider(
+                                            color: colorScheme.outlineVariant)),
                                     Padding(
-                                      padding:
-                                          const EdgeInsets.symmetric(horizontal: 8.0),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8.0),
                                       child: Text(
                                         'or sign up with',
                                         style: textTheme.bodyMedium?.copyWith(
@@ -163,38 +181,66 @@ class SignUpPageWeb extends StatelessWidget {
                                       ),
                                     ),
                                     Expanded(
-                                        child: Divider(color: colorScheme.outlineVariant)),
+                                        child: Divider(
+                                            color: colorScheme.outlineVariant)),
                                   ],
                                 ),
                                 const SizedBox(height: 16),
-                                // Email text field
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    'Email',
-                                    style: textTheme.bodyMedium,
+                                AutofillGroup(
+                                  child: Column(
+                                    children: [
+                                      // Email text field
+                                      Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          'Email',
+                                          style: textTheme.bodyMedium,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      AuthTextField(
+                                        label: 'Email',
+                                        controller: _emailController,
+                                        keyboardType:
+                                            TextInputType.emailAddress,
+                                        textInputAction: TextInputAction.next,
+                                        autofillHints: const [
+                                          AutofillHints.email,
+                                        ],
+                                        onSubmitted: (_) =>
+                                            _passwordFocus.requestFocus(),
+                                        validator: AuthValidators.validateEmail,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      // Password text field
+                                      Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          'Password',
+                                          style: textTheme.bodyMedium,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      AuthTextField(
+                                        label: 'Password',
+                                        controller: _passwordController,
+                                        isPassword: true,
+                                        focusNode: _passwordFocus,
+                                        textInputAction: TextInputAction.done,
+                                        autofillHints: const [
+                                          AutofillHints.newPassword,
+                                        ],
+                                        onSubmitted: state is AuthLoading
+                                            ? null
+                                            : (_) => _signUp(
+                                                  context,
+                                                  authBloc,
+                                                ),
+                                        validator:
+                                            AuthValidators.validatePassword,
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                const SizedBox(height: 2),
-                                AuthTextField(
-                                  controller: _emailController,
-                                  obscureText: false,
-                                  validator: AuthValidators.validateEmail,
-                                ),
-                                const SizedBox(height: 16),
-                                // Password text field
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    'Password',
-                                    style: textTheme.bodyMedium,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                AuthTextField(
-                                  controller: _passwordController,
-                                  obscureText: true,
-                                  validator: AuthValidators.validatePassword,
                                 ),
                                 const SizedBox(height: 32),
                                 // Sign up button

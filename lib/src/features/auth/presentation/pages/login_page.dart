@@ -13,12 +13,19 @@ import 'package:doormer/src/shared/sessions/bloc/global_session_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in_web/google_sign_in_web.dart';
 import 'package:toastification/toastification.dart';
+import 'package:flutter/services.dart';
 
-class LoginPageWeb extends StatelessWidget {
-  LoginPageWeb({super.key});
+class LoginPageWeb extends StatefulWidget {
+  const LoginPageWeb({super.key});
 
+  @override
+  State<LoginPageWeb> createState() => _LoginPageWebState();
+}
+
+class _LoginPageWebState extends State<LoginPageWeb> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final FocusNode _passwordFocus = FocusNode();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   void _login(BuildContext context, AuthBloc authBloc) {
@@ -29,7 +36,16 @@ class LoginPageWeb extends StatelessWidget {
         email: email,
         password: password,
       ));
+      TextInput.finishAutofillContext();
     }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _passwordFocus.dispose();
+    super.dispose();
   }
 
   @override
@@ -96,7 +112,8 @@ class LoginPageWeb extends StatelessWidget {
                           width: containerWidth,
                           padding: const EdgeInsets.all(24.0),
                           decoration: BoxDecoration(
-                            border: Border.all(color: colorScheme.outlineVariant),
+                            border:
+                                Border.all(color: colorScheme.outlineVariant),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Form(
@@ -133,10 +150,11 @@ class LoginPageWeb extends StatelessWidget {
                                 Row(
                                   children: [
                                     Expanded(
-                                        child: Divider(color: colorScheme.outlineVariant)),
+                                        child: Divider(
+                                            color: colorScheme.outlineVariant)),
                                     Padding(
-                                      padding:
-                                          const EdgeInsets.symmetric(horizontal: 8.0),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8.0),
                                       child: Text(
                                         'or log in with',
                                         style: textTheme.bodyMedium?.copyWith(
@@ -145,38 +163,63 @@ class LoginPageWeb extends StatelessWidget {
                                       ),
                                     ),
                                     Expanded(
-                                        child: Divider(color: colorScheme.outlineVariant)),
+                                        child: Divider(
+                                            color: colorScheme.outlineVariant)),
                                   ],
                                 ),
                                 const SizedBox(height: 16),
-                                // Email text field
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    'Email',
-                                    style: textTheme.bodyMedium,
+                                AutofillGroup(
+                                  child: Column(
+                                    children: [
+                                      // Email text field
+                                      Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          'Email',
+                                          style: textTheme.bodyMedium,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      AuthTextField(
+                                        label: 'Email',
+                                        controller: _emailController,
+                                        keyboardType:
+                                            TextInputType.emailAddress,
+                                        textInputAction: TextInputAction.next,
+                                        autofillHints: const [
+                                          AutofillHints.email,
+                                        ],
+                                        onSubmitted: (_) =>
+                                            _passwordFocus.requestFocus(),
+                                        validator: AuthValidators.validateEmail,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      // Password text field
+                                      Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          'Password',
+                                          style: textTheme.bodyMedium,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      AuthTextField(
+                                        label: 'Password',
+                                        controller: _passwordController,
+                                        isPassword: true,
+                                        focusNode: _passwordFocus,
+                                        textInputAction: TextInputAction.done,
+                                        autofillHints: const [
+                                          AutofillHints.password,
+                                        ],
+                                        onSubmitted: state is AuthLoading
+                                            ? null
+                                            : (_) => _login(context, authBloc),
+                                        validator:
+                                            AuthValidators.validatePassword,
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                const SizedBox(height: 2),
-                                AuthTextField(
-                                  controller: _emailController,
-                                  obscureText: false,
-                                  validator: AuthValidators.validateEmail,
-                                ),
-                                const SizedBox(height: 16),
-                                // Password text field
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    'Password',
-                                    style: textTheme.bodyMedium,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                AuthTextField(
-                                  controller: _passwordController,
-                                  obscureText: true,
-                                  validator: AuthValidators.validatePassword,
                                 ),
                                 const SizedBox(height: 32),
                                 // Login button
