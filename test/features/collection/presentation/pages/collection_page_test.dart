@@ -377,6 +377,28 @@ void main() {
         reason: 'and so did the quarks the two draws cost');
   });
 
+  testWidgets('coming back opens straight onto the deck list, with no spinner',
+      (tester) async {
+    await _pumpPhone(tester);
+
+    // Leave and come back, as switching between Solve and Cards does.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(_app());
+
+    // The visit's first frame. A spinner turns with no value; the deck rows'
+    // progress rings are CircularProgressIndicators too, but with a value.
+    final spinner = find.byWidgetPredicate((widget) =>
+        widget is CircularProgressIndicator && widget.value == null);
+    expect(spinner, findsNothing);
+    expect(find.byType(DeckListOrganism), findsOneWidget);
+    expect(find.text('Meridian'), findsOneWidget);
+
+    // Let the fresh read land.
+    await tester.pump();
+    await tester.pumpAndSettle();
+  });
+
   testWidgets(
       'the quark balance is visible, so quarks are never spent invisibly',
       (tester) async {

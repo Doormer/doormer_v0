@@ -36,6 +36,10 @@ class _PendingCollectionRepository implements CollectionRepository {
   Future<({int quarkBalance, List<DeckProgress> decks})> loadDecks() =>
       Completer<({int quarkBalance, List<DeckProgress> decks})>().future;
 
+  // Nothing has been read, so nothing is remembered.
+  @override
+  ({int quarkBalance, List<DeckProgress> decks})? get lastDeckList => null;
+
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw UnimplementedError('${invocation.memberName}');
