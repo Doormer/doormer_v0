@@ -74,11 +74,7 @@ class AskByPhotoPage extends StatelessWidget {
     bool isSolving = false,
   }) async {
     if (isSolving) {
-      CustomToast.show(
-        context,
-        message: 'Still solving your last photo. One moment.',
-        type: ToastificationType.info,
-      );
+      _showStillSolving(context);
       return;
     }
 
@@ -109,6 +105,28 @@ class AskByPhotoPage extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  /// Opens the collection, unless a solve is still running.
+  ///
+  /// Leaving mid-solve would lose the answer, and photographing the same
+  /// question again would then count as a repeat and pay nothing.
+  void _openCards(BuildContext context, {required bool isSolving}) {
+    if (isSolving) {
+      _showStillSolving(context);
+      return;
+    }
+    context.go('/collection');
+  }
+
+  /// Says a solve is still running, so the tap has to wait. Solve and Cards
+  /// both use it, so their wording cannot drift apart.
+  void _showStillSolving(BuildContext context) {
+    CustomToast.show(
+      context,
+      message: 'Still solving your last photo. One moment.',
+      type: ToastificationType.info,
     );
   }
 
@@ -229,7 +247,7 @@ class AskByPhotoPage extends StatelessWidget {
               onAiTutor: () => AppLogger.info('AI chat'),
               onSolve: () =>
                   _showPhotoSourceOptions(context, isSolving: isLoading),
-              onCards: () => AppLogger.info('Cards'),
+              onCards: () => _openCards(context, isSolving: isLoading),
               onProfile: () => AppLogger.info('Profile'),
             ),
           );
