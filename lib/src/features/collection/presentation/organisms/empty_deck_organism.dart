@@ -55,7 +55,7 @@ class EmptyDeckOrganism extends StatelessWidget {
         SizedBox(height: 6.h),
         Text(
           // Digits, never words: deck sizes are unbounded.
-          '${params.deckSize} cards to find',
+          '${params.deckSize} ${params.deckSize == 1 ? 'card' : 'cards'} to find',
           style: TextStyle(fontSize: 12.sp, color: QuestPalette.muted),
         ),
         SizedBox(height: 11.h),

@@ -7,12 +7,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 EmptyDeckParams _params({
+  int deckSize = 6,
   bool canAfford = true,
   bool isDrawing = false,
   VoidCallback? onDraw,
 }) =>
     EmptyDeckParams(
-      deckSize: 6,
+      deckSize: deckSize,
       rarityMix: const {Rarity.common: 3, Rarity.uncommon: 2, Rarity.rare: 1},
       drawCost: 40,
       canAfford: canAfford,
@@ -51,6 +52,13 @@ void main() {
     _pinDesignViewport(tester);
     await tester.pumpWidget(_host(EmptyDeckOrganism(params: _params())));
     expect(find.text('6 cards to find'), findsOneWidget);
+  });
+
+  testWidgets('says card, not cards, for a deck of one', (tester) async {
+    _pinDesignViewport(tester);
+    await tester
+        .pumpWidget(_host(EmptyDeckOrganism(params: _params(deckSize: 1))));
+    expect(find.text('1 card to find'), findsOneWidget);
   });
 
   testWidgets('shows the mix as composition, never as odds', (tester) async {

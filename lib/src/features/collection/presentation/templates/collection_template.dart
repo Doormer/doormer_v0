@@ -126,7 +126,7 @@ class CollectionTemplate extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  '${decks.length} decks',
+                  '${decks.length} ${decks.length == 1 ? 'deck' : 'decks'}',
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: 11.5.sp, color: QuestPalette.dim),
                 ),

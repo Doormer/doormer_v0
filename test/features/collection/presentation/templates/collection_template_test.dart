@@ -57,6 +57,7 @@ const _cinder = Collection(
 
 CollectionTemplate _template({
   int quarkBalance = 120,
+  List<DeckProgress> decks = _decks,
   String? selectedDeckId,
   Collection? collection,
   String? deckErrorMessage,
@@ -67,7 +68,7 @@ CollectionTemplate _template({
     CollectionTemplate(
       quarkBalance: quarkBalance,
       quarkDotKey: quarkDotKey,
-      decks: _decks,
+      decks: decks,
       selectedDeckId: selectedDeckId,
       collection: collection,
       deckErrorMessage: deckErrorMessage,
@@ -100,6 +101,11 @@ void main() {
     expect(find.byType(CardGridOrganism), findsNothing);
     expect(find.text('2 decks'), findsOneWidget);
     expect(find.text('120 quarks'), findsOneWidget);
+  });
+
+  testWidgets('a phone with one deck says deck, not decks', (tester) async {
+    await _pumpAt(tester, _phone, _template(decks: [_decks.first]));
+    expect(find.text('1 deck'), findsOneWidget);
   });
 
   testWidgets('a phone with a deck open shows the grid and not the list',
