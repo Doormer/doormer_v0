@@ -1,8 +1,7 @@
 import 'package:doormer/src/features/auth/presentation/pages/login_page.dart';
 import 'package:doormer/src/features/auth/presentation/pages/signup_page.dart';
-import 'package:doormer/src/features/collection/presentation/pages/collection_page.dart';
+import 'package:doormer/src/core/routes/destination_routes.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
-import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
 import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
 import 'package:doormer/src/features/registration/presentation/pages/candidate_registration.dart';
 import 'package:doormer/src/features/registration/presentation/pages/registration_complete_page.dart';
@@ -39,14 +38,7 @@ class WebRouter {
               builder: (context, state) => const RegistrationCompletePage()),
         ],
       ),
-      GoRoute(
-        path: '/questions/photo',
-        builder: (context, state) => const AskByPhotoPage(),
-      ),
-      GoRoute(
-        path: '/collection',
-        builder: (context, state) => const CollectionPage(),
-      ),
+      ...destinationRoutes,
       GoRoute(
         path: '/questions/:questionId/solution',
         builder: (context, state) {
