@@ -16,6 +16,10 @@ class AppConfig {
       defaultValue:
           '1041088037892-m3k6b6suai10v54rmfihuutv9if4v63p.apps.googleusercontent.com');
 
+  // Accessibility tree for browser-automation agents (dev only)
+  static bool get enableSemantics =>
+      const bool.fromEnvironment('ENABLE_SEMANTICS');
+
   static const String surveyURL =
       'https://forms.office.com/Pages/ResponsePage.aspx?id=DQSIkWdsW0yxEjajBLZtrQAAAAAAAAAAAAMAALkU5oxUM002V0xCM1RRTzFIUVJEU0xRNDJMSlpTSC4u';
 }
