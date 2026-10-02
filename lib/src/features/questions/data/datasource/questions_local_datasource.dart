@@ -40,12 +40,11 @@ class QuestionsLocalDataSourceImpl implements QuestionsLocalDataSource {
     }
   }
 
-  /// Mock standing. No endpoint serves XP, streaks or syllabus placement yet;
+  /// Mock standing. No endpoint serves streaks or syllabus placement yet;
   /// replace this body with the remote call when one does.
   @override
   Future<QuestProfile> loadQuestProfile() async {
     return const QuestProfile(
-      bankedXp: 120,
       streakDays: 3,
       topic: 'Geometry - Area',
       questionTitle: 'Road through a field',

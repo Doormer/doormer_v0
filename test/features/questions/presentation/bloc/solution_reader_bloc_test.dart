@@ -89,7 +89,6 @@ class _StubRepository implements QuestionsRepository {
 
   @override
   Future<QuestProfile> loadQuestProfile() async => const QuestProfile(
-        bankedXp: 120,
         streakDays: 3,
         topic: 'Geometry - Area',
         questionTitle: 'Road through a field',
@@ -164,7 +163,6 @@ void main() {
         isA<SolutionReaderReady>()
             .having((s) => s.quarkBalance, 'quarkBalance', 128),
         isA<SolutionReaderReady>()
-            .having((s) => s.profile?.bankedXp, 'bankedXp', 120)
             .having((s) => s.profile?.streakDays, 'streakDays', 3),
       ],
     );

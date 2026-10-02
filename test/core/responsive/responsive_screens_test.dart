@@ -49,7 +49,6 @@ class _FakeQuestionsRepository implements QuestionsRepository {
 
   @override
   Future<QuestProfile> loadQuestProfile() async => const QuestProfile(
-        bankedXp: 120,
         streakDays: 3,
         topic: 'Geometry - Area',
         questionTitle: 'Road through a field',

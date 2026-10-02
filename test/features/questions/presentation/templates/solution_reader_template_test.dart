@@ -164,7 +164,6 @@ const _paidDocument = SolutionDocument(
 );
 
 const _profile = QuestProfile(
-  bankedXp: 120,
   streakDays: 4,
   topic: 'Geometry - Area',
   questionTitle: 'Road through a field',
