@@ -1,6 +1,6 @@
 import 'package:doormer/src/core/di/service_locator.dart';
-import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
+import 'package:doormer/src/shared/widget/coming_soon_toast.dart';
 import 'package:doormer/src/shared/widget/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -36,8 +36,8 @@ class ProfilePage extends StatelessWidget {
                 context.read<ProfileBloc>().add(const SignOutRequested()),
             navigationBarParams: NavigationBarParams(
               current: AppDestination.profile,
-              onSaved: () => AppLogger.info('Saved questions'),
-              onAiTutor: () => AppLogger.info('AI chat'),
+              onSaved: () => showComingSoon(context),
+              onAiTutor: () => showComingSoon(context),
               onSolve: () => context.go('/questions/photo'),
               onCards: () => context.go('/collection'),
               onProfile: () {},

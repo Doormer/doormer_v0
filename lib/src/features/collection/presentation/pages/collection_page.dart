@@ -1,7 +1,7 @@
 // lib/src/features/collection/presentation/pages/collection_page.dart
 import 'package:doormer/src/core/di/service_locator.dart';
-import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
+import 'package:doormer/src/shared/widget/coming_soon_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -46,12 +46,12 @@ class _CollectionViewState extends State<_CollectionView> {
     // One set for all three screens: loading, error and ready.
     final navigationBarParams = NavigationBarParams(
       current: AppDestination.cards,
-      onSaved: () => AppLogger.info('Saved questions'),
-      onAiTutor: () => AppLogger.info('AI chat'),
+      onSaved: () => showComingSoon(context),
+      onAiTutor: () => showComingSoon(context),
       onSolve: () => context.go('/questions/photo'),
       // Already here.
       onCards: () {},
-      onProfile: () => AppLogger.info('Profile'),
+      onProfile: () => context.go('/profile'),
     );
 
     return BlocConsumer<CollectionBloc, CollectionState>(

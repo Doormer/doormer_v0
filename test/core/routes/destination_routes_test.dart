@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/routes/destination_routes.dart';
+import 'package:doormer/src/core/services/sessions/session_service.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/collection/domain/entity/deck_progress.dart';
@@ -12,6 +13,8 @@ import 'package:doormer/src/features/collection/domain/usecase/load_decks_usecas
 import 'package:doormer/src/features/collection/domain/usecase/shatter_copy_usecase.dart';
 import 'package:doormer/src/features/collection/presentation/bloc/collection_bloc.dart';
 import 'package:doormer/src/features/collection/presentation/pages/collection_page.dart';
+import 'package:doormer/src/features/profile/domain/usecase/sign_out_usecase.dart';
+import 'package:doormer/src/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
@@ -45,6 +48,14 @@ class _PendingCollectionRepository implements CollectionRepository {
       throw UnimplementedError('${invocation.memberName}');
 }
 
+class _FakeSessionService implements SessionService {
+  @override
+  Future<void> logout() async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
   setUpAll(AppLogger.disable);
 
@@ -62,6 +73,14 @@ void main() {
         loadCollection: LoadCollectionUseCase(collection),
         drawCard: DrawCardUseCase(collection),
         shatterCopy: ShatterCopyUseCase(collection),
+      ),
+    );
+    serviceLocator.registerLazySingleton<SessionService>(
+      _FakeSessionService.new,
+    );
+    serviceLocator.registerFactory<ProfileBloc>(
+      () => ProfileBloc(
+        signOut: SignOutUseCase(serviceLocator<SessionService>()),
       ),
     );
   });
@@ -107,6 +126,39 @@ void main() {
 
     expect(find.byType(CollectionPage), findsNothing);
     expect(find.byType(AskByPhotoPage), findsOneWidget);
+    expect(tester.getRect(find.byType(NavigationBarOrganism)), bar);
+  });
+
+  testWidgets('Profile swaps in place', (tester) async {
+    tester.view.physicalSize = const Size(360, 690);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final router = GoRouter(
+      initialLocation: '/questions/photo',
+      routes: destinationRoutes,
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(360, 690),
+        builder: (_, __) => MaterialApp.router(
+          theme: AppTheme.light,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pump();
+    final bar = tester.getRect(find.byType(NavigationBarOrganism));
+
+    await tester.tap(find.byIcon(Icons.person_outline));
+    await tester.pump();
+
+    expect(find.text('More profile options are coming soon.'), findsOneWidget);
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      4,
+    );
     expect(tester.getRect(find.byType(NavigationBarOrganism)), bar);
   });
 }

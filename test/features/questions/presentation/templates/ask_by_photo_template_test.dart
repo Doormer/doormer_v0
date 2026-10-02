@@ -191,14 +191,16 @@ void main() {
       });
     }
 
-    testWidgets('stays on icons alone on a phone', (tester) async {
+    testWidgets('names its destinations on a phone', (tester) async {
       await pumpMounted(tester, const Size(390, 844));
 
       expect(
         dock(tester).labelBehavior,
-        NavigationDestinationLabelBehavior.alwaysHide,
-        reason: 'five labels across a phone would be squeezed illegible',
+        NavigationDestinationLabelBehavior.alwaysShow,
+        reason: 'the phone dock keeps each nav destination named',
       );
+      expect(find.text('AI Tutor'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 }

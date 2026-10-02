@@ -8,6 +8,7 @@ import 'package:doormer/src/features/questions/presentation/params/photo_upload_
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/templates/ask_by_photo_template.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
+import 'package:doormer/src/shared/widget/coming_soon_toast.dart';
 import 'package:doormer/src/shared/widget/custom_toast.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -120,6 +121,18 @@ class AskByPhotoPage extends StatelessWidget {
     context.go('/collection');
   }
 
+  /// Opens the profile, unless a solve is still running.
+  ///
+  /// Leaving mid-solve would lose the answer, and photographing the same
+  /// question again would then count as a repeat and pay nothing.
+  void _openProfile(BuildContext context, {required bool isSolving}) {
+    if (isSolving) {
+      _showStillSolving(context);
+      return;
+    }
+    context.go('/profile');
+  }
+
   /// Says a solve is still running, so the tap has to wait. Solve and Cards
   /// both use it, so their wording cannot drift apart.
   void _showStillSolving(BuildContext context) {
@@ -207,9 +220,8 @@ class AskByPhotoPage extends StatelessWidget {
           // moment the solve goes wrong.
           final failed = state is AskByPhotoSolveFailed ? state : null;
           final isLoading = loading != null;
-          final imageBytes = selected?.imageBytes ??
-              loading?.imageBytes ??
-              failed?.imageBytes;
+          final imageBytes =
+              selected?.imageBytes ?? loading?.imageBytes ?? failed?.imageBytes;
           final isRetry = failed?.isRetryable ?? false;
 
           return AskByPhotoTemplate(
@@ -243,12 +255,12 @@ class AskByPhotoPage extends StatelessWidget {
             ),
             navigationBarParams: NavigationBarParams(
               current: AppDestination.solve,
-              onSaved: () => AppLogger.info('Saved questions'),
-              onAiTutor: () => AppLogger.info('AI chat'),
+              onSaved: () => showComingSoon(context),
+              onAiTutor: () => showComingSoon(context),
               onSolve: () =>
                   _showPhotoSourceOptions(context, isSolving: isLoading),
               onCards: () => _openCards(context, isSolving: isLoading),
-              onProfile: () => AppLogger.info('Profile'),
+              onProfile: () => _openProfile(context, isSolving: isLoading),
             ),
           );
         },
