@@ -58,21 +58,17 @@ class SolutionReaderContent {
   final String vaultSolvedLabel;
   final String checkTitle;
 
-  /// Standing bar copy. The streak is empty until the mock standing loads.
+  /// Where the question sits. Empty when the solver named none.
   final String topic;
-  final String questionTitle;
-  final String streakLabel;
+
+  /// The theory or rule the solution relies on. Empty when unnamed.
+  final String method;
 
   /// Quark balance pill copy. Empty until the real balance loads.
   final String quarkBalanceLabel;
 
   /// Reward chip copy. Empty when the reveal paid nothing or has not happened.
   final String rewardLabel;
-
-  /// True once the student is on the step that decides the day. The streak is
-  /// the only thing on the page that can go backwards, and it is worth saying
-  /// so at the moment it becomes true rather than leaving it to a colour.
-  final bool streakAtStake;
 
   /// Empty until the answer is revealed — a check read before the answer is
   /// just another step.
@@ -104,11 +100,9 @@ class SolutionReaderContent {
     required this.checkTitle,
     required this.checkBody,
     required this.topic,
-    required this.questionTitle,
-    required this.streakLabel,
+    required this.method,
     required this.quarkBalanceLabel,
     required this.rewardLabel,
-    required this.streakAtStake,
   });
 }
 
@@ -159,8 +153,6 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
   // take effect on the last step. On any earlier step the vault stays locked
   // and the CTA stays enabled.
   final bool answerRevealed = isLastStep && state.answerRevealed;
-
-  final profile = state.profile;
 
   return SolutionReaderContent(
     // "of N" is load-bearing: the number alone says where the student is, but
@@ -249,12 +241,10 @@ SolutionReaderContent solutionReaderContent(SolutionReaderReady state) {
     checkBody: answerRevealed
         ? diagramFirstOrder(state.document.verification.body)
         : const [],
-    topic: profile?.topic ?? '',
-    questionTitle: profile?.questionTitle ?? '',
-    streakLabel: profile == null ? '' : '${profile.streakDays}-day',
+    topic: state.topic,
+    method: state.method,
     quarkBalanceLabel:
         state.quarkBalance == null ? '' : quarkCountLabel(state.quarkBalance!),
     rewardLabel: rewardQuarkLabel(state.quarksEarned),
-    streakAtStake: !onBriefing && state.isLastStep,
   );
 }

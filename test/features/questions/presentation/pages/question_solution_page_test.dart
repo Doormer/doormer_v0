@@ -18,7 +18,6 @@ import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bl
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -164,7 +163,18 @@ void main() {
     expect(find.text('Handed over from the solve.'), findsOneWidget);
   });
 
-  testWidgets('carries handed-over topic and method from a solve',
+  testWidgets(
+      'shows the sample question\'s own topic and method, and no streak',
+      (tester) async {
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+
+    expect(find.text('GEOMETRY - AREA'), findsOneWidget);
+    expect(find.text('Trigonometry and parallelogram area'), findsOneWidget);
+    expect(find.byKey(const Key('hud_streak')), findsNothing);
+  });
+
+  testWidgets('shows the topic and method handed over from a solve',
       (tester) async {
     final outcome = await _AssetRepository().loadSampleSolution();
 
@@ -178,16 +188,8 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    final blocContext = tester.element(
-      find.byType(BlocBuilder<SolutionReaderBloc, SolutionReaderState>),
-    );
-
-    expect(
-      blocContext.read<SolutionReaderBloc>().state,
-      isA<SolutionReaderReady>()
-          .having((s) => s.topic, 'topic', 'Algebra - Linear equations')
-          .having((s) => s.method, 'method', 'Inverse operations'),
-    );
+    expect(find.text('ALGEBRA - LINEAR EQUATIONS'), findsOneWidget);
+    expect(find.text('Inverse operations'), findsOneWidget);
   });
 
   testWidgets('lands at the top of step one after a scrolled briefing',

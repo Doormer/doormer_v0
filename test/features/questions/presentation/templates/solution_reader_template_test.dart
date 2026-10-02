@@ -1,6 +1,5 @@
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
-import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/solution_text_atom.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_reader_presenter.dart';
@@ -163,16 +162,11 @@ const _paidDocument = SolutionDocument(
   finalAnswer: FinalAnswer(body: [TextSolutionSegment('160')]),
 );
 
-const _profile = QuestProfile(
-  streakDays: 4,
-  topic: 'Geometry - Area',
-  questionTitle: 'Road through a field',
-);
-
 SolutionReaderReady _atStep(int index) => SolutionReaderReady(
       document: _paidDocument,
       stepIndex: index,
-      profile: _profile,
+      topic: 'Geometry - Area',
+      method: 'Trigonometry and parallelogram area',
     );
 
 SolutionReaderParams _params(
@@ -886,8 +880,7 @@ void _trailPlacementTests() {
     ));
     await tester.pump();
 
-    expect(tester.widget<SolutionTrailOrganism>(trail()).axis,
-        Axis.horizontal);
+    expect(tester.widget<SolutionTrailOrganism>(trail()).axis, Axis.horizontal);
 
     final road = tester.getRect(trail());
     final body = tester.getRect(find.byKey(const Key('solution_scroll')));

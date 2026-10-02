@@ -18,81 +18,109 @@ Widget _pump(QuestHudParams params) {
 }
 
 void main() {
-  testWidgets('shows the crumb, the question name and both pills',
-      (tester) async {
+  testWidgets('shows the topic in capitals over the method', (tester) async {
     await tester.pumpWidget(_pump(const QuestHudParams(
       topic: 'Geometry - Area',
-      questionTitle: 'Road through a field',
+      method: 'Trigonometry and parallelogram area',
       quarkBalanceLabel: '128 quarks',
-      streakLabel: '3-day',
     )));
     await tester.pump();
 
     expect(find.text('GEOMETRY - AREA'), findsOneWidget);
-    expect(find.text('Road through a field'), findsOneWidget);
-    expect(find.text('128 quarks'), findsOneWidget);
-    expect(find.byKey(const Key('hud_quarks')), findsOneWidget);
-    expect(find.text('3-day'), findsOneWidget);
+    expect(find.text('Trigonometry and parallelogram area'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byKey(const Key('hud_topic'))).dy,
+      lessThan(tester.getTopLeft(find.byKey(const Key('hud_method'))).dy),
+    );
   });
 
-  testWidgets('omits a pill rather than showing a placeholder for it',
-      (tester) async {
+  testWidgets('a blank topic and method show nothing', (tester) async {
     await tester.pumpWidget(_pump(const QuestHudParams(
-      topic: 'Geometry - Area',
-      questionTitle: 'Road through a field',
+      topic: '',
+      method: '',
       quarkBalanceLabel: '',
-      streakLabel: '',
     )));
     await tester.pump();
 
-    // A "0 quarks" that becomes "120 quarks" a frame later reads as losing
-    // something, so a stat that has not loaded shows nothing at all.
-    expect(find.byKey(const Key('hud_quarks')), findsNothing);
-    expect(find.byKey(const Key('hud_streak')), findsNothing);
-    expect(find.text('Road through a field'), findsOneWidget);
+    expect(tester.widget<Text>(find.byKey(const Key('hud_topic'))).data, '');
+    expect(tester.widget<Text>(find.byKey(const Key('hud_method'))).data, '');
   });
 
-  testWidgets('a long question name is truncated, not wrapped or overflowing',
-      (tester) async {
+  testWidgets('shows a method without a topic', (tester) async {
     await tester.pumpWidget(_pump(const QuestHudParams(
-      topic: 'Geometry - Area',
-      questionTitle:
-          'A road of uniform width crosses a rectangular field at an angle',
-      quarkBalanceLabel: '128 quarks',
-      streakLabel: '3-day',
+      topic: '',
+      method: 'Completing the square',
+      quarkBalanceLabel: '',
     )));
     await tester.pump();
 
-    expect(tester.takeException(), isNull);
+    expect(tester.widget<Text>(find.byKey(const Key('hud_topic'))).data, '');
+    expect(find.text('Completing the square'), findsOneWidget);
   });
 
-  testWidgets('hands the stake down to the streak pill', (tester) async {
+  testWidgets('keeps its height when the quark pill arrives', (tester) async {
+    await tester.pumpWidget(_pump(const QuestHudParams(
+      topic: '',
+      method: '',
+      quarkBalanceLabel: '',
+    )));
+    await tester.pump();
+    final before = tester.getSize(find.byKey(const Key('quest_hud'))).height;
+
+    await tester.pumpWidget(_pump(const QuestHudParams(
+      topic: '',
+      method: '',
+      quarkBalanceLabel: '128 quarks',
+    )));
+    await tester.pump();
+    final after = tester.getSize(find.byKey(const Key('quest_hud'))).height;
+
+    expect(after, before);
+  });
+
+  testWidgets('shows only one pill and no streak', (tester) async {
     await tester.pumpWidget(_pump(const QuestHudParams(
       topic: 'Geometry',
-      questionTitle: 'Road through a field',
+      method: 'Area of a parallelogram',
       quarkBalanceLabel: '128 quarks',
-      streakLabel: '3-day',
-      streakAtStake: true,
     )));
     await tester.pump();
 
-    expect(
-      tester.widget<StatPillAtom>(find.byKey(const Key('hud_streak'))).atStake,
-      isTrue,
-    );
-    expect(
-      tester.widget<StatPillAtom>(find.byKey(const Key('hud_quarks'))).atStake,
-      isFalse,
-      reason: 'earned quarks cannot be lost, so the balance is never at stake',
-    );
+    expect(find.byType(StatPillAtom), findsOneWidget);
+    expect(find.byKey(const Key('hud_streak')), findsNothing);
+  });
+
+  testWidgets('omits the quark pill until the balance loads', (tester) async {
+    await tester.pumpWidget(_pump(const QuestHudParams(
+      topic: 'Geometry',
+      method: 'Area of a parallelogram',
+      quarkBalanceLabel: '',
+    )));
+    await tester.pump();
+
+    expect(find.byKey(const Key('hud_quarks')), findsNothing);
+  });
+
+  testWidgets('a long method is cut to one line', (tester) async {
+    await tester.pumpWidget(_pump(const QuestHudParams(
+      topic: 'Geometry - Area',
+      method:
+          'Trigonometry and parallelogram area with a deliberately long explanation',
+      quarkBalanceLabel: '128 quarks',
+    )));
+    await tester.pump();
+
+    final method = tester.widget<Text>(find.byKey(const Key('hud_method')));
+    expect(method.maxLines, 1);
+    expect(method.overflow, TextOverflow.ellipsis);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('the quark pill is amber and uses a dot', (tester) async {
     await tester.pumpWidget(_pump(const QuestHudParams(
       topic: 'Geometry',
-      questionTitle: 'Road through a field',
+      method: 'Area of a parallelogram',
       quarkBalanceLabel: '1 quark',
-      streakLabel: '3-day',
     )));
     await tester.pump();
 
