@@ -42,7 +42,7 @@ In VS Code, use its built-in browser tools. Elsewhere, use Playwright MCP from `
 
 ## 4. Need a signed-in user?
 
-Sign up a throwaway account at `/auth/signup`: `agent+<current time in ms>@example.com`, any password of 6+ characters. You land on `/auth/registration`. Never use a real account. Google sign-in can't be automated.
+Sign up a throwaway account at `/auth/signup`: `agent+<current time in ms>@example.com` (digits only; no hyphens), any password of 6+ characters. You land on `/auth/registration`. Never use a real account. Google sign-in can't be automated.
 
 ## 5. Flutter rules
 
