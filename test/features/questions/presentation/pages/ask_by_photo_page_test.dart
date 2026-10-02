@@ -160,11 +160,11 @@ void main() {
     );
   }
 
-  // Error states raise a toast that auto-closes after 2s. Left running, the
+  // Error states raise a toast that auto-closes after 4s. Left running, the
   // binding fails the test with "A Timer is still pending" once the tree is
   // disposed, so tests that trigger one drain it before finishing.
   Future<void> drainToasts(WidgetTester tester) async {
-    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
   }
 
@@ -440,7 +440,8 @@ void main() {
       repository.failure = null;
       repository.outcome = _outcome(PhotoQuestionSolveStatus.solved);
 
-      await tester.ensureVisible(find.widgetWithText(AppButtonAtom, 'Try again'));
+      await tester
+          .ensureVisible(find.widgetWithText(AppButtonAtom, 'Try again'));
       await tester.tap(find.widgetWithText(AppButtonAtom, 'Try again'));
       await tester.pump();
       await tester.pump();
@@ -538,11 +539,11 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.style_outlined));
     // Not pumpAndSettle: the submit button's spinner animates for as long as
-    // the solve runs. The first toast waits 300ms for its overlay, then grows
-    // from zero height, and finders skip it until it has some.
+    // the solve runs. Toastification 3.x inserts the toast after a frame and
+    // then animates it from zero height, so finders skip it until it has some.
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
 
     expect(find.text('Cards page'), findsNothing);
     expect(find.byType(AskByPhotoPage), findsOneWidget);

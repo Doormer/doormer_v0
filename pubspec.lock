@@ -809,10 +809,10 @@ packages:
     dependency: transitive
     description:
       name: pausable_timer
-      sha256: "1897e2c6a4e73b9486e4ff943bfd08585bc231400e6ae924a92f5b9fd8efc0a6"
+      sha256: "6ef1a95441ec3439de6fb63f39a011b67e693198e7dae14e20675c3c00e86074"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0+7"
+    version: "3.1.0+3"
   petitparser:
     dependency: transitive
     description:
@@ -1022,10 +1022,10 @@ packages:
     dependency: "direct main"
     description:
       name: toastification
-      sha256: ce383b102d519ab8d85b04a949072c9acb2ea6c0dc0030182ed781b68cfdee6b
+      sha256: "69db2bff425b484007409650d8bcd5ed1ce2e9666293ece74dcd917dacf23112"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0"
+    version: "3.0.3"
   tuple:
     dependency: transitive
     description:
@@ -1126,10 +1126,10 @@ packages:
     dependency: "direct main"
     description:
       name: uuid
-      sha256: "648e103079f7c64a36dc7d39369cabb358d377078a051d6ae2ad3aa539519313"
+      sha256: "9b129329f58692f6e6578329498a8fe9fbe98f090beb764ffbb8ee2eadd01dcd"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.7"
+    version: "4.6.0"
   vector_graphics:
     dependency: transitive
     description:
