@@ -1,6 +1,7 @@
 import 'package:universal_html/html.dart' as html;
 import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:doormer/src/features/auth/domain/auth_messages.dart';
+import 'package:doormer/src/features/auth/presentation/utils/auth_autofill.dart';
 import 'package:doormer/src/features/auth/presentation/widget/agreement_text_widget.dart';
 import 'package:doormer/src/features/auth/presentation/widget/signup_button.dart';
 import 'package:doormer/src/features/auth/utils/auth_validators.dart';
@@ -15,7 +16,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in_web/google_sign_in_web.dart';
 import 'package:toastification/toastification.dart';
-import 'package:flutter/services.dart';
 
 class SignUpPageWeb extends StatefulWidget {
   const SignUpPageWeb({super.key});
@@ -38,7 +38,6 @@ class _SignUpPageWebState extends State<SignUpPageWeb> {
         email: email,
         password: password,
       ));
-      TextInput.finishAutofillContext();
     }
   }
 
@@ -87,6 +86,7 @@ class _SignUpPageWebState extends State<SignUpPageWeb> {
                         final router = GoRouter.of(context);
 
                         if (state is AuthSuccess) {
+                          AuthAutofill.finishOnAuthSuccess(state);
                           final sessionState =
                               context.read<GlobalSessionBloc>().state;
                           if (sessionState is SessionActiveState) {

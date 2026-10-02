@@ -8,12 +8,12 @@ import 'package:doormer/src/shared/widget/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:doormer/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:doormer/src/features/auth/presentation/utils/auth_autofill.dart';
 import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/shared/sessions/bloc/global_session_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in_web/google_sign_in_web.dart';
 import 'package:toastification/toastification.dart';
-import 'package:flutter/services.dart';
 
 class LoginPageWeb extends StatefulWidget {
   const LoginPageWeb({super.key});
@@ -36,7 +36,6 @@ class _LoginPageWebState extends State<LoginPageWeb> {
         email: email,
         password: password,
       ));
-      TextInput.finishAutofillContext();
     }
   }
 
@@ -85,6 +84,7 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                         final router = GoRouter.of(context);
 
                         if (state is AuthSuccess) {
+                          AuthAutofill.finishOnAuthSuccess(state);
                           final sessionState =
                               context.read<GlobalSessionBloc>().state;
                           if (sessionState is SessionActiveState) {
