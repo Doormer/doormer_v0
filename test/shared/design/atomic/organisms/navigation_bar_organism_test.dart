@@ -1,7 +1,7 @@
 import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
-import 'package:doormer/src/features/questions/presentation/organisms/navigation_bar_organism.dart';
-import 'package:doormer/src/features/questions/presentation/params/bottom_action_bar_params.dart';
+import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
+import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +11,7 @@ void main() {
     WidgetTester tester, {
     required Size size,
     required List<String> tapped,
+    AppDestination current = AppDestination.saved,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -26,12 +27,12 @@ void main() {
             body: Align(
               alignment: Alignment.bottomCenter,
               child: NavigationBarOrganism(
-                params: BottomActionBarParams(
-                  selectedIndex: 0,
-                  onCopy: () => tapped.add('saved'),
-                  onAiChat: () => tapped.add('tutor'),
-                  onUpload: () => tapped.add('solve'),
-                  onChat: () => tapped.add('discuss'),
+                params: NavigationBarParams(
+                  current: current,
+                  onSaved: () => tapped.add('saved'),
+                  onAiTutor: () => tapped.add('tutor'),
+                  onSolve: () => tapped.add('solve'),
+                  onCards: () => tapped.add('cards'),
                   onProfile: () => tapped.add('profile'),
                 ),
               ),
@@ -145,12 +146,12 @@ void main() {
               child: SizedBox(
                 width: width,
                 child: NavigationBarOrganism(
-                  params: BottomActionBarParams(
-                    selectedIndex: 0,
-                    onCopy: () {},
-                    onAiChat: () {},
-                    onUpload: () {},
-                    onChat: () {},
+                  params: NavigationBarParams(
+                    current: AppDestination.saved,
+                    onSaved: () {},
+                    onAiTutor: () {},
+                    onSolve: () {},
+                    onCards: () {},
                     onProfile: () {},
                   ),
                 ),
@@ -184,7 +185,7 @@ void main() {
             find.byType(NavigationDestination),
           )
           .map((destination) => destination.label),
-      ['Saved', 'AI Tutor', 'Solve', 'Discuss', 'Profile'],
+      ['Saved', 'AI Tutor', 'Solve', 'Cards', 'Profile'],
     );
   });
 
@@ -260,9 +261,51 @@ void main() {
     await tester.tap(find.byIcon(Icons.bookmark));
     await tester.tap(find.byIcon(Icons.smart_toy_outlined));
     await tester.tap(find.byIcon(Icons.document_scanner_outlined));
-    await tester.tap(find.byIcon(Icons.forum_outlined));
+    await tester.tap(find.byIcon(Icons.style_outlined));
     await tester.tap(find.byIcon(Icons.person_outline));
 
-    expect(tapped, ['saved', 'tutor', 'solve', 'discuss', 'profile']);
+    expect(tapped, ['saved', 'tutor', 'solve', 'cards', 'profile']);
+  });
+
+  AppDestination lit(WidgetTester tester) => AppDestination.values[
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex];
+
+  testWidgets('a tap on Cards leaves Solve lit on the Solve page',
+      (tester) async {
+    final tapped = <String>[];
+    await pumpNavigation(
+      tester,
+      size: const Size(390, 844),
+      tapped: tapped,
+      current: AppDestination.solve,
+    );
+
+    await tester.tap(find.byIcon(Icons.style_outlined));
+    await tester.pump();
+
+    expect(lit(tester), AppDestination.solve,
+        reason: 'Cards opens its own page, whose bar lights it. Lit here, it '
+            'would stay lit on home whenever the tap is refused mid-solve');
+    expect(tapped, ['cards']);
+  });
+
+  testWidgets('on the Cards page, Cards is lit and lights again when tapped',
+      (tester) async {
+    await pumpNavigation(
+      tester,
+      size: const Size(390, 844),
+      tapped: <String>[],
+      current: AppDestination.cards,
+    );
+    expect(lit(tester), AppDestination.cards);
+    expect(find.byIcon(Icons.style), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.bookmark_outline));
+    await tester.pump();
+    expect(lit(tester), AppDestination.saved);
+
+    await tester.tap(find.byIcon(Icons.style_outlined));
+    await tester.pump();
+    expect(lit(tester), AppDestination.cards);
   });
 }

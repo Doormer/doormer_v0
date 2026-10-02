@@ -1,6 +1,6 @@
 import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/theme/app_theme_context.dart';
-import 'package:doormer/src/features/questions/presentation/params/bottom_action_bar_params.dart';
+import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -13,16 +13,26 @@ class _Destination {
   const _Destination(this.icon, this.label, {this.selectedIcon});
 }
 
-/// Solve has no selected form: it opens the camera rather than switching to a
-/// section, so it never stays lit.
-const _destinations = <_Destination>[
-  _Destination(Icons.bookmark_outline, 'Saved', selectedIcon: Icons.bookmark),
-  _Destination(Icons.smart_toy_outlined, 'AI Tutor',
-      selectedIcon: Icons.smart_toy),
-  _Destination(Icons.document_scanner_outlined, 'Solve'),
-  _Destination(Icons.forum_outlined, 'Discuss', selectedIcon: Icons.forum),
-  _Destination(Icons.person_outline, 'Profile', selectedIcon: Icons.person),
-];
+/// How each item looks. Solve has no selected form: it opens the camera rather
+/// than switching to a section, so it never stays lit.
+_Destination _destinationOf(AppDestination destination) {
+  switch (destination) {
+    case AppDestination.saved:
+      return const _Destination(Icons.bookmark_outline, 'Saved',
+          selectedIcon: Icons.bookmark);
+    case AppDestination.aiTutor:
+      return const _Destination(Icons.smart_toy_outlined, 'AI Tutor',
+          selectedIcon: Icons.smart_toy);
+    case AppDestination.solve:
+      return const _Destination(Icons.document_scanner_outlined, 'Solve');
+    case AppDestination.cards:
+      return const _Destination(Icons.style_outlined, 'Cards',
+          selectedIcon: Icons.style);
+    case AppDestination.profile:
+      return const _Destination(Icons.person_outline, 'Profile',
+          selectedIcon: Icons.person);
+  }
+}
 
 class NavigationBarOrganism extends StatefulWidget {
   /// How much room one destination needs before its name is worth showing.
@@ -35,7 +45,7 @@ class NavigationBarOrganism extends StatefulWidget {
   /// boundary.
   static const double labelRoom = 104;
 
-  final BottomActionBarParams params;
+  final NavigationBarParams params;
 
   const NavigationBarOrganism({super.key, required this.params});
 
@@ -44,37 +54,50 @@ class NavigationBarOrganism extends StatefulWidget {
 }
 
 class _NavigationBarOrganismState extends State<NavigationBarOrganism> {
-  static const _solveIndex = 2;
-
-  late int _selectedIndex;
+  late AppDestination _lit;
 
   @override
   void initState() {
     super.initState();
-    _selectedIndex = widget.params.selectedIndex;
+    _lit = widget.params.current;
   }
 
   @override
   void didUpdateWidget(covariant NavigationBarOrganism oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.params.selectedIndex != widget.params.selectedIndex) {
-      _selectedIndex = widget.params.selectedIndex;
+    if (oldWidget.params.current != widget.params.current) {
+      _lit = widget.params.current;
     }
   }
 
-  void _onDestinationSelected(int index) {
-    final actions = <VoidCallback>[
-      widget.params.onCopy,
-      widget.params.onAiChat,
-      widget.params.onUpload,
-      widget.params.onChat,
-      widget.params.onProfile,
-    ];
+  /// Whether a tap on [tapped] lights it.
+  ///
+  /// Solve never does: it opens the camera, not a page. Cards does only on the
+  /// Cards page. Anywhere else it opens that page, whose own bar lights it, so
+  /// a tap refused mid-solve does not leave Cards lit on home.
+  bool _lightsUp(AppDestination tapped) => switch (tapped) {
+        AppDestination.solve => false,
+        AppDestination.cards => widget.params.current == AppDestination.cards,
+        AppDestination.saved ||
+        AppDestination.aiTutor ||
+        AppDestination.profile =>
+          true,
+      };
 
-    if (index != _solveIndex) {
-      setState(() => _selectedIndex = index);
+  VoidCallback _actionFor(AppDestination tapped) => switch (tapped) {
+        AppDestination.saved => widget.params.onSaved,
+        AppDestination.aiTutor => widget.params.onAiTutor,
+        AppDestination.solve => widget.params.onSolve,
+        AppDestination.cards => widget.params.onCards,
+        AppDestination.profile => widget.params.onProfile,
+      };
+
+  void _onDestinationSelected(int index) {
+    final tapped = AppDestination.values[index];
+    if (_lightsUp(tapped)) {
+      setState(() => _lit = tapped);
     }
-    actions[index]();
+    _actionFor(tapped)();
   }
 
   @override
@@ -85,7 +108,7 @@ class _NavigationBarOrganismState extends State<NavigationBarOrganism> {
       builder: (context, constraints) {
         final dockWidth =
             constraints.maxWidth.clamp(0.0, AppLayout.maxContentWidth);
-        final isWide = dockWidth / _destinations.length >=
+        final isWide = dockWidth / AppDestination.values.length >=
             NavigationBarOrganism.labelRoom;
         final barHeight = isWide ? 84.h : 72.h;
         final iconSize = isWide ? 26.0 : 24.0;
@@ -105,13 +128,14 @@ class _NavigationBarOrganismState extends State<NavigationBarOrganism> {
                 height: barHeight,
                 backgroundColor: Colors.transparent,
                 elevation: 0,
-                selectedIndex: _selectedIndex,
+                selectedIndex: _lit.index,
                 labelBehavior: isWide
                     ? NavigationDestinationLabelBehavior.alwaysShow
                     : NavigationDestinationLabelBehavior.alwaysHide,
                 onDestinationSelected: _onDestinationSelected,
                 destinations: [
-                  for (final destination in _destinations)
+                  for (final destination
+                      in AppDestination.values.map(_destinationOf))
                     NavigationDestination(
                       icon: Icon(destination.icon, size: iconSize),
                       selectedIcon: destination.selectedIcon == null

@@ -4,10 +4,10 @@ import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/photo_upload_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solve_status_presenter.dart';
-import 'package:doormer/src/features/questions/presentation/params/bottom_action_bar_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/templates/ask_by_photo_template.dart';
+import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:doormer/src/shared/widget/custom_toast.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -223,13 +223,13 @@ class AskByPhotoPage extends StatelessWidget {
                   .read<AskByPhotoBloc>()
                   .add(const AskByPhotoTypeInsteadRequested()),
             ),
-            bottomBarParams: BottomActionBarParams(
-              selectedIndex: 2,
-              onCopy: () => AppLogger.info('Saved questions'),
-              onAiChat: () => AppLogger.info('AI chat'),
-              onUpload: () =>
+            navigationBarParams: NavigationBarParams(
+              current: AppDestination.solve,
+              onSaved: () => AppLogger.info('Saved questions'),
+              onAiTutor: () => AppLogger.info('AI chat'),
+              onSolve: () =>
                   _showPhotoSourceOptions(context, isSolving: isLoading),
-              onChat: () => AppLogger.info('Discussions'),
+              onCards: () => AppLogger.info('Cards'),
               onProfile: () => AppLogger.info('Profile'),
             ),
           );
