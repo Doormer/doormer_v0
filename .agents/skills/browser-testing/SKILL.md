@@ -48,7 +48,7 @@ Sign up a throwaway account at `/auth/signup`: `agent+<current time in ms>@examp
 
 - A page that just opened can read as empty while the app loads: wait a few seconds, then read again.
 - Only `button "Enable accessibility"` once loaded? The flag is missing: restart with it, or else click that button and move the mouse over the page.
-- Type key by key (Type row); `browser_fill_form` and `typeInPage` lose text. Then read the page: each `textbox` shows its text.
+- Playwright MCP: type with `browser_type` and `slowly: true`, not run code. VS Code: use the Type row. `browser_fill_form` and `typeInPage` lose text. Then read the page: each `textbox` shows its text.
 - Read the page after every click to see where you landed. Let entrance animations finish first (reduced-motion emulation won't stop them): clicking a moving item can open the wrong one.
 - Text boxes have no names: pick them by order, after their label.
 - Icon-only buttons, like the back arrow, aren't listed: click by position from a screenshot, or go by URL.
