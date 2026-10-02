@@ -14,7 +14,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST http://localhost:8888/v1/login 
   -H 'Content-Type: application/json' -d '{}'
 ```
 
-`400` means `taka-api` is up. Otherwise ask the user to start it, unless your check makes no API calls (then say so in the report).
+`400` means `taka-api` is up. Otherwise ask the user to start it, unless your check makes no API calls (then report that).
 
 ## 2. Start the app in the background
 
@@ -35,7 +35,7 @@ In VS Code, use its built-in browser tools. Elsewhere, use Playwright MCP from `
 | Open a URL | `openBrowserPage` | `browser_navigate` |
 | Read the page | `readPage` | `browser_snapshot` |
 | Click | `clickElement` | `browser_click` |
-| Type | `runPlaywrightCode`: `await page.getByRole('textbox').nth(0).pressSequentially('text', { delay: 25 })` | `browser_type` with `slowly: true` |
+| Type | `clickElement` on the field, then `runPlaywrightCode`: `await page.waitForTimeout(500); await page.keyboard.type('text', { delay: 25 })` | `browser_type` with `slowly: true` |
 | Click by position | `runPlaywrightCode`: `await page.mouse.click(x, y)` | `browser_mouse_click_xy` |
 | Screenshot | `screenshotPage` | `browser_take_screenshot`, no `filename` or one in `.playwright-mcp/` |
 | Console errors | `runPlaywrightCode`: `return (await page.consoleMessages()).filter(m => m.type() === 'error').map(m => m.text())` | `browser_console_messages` with `level: "error"` |
@@ -46,7 +46,7 @@ Sign up a throwaway account at `/auth/signup`: `agent+<current time in ms>@examp
 
 ## 5. Flutter rules
 
-- A page that just opened can read as empty while the app loads: wait a few seconds, then read again.
+- A just-opened page can read as empty while the app loads: wait a few seconds, then read again.
 - Only `button "Enable accessibility"` once loaded? The flag is missing: restart with it, or else click that button and move the mouse over the page.
 - Playwright MCP: type with `browser_type` and `slowly: true`, not run code. VS Code: use the Type row. `browser_fill_form` and `typeInPage` lose text. Then read the page: each `textbox` shows its text.
 - Read the page after every click to see where you landed. Let entrance animations finish first (reduced-motion emulation won't stop them): clicking a moving item can open the wrong one.
