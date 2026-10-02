@@ -60,6 +60,8 @@ void initQuestionsModule() {
     () => SolutionReaderBloc(
       loadSampleSolutionUseCase: serviceLocator<LoadSampleSolutionUseCase>(),
       loadQuestProfileUseCase: serviceLocator<LoadQuestProfileUseCase>(),
+      loadQuarkBalanceUseCase: serviceLocator<LoadQuarkBalanceUseCase>(),
+      revealAnswerUseCase: serviceLocator<RevealAnswerUseCase>(),
     ),
   );
 }

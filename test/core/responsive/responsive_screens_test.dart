@@ -18,8 +18,10 @@ import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart'
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_quest_profile_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
+import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
@@ -114,6 +116,8 @@ void main() {
       () => SolutionReaderBloc(
         loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
         loadQuestProfileUseCase: LoadQuestProfileUseCase(repository),
+        loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(repository),
+        revealAnswerUseCase: RevealAnswerUseCase(repository),
       ),
     );
 

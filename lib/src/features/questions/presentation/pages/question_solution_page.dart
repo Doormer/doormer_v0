@@ -29,6 +29,7 @@ class QuestionSolutionPage extends StatelessWidget {
         ..add(SolutionReaderStarted(
           document: solvedState?.solution,
           note: solvedState?.note ?? '',
+          questionId: solvedState == null ? null : questionId,
         )),
       child: BlocBuilder<SolutionReaderBloc, SolutionReaderState>(
         builder: (context, state) {
@@ -44,8 +45,9 @@ class QuestionSolutionPage extends StatelessWidget {
                 onBack: () => bloc.add(const SolutionReaderWentBack()),
                 onToggleRationale: () =>
                     bloc.add(const SolutionReaderRationaleToggled()),
-                onRevealAnswer: () =>
-                    bloc.add(const SolutionReaderAnswerRevealed()),
+                onRevealAnswer: () => bloc.add(SolutionReaderAnswerRevealed(
+                  questionId: solvedState == null ? null : questionId,
+                )),
                 onTravelTo: (position) =>
                     bloc.add(SolutionReaderTravelled(position)),
                 onEnlargeVisual: (visual) => _openEnlarge(context, visual),

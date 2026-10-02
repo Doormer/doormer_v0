@@ -13,15 +13,19 @@ abstract class SolutionReaderEvent extends Equatable {
 class SolutionReaderStarted extends SolutionReaderEvent {
   final SolutionDocument? document;
 
+  /// The solved question that can pay when the answer opens. Null for the
+  /// bundled sample opened by URL, which must never pay.
+  final String? questionId;
+
   /// Solver commentary handed over alongside [document]. Ignored when
   /// [document] is null, because the sample path reads the note off the
   /// outcome it loads.
   final String note;
 
-  const SolutionReaderStarted({this.document, this.note = ''});
+  const SolutionReaderStarted({this.document, this.note = '', this.questionId});
 
   @override
-  List<Object?> get props => [document, note];
+  List<Object?> get props => [document, note, questionId];
 }
 
 class SolutionReaderAdvanced extends SolutionReaderEvent {
@@ -53,5 +57,10 @@ class SolutionReaderRationaleToggled extends SolutionReaderEvent {
 }
 
 class SolutionReaderAnswerRevealed extends SolutionReaderEvent {
-  const SolutionReaderAnswerRevealed();
+  final String? questionId;
+
+  const SolutionReaderAnswerRevealed({this.questionId});
+
+  @override
+  List<Object?> get props => [questionId];
 }
