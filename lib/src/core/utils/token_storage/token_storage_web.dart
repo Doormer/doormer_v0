@@ -11,7 +11,7 @@ class TokenStorageWeb implements TokenStorage {
   }
 
   String _createDeleteCookie(String name) {
-    return '$name=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; SameSite=Strict; HttpOnly';
+    return '$name=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; SameSite=Strict';
   }
 
   String? _getCookieValue(String name) {
@@ -29,7 +29,7 @@ class TokenStorageWeb implements TokenStorage {
   @override
   Future<void> saveAccessToken(String token) async {
     html.document.cookie = _createCookie(_accessTokenKey, token);
-    AppLogger.info('Saved $token in storage');
+    AppLogger.info('Saved access token');
   }
 
   @override
