@@ -10,6 +10,14 @@ import '../entity/draw_outcome.dart';
 abstract class CollectionRepository {
   Future<({int quarkBalance, List<DeckProgress> decks})> loadDecks();
 
+  /// The deck list as it was last read, with the quark balance from the
+  /// latest answer of any kind, so the collection can open on it while it
+  /// reads afresh. Null before the first read and after [forgetLastDeckList].
+  ({int quarkBalance, List<DeckProgress> decks})? get lastDeckList;
+
+  /// Drops [lastDeckList]. Whoever signs in next may be a different student.
+  void forgetLastDeckList();
+
   /// One deck, with every card in it, held or not.
   Future<({int quarkBalance, Collection collection})> loadCollection(
     String deckId,

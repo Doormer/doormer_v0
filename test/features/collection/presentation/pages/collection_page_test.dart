@@ -111,6 +111,15 @@ class _InMemoryCollectionRepository implements CollectionRepository {
   /// When set, the next shatter fails with it.
   Failure? failNextShatterWith;
 
+  /// The deck list as last read, as the real repository remembers it.
+  @override
+  ({int quarkBalance, List<DeckProgress> decks})? lastDeckList;
+
+  @override
+  void forgetLastDeckList() {
+    lastDeckList = null;
+  }
+
   void _failLoadIfAsked() {
     final failure = failNextLoadWith;
     failNextLoadWith = null;
@@ -156,7 +165,7 @@ class _InMemoryCollectionRepository implements CollectionRepository {
   @override
   Future<({int quarkBalance, List<DeckProgress> decks})> loadDecks() async {
     _failLoadIfAsked();
-    return (
+    return lastDeckList = (
       quarkBalance: _quarkBalance,
       decks: [
         for (final deck in _decks.values)

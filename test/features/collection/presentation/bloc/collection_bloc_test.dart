@@ -74,6 +74,15 @@ class _FakeRepository implements CollectionRepository {
   int drawCalls = 0;
   int shatterCalls = 0;
 
+  /// What the collection opens on. A test sets it to play an earlier visit.
+  @override
+  ({int quarkBalance, List<DeckProgress> decks})? lastDeckList;
+
+  @override
+  void forgetLastDeckList() {
+    lastDeckList = null;
+  }
+
   Collection collectionOf(String deckId) => Collection(
         deck: _decks[deckId]!,
         holdingsByCardId: Map.of(holdings[deckId]!),
