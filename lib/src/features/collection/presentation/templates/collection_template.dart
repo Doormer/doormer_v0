@@ -1,5 +1,7 @@
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
+import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -57,6 +59,9 @@ class CollectionTemplate extends StatelessWidget {
   final VoidCallback onDraw;
   final void Function(Holding holding) onCardTap;
 
+  /// The bar at the foot of the page, with Cards lit.
+  final NavigationBarParams navigationBarParams;
+
   const CollectionTemplate({
     super.key,
     required this.quarkBalance,
@@ -70,6 +75,7 @@ class CollectionTemplate extends StatelessWidget {
     required this.onCloseDeck,
     required this.onDraw,
     required this.onCardTap,
+    required this.navigationBarParams,
   });
 
   @override
@@ -83,6 +89,21 @@ class CollectionTemplate extends StatelessWidget {
           padding: EdgeInsets.all(14.w),
           child: isWide ? _wide(context) : _narrow(context),
         ),
+      ),
+      bottomNavigationBar: navigationBar(navigationBarParams),
+    );
+  }
+
+  /// The bar as every collection screen places it: at the foot of the
+  /// Scaffold, which lays the body out above it, with home's margins.
+  ///
+  /// Static because the page builds the loading and error screens itself.
+  static Widget navigationBar(NavigationBarParams params) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 20.h),
+        child: NavigationBarOrganism(params: params),
       ),
     );
   }
