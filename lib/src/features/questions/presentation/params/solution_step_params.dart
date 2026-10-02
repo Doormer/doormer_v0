@@ -13,12 +13,6 @@ class SolutionStepParams {
   final bool hasRationale;
   final bool rationaleVisible;
   final String rationaleToggleLabel;
-
-  /// What this step is worth, e.g. `+15 XP`. Empty hides the sticker.
-  final String xpLabel;
-
-  /// Locates the XP sticker so a pellet can be launched from it.
-  final Key? xpStickerKey;
   final VoidCallback onToggleRationale;
   final void Function(VisualSolutionSegment visual) onEnlargeVisual;
   final DiagramImageProviderBuilder imageProviderBuilder;
@@ -31,8 +25,6 @@ class SolutionStepParams {
     required this.hasRationale,
     required this.rationaleVisible,
     required this.rationaleToggleLabel,
-    this.xpLabel = '',
-    this.xpStickerKey,
     required this.onToggleRationale,
     required this.onEnlargeVisual,
     this.imageProviderBuilder = networkDiagramImageProvider,

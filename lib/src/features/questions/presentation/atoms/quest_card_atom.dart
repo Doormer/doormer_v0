@@ -12,8 +12,7 @@ class QuestCardAtom extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
 
-  /// Drawn over the card's top-right corner, escaping its bounds. Used for the
-  /// XP sticker.
+  /// Drawn over the card's top-right corner, escaping its bounds.
   final Widget? sticker;
 
   const QuestCardAtom({

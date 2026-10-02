@@ -42,12 +42,6 @@ class SolutionReaderTemplate extends StatefulWidget {
 
 class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
     with SingleTickerProviderStateMixin {
-  /// Headroom inside the scroll view for the XP sticker, which is positioned
-  /// 9px above the card's top edge and so sits outside it. With a zero top
-  /// padding the viewport clipped the sticker in half — the tag read as a torn
-  /// mint strip rather than a reward.
-  static const double _stickerHeadroom = 14;
-
   /// Below this a sideways drag is browsing, not a decision.
   static const double _swipeVelocity = 320;
 
@@ -363,7 +357,7 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
       child: SingleChildScrollView(
         key: const Key('solution_scroll'),
         controller: _scrollController,
-        padding: EdgeInsets.fromLTRB(16.w, _stickerHeadroom.h, 16.w, 16.h),
+        padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 16.h),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: _screenChildren(content),
