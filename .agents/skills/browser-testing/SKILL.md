@@ -52,7 +52,7 @@ Sign up a throwaway account at `/auth/signup`: `agent+<current time in ms>@examp
 - Read the page after every click to see where you landed. Let entrance animations finish first (reduced-motion emulation won't stop them): clicking a moving item can open the wrong one.
 - Text boxes have no names: pick them by order, after their label.
 - Icon-only buttons, like the back arrow, aren't listed: click by position from a screenshot, or go by URL.
-- Open routes by URL; they are in `lib/src/core/routes/web_router.dart`. Pages that call the API need a signed-in session.
+- Open routes by URL; they are in `lib/src/core/routes/`. Pages that call the API need a signed-in session.
 - Check console errors after each flow.
 
 ## 6. Known limits
