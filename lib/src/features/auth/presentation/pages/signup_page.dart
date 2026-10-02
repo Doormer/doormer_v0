@@ -2,12 +2,12 @@ import 'package:universal_html/html.dart' as html;
 import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:doormer/src/features/auth/domain/auth_messages.dart';
 import 'package:doormer/src/features/auth/presentation/utils/auth_autofill.dart';
+import 'package:doormer/src/features/auth/presentation/widget/auth_credentials_fields.dart';
 import 'package:doormer/src/features/auth/presentation/widget/agreement_text_widget.dart';
 import 'package:doormer/src/features/auth/presentation/widget/signup_button.dart';
 import 'package:doormer/src/features/auth/utils/auth_validators.dart';
 import 'package:doormer/src/shared/widget/custom_toast.dart';
 import 'package:flutter/material.dart';
-import 'package:doormer/src/features/auth/presentation/widget/auth_textfield_web.dart';
 import 'package:doormer/src/features/auth/presentation/widget/google_signin_button.dart';
 import 'package:doormer/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:doormer/src/core/di/service_locator.dart';
@@ -186,61 +186,22 @@ class _SignUpPageWebState extends State<SignUpPageWeb> {
                                   ],
                                 ),
                                 const SizedBox(height: 16),
-                                AutofillGroup(
-                                  child: Column(
-                                    children: [
-                                      // Email text field
-                                      Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: Text(
-                                          'Email',
-                                          style: textTheme.bodyMedium,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      AuthTextField(
-                                        label: 'Email',
-                                        controller: _emailController,
-                                        keyboardType:
-                                            TextInputType.emailAddress,
-                                        textInputAction: TextInputAction.next,
-                                        autofillHints: const [
-                                          AutofillHints.email,
-                                        ],
-                                        onSubmitted: (_) =>
-                                            _passwordFocus.requestFocus(),
-                                        validator: AuthValidators.validateEmail,
-                                      ),
-                                      const SizedBox(height: 16),
-                                      // Password text field
-                                      Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: Text(
-                                          'Password',
-                                          style: textTheme.bodyMedium,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      AuthTextField(
-                                        label: 'Password',
-                                        controller: _passwordController,
-                                        isPassword: true,
-                                        focusNode: _passwordFocus,
-                                        textInputAction: TextInputAction.done,
-                                        autofillHints: const [
-                                          AutofillHints.newPassword,
-                                        ],
-                                        onSubmitted: state is AuthLoading
-                                            ? null
-                                            : (_) => _signUp(
-                                                  context,
-                                                  authBloc,
-                                                ),
-                                        validator:
-                                            AuthValidators.validatePassword,
-                                      ),
-                                    ],
-                                  ),
+                                AuthCredentialsFields(
+                                  emailController: _emailController,
+                                  passwordController: _passwordController,
+                                  passwordFocus: _passwordFocus,
+                                  passwordAutofillHints: const [
+                                    AutofillHints.newPassword,
+                                  ],
+                                  onPasswordSubmitted: state is AuthLoading
+                                      ? null
+                                      : (_) => _signUp(
+                                            context,
+                                            authBloc,
+                                          ),
+                                  emailValidator: AuthValidators.validateEmail,
+                                  passwordValidator:
+                                      AuthValidators.validatePassword,
                                 ),
                                 const SizedBox(height: 32),
                                 // Sign up button
