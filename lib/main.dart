@@ -1,3 +1,4 @@
+import 'package:doormer/src/core/config/app_config.dart';
 import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/routes/app_router.dart';
@@ -9,6 +10,9 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Flutter web draws on a canvas, so browser-automation tools can't read the
+  // page unless the accessibility tree is built.
+  if (AppConfig.enableSemantics) WidgetsBinding.instance.ensureSemantics();
 
   // Not const, despite what `prefer_const_constructors` claims: the analyzer
   // sees the stub implementation, which has a const constructor, while the web

@@ -156,3 +156,6 @@ app.*.symbols
 # Superpowers brainstorming artifacts
 .superpowers/
 docs/
+
+# Playwright MCP output (screenshots, snapshots, console logs)
+.playwright-mcp/

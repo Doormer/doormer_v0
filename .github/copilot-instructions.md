@@ -31,8 +31,11 @@ flutter test
 |----------|---------|---------|
 | `API_BASE_URL` | `http://localhost:8888` | Backend API root |
 | `GOOGLE_CLIENT_ID` | hardcoded dev ID | Google OAuth client |
+| `ENABLE_SEMANTICS` | `false` | Builds the accessibility tree so browser-automation agents can read the UI. Dev and agent use only |
 
 See `lib/src/core/config/app_config.dart` for all config values.
+
+To check the UI in a real browser, follow `.agents/skills/browser-testing/SKILL.md`.
 
 ## Architecture — Clean Architecture
 
