@@ -13,11 +13,19 @@ class PhotoQuestionSolveOutcome {
   /// Free-form solver commentary. Present from schema 3.0 onwards.
   final String note;
 
+  /// Where the question sits, such as "Geometry - Area". Empty when unnamed.
+  final String topic;
+
+  /// The theory or rule the solution relies on. Empty when unnamed.
+  final String method;
+
   const PhotoQuestionSolveOutcome({
     required this.status,
     required this.questionId,
     required this.solution,
     this.note = '',
+    this.topic = '',
+    this.method = '',
   });
 }
 

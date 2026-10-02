@@ -81,10 +81,15 @@ void main() {
                   'url': 'https://example.test/step1.png',
                   'width': 1600,
                   'height': 1067,
-                  'caption': 'The 5 m and 4 m measurements determine the angle.',
+                  'caption':
+                      'The 5 m and 4 m measurements determine the angle.',
                   'alt': 'A right triangle.',
                 },
-                {'type': 'math', 'latex': r'\tan\theta=\frac{3}{4}', 'alt': 'tan'},
+                {
+                  'type': 'math',
+                  'latex': r'\tan\theta=\frac{3}{4}',
+                  'alt': 'tan'
+                },
               ],
               'rationale': [
                 {'type': 'text', 'value': 'The 5 m segment is the hypotenuse.'},
@@ -111,14 +116,49 @@ void main() {
       expect(entity.note, 'The printed rectangle width is not given directly.');
       expect(entity.solution!.schemaVersion, '3.0');
       expect(entity.solution!.approach.body.single, isA<TextSolutionSegment>());
-      expect(entity.solution!.verification.body.single, isA<TextSolutionSegment>());
+      expect(entity.solution!.verification.body.single,
+          isA<TextSolutionSegment>());
       expect(step.rationale.single, isA<TextSolutionSegment>());
       expect(visual.mediaType, 'image/png');
       expect(visual.url, 'https://example.test/step1.png');
       expect(visual.width, 1600);
       expect(visual.height, 1067);
-      expect(visual.caption, 'The 5 m and 4 m measurements determine the angle.');
+      expect(
+          visual.caption, 'The 5 m and 4 m measurements determine the angle.');
       expect(visual.alt, 'A right triangle.');
+    });
+
+    test('reads the topic and the method', () {
+      final model = PhotoQuestionResponseModel.fromJson({
+        'status': 'solved',
+        'question_id': '57',
+        'topic': 'Geometry - Area',
+        'method': 'Trigonometry and parallelogram area',
+        'solution': {
+          'schema_version': '3.0',
+          'steps': [
+            {'title': 'Find the width', 'body': []},
+          ],
+          'final_answer': {'body': []},
+        },
+      });
+
+      final entity = model.toEntity();
+
+      expect(entity.topic, 'Geometry - Area');
+      expect(entity.method, 'Trigonometry and parallelogram area');
+    });
+
+    test('treats an absent topic and method as empty', () {
+      final model = PhotoQuestionResponseModel.fromJson({
+        'status': 'unreadable',
+        'question_id': 'q_456',
+      });
+
+      final entity = model.toEntity();
+
+      expect(entity.topic, '');
+      expect(entity.method, '');
     });
 
     test('skips unknown segment types instead of throwing', () {
@@ -163,13 +203,16 @@ void main() {
     });
 
     test('parses the bundled schema 3.0 mock asset end to end', () {
-      final raw = File('assets/mock/mock_question_response.json').readAsStringSync();
+      final raw =
+          File('assets/mock/mock_question_response.json').readAsStringSync();
       final json = jsonDecode(raw) as Map<String, dynamic>;
 
       final entity = PhotoQuestionResponseModel.fromJson(json).toEntity();
       final solution = entity.solution!;
 
       expect(entity.status, PhotoQuestionSolveStatus.solved);
+      expect(entity.topic, 'Geometry - Area');
+      expect(entity.method, 'Trigonometry and parallelogram area');
       expect(solution.schemaVersion, '3.0');
       // Deliberately not an exact count. This test exists to prove the parser
       // handles the real payload, so pinning the number of steps only couples
@@ -179,7 +222,8 @@ void main() {
       expect(solution.verification.body, isNotEmpty);
       expect(solution.finalAnswer.body.single, isA<MathSolutionSegment>());
       for (final step in solution.steps) {
-        expect(step.rationale, isNotEmpty, reason: 'every 3.0 step has rationale');
+        expect(step.rationale, isNotEmpty,
+            reason: 'every 3.0 step has rationale');
         expect(
           step.body.whereType<VisualSolutionSegment>(),
           hasLength(1),

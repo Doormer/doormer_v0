@@ -2,6 +2,8 @@
     "status": "solved",
     "question_id": "57",
     "note": "The printed rectangle width is not given directly; it is derived from the road angle and the 24 m vertical drop.",
+    "topic": "Geometry - Area",
+    "method": "Trigonometry and parallelogram area",
     "solution": {
         "schema_version": "3.0",
         "approach": {
