@@ -9,32 +9,24 @@ class AgreementTextWidget extends StatelessWidget {
   void _showTermsSheet(BuildContext context) {
     showModalBottomSheet(
       isScrollControlled: true,
+      showDragHandle: true,
       context: context,
-      builder: (context) {
-        final height = MediaQuery.of(context).size.height * 0.9;
-        return Container(
-          color: Theme.of(context).colorScheme.surface,
-          padding: const EdgeInsets.all(16.0),
-          height: height,
-          child: AgreementText.termsAndConditions,
-        );
-      },
+      builder: (_) => const _AgreementSheet(
+        title: 'Terms of Service',
+        child: AgreementText.termsAndConditions,
+      ),
     );
   }
 
   void _showPrivacySheet(BuildContext context) {
     showModalBottomSheet(
       isScrollControlled: true,
+      showDragHandle: true,
       context: context,
-      builder: (context) {
-        final height = MediaQuery.of(context).size.height * 0.9;
-        return Container(
-          color: Theme.of(context).colorScheme.surface,
-          padding: const EdgeInsets.all(16.0),
-          height: height,
-          child: AgreementText.privacyPolicy,
-        );
-      },
+      builder: (_) => const _AgreementSheet(
+        title: 'Privacy Policy',
+        child: AgreementText.privacyPolicy,
+      ),
     );
   }
 
@@ -42,7 +34,8 @@ class AgreementTextWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
     final textTheme = context.textTheme;
-    final baseStyle = textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface);
+    final baseStyle =
+        textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface);
     final linkStyle = textTheme.bodyMedium?.copyWith(
       color: colorScheme.primary,
       decoration: TextDecoration.underline,
@@ -50,6 +43,7 @@ class AgreementTextWidget extends StatelessWidget {
     );
 
     return RichText(
+      textAlign: TextAlign.center,
       text: TextSpan(
         text: "By continuing, you agree to our\n",
         style: baseStyle,
@@ -74,6 +68,47 @@ class AgreementTextWidget extends StatelessWidget {
                 _showPrivacySheet(context);
               },
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AgreementSheet extends StatelessWidget {
+  const _AgreementSheet({
+    required this.title,
+    required this.child,
+  });
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final height = MediaQuery.of(context).size.height * 0.9;
+
+    return Container(
+      color: Theme.of(context).colorScheme.surface,
+      padding: const EdgeInsets.all(16.0),
+      height: height,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: 'Close',
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+          Expanded(child: child),
         ],
       ),
     );

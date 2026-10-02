@@ -57,24 +57,24 @@ class GoogleSignInButtonState extends State<GoogleSignInButton> {
   Widget build(BuildContext context) {
     AppLogger.info(
         'GoogleSignInPlatform instance: ${GoogleSignInPlatform.instance.runtimeType}');
-    return Column(
-      children: [
-        // Render Google Sign-In button with custom minimum width and text from the widget properties.
-        SizedBox(
-          child: (GoogleSignInPlatform.instance as web.GoogleSignInPlugin)
-              .renderButton(
-            configuration: web.GSIButtonConfiguration(
-              type: web.GSIButtonType.standard,
-              theme: web.GSIButtonTheme.filledBlue,
-              size: web.GSIButtonSize.large,
-              text: widget.buttonText,
-              shape: web.GSIButtonShape.rectangular,
-              logoAlignment: web.GSIButtonLogoAlignment.left,
-              minimumWidth: widget.minimumWidth,
-            ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: SizedBox(
+        width: widget.minimumWidth,
+        height: 44,
+        child: (GoogleSignInPlatform.instance as web.GoogleSignInPlugin)
+            .renderButton(
+          configuration: web.GSIButtonConfiguration(
+            type: web.GSIButtonType.standard,
+            theme: web.GSIButtonTheme.outline,
+            size: web.GSIButtonSize.large,
+            text: widget.buttonText,
+            shape: web.GSIButtonShape.pill,
+            logoAlignment: web.GSIButtonLogoAlignment.left,
+            minimumWidth: widget.minimumWidth,
           ),
         ),
-      ],
+      ),
     );
   }
 }
