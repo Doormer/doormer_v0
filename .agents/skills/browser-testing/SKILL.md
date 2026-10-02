@@ -58,7 +58,7 @@ Sign up a throwaway account at `/auth/signup`: `agent+<current time in ms>@examp
 ## 6. Known limits
 
 - The camera can't be tested headless.
-- "Choose from gallery" opens a file chooser. Playwright MCP: `browser_file_upload` with absolute `paths`; no `paths` cancels. VS Code: start `page.waitForEvent('filechooser')` before the click, then `setFiles`. A picked photo starts a real solve.
+- "Choose from gallery" opens a file chooser. Playwright MCP: `browser_file_upload` with absolute `paths`; no `paths` cancels. VS Code: `handleDialog` with absolute `selectFiles`; empty cancels. A picked photo starts a real solve.
 - Judge visuals from screenshots only.
 
 ## 7. Finish
