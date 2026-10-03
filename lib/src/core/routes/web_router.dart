@@ -10,7 +10,7 @@ import 'package:doormer/src/features/questions/presentation/pages/question_solut
 import 'package:doormer/src/features/registration/presentation/pages/candidate_registration.dart';
 import 'package:doormer/src/features/registration/presentation/pages/registration_complete_page.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
-import 'package:flutter/material.dart';
+import 'package:doormer/src/shared/widget/not_found_page.dart';
 
 import 'package:go_router/go_router.dart';
 
@@ -68,10 +68,8 @@ class WebRouter {
       ),
     ],
     errorBuilder: (context, state) {
-      AppLogger.warn('Page not found: ${state.fullPath}');
-      return const Scaffold(
-        body: Center(child: Text('Page not found!')),
-      );
+      AppLogger.warn('Page not found: ${state.uri.path}');
+      return NotFoundPage(onGoHome: () => context.go('/'));
     },
   );
 }

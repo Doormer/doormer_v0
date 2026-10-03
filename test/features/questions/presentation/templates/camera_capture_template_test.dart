@@ -38,6 +38,14 @@ void main() {
     expect(find.byKey(const Key('camera_shutter')), findsOneWidget);
   });
 
+  testWidgets('names the shutter action', (tester) async {
+    await tester.pumpWidget(
+      _pump(_params(status: CameraCaptureStatus.starting)),
+    );
+
+    expect(find.byTooltip('Take photo'), findsOneWidget);
+  });
+
   testWidgets('waits while the camera is still coming up', (tester) async {
     await tester.pumpWidget(
       _pump(_params(status: CameraCaptureStatus.starting)),
@@ -57,7 +65,8 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
-  testWidgets('holds the spinner even with a preview in hand, until the camera '
+  testWidgets(
+      'holds the spinner even with a preview in hand, until the camera '
       'says it is ready', (tester) async {
     await tester.pumpWidget(_pump(_params(
       status: CameraCaptureStatus.starting,

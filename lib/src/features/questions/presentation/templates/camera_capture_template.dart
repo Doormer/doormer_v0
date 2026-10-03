@@ -22,6 +22,7 @@ class CameraCaptureTemplate extends StatelessWidget {
       body: Center(child: _body()),
       floatingActionButton: FloatingActionButton(
         key: const Key('camera_shutter'),
+        tooltip: 'Take photo',
         onPressed: params.onCapture,
         child: const Icon(Icons.camera_alt),
       ),
