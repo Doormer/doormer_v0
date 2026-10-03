@@ -9,6 +9,7 @@ import 'package:doormer/src/features/collection/presentation/params/reveal_param
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _card = CollectibleCard(
@@ -121,7 +122,7 @@ void main() {
 
   testWidgets('shows the approved headline for each outcome', (tester) async {
     for (final entry in {
-      DrawResult.newCard: 'A new one',
+      DrawResult.newCard: 'New card!',
       DrawResult.upgrade: 'Now special',
       DrawResult.duplicate: 'Another one',
     }.entries) {
@@ -368,7 +369,7 @@ void main() {
     // No MaterialApp, no Scaffold — if the organism does not bring its own
     // Material, this text cannot render cleanly.
     expect(find.byType(Material), findsWidgets);
-    final text = tester.widget<Text>(find.text('A new one'));
+    final text = tester.widget<Text>(find.text('New card!'));
     expect(text.style?.decoration ?? TextDecoration.none, TextDecoration.none);
   });
 
@@ -383,6 +384,21 @@ void main() {
     )));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(CardRevealOrganism));
+    expect(dismissed, 1);
+  });
+
+  testWidgets('Esc dismisses the reveal', (tester) async {
+    var dismissed = 0;
+    await tester.pumpWidget(_host(CardRevealOrganism(
+      params: RevealParams(
+        supportingLine: '1 of 6 Cinder cards collected',
+        outcome: _outcome(DrawResult.newCard),
+        onDismiss: () => dismissed++,
+      ),
+    )));
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
     expect(dismissed, 1);
   });
 

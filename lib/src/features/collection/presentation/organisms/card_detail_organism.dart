@@ -279,7 +279,8 @@ class _CardDetailOrganismState extends State<CardDetailOrganism>
                             label: 'Rarity',
                             value: _rarityLabel(card.rarity),
                           ),
-                          _Fact(label: 'Deck', value: card.scaleLabel),
+                          _Fact(label: 'Size', value: card.scaleLabel),
+                          _Fact(label: 'Deck', value: params.deckName),
                           SizedBox(height: 16.h),
                           Center(
                             child: AppButtonAtom(

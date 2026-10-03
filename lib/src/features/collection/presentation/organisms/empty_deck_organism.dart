@@ -76,7 +76,7 @@ class EmptyDeckOrganism extends StatelessWidget {
           // The price rides on the label. Disabling the button must not hide
           // what a draw costs — that is the whole reason it stays on screen
           // rather than disappearing when it cannot be afforded.
-          label: 'Draw a card · ${params.drawCost}',
+          label: params.drawLabel,
           expand: true,
           isLoading: params.isDrawing,
           onPressed: params.canAfford ? params.onDraw : null,

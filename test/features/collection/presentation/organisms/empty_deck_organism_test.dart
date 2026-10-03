@@ -15,7 +15,7 @@ EmptyDeckParams _params({
     EmptyDeckParams(
       deckSize: deckSize,
       rarityMix: const {Rarity.common: 3, Rarity.uncommon: 2, Rarity.rare: 1},
-      drawCost: 40,
+      drawLabel: 'Draw a card · 40 quarks',
       canAfford: canAfford,
       quarksShortLabel: '25 more quarks to draw',
       isDrawing: isDrawing,
@@ -97,7 +97,7 @@ void main() {
       params: EmptyDeckParams(
         deckSize: 3,
         rarityMix: const {Rarity.common: 3, Rarity.uncommon: 0, Rarity.rare: 0},
-        drawCost: 40,
+        drawLabel: 'Draw a card · 40 quarks',
         canAfford: true,
         quarksShortLabel: '',
         isDrawing: false,
@@ -117,6 +117,13 @@ void main() {
     ));
     expect(find.textContaining('40'), findsWidgets,
         reason: 'disabling the button must not hide what a draw costs');
+  });
+
+  testWidgets('the draw button names its price in quarks', (tester) async {
+    _pinDesignViewport(tester);
+    await tester.pumpWidget(_host(EmptyDeckOrganism(params: _params())));
+
+    expect(find.text('Draw a card · 40 quarks'), findsOneWidget);
   });
 
   testWidgets('names no ship, hull or fleet', (tester) async {

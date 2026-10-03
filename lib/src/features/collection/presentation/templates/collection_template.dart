@@ -264,7 +264,7 @@ class CollectionTemplate extends StatelessWidget {
         ),
         SizedBox(height: 14.h),
         AppButtonAtom(
-          label: 'Draw a card · ${deck.drawCost}',
+          label: CollectionPresenter.drawLabel(deck.drawCost),
           expand: true,
           isLoading: isDrawing,
           onPressed: canAffordDraw ? onDraw : null,

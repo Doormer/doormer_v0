@@ -129,6 +129,7 @@ class _CollectionViewState extends State<_CollectionView> {
                             holding:
                                 latest.collection?.holdingOf(tapped.card.id) ??
                                     tapped,
+                            deckName: latest.collection?.deck.name ?? '',
                             quarkBalance: latest.quarkBalance,
                             quarkDotKey: _quarkDotKey,
                             isShattering: latest.isShattering,

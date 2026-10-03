@@ -130,7 +130,7 @@ void main() {
     expect(find.byType(CardGridOrganism), findsOneWidget);
     expect(find.byType(DeckListOrganism), findsNothing);
     expect(find.text('1 of 1 held'), findsOneWidget);
-    expect(find.text('Draw a card · 40'), findsOneWidget);
+    expect(find.text('Draw a card · 40 quarks'), findsOneWidget);
   });
 
   testWidgets('a wide window shows the rail and the deck together',
@@ -240,7 +240,8 @@ void main() {
           selectedDeckId: 'meridian',
           collection: _meridian,
         ));
-    expect(find.text('1 more quark to draw'), findsOneWidget);
+    expect(find.text('1 more quark to draw. Answer questions to earn quarks.'),
+        findsOneWidget);
   });
 
   testWidgets('a draw the student cannot afford says how far short they are',
@@ -253,7 +254,9 @@ void main() {
           selectedDeckId: 'meridian',
           collection: _meridian,
         ));
-    expect(find.text('25 more quarks to draw'), findsOneWidget);
+    expect(
+        find.text('25 more quarks to draw. Answer questions to earn quarks.'),
+        findsOneWidget);
     expect(tester.widget<AppButtonAtom>(find.byType(AppButtonAtom)).onPressed,
         isNull);
   });

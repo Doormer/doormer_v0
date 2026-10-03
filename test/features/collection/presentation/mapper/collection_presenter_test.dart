@@ -85,10 +85,16 @@ void main() {
     );
 
     expect(params.deckSize, 2);
-    expect(params.drawCost, 40);
+    expect(params.drawLabel, 'Draw a card · 40 quarks');
     expect(params.canAfford, isFalse);
-    expect(params.quarksShortLabel, '25 more quarks to draw');
+    expect(params.quarksShortLabel,
+        '25 more quarks to draw. Answer questions to earn quarks.');
     expect(params.isDrawing, isFalse);
+  });
+
+  test('the draw button names its price in quarks', () {
+    expect(CollectionPresenter.drawLabel(40), 'Draw a card · 40 quarks');
+    expect(CollectionPresenter.drawLabel(1), 'Draw a card · 1 quark');
   });
 
   test('the quark balance says quark for one, and quarks for any other count',
@@ -98,9 +104,13 @@ void main() {
     expect(CollectionPresenter.quarkBalanceLabel(40), '40 quarks');
   });
 
-  test('one quark short of a draw is said in the singular', () {
-    expect(CollectionPresenter.quarksShortLabel(1), '1 more quark to draw');
-    expect(CollectionPresenter.quarksShortLabel(25), '25 more quarks to draw');
+  test('the shortfall says how to earn more', () {
+    expect(CollectionPresenter.quarksShortLabel(40),
+        '40 more quarks to draw. Answer questions to earn quarks.');
+    expect(CollectionPresenter.quarksShortLabel(1),
+        '1 more quark to draw. Answer questions to earn quarks.');
+    expect(CollectionPresenter.quarksShortLabel(25),
+        '25 more quarks to draw. Answer questions to earn quarks.');
   });
 
   test('the empty deck is told when a draw is in flight', () {
@@ -122,7 +132,7 @@ void main() {
           deckName: 'Meridian',
           collectionAfterDraw: _collectionWithGnomon(standard: 1, special: 0),
         ),
-        'Meridian is 1 of 2',
+        '1 of 2 Meridian cards collected',
       );
     });
 

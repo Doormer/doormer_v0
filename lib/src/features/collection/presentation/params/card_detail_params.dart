@@ -5,6 +5,7 @@ import '../../domain/entity/holding.dart';
 
 class CardDetailParams {
   final Holding holding;
+  final String deckName;
 
   /// The student's quarks. The window doesn't show them: the page's balance
   /// is behind it. A rebuild with a higher balance and one fewer copy is a
@@ -27,6 +28,7 @@ class CardDetailParams {
 
   const CardDetailParams({
     required this.holding,
+    required this.deckName,
     required this.quarkBalance,
     required this.quarkDotKey,
     required this.isShattering,

@@ -26,6 +26,7 @@ import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -463,8 +464,8 @@ void main() {
     await tester.tap(find.textContaining('Draw a card').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 1700));
-    expect(find.text('A new one'), findsOneWidget);
-    expect(find.text('Meridian is 5 of 6'), findsOneWidget);
+    expect(find.text('New card!'), findsOneWidget);
+    expect(find.text('5 of 6 Meridian cards collected'), findsOneWidget);
     await tester.tap(find.byType(CardRevealOrganism));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
@@ -509,6 +510,20 @@ void main() {
 
     expect(find.byType(CardDetailOrganism), findsNothing,
         reason: 'the detail must not be a dead end');
+  });
+
+  testWidgets('Esc closes an open card detail', (tester) async {
+    await _pumpPhone(tester);
+    await _openDeck(tester, 'Meridian');
+
+    await tester.tap(find.byType(CardTileMolecule).first);
+    await tester.pumpAndSettle();
+    expect(find.byType(CardDetailOrganism), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CardDetailOrganism), findsNothing);
   });
 
   testWidgets('shattering a spare pays its quarks, and the window stays open',
