@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:doormer/src/core/routes/popup_route_tracker.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/quest_backdrop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -99,18 +100,19 @@ abstract final class AppLayout {
 /// a 1440x900 laptop scales to about 1.30, not [AppLayout.maxScale]. The
 /// ceiling is only reached when a window is tall enough to spend it.
 ///
-/// One consequence of wrapping the Navigator rather than each page: route-level
-/// modals live in the Navigator's own overlay, so a bottom sheet or dialog is
-/// bounded to the column too - which is what keeps it phone-shaped instead of
-/// stretching a short sheet across a 1440px window - but its scrim is bounded
-/// with it. On a wide window the margins beside the column stay undimmed and do
-/// not accept tap-to-dismiss. Pushing the clamp below the Navigator would fix
-/// the scrim at the cost of full-width modals and a per-screen opt-in that new
-/// screens would forget, so the scrim is the side that gives.
+/// Route-level modals stay bounded to the column, which keeps dialogs and
+/// bottom sheets phone-shaped instead of stretching across a 1440px window.
+/// When [popupRoutes] is provided, the shell still dims the margins to match
+/// the top popup's scrim and closes that popup on a margin tap.
 class ResponsiveAppShell extends StatelessWidget {
   final Widget child;
+  final PopupRouteTracker? popupRoutes;
 
-  const ResponsiveAppShell({super.key, required this.child});
+  const ResponsiveAppShell({
+    super.key,
+    required this.child,
+    this.popupRoutes,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -129,23 +131,73 @@ class ResponsiveAppShell extends StatelessWidget {
     final designSize = Size(window.width / scale, window.height / scale);
 
     return QuestBackdrop(
-      child: Center(
-        child: SizedBox(
-          width: contentWidth,
-          child: ScreenUtilInit(
-            designSize: designSize,
-            // Load-bearing. `splitScreenMode` floors the height at 700px, which
-            // would desynchronise the vertical scale from the clamp on short
-            // windows. `minTextAdapt` is inert either way because
-            // `fontSizeResolver` overrides it - which is why setting that flag
-            // alone had never done anything here.
-            splitScreenMode: false,
-            minTextAdapt: false,
-            fontSizeResolver: FontSizeResolvers.width,
-            builder: (_, __) => MediaQuery(data: contentQuery, child: child),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Center(
+            child: SizedBox(
+              width: contentWidth,
+              child: ScreenUtilInit(
+                designSize: designSize,
+                // Load-bearing. `splitScreenMode` floors the height at 700px,
+                // which would desynchronise the vertical scale from the clamp
+                // on short windows. `minTextAdapt` is inert either way because
+                // `fontSizeResolver` overrides it - which is why setting that
+                // flag alone had never done anything here.
+                splitScreenMode: false,
+                minTextAdapt: false,
+                fontSizeResolver: FontSizeResolvers.width,
+                builder: (_, __) =>
+                    MediaQuery(data: contentQuery, child: child),
+              ),
+            ),
           ),
-        ),
+          if (popupRoutes != null)
+            Positioned.fill(
+              child: _MarginScrim(
+                popupRoutes: popupRoutes!,
+                contentWidth: contentWidth,
+              ),
+            ),
+        ],
       ),
+    );
+  }
+}
+
+class _MarginScrim extends StatelessWidget {
+  final PopupRouteTracker popupRoutes;
+  final double contentWidth;
+
+  const _MarginScrim({required this.popupRoutes, required this.contentWidth});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: popupRoutes,
+      builder: (context, _) {
+        final open = popupRoutes.hasOpenPopup;
+        Widget margin() => Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: popupRoutes.dismissTop,
+                child: ColoredBox(color: popupRoutes.barrierColor),
+              ),
+            );
+        return IgnorePointer(
+          ignoring: !open,
+          child: ExcludeSemantics(
+            child: AnimatedOpacity(
+              opacity: open ? 1 : 0,
+              duration: const Duration(milliseconds: 200),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [margin(), SizedBox(width: contentWidth), margin()],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

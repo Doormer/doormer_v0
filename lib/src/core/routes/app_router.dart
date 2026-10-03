@@ -1,3 +1,4 @@
+import 'package:doormer/src/core/routes/popup_route_tracker.dart';
 import 'package:go_router/go_router.dart';
 import 'web_router.dart';
 
@@ -11,4 +12,6 @@ and delegates the routing setup accordingly.
 
 class AppRouter {
   static GoRouter get router => WebRouter.router;
+
+  static PopupRouteTracker get popupRoutes => WebRouter.popupRoutes;
 }

@@ -1,4 +1,5 @@
 import 'package:doormer/src/core/di/service_locator.dart';
+import 'package:doormer/src/core/routes/popup_route_tracker.dart';
 import 'package:doormer/src/core/routes/route_guard.dart';
 import 'package:doormer/src/core/utils/token_storage/token_storage.dart';
 import 'package:doormer/src/features/auth/presentation/pages/login_page.dart';
@@ -20,6 +21,8 @@ WebRouter defines the routing structure and logic specifically for the web platf
 */
 
 class WebRouter {
+  static final PopupRouteTracker popupRoutes = PopupRouteTracker();
+
   static final GoRouter router = GoRouter(
     initialLocation: '/auth',
     redirect: (context, state) async {
@@ -29,6 +32,7 @@ class WebRouter {
         isSignedIn: token != null && token.isNotEmpty,
       );
     },
+    observers: [popupRoutes],
     routes: [
       // Authentication Routes (Only for users NOT logged in)
       GoRoute(

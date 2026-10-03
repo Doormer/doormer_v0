@@ -4,6 +4,7 @@
 // 1440px-wide window rendered 14px body text at 56px and 16px gutters at 64px,
 // while corner radii grew only 1.3x. The numbers below are the contract.
 import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
+import 'package:doormer/src/core/routes/popup_route_tracker.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/quest_backdrop.dart';
 import 'package:flutter/material.dart';
@@ -169,5 +170,101 @@ void main() {
             'margins unpainted, which is the letterboxing this replaced',
       );
     });
+
+    testWidgets('a tap beside the column closes an open dialog',
+        (tester) async {
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final tracker = PopupRouteTracker();
+
+      await tester.pumpWidget(MaterialApp(
+        navigatorObservers: [tracker],
+        builder: (context, child) =>
+            ResponsiveAppShell(popupRoutes: tracker, child: child!),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showDialog<void>(
+                  context: context, builder: (_) => const Text('hi')),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ));
+
+      // Before anything is open, the margin is inert.
+      await tester.tapAt(const Offset(40, 450));
+      await tester.pump();
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      expect(find.text('hi'), findsOneWidget);
+
+      await tester.tapAt(const Offset(40, 450));
+      await tester.pumpAndSettle();
+      expect(find.text('hi'), findsNothing);
+    });
+
+    testWidgets('opening a popup keeps the column state mounted',
+        (tester) async {
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final tracker = PopupRouteTracker();
+
+      await tester.pumpWidget(MaterialApp(
+        navigatorObservers: [tracker],
+        builder: (context, child) =>
+            ResponsiveAppShell(popupRoutes: tracker, child: child!),
+        home: const _StatefulDialogLauncher(),
+      ));
+
+      await tester.tap(find.text('increment'));
+      await tester.pump();
+      expect(find.text('count 1'), findsOneWidget);
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('dialog'), findsOneWidget);
+      expect(find.text('count 1'), findsOneWidget);
+    });
   });
+}
+
+class _StatefulDialogLauncher extends StatefulWidget {
+  const _StatefulDialogLauncher();
+
+  @override
+  State<_StatefulDialogLauncher> createState() =>
+      _StatefulDialogLauncherState();
+}
+
+class _StatefulDialogLauncherState extends State<_StatefulDialogLauncher> {
+  int _count = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(
+        children: [
+          Text('count $_count'),
+          TextButton(
+            onPressed: () => setState(() => _count++),
+            child: const Text('increment'),
+          ),
+          TextButton(
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (_) => const Text('dialog'),
+            ),
+            child: const Text('open'),
+          ),
+        ],
+      ),
+    );
+  }
 }
