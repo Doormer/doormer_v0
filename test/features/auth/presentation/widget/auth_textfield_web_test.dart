@@ -84,13 +84,42 @@ void main() {
 
   testWidgets('an error clears as soon as the field is edited', (tester) async {
     final formKey = GlobalKey<FormState>();
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
+
+    addTearDown(emailController.dispose);
+    addTearDown(passwordController.dispose);
+
     await tester.pumpWidget(_pump(
       Form(
         key: formKey,
-        child: AuthTextField(
-          label: 'Email',
-          controller: TextEditingController(),
-          validator: (v) => (v ?? '').contains('@') ? null : 'Enter an email',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AuthTextField(
+              label: 'Email',
+              controller: emailController,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Email is required';
+                }
+                if (!value.contains('@')) {
+                  return 'Enter a valid email address';
+                }
+                return null;
+              },
+            ),
+            AuthTextField(
+              label: 'Password',
+              controller: passwordController,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Password is required';
+                }
+                return null;
+              },
+            ),
+          ],
         ),
       ),
       theme: AppTheme.light,
@@ -98,11 +127,19 @@ void main() {
 
     formKey.currentState!.validate();
     await tester.pump();
-    expect(find.text('Enter an email'), findsOneWidget);
+    expect(find.text('Email is required'), findsOneWidget);
+    expect(find.text('Password is required'), findsOneWidget);
 
-    await tester.enterText(find.byType(TextFormField), 'a@b.co');
+    await tester.enterText(find.byType(TextFormField).first, 'a');
     await tester.pump();
-    expect(find.text('Enter an email'), findsNothing);
+    expect(find.text('Email is required'), findsNothing);
+    expect(find.text('Enter a valid email address'), findsNothing);
+    expect(find.text('Password is required'), findsOneWidget);
+
+    formKey.currentState!.validate();
+    await tester.pump();
+    expect(find.text('Enter a valid email address'), findsOneWidget);
+    expect(find.text('Password is required'), findsOneWidget);
   });
 
   testWidgets('the field is named for screen readers', (tester) async {

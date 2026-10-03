@@ -32,10 +32,17 @@ class AuthTextField extends StatefulWidget {
 }
 
 class _AuthTextFieldState extends State<AuthTextField> {
+  final _fieldKey = GlobalKey<FormFieldState<String>>();
   bool _obscured = true;
   bool _hasError = false;
+  bool _isClearingErrorOnEdit = false;
 
   String? _validate(String? value) {
+    if (_isClearingErrorOnEdit) {
+      _updateErrorModeAfterBuild(false);
+      return null;
+    }
+
     final error = widget.validator?.call(value);
     _updateErrorModeAfterBuild(error != null);
     return error;
@@ -55,8 +62,18 @@ class _AuthTextFieldState extends State<AuthTextField> {
   }
 
   void _handleChanged(String value) {
-    if (_hasError) {
-      setState(() {});
+    if (!_hasError) {
+      return;
+    }
+
+    _isClearingErrorOnEdit = true;
+    _fieldKey.currentState?.validate();
+    _isClearingErrorOnEdit = false;
+
+    if (mounted && _hasError) {
+      setState(() {
+        _hasError = false;
+      });
     }
   }
 
@@ -67,6 +84,7 @@ class _AuthTextFieldState extends State<AuthTextField> {
     return Semantics(
       label: widget.label,
       child: TextFormField(
+        key: _fieldKey,
         controller: widget.controller,
         focusNode: widget.focusNode,
         keyboardType: widget.keyboardType,
@@ -74,9 +92,7 @@ class _AuthTextFieldState extends State<AuthTextField> {
         autofillHints: widget.autofillHints,
         onFieldSubmitted: widget.onSubmitted,
         onChanged: _handleChanged,
-        autovalidateMode: _hasError
-            ? AutovalidateMode.onUserInteraction
-            : AutovalidateMode.disabled,
+        autovalidateMode: AutovalidateMode.disabled,
         obscureText: widget.isPassword && _obscured,
         cursorColor: colorScheme.primary,
         style: textTheme.bodyMedium,
