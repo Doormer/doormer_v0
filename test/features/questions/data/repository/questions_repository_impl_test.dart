@@ -16,6 +16,7 @@ class _FakeQuestionsRemoteDataSource implements QuestionsRemoteDataSource {
   String? contentType;
   String? idempotencyKey;
   String? revealedQuestionId;
+  String? loadedQuestionId;
   int balanceCalls = 0;
 
   @override
@@ -38,6 +39,25 @@ class _FakeQuestionsRemoteDataSource implements QuestionsRemoteDataSource {
   Future<AnswerRewardModel> revealAnswer(String questionId) async {
     revealedQuestionId = questionId;
     return const AnswerRewardModel(quarksEarned: 3, quarkBalance: 131);
+  }
+
+  @override
+  Future<PhotoQuestionResponseModel> loadQuestion(String questionId) async {
+    loadedQuestionId = questionId;
+    return PhotoQuestionResponseModel.fromJson({
+      'status': 'solved',
+      'question_id': questionId,
+      'note': 'The width is derived.',
+      'topic': 'Geometry - Area',
+      'method': 'Trigonometry and parallelogram area',
+      'solution': {
+        'schema_version': '3.0',
+        'steps': [
+          {'title': 'Find the width', 'body': []},
+        ],
+        'final_answer': {'body': []},
+      },
+    });
   }
 
   @override
@@ -99,6 +119,24 @@ void main() {
 
     expect(local.callCount, 1);
     expect(outcome.questionId, 'sample');
+  });
+
+  test('loadQuestion delegates to the remote datasource and maps the outcome',
+      () async {
+    final remote = _FakeQuestionsRemoteDataSource();
+    final repository = QuestionsRepositoryImpl(
+      remoteDataSource: remote,
+      localDataSource: _FakeQuestionsLocalDataSource(),
+    );
+
+    final outcome = await repository.loadQuestion('57');
+
+    expect(remote.loadedQuestionId, '57');
+    expect(outcome.questionId, '57');
+    expect(outcome.note, 'The width is derived.');
+    expect(outcome.topic, 'Geometry - Area');
+    expect(outcome.method, 'Trigonometry and parallelogram area');
+    expect(outcome.solution, isNotNull);
   });
 
   test('revealAnswer delegates to the remote datasource and maps the reward',

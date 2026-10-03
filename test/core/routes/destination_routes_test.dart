@@ -15,6 +15,7 @@ import 'package:doormer/src/features/collection/presentation/bloc/collection_blo
 import 'package:doormer/src/features/collection/presentation/pages/collection_page.dart';
 import 'package:doormer/src/features/profile/domain/usecase/sign_out_usecase.dart';
 import 'package:doormer/src/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
@@ -27,6 +28,10 @@ import 'package:go_router/go_router.dart';
 
 /// Never asked anything: the Solve page only opens here.
 class _UnusedQuestionsRepository implements QuestionsRepository {
+  @override
+  Future<PhotoQuestionSolveOutcome> loadQuestion(String questionId) =>
+      throw UnimplementedError();
+
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw UnimplementedError('${invocation.memberName}');

@@ -3,27 +3,35 @@ import 'dart:typed_data';
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
-import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_question_usecase.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeRepository implements QuestionsRepository {
   String? questionId;
 
   @override
-  Future<AnswerReward> revealAnswer(String questionId) async {
+  Future<PhotoQuestionSolveOutcome> loadQuestion(String questionId) async {
     this.questionId = questionId;
-    return const AnswerReward(quarksEarned: 3, quarkBalance: 131);
+    return const PhotoQuestionSolveOutcome(
+      status: PhotoQuestionSolveStatus.solved,
+      questionId: '57',
+      solution: SolutionDocument(
+        schemaVersion: '3.0',
+        steps: [SolutionStep(title: 'Step 1', body: [])],
+        finalAnswer: FinalAnswer(body: []),
+      ),
+    );
   }
-
-  @override
-  Future<int> loadQuarkBalance() => throw UnimplementedError();
 
   @override
   Future<PhotoQuestionSolveOutcome> loadSampleSolution() =>
       throw UnimplementedError();
 
   @override
-  Future<PhotoQuestionSolveOutcome> loadQuestion(String questionId) =>
+  Future<int> loadQuarkBalance() => throw UnimplementedError();
+
+  @override
+  Future<AnswerReward> revealAnswer(String questionId) =>
       throw UnimplementedError();
 
   @override
@@ -37,12 +45,12 @@ class _FakeRepository implements QuestionsRepository {
 void main() {
   test('delegates to the repository', () async {
     final repository = _FakeRepository();
-    final useCase = RevealAnswerUseCase(repository);
+    final useCase = LoadQuestionUseCase(repository);
 
-    final reward = await useCase('123');
+    final outcome = await useCase('57');
 
-    expect(repository.questionId, '123');
-    expect(reward.quarksEarned, 3);
-    expect(reward.quarkBalance, 131);
+    expect(repository.questionId, '57');
+    expect(outcome.questionId, '57');
+    expect(outcome.solution, isNotNull);
   });
 }

@@ -24,6 +24,10 @@ class _FakeRepository implements QuestionsRepository {
       throw UnimplementedError();
 
   @override
+  Future<PhotoQuestionSolveOutcome> loadQuestion(String questionId) =>
+      throw UnimplementedError();
+
+  @override
   Future<PhotoQuestionSolveOutcome> submitPhotoQuestion({
     required Uint8List imageBytes,
     required String contentType,

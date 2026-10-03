@@ -97,6 +97,45 @@ void main() {
     });
   });
 
+  group('loadQuestion', () {
+    test('posts the question id and reads the solved outcome', () async {
+      final adapter = _FakeAdapter(body: {
+        'status': 'solved',
+        'question_id': '57',
+        'note': 'The width is derived.',
+        'topic': 'Geometry - Area',
+        'method': 'Trigonometry and parallelogram area',
+        'solution': {
+          'schema_version': '3.0',
+          'steps': [
+            {
+              'title': 'Find the width',
+              'body': [
+                {'type': 'text', 'value': 'Use the angle.'},
+              ],
+            },
+          ],
+          'final_answer': {
+            'body': [
+              {'type': 'math', 'latex': r'160', 'alt': '160'},
+            ],
+          },
+        },
+      });
+
+      final reply = await _dataSource(adapter).loadQuestion('57');
+
+      expect(adapter.request!.method, 'POST');
+      expect(adapter.request!.path, '/v1/questions/solution');
+      expect(adapter.request!.data, {'question_id': '57'});
+      expect(reply.questionId, '57');
+      expect(reply.note, 'The width is derived.');
+      expect(reply.topic, 'Geometry - Area');
+      expect(reply.method, 'Trigonometry and parallelogram area');
+      expect(reply.solution!.steps.single.title, 'Find the width');
+    });
+  });
+
   group('failures carry the collection-style messages', () {
     test('a timeout or no connection', () async {
       for (final type in [

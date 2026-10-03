@@ -15,6 +15,8 @@ abstract class QuestionsRemoteDataSource {
     required String idempotencyKey,
   });
 
+  Future<PhotoQuestionResponseModel> loadQuestion(String questionId);
+
   Future<AnswerRewardModel> revealAnswer(String questionId);
 
   Future<QuarkBalanceModel> loadQuarkBalance();
@@ -72,6 +74,13 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
       throw ServerFailure('We could not read the solver response. Try again.');
     }
   }
+
+  @override
+  Future<PhotoQuestionResponseModel> loadQuestion(String questionId) => _post(
+        '/v1/questions/solution',
+        {'question_id': questionId},
+        PhotoQuestionResponseModel.fromJson,
+      );
 
   @override
   Future<AnswerRewardModel> revealAnswer(String questionId) => _post(

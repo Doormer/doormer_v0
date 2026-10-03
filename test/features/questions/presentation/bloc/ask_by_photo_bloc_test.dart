@@ -44,6 +44,11 @@ class _FakeQuestionsRepository implements QuestionsRepository {
   }
 
   @override
+  Future<PhotoQuestionSolveOutcome> loadQuestion(String questionId) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<int> loadQuarkBalance() {
     throw UnimplementedError();
   }
