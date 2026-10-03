@@ -8,6 +8,7 @@ import 'package:doormer/src/features/questions/utils/photo/heic_detection.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_preparer.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_scaling.dart';
 import 'package:doormer/src/features/questions/utils/photo/picked_photo_file.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:web/web.dart' as web;
 
 /// High enough that letter edges stay crisp for the solver.
@@ -17,10 +18,16 @@ const double _jpegQuality = 0.92;
 const String _heicConverterPath = 'vendor/heic-to/heic-to.js';
 
 class WebPhotoPreparer implements PhotoPreparer {
-  WebPhotoPreparer({String? heicConverterUrl})
-      : _heicConverterUrl = heicConverterUrl;
+  WebPhotoPreparer({
+    String? heicConverterUrl,
+    @visibleForTesting
+    FutureOr<Uint8List> Function(web.HTMLCanvasElement canvas)? encodeJpeg,
+  })  : _heicConverterUrl = heicConverterUrl,
+        _encodeJpegOverride = encodeJpeg;
 
   final String? _heicConverterUrl;
+  final FutureOr<Uint8List> Function(web.HTMLCanvasElement canvas)?
+      _encodeJpegOverride;
 
   /// Loaded on first need and kept; reset after a failed load so the next
   /// HEIC photo can try again.
@@ -36,6 +43,15 @@ class WebPhotoPreparer implements PhotoPreparer {
     final bitmap = await _decode(blob, file);
     try {
       return await _scaleAndEncode(bitmap, preparedFileNameFor(file.name));
+    } on Failure {
+      rethrow;
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'Photo could not be prepared',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      throw ValidationFailure(photoUnreadableMessage);
     } finally {
       bitmap.close();
     }
@@ -128,26 +144,40 @@ class WebPhotoPreparer implements PhotoPreparer {
   ) async {
     web.CanvasImageSource source = bitmap;
     web.HTMLCanvasElement? canvas;
-    for (final step in scalingSteps(PhotoSize(bitmap.width, bitmap.height))) {
-      final next = web.HTMLCanvasElement()
-        ..width = step.width
-        ..height = step.height;
-      final context = next.getContext('2d')! as web.CanvasRenderingContext2D;
-      context
-        ..imageSmoothingEnabled = true
-        ..imageSmoothingQuality = 'high'
-        ..fillStyle = '#ffffff'.toJS
-        ..fillRect(0, 0, step.width, step.height)
-        ..drawImage(source, 0, 0, step.width, step.height);
-      if (canvas != null) _release(canvas);
-      canvas = next;
-      source = next;
+    var didFinishScaling = false;
+    try {
+      for (final step in scalingSteps(PhotoSize(bitmap.width, bitmap.height))) {
+        final next = web.HTMLCanvasElement();
+        var didDraw = false;
+        try {
+          next
+            ..width = step.width
+            ..height = step.height;
+          final context =
+              next.getContext('2d')! as web.CanvasRenderingContext2D;
+          context
+            ..imageSmoothingEnabled = true
+            ..imageSmoothingQuality = 'high'
+            ..fillStyle = '#ffffff'.toJS
+            ..fillRect(0, 0, step.width, step.height)
+            ..drawImage(source, 0, 0, step.width, step.height);
+          didDraw = true;
+        } finally {
+          if (!didDraw) _release(next);
+        }
+        if (canvas != null) _release(canvas);
+        canvas = next;
+        source = next;
+      }
+      didFinishScaling = true;
+    } finally {
+      if (!didFinishScaling && canvas != null) _release(canvas);
     }
 
     final last = canvas!;
     try {
       return PreparedPhoto(
-        bytes: await _encodeJpeg(last),
+        bytes: await _encodeJpegWithOverride(last),
         fileName: fileName,
         width: last.width,
         height: last.height,
@@ -155,6 +185,14 @@ class WebPhotoPreparer implements PhotoPreparer {
     } finally {
       _release(last);
     }
+  }
+
+  Future<Uint8List> _encodeJpegWithOverride(
+    web.HTMLCanvasElement canvas,
+  ) async {
+    final encodeJpeg = _encodeJpegOverride;
+    if (encodeJpeg != null) return await encodeJpeg(canvas);
+    return _encodeJpeg(canvas);
   }
 
   Future<Uint8List> _encodeJpeg(web.HTMLCanvasElement canvas) async {

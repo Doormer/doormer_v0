@@ -168,6 +168,38 @@ void main() {
   );
 
   test(
+    'reports scale and encode browser failures as an unreadable photo',
+    () async {
+      final bytes = await _canvasImage(800, 600, 'image/png');
+      web.HTMLCanvasElement? encodedCanvas;
+
+      await expectLater(
+        WebPhotoPreparer(
+          encodeJpeg: (canvas) {
+            encodedCanvas = canvas;
+            throw StateError('canvas failed');
+          },
+        ).prepare(
+          PickedPhotoFile(
+            bytes: bytes,
+            name: 'notes.png',
+            mimeType: 'image/png',
+          ),
+        ),
+        throwsA(
+          isA<ValidationFailure>().having(
+            (f) => f.message,
+            'message',
+            photoUnreadableMessage,
+          ),
+        ),
+      );
+      expect(encodedCanvas?.width, 0);
+      expect(encodedCanvas?.height, 0);
+    },
+  );
+
+  test(
     'says the HEIC converter is unavailable when it cannot be loaded',
     () async {
       final heicHeader = Uint8List.fromList([
