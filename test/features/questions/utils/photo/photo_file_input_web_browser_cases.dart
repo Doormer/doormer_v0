@@ -36,10 +36,19 @@ void main() {
 
   test('a new pick replaces a chooser that never reported back', () async {
     final input = WebPhotoFileInput();
-    input.pick(fromCamera: false).ignore();
+    final first = input.pick(fromCamera: false);
+    final firstInput = _fileInput()!;
     final second = input.pick(fromCamera: false);
 
     expect(web.document.querySelectorAll('input[type=file]').length, 1);
+    await expectLater(
+      first.timeout(const Duration(seconds: 1)),
+      completion(isNull),
+    );
+    expect(
+        () => firstInput.dispatchEvent(web.Event('cancel')), returnsNormally);
+    expect(
+        () => firstInput.dispatchEvent(web.Event('change')), returnsNormally);
 
     _fileInput()!.dispatchEvent(web.Event('cancel'));
     expect(await second, isNull);
