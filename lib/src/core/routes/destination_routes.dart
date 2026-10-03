@@ -1,9 +1,10 @@
 import 'package:doormer/src/features/collection/presentation/pages/collection_page.dart';
+import 'package:doormer/src/features/profile/presentation/pages/profile_page.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
 import 'package:go_router/go_router.dart';
 
 /// The routes of the pages on the nav bar, one per destination that has a
-/// page so far.
+/// page so far: Solve, Cards, and Profile.
 ///
 /// They're tabs, so they swap in place with no page transition. The default
 /// one slid the whole page in, bar and all, and two bars crossed mid-switch.
@@ -23,6 +24,13 @@ final List<GoRoute> destinationRoutes = [
     pageBuilder: (context, state) => NoTransitionPage(
       key: state.pageKey,
       child: const CollectionPage(),
+    ),
+  ),
+  GoRoute(
+    path: '/profile',
+    pageBuilder: (context, state) => NoTransitionPage(
+      key: state.pageKey,
+      child: const ProfilePage(),
     ),
   ),
 ];

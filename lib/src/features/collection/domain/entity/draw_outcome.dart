@@ -13,7 +13,7 @@ import 'collectible_card.dart';
 /// `duplicate` is the engine's word for the third case and must never reach a
 /// student — it is clinical, and it names the thing as redundant.
 enum DrawResult {
-  newCard('A new one'),
+  newCard('New card!'),
   upgrade('Now special'),
   duplicate('Another one');
 

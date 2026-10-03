@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/services/sessions/session_service.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/auth/data/datasource/auth_remote_datasource.dart';
+import 'package:doormer/src/features/auth/domain/auth_messages.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -76,6 +78,46 @@ void main() {
     await _dataSource(adapter).login('ana@example.test', 'secret');
 
     expect(adapter.paths, ['/v1/login']);
+  });
+
+  test('a wrong password reads as wrong email or password', () async {
+    final adapter = _FakeAdapter([(400, 'wrong email or password')]);
+
+    await expectLater(
+      _dataSource(adapter).login('ana@example.test', 'nope'),
+      throwsA(isA<AuthFailure>()
+          .having((f) => f.message, 'message', AuthMessages.wrongCredentials)),
+    );
+  });
+
+  test('an unknown email reads as wrong email or password', () async {
+    final adapter = _FakeAdapter([(400, 'user not found')]);
+
+    await expectLater(
+      _dataSource(adapter).login('nobody@example.test', 'nope'),
+      throwsA(isA<AuthFailure>()
+          .having((f) => f.message, 'message', AuthMessages.wrongCredentials)),
+    );
+  });
+
+  test('any other login failure keeps the generic message', () async {
+    final adapter = _FakeAdapter([(500, 'database down')]);
+
+    await expectLater(
+      _dataSource(adapter).login('ana@example.test', 'secret'),
+      throwsA(isA<ServerFailure>()
+          .having((f) => f.message, 'message', isNot(contains('database')))),
+    );
+  });
+
+  test('signing up with a taken email says so', () async {
+    final adapter = _FakeAdapter([(400, 'user is already registered')]);
+
+    await expectLater(
+      _dataSource(adapter).signup('ana@example.test', 'secret'),
+      throwsA(isA<ValidationFailure>()
+          .having((f) => f.message, 'message', AuthMessages.emailTaken)),
+    );
   });
 
   test('signs up with Google at /v1/signup', () async {

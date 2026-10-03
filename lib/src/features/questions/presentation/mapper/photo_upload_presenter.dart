@@ -22,7 +22,7 @@ PhotoUploadCopy photoUploadCopyFor({
   required bool isRetry,
 }) {
   return PhotoUploadCopy(
-    pickLabel: hasPhoto ? 'Retake' : 'Choose photo',
+    pickLabel: hasPhoto ? 'Change photo' : 'Choose photo',
     submitLabel: isRetry ? 'Try again' : 'Submit to solver',
   );
 }

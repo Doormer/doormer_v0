@@ -10,7 +10,8 @@ class CustomToast {
   /// [message]: The message text displayed inside the toast.
   /// [type]: The [ToastificationType] of the toast (e.g., success, error, info, warning).
   /// [alignment]: The screen alignment for the toast (default is [Alignment.bottomCenter]).
-  /// [autoCloseDuration]: The duration the toast remains visible before closing (default is 2 seconds).
+  /// [autoCloseDuration]: The duration the toast remains visible before
+  /// closing. Defaults to 4 seconds for errors and 2 seconds for other toasts.
   /// [style]: The toast style (default is [ToastificationStyle.flat]).
   /// [showProgressBar]: Whether a progress bar is displayed (default is false).
   static void show(
@@ -18,18 +19,23 @@ class CustomToast {
     required String message,
     required ToastificationType type,
     Alignment alignment = Alignment.bottomCenter,
-    Duration autoCloseDuration = const Duration(seconds: 2),
+    Duration? autoCloseDuration,
     ToastificationStyle style = ToastificationStyle.minimal,
     bool showProgressBar = false,
   }) {
     toastification.show(
       context: context,
-      title: message,
-      autoCloseDuration: autoCloseDuration,
+      title: Text(message),
+      autoCloseDuration: autoCloseDuration ?? defaultDurationFor(type),
       type: type,
       style: style,
       alignment: alignment,
       showProgressBar: showProgressBar,
     );
   }
+
+  static Duration defaultDurationFor(ToastificationType type) =>
+      type == ToastificationType.error
+          ? const Duration(seconds: 4)
+          : const Duration(seconds: 2);
 }

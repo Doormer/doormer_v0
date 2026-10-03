@@ -81,9 +81,7 @@ class CollectionTemplate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isWide = MediaQuery.sizeOf(context).width >= railBreakpoint;
-
     return Scaffold(
-      backgroundColor: background,
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.all(14.w),
@@ -93,14 +91,6 @@ class CollectionTemplate extends StatelessWidget {
       bottomNavigationBar: navigationBar(navigationBarParams),
     );
   }
-
-  /// The colour every collection screen paints behind it: loading, error and
-  /// the decks alike.
-  ///
-  /// The app paints a purple backdrop behind every page; the collection covers
-  /// it. A screen that let it show through flashed purple before the decks
-  /// arrived.
-  static const Color background = QuestPalette.night;
 
   /// The bar as every collection screen places it: at the foot of the
   /// Scaffold, which lays the body out above it, with home's margins.
@@ -128,18 +118,36 @@ class CollectionTemplate extends StatelessWidget {
   }
 
   Widget _wide(BuildContext context) {
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: railWidth.w,
-          child: SingleChildScrollView(child: _deckList(isRail: true)),
-        ),
-        SizedBox(width: 20.w),
+        _header(context, useKeyedBalance: true),
+        SizedBox(height: 12.h),
         Expanded(
-          child: selectedDeckId == null
-              ? const SizedBox.shrink()
-              : _deckBody(context, isWide: true),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: railWidth.w,
+                child: SingleChildScrollView(child: _deckList(isRail: true)),
+              ),
+              SizedBox(width: 20.w),
+              Expanded(
+                child: selectedDeckId == null
+                    ? Center(
+                        child: Text(
+                          'Pick a deck to see its cards.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 15.sp,
+                            color: QuestPalette.dim,
+                          ),
+                        ),
+                      )
+                    : _deckBody(context, isWide: true),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -150,20 +158,7 @@ class CollectionTemplate extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Text(
-                  '${decks.length} ${decks.length == 1 ? 'deck' : 'decks'}',
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 11.5.sp, color: QuestPalette.dim),
-                ),
-              ),
-              SizedBox(width: 10.w),
-              Flexible(child: QuarkBalanceAtom(quarkBalance: quarkBalance)),
-            ],
-          ),
+          _header(context),
           SizedBox(height: 12.h),
           Expanded(
             child: SingleChildScrollView(child: _deckList(isRail: false)),
@@ -172,6 +167,30 @@ class CollectionTemplate extends StatelessWidget {
       );
     }
     return _deckBody(context, showBack: true);
+  }
+
+  Widget _header(BuildContext context, {bool useKeyedBalance = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Flexible(
+          child: Text(
+            '${decks.length} ${decks.length == 1 ? 'deck' : 'decks'}',
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 11.5.sp, color: QuestPalette.dim),
+          ),
+        ),
+        SizedBox(width: 10.w),
+        Flexible(
+          child: useKeyedBalance
+              ? QuarkBalanceMolecule(
+                  quarkBalance: quarkBalance,
+                  dotKey: quarkDotKey,
+                )
+              : QuarkBalanceAtom(quarkBalance: quarkBalance),
+        ),
+      ],
+    );
   }
 
   Widget _deckBody(
@@ -227,13 +246,15 @@ class CollectionTemplate extends StatelessWidget {
                 style: TextStyle(fontSize: 11.5.sp, color: QuestPalette.dim),
               ),
             ),
-            SizedBox(width: 10.w),
-            Flexible(
-              child: QuarkBalanceMolecule(
-                quarkBalance: quarkBalance,
-                dotKey: quarkDotKey,
+            if (!isWide) ...[
+              SizedBox(width: 10.w),
+              Flexible(
+                child: QuarkBalanceMolecule(
+                  quarkBalance: quarkBalance,
+                  dotKey: quarkDotKey,
+                ),
               ),
-            ),
+            ],
           ],
         ),
         SizedBox(height: 14.h),
@@ -252,7 +273,7 @@ class CollectionTemplate extends StatelessWidget {
         ),
         SizedBox(height: 14.h),
         AppButtonAtom(
-          label: 'Draw a card · ${deck.drawCost}',
+          label: CollectionPresenter.drawLabel(deck.drawCost),
           expand: true,
           isLoading: isDrawing,
           onPressed: canAffordDraw ? onDraw : null,

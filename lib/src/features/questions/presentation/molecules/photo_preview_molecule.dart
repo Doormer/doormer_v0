@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/viewfinder_corners_atom.dart';
+import 'package:doormer/src/features/questions/utils/image_readability.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -30,7 +31,20 @@ class PhotoPreviewMolecule extends StatelessWidget {
             if (bytes == null)
               _buildEmptyHint(context)
             else
-              Image.memory(bytes, fit: BoxFit.cover),
+              Image.memory(
+                bytes,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16.w),
+                    child: Text(
+                      unreadableImageMessage,
+                      textAlign: TextAlign.center,
+                      style: context.textTheme.bodyMedium,
+                    ),
+                  ),
+                ),
+              ),
             const ViewfinderCornersAtom(),
           ],
         ),

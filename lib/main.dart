@@ -61,6 +61,7 @@ class MyApp extends StatelessWidget {
           // shares one column and one UI scale. This is also what sets up
           // ScreenUtil, so nothing above it may use `.w`/`.sp`/`.h`.
           builder: (context, child) => ResponsiveAppShell(
+            popupRoutes: AppRouter.popupRoutes,
             child: child ?? const SizedBox.shrink(),
           ),
         ),

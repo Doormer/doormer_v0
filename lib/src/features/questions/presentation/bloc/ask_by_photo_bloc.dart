@@ -64,6 +64,11 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
     } on Failure catch (f, stackTrace) {
       emit(AskByPhotoNetworkError(
         f.message,
+        cause: switch (f) {
+          NetworkFailure() => SolveErrorCause.network,
+          ServerFailure() => SolveErrorCause.server,
+          _ => SolveErrorCause.unknown,
+        },
         imageBytes: selected.imageBytes,
         fileName: selected.fileName,
         mimeType: selected.mimeType,
@@ -73,6 +78,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
     } catch (e, stackTrace) {
       emit(AskByPhotoNetworkError(
         'An unexpected error occurred',
+        cause: SolveErrorCause.unknown,
         imageBytes: selected.imageBytes,
         fileName: selected.fileName,
         mimeType: selected.mimeType,

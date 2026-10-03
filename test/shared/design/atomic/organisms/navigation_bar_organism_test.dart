@@ -43,7 +43,7 @@ void main() {
     );
   }
 
-  testWidgets('keeps sections selected while Solve remains an action',
+  testWidgets('a tap lights nothing by itself; the current page stays lit',
       (tester) async {
     final tapped = <String>[];
 
@@ -59,13 +59,13 @@ void main() {
     await tester.pump();
     expect(
         tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
-        1);
+        0);
 
     await tester.tap(find.byIcon(Icons.document_scanner_outlined));
     await tester.pump();
     expect(
         tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
-        1);
+        0);
     expect(tapped, ['tutor', 'solve']);
   });
 
@@ -123,12 +123,10 @@ void main() {
     }
   });
 
-  // Sizes the dock itself rather than the window: what decides whether the
-  // names show is the room the dock is given, and the page it lives on keeps a
-  // margin either side. Testing it by window width measures the wrong number
-  // and reports a pass for a width the app never hands over -- which is how the
-  // labels came to be unreachable in the first place. That the app does give it
-  // the room lives in the template's tests, where the margins are real.
+  // Sizes the dock itself rather than the window: the page it lives on keeps a
+  // margin either side, so the dock's own width is what decides its wide shape
+  // and icon scale. That the app gives it the expected room lives in template
+  // tests, where the margins are real.
   Future<void> pumpDockOfWidth(WidgetTester tester, double width) async {
     tester.view.physicalSize = const Size(1400, 900);
     tester.view.devicePixelRatio = 1;
@@ -164,14 +162,10 @@ void main() {
     await tester.pump();
   }
 
-  const destinations = 5;
+  const wideDockWidth = 520.0;
 
-  testWidgets('names its destinations once each one has room to be named',
-      (tester) async {
-    await pumpDockOfWidth(
-      tester,
-      NavigationBarOrganism.labelRoom * destinations,
-    );
+  testWidgets('names its destinations on wide docks', (tester) async {
+    await pumpDockOfWidth(tester, wideDockWidth);
 
     final navigationBar =
         tester.widget<NavigationBar>(find.byType(NavigationBar));
@@ -191,9 +185,20 @@ void main() {
 
   testWidgets('drops the hover tooltip once the name is on screen',
       (tester) async {
-    await pumpDockOfWidth(
+    await pumpDockOfWidth(tester, wideDockWidth);
+
+    for (final destination in tester.widgetList<NavigationDestination>(
+      find.byType(NavigationDestination),
+    )) {
+      expect(destination.tooltip, '',
+          reason: 'a tooltip that repeats the label the user is already '
+              'reading is noise');
+    }
+
+    await pumpNavigation(
       tester,
-      NavigationBarOrganism.labelRoom * destinations,
+      size: const Size(390, 844),
+      tapped: <String>[],
     );
 
     for (final destination in tester.widgetList<NavigationDestination>(
@@ -205,34 +210,6 @@ void main() {
     }
   });
 
-  testWidgets('keeps the hover tooltip while the name is hidden',
-      (tester) async {
-    await pumpDockOfWidth(
-      tester,
-      NavigationBarOrganism.labelRoom * destinations - 1,
-    );
-
-    for (final destination in tester.widgetList<NavigationDestination>(
-      find.byType(NavigationDestination),
-    )) {
-      expect(destination.tooltip, isNull,
-          reason: 'null lets the destination fall back to naming itself, '
-              'which is the only name a bare icon has');
-    }
-  });
-
-  testWidgets('keeps quiet while a name would be squeezed', (tester) async {
-    await pumpDockOfWidth(
-      tester,
-      NavigationBarOrganism.labelRoom * destinations - 1,
-    );
-
-    expect(
-      tester.widget<NavigationBar>(find.byType(NavigationBar)).labelBehavior,
-      NavigationDestinationLabelBehavior.alwaysHide,
-    );
-  });
-
   testWidgets('never grows past the reading column', (tester) async {
     await pumpDockOfWidth(tester, AppLayout.maxContentWidth + 400);
 
@@ -242,29 +219,32 @@ void main() {
     );
   });
 
-  testWidgets('keeps labels hidden and all actions available on mobile',
-      (tester) async {
-    final tapped = <String>[];
-    await pumpNavigation(
-      tester,
-      size: const Size(390, 844),
-      tapped: tapped,
-    );
+  testWidgets('names every destination on a phone', (tester) async {
+    for (final size in [const Size(360, 690), const Size(390, 844)]) {
+      final tapped = <String>[];
+      await pumpNavigation(
+        tester,
+        size: size,
+        tapped: tapped,
+      );
 
-    final navigationBar =
-        tester.widget<NavigationBar>(find.byType(NavigationBar));
-    expect(
-      navigationBar.labelBehavior,
-      NavigationDestinationLabelBehavior.alwaysHide,
-    );
+      final navigationBar =
+          tester.widget<NavigationBar>(find.byType(NavigationBar));
+      expect(
+        navigationBar.labelBehavior,
+        NavigationDestinationLabelBehavior.alwaysShow,
+      );
+      expect(find.text('AI Tutor'), findsOneWidget);
+      expect(tester.takeException(), isNull);
 
-    await tester.tap(find.byIcon(Icons.bookmark));
-    await tester.tap(find.byIcon(Icons.smart_toy_outlined));
-    await tester.tap(find.byIcon(Icons.document_scanner_outlined));
-    await tester.tap(find.byIcon(Icons.style_outlined));
-    await tester.tap(find.byIcon(Icons.person_outline));
+      await tester.tap(find.byIcon(Icons.bookmark));
+      await tester.tap(find.byIcon(Icons.smart_toy_outlined));
+      await tester.tap(find.byIcon(Icons.document_scanner_outlined));
+      await tester.tap(find.byIcon(Icons.style_outlined));
+      await tester.tap(find.byIcon(Icons.person_outline));
 
-    expect(tapped, ['saved', 'tutor', 'solve', 'cards', 'profile']);
+      expect(tapped, ['saved', 'tutor', 'solve', 'cards', 'profile']);
+    }
   });
 
   AppDestination lit(WidgetTester tester) => AppDestination.values[
@@ -302,10 +282,24 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.bookmark_outline));
     await tester.pump();
-    expect(lit(tester), AppDestination.saved);
+    expect(lit(tester), AppDestination.cards);
 
-    await tester.tap(find.byIcon(Icons.style_outlined));
+    await tester.tap(find.byIcon(Icons.style));
     await tester.pump();
     expect(lit(tester), AppDestination.cards);
+  });
+
+  testWidgets('Profile is lit on the Profile page', (tester) async {
+    await pumpNavigation(
+      tester,
+      size: const Size(390, 844),
+      tapped: <String>[],
+      current: AppDestination.profile,
+    );
+
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      4,
+    );
   });
 }

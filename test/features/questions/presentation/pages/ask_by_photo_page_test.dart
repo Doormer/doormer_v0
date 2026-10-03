@@ -3,9 +3,9 @@
 // These pump the REAL AskByPhotoPage widget tree — its BlocConsumer, the upload
 // and status panels, the enable/disable logic on the Submit button, and the
 // GoRouter hand-off on a solved outcome — backed by the real AskByPhotoBloc and
-// SubmitPhotoQuestionUseCase. Only the repository (network boundary) and the
-// platform file picker are substituted: the picker result is simulated by
-// dispatching AskByPhotoPhotoPicked, exactly as AskByPhotoPage._pickPhoto does.
+// SubmitPhotoQuestionUseCase. Only the repository (network boundary) and,
+// where a test exercises the picker path, the platform file picker are
+// substituted.
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -29,6 +29,8 @@ import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
 import 'package:doormer/src/features/questions/presentation/templates/solution_reader_template.dart';
+import 'package:doormer/src/features/questions/utils/image_readability.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -73,6 +75,41 @@ class _FakeQuestionsRepository implements QuestionsRepository {
   }
 }
 
+class _FakeFilePicker extends FilePicker {
+  _FakeFilePicker(this.result);
+
+  final FilePickerResult? result;
+  FileType? lastType;
+  List<String>? lastAllowedExtensions;
+  bool? lastAllowMultiple;
+  bool? lastWithData;
+
+  @override
+  Future<FilePickerResult?> pickFiles({
+    String? dialogTitle,
+    String? initialDirectory,
+    FileType type = FileType.any,
+    List<String>? allowedExtensions,
+    Function(FilePickerStatus)? onFileLoading,
+    @Deprecated(
+      'allowCompression is deprecated and has no effect. Use compressionQuality instead.',
+    )
+    bool allowCompression = false,
+    int compressionQuality = 0,
+    bool allowMultiple = false,
+    bool withData = false,
+    bool withReadStream = false,
+    bool lockParentWindow = false,
+    bool readSequential = false,
+  }) async {
+    lastType = type;
+    lastAllowedExtensions = allowedExtensions;
+    lastAllowMultiple = allowMultiple;
+    lastWithData = withData;
+    return result;
+  }
+}
+
 PhotoQuestionSolveOutcome _outcome(PhotoQuestionSolveStatus status) {
   return PhotoQuestionSolveOutcome(
     status: status,
@@ -97,7 +134,8 @@ PhotoQuestionSolveOutcome _outcome(PhotoQuestionSolveStatus status) {
 // A real, decodable 1x1 transparent PNG so the in-tree Image.memory preview
 // decodes without raising a FlutterError during the test.
 final Uint8List _pngBytes = base64Decode(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk'
+  'YPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
 );
 
 void main() {
@@ -150,11 +188,11 @@ void main() {
     );
   }
 
-  // Error states raise a toast that auto-closes after 2s. Left running, the
+  // Error states raise a toast that auto-closes after 4s. Left running, the
   // binding fails the test with "A Timer is still pending" once the tree is
   // disposed, so tests that trigger one drain it before finishing.
   Future<void> drainToasts(WidgetTester tester) async {
-    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
   }
 
@@ -268,7 +306,7 @@ void main() {
     await selectPhoto(tester);
 
     expect(find.text('algebra.png'), findsOneWidget);
-    expect(find.text('Retake'), findsOneWidget);
+    expect(find.text('Change photo'), findsOneWidget);
     expect(find.text('Clear'), findsOneWidget);
     // Scoped to the preview: the template also paints a decorative background
     // Image.asset, so a bare byType(Image) finder matches two widgets.
@@ -280,6 +318,58 @@ void main() {
       findsOneWidget,
     );
     expect(submitButton(tester).onPressed, isNotNull);
+  });
+
+  testWidgets('an unreadable file is refused with a friendly message',
+      (tester) async {
+    repository = _FakeQuestionsRepository(
+      outcome: _outcome(PhotoQuestionSolveStatus.solved),
+    );
+    registerBloc();
+    final fakeFilePicker = _FakeFilePicker(
+      FilePickerResult([
+        PlatformFile(
+          name: 'photo.png',
+          size: 64,
+          bytes: Uint8List.fromList(List.filled(64, 7)),
+        ),
+      ]),
+    );
+    FilePicker? originalFilePicker;
+    try {
+      originalFilePicker = FilePicker.platform;
+    } catch (e) {
+      if (!e.toString().contains('has not been initialized')) rethrow;
+      originalFilePicker = null;
+    }
+    FilePicker.platform = fakeFilePicker;
+    addTearDown(() {
+      FilePicker.platform = originalFilePicker ?? _FakeFilePicker(null);
+    });
+    await pumpPage(tester);
+
+    await tester.tap(find.byIcon(Icons.document_scanner_outlined));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Choose from gallery'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+
+    expect(fakeFilePicker.lastType, FileType.custom);
+    expect(fakeFilePicker.lastAllowedExtensions, const ['jpg', 'jpeg', 'png']);
+    expect(fakeFilePicker.lastAllowMultiple, isFalse);
+    expect(fakeFilePicker.lastWithData, isTrue);
+    expect(find.text(unreadableImageMessage), findsOneWidget);
+    expect(find.text('JPEG or PNG · max 10 MB'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(PhotoPreviewMolecule),
+        matching: find.byType(Image),
+      ),
+      findsNothing,
+    );
+    expect(submitButton(tester).onPressed, isNull);
+    await drainToasts(tester);
   });
 
   testWidgets(
@@ -351,14 +441,11 @@ void main() {
     expect(repository.callCount, 1);
     expect(find.byType(QuestionSolutionPage), findsNothing);
     expect(find.text('We could not read it'), findsOneWidget);
-    // Retake moved up to sit with the photo, which now survives the failure;
-    // the recovery panel keeps only the action the photo panel lacks.
-    expect(find.widgetWithText(AppButtonAtom, 'Retake'), findsOneWidget);
-    expect(find.widgetWithText(OutlinedButton, 'Type instead'), findsOneWidget);
+    expect(find.widgetWithText(AppButtonAtom, 'Change photo'), findsOneWidget);
+    expect(find.text('Type instead'), findsNothing);
   });
 
-  testWidgets('Retake on the recovery panel offers the camera, not just files',
-      (tester) async {
+  testWidgets('Change photo offers the camera, not just files', (tester) async {
     repository = _FakeQuestionsRepository(
       outcome: _outcome(PhotoQuestionSolveStatus.unreadable),
     );
@@ -376,10 +463,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     await tester.pump();
 
-    // The photo now survives the failure, so Retake lives with it in the
+    // The photo now survives the failure, so Change photo lives with it in the
     // upload panel rather than being repeated in the recovery panel below.
-    expect(find.widgetWithText(AppButtonAtom, 'Retake'), findsOneWidget);
-    await tester.tap(find.widgetWithText(AppButtonAtom, 'Retake'));
+    expect(find.widgetWithText(AppButtonAtom, 'Change photo'), findsOneWidget);
+    await tester.tap(find.widgetWithText(AppButtonAtom, 'Change photo'));
     await tester.pumpAndSettle();
 
     // The recovery copy tells the student to retake the shot, so this button
@@ -413,9 +500,11 @@ void main() {
       // control competing with it.
       expect(find.widgetWithText(AppButtonAtom, 'Try again'), findsOneWidget);
       expect(find.text('Submit to solver'), findsNothing);
-      expect(find.widgetWithText(AppButtonAtom, 'Retake'), findsOneWidget,
-          reason: 'exactly one Retake: the status panel must not repeat the '
+      expect(find.widgetWithText(AppButtonAtom, 'Change photo'), findsOneWidget,
+          reason:
+              'exactly one Change photo: the status panel must not repeat the '
               'button the upload panel is already showing');
+      expect(find.text('Type instead'), findsNothing);
       await drainToasts(tester);
     });
 
@@ -458,7 +547,8 @@ void main() {
           reason: 'the same blurry bytes read as blurry every time');
       expect(find.text('Submit to solver'), findsOneWidget,
           reason: 'the button stays generic when a resend would not help');
-      expect(find.widgetWithText(AppButtonAtom, 'Retake'), findsOneWidget);
+      expect(
+          find.widgetWithText(AppButtonAtom, 'Change photo'), findsOneWidget);
     });
   });
 
@@ -529,11 +619,11 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.style_outlined));
     // Not pumpAndSettle: the submit button's spinner animates for as long as
-    // the solve runs. The first toast waits 300ms for its overlay, then grows
-    // from zero height, and finders skip it until it has some.
+    // the solve runs. Toastification 3.x inserts the toast after a frame and
+    // then animates it from zero height, so finders skip it until it has some.
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
 
     expect(find.text('Cards page'), findsNothing);
     expect(find.byType(AskByPhotoPage), findsOneWidget);

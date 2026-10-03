@@ -33,6 +33,7 @@ CardDetailParams _params({
   int specialCopies = 0,
   int quarkBalance = 600,
   bool isShattering = false,
+  String deckName = 'Cinder',
   String? errorMessage,
   void Function(CardVariant variant)? onShatter,
   VoidCallback? onClose,
@@ -43,6 +44,7 @@ CardDetailParams _params({
         standardCopies: standardCopies,
         specialCopies: specialCopies,
       ),
+      deckName: deckName,
       quarkBalance: quarkBalance,
       quarkDotKey: _pageQuarkDot,
       isShattering: isShattering,
@@ -104,6 +106,26 @@ void main() {
     expect(find.text('Astrolabe'), findsWidgets);
     expect(find.text('Uncommon'), findsOneWidget);
     expect(find.text('2'), findsOneWidget);
+  });
+
+  testWidgets('shows size and deck as separate facts', (tester) async {
+    _phone(tester);
+    await tester.pumpWidget(_host(CardDetailOrganism(
+      params: _params(deckName: 'Cinder'),
+    )));
+
+    expect(find.text('Size'), findsOneWidget);
+    expect(find.text('Deck'), findsOneWidget);
+    expect(find.text('Cinder'), findsOneWidget);
+
+    final sizeLabelCenter = tester.getCenter(find.text('Size'));
+    final scaleValueCenter = tester.getCenter(find.text(_card.scaleLabel));
+    expect(
+      (sizeLabelCenter.dy - scaleValueCenter.dy).abs(),
+      lessThan(1),
+      reason: 'the card scale belongs to the Size fact',
+    );
+    expect(scaleValueCenter.dx, greaterThan(sizeLabelCenter.dx));
   });
 
   testWidgets('never stretches past 520 on a wide window', (tester) async {

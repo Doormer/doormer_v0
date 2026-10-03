@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('DrawResult headlines', () {
     test('are exactly the approved wording', () {
-      expect(DrawResult.newCard.headline, 'A new one');
+      expect(DrawResult.newCard.headline, 'New card!');
       expect(DrawResult.upgrade.headline, 'Now special');
       expect(DrawResult.duplicate.headline, 'Another one');
     });
@@ -26,8 +26,8 @@ void main() {
 
   group('DrawOutcome', () {
     test('carries the count after the draw, for the badge', () {
-      final outcome = DrawOutcome(
-        card: const CollectibleCard(
+      const outcome = DrawOutcome(
+        card: CollectibleCard(
           id: 'gnomon',
           name: 'Gnomon',
           rarity: Rarity.common,

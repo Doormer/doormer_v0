@@ -19,7 +19,7 @@ void main() {
         final ctrl = TextEditingController();
 
         await tester.pumpWidget(_pump(
-          AuthTextField(controller: ctrl),
+          AuthTextField(label: 'Email', controller: ctrl),
           theme: theme,
         ));
 
@@ -40,7 +40,11 @@ void main() {
         final ctrl = TextEditingController();
 
         await tester.pumpWidget(_pump(
-          AuthTextField(controller: ctrl, hintText: 'Enter email'),
+          AuthTextField(
+            label: 'Email',
+            controller: ctrl,
+            hintText: 'Enter email',
+          ),
           theme: theme,
         ));
 
@@ -55,5 +59,94 @@ void main() {
         );
       },
     );
+  });
+
+  testWidgets('a password field toggles visibility', (tester) async {
+    await tester.pumpWidget(_pump(
+      AuthTextField(
+        label: 'Password',
+        controller: TextEditingController(),
+        isPassword: true,
+      ),
+      theme: AppTheme.light,
+    ));
+
+    EditableText editable() =>
+        tester.widget<EditableText>(find.byType(EditableText));
+    expect(editable().obscureText, isTrue);
+    expect(find.byTooltip('Show password'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Show password'));
+    await tester.pump();
+    expect(editable().obscureText, isFalse);
+    expect(find.byTooltip('Hide password'), findsOneWidget);
+  });
+
+  testWidgets('an error clears as soon as the field is edited', (tester) async {
+    final formKey = GlobalKey<FormState>();
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
+
+    addTearDown(emailController.dispose);
+    addTearDown(passwordController.dispose);
+
+    await tester.pumpWidget(_pump(
+      Form(
+        key: formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AuthTextField(
+              label: 'Email',
+              controller: emailController,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Email is required';
+                }
+                if (!value.contains('@')) {
+                  return 'Enter a valid email address';
+                }
+                return null;
+              },
+            ),
+            AuthTextField(
+              label: 'Password',
+              controller: passwordController,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Password is required';
+                }
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+      theme: AppTheme.light,
+    ));
+
+    formKey.currentState!.validate();
+    await tester.pump();
+    expect(find.text('Email is required'), findsOneWidget);
+    expect(find.text('Password is required'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextFormField).first, 'a');
+    await tester.pump();
+    expect(find.text('Email is required'), findsNothing);
+    expect(find.text('Enter a valid email address'), findsNothing);
+    expect(find.text('Password is required'), findsOneWidget);
+
+    formKey.currentState!.validate();
+    await tester.pump();
+    expect(find.text('Enter a valid email address'), findsOneWidget);
+    expect(find.text('Password is required'), findsOneWidget);
+  });
+
+  testWidgets('the field is named for screen readers', (tester) async {
+    await tester.pumpWidget(_pump(
+      AuthTextField(label: 'Email', controller: TextEditingController()),
+      theme: AppTheme.light,
+    ));
+    expect(find.bySemanticsLabel('Email'), findsOneWidget);
   });
 }

@@ -41,7 +41,7 @@ class CollectionPresenter {
     return EmptyDeckParams(
       deckSize: deck.size,
       rarityMix: deck.rarityMix,
-      drawCost: deck.drawCost,
+      drawLabel: drawLabel(deck.drawCost),
       canAfford: deck.canAffordDraw(quarkBalance),
       quarksShortLabel: quarksShortLabel(deck.quarksShortOfDraw(quarkBalance)),
       isDrawing: isDrawing,
@@ -53,10 +53,14 @@ class CollectionPresenter {
   static String quarkBalanceLabel(int quarkBalance) =>
       '$quarkBalance ${_quarkWord(quarkBalance)}';
 
-  /// Under a draw button the student can't afford yet: "25 more quarks to
-  /// draw", or "1 more quark to draw".
+  /// On the draw button: "Draw a card · 40 quarks", or "... 1 quark".
+  static String drawLabel(int drawCost) =>
+      'Draw a card · $drawCost ${_quarkWord(drawCost)}';
+
+  /// Under a draw button the student can't afford yet.
   static String quarksShortLabel(int quarksShort) =>
-      '$quarksShort more ${_quarkWord(quarksShort)} to draw';
+      '$quarksShort more ${_quarkWord(quarksShort)} to draw. '
+      'Answer questions to earn quarks.';
 
   static String _quarkWord(int count) => count == 1 ? 'quark' : 'quarks';
 
@@ -75,8 +79,8 @@ class CollectionPresenter {
     switch (outcome.result) {
       case DrawResult.newCard:
         if (collectionAfterDraw == null) return 'Added to $deckName';
-        return '$deckName is ${collectionAfterDraw.cardsHeld} '
-            'of ${collectionAfterDraw.deck.size}';
+        return '${collectionAfterDraw.cardsHeld} of '
+            '${collectionAfterDraw.deck.size} $deckName cards collected';
       case DrawResult.upgrade:
         return 'You keep the standard one.';
       case DrawResult.duplicate:

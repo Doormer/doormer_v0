@@ -1,7 +1,6 @@
 import 'package:universal_html/html.dart' as html;
 import 'package:doormer/src/core/theme/app_theme_context.dart';
-import 'package:doormer/src/core/utils/app_logger.dart';
-import 'package:doormer/src/features/auth/presentation/widget/auth_textfield_web.dart';
+import 'package:doormer/src/features/auth/presentation/widget/auth_credentials_fields.dart';
 import 'package:doormer/src/features/auth/presentation/widget/google_signin_button.dart';
 import 'package:doormer/src/features/auth/presentation/widget/signup_button.dart';
 import 'package:doormer/src/features/auth/utils/auth_validators.dart';
@@ -9,29 +8,43 @@ import 'package:doormer/src/shared/widget/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:doormer/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:doormer/src/features/auth/presentation/utils/auth_autofill.dart';
 import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/shared/sessions/bloc/global_session_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in_web/google_sign_in_web.dart';
 import 'package:toastification/toastification.dart';
 
-class LoginPageWeb extends StatelessWidget {
-  LoginPageWeb({super.key});
+class LoginPageWeb extends StatefulWidget {
+  const LoginPageWeb({super.key});
 
+  @override
+  State<LoginPageWeb> createState() => _LoginPageWebState();
+}
+
+class _LoginPageWebState extends State<LoginPageWeb> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final FocusNode _passwordFocus = FocusNode();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   void _login(BuildContext context, AuthBloc authBloc) {
     if (_formKey.currentState?.validate() ?? false) {
       final email = _emailController.text;
       final password = _passwordController.text;
-      AppLogger.info('Dispatching LoginRequested event with email: $email');
       authBloc.add(LoginRequested(
         email: email,
         password: password,
       ));
     }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _passwordFocus.dispose();
+    super.dispose();
   }
 
   @override
@@ -71,6 +84,7 @@ class LoginPageWeb extends StatelessWidget {
                         final router = GoRouter.of(context);
 
                         if (state is AuthSuccess) {
+                          AuthAutofill.finishOnAuthSuccess(state);
                           final sessionState =
                               context.read<GlobalSessionBloc>().state;
                           if (sessionState is SessionActiveState) {
@@ -84,20 +98,11 @@ class LoginPageWeb extends StatelessWidget {
                         }
 
                         if (state is AuthError) {
-                          final errorMsg = state.error.toString().toLowerCase();
-                          if (errorMsg.contains('wrong email or password')) {
-                            CustomToast.show(
-                              context,
-                              message: 'Wrong Email Or Password',
-                              type: ToastificationType.error,
-                            );
-                          } else {
-                            CustomToast.show(
-                              context,
-                              message: 'Login Failed.',
-                              type: ToastificationType.error,
-                            );
-                          }
+                          CustomToast.show(
+                            context,
+                            message: state.error,
+                            type: ToastificationType.error,
+                          );
                         }
                       },
                       builder: (context, state) {
@@ -107,7 +112,8 @@ class LoginPageWeb extends StatelessWidget {
                           width: containerWidth,
                           padding: const EdgeInsets.all(24.0),
                           decoration: BoxDecoration(
-                            border: Border.all(color: colorScheme.outlineVariant),
+                            border:
+                                Border.all(color: colorScheme.outlineVariant),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Form(
@@ -144,10 +150,11 @@ class LoginPageWeb extends StatelessWidget {
                                 Row(
                                   children: [
                                     Expanded(
-                                        child: Divider(color: colorScheme.outlineVariant)),
+                                        child: Divider(
+                                            color: colorScheme.outlineVariant)),
                                     Padding(
-                                      padding:
-                                          const EdgeInsets.symmetric(horizontal: 8.0),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8.0),
                                       child: Text(
                                         'or log in with',
                                         style: textTheme.bodyMedium?.copyWith(
@@ -156,38 +163,24 @@ class LoginPageWeb extends StatelessWidget {
                                       ),
                                     ),
                                     Expanded(
-                                        child: Divider(color: colorScheme.outlineVariant)),
+                                        child: Divider(
+                                            color: colorScheme.outlineVariant)),
                                   ],
                                 ),
                                 const SizedBox(height: 16),
-                                // Email text field
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    'Email',
-                                    style: textTheme.bodyMedium,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                AuthTextField(
-                                  controller: _emailController,
-                                  obscureText: false,
-                                  validator: AuthValidators.validateEmail,
-                                ),
-                                const SizedBox(height: 16),
-                                // Password text field
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    'Password',
-                                    style: textTheme.bodyMedium,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                AuthTextField(
-                                  controller: _passwordController,
-                                  obscureText: true,
-                                  validator: AuthValidators.validatePassword,
+                                AuthCredentialsFields(
+                                  emailController: _emailController,
+                                  passwordController: _passwordController,
+                                  passwordFocus: _passwordFocus,
+                                  passwordAutofillHints: const [
+                                    AutofillHints.password,
+                                  ],
+                                  onPasswordSubmitted: state is AuthLoading
+                                      ? null
+                                      : (_) => _login(context, authBloc),
+                                  emailValidator: AuthValidators.validateEmail,
+                                  passwordValidator:
+                                      AuthValidators.validatePassword,
                                 ),
                                 const SizedBox(height: 32),
                                 // Login button

@@ -1,12 +1,13 @@
 import 'package:universal_html/html.dart' as html;
 import 'package:doormer/src/core/theme/app_theme_context.dart';
-import 'package:doormer/src/core/utils/app_logger.dart';
+import 'package:doormer/src/features/auth/domain/auth_messages.dart';
+import 'package:doormer/src/features/auth/presentation/utils/auth_autofill.dart';
+import 'package:doormer/src/features/auth/presentation/widget/auth_credentials_fields.dart';
 import 'package:doormer/src/features/auth/presentation/widget/agreement_text_widget.dart';
 import 'package:doormer/src/features/auth/presentation/widget/signup_button.dart';
 import 'package:doormer/src/features/auth/utils/auth_validators.dart';
 import 'package:doormer/src/shared/widget/custom_toast.dart';
 import 'package:flutter/material.dart';
-import 'package:doormer/src/features/auth/presentation/widget/auth_textfield_web.dart';
 import 'package:doormer/src/features/auth/presentation/widget/google_signin_button.dart';
 import 'package:doormer/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:doormer/src/core/di/service_locator.dart';
@@ -16,23 +17,36 @@ import 'package:go_router/go_router.dart';
 import 'package:google_sign_in_web/google_sign_in_web.dart';
 import 'package:toastification/toastification.dart';
 
-class SignUpPageWeb extends StatelessWidget {
-  SignUpPageWeb({super.key});
+class SignUpPageWeb extends StatefulWidget {
+  const SignUpPageWeb({super.key});
 
+  @override
+  State<SignUpPageWeb> createState() => _SignUpPageWebState();
+}
+
+class _SignUpPageWebState extends State<SignUpPageWeb> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final FocusNode _passwordFocus = FocusNode();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   void _signUp(BuildContext context, AuthBloc authBloc) {
     if (_formKey.currentState?.validate() ?? false) {
       final email = _emailController.text;
       final password = _passwordController.text;
-      AppLogger.info('Dispatching SignupRequested event with email: $email');
       authBloc.add(SignupRequested(
         email: email,
         password: password,
       ));
     }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _passwordFocus.dispose();
+    super.dispose();
   }
 
   @override
@@ -72,6 +86,7 @@ class SignUpPageWeb extends StatelessWidget {
                         final router = GoRouter.of(context);
 
                         if (state is AuthSuccess) {
+                          AuthAutofill.finishOnAuthSuccess(state);
                           final sessionState =
                               context.read<GlobalSessionBloc>().state;
                           if (sessionState is SessionActiveState) {
@@ -83,14 +98,12 @@ class SignUpPageWeb extends StatelessWidget {
                             }
                           }
                         }
-
                         if (state is AuthError) {
-                          final errorMsg = state.error.toString().toLowerCase();
-                          if (errorMsg.contains('user is already registered')) {
+                          if (state.error == AuthMessages.emailTaken) {
                             CustomToast.show(
                               context,
                               message:
-                                  'An account with this email already exists. Redirecting to login...',
+                                  '${AuthMessages.emailTaken} Taking you to log in…',
                               type: ToastificationType.warning,
                             );
                             Future.delayed(const Duration(seconds: 2), () {
@@ -99,7 +112,7 @@ class SignUpPageWeb extends StatelessWidget {
                           } else {
                             CustomToast.show(
                               context,
-                              message: 'Sign Up Failed.',
+                              message: state.error,
                               type: ToastificationType.error,
                             );
                           }
@@ -112,7 +125,8 @@ class SignUpPageWeb extends StatelessWidget {
                           width: containerWidth,
                           padding: const EdgeInsets.all(24.0),
                           decoration: BoxDecoration(
-                            border: Border.all(color: colorScheme.outlineVariant),
+                            border:
+                                Border.all(color: colorScheme.outlineVariant),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Form(
@@ -154,10 +168,11 @@ class SignUpPageWeb extends StatelessWidget {
                                 Row(
                                   children: [
                                     Expanded(
-                                        child: Divider(color: colorScheme.outlineVariant)),
+                                        child: Divider(
+                                            color: colorScheme.outlineVariant)),
                                     Padding(
-                                      padding:
-                                          const EdgeInsets.symmetric(horizontal: 8.0),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8.0),
                                       child: Text(
                                         'or sign up with',
                                         style: textTheme.bodyMedium?.copyWith(
@@ -166,38 +181,27 @@ class SignUpPageWeb extends StatelessWidget {
                                       ),
                                     ),
                                     Expanded(
-                                        child: Divider(color: colorScheme.outlineVariant)),
+                                        child: Divider(
+                                            color: colorScheme.outlineVariant)),
                                   ],
                                 ),
                                 const SizedBox(height: 16),
-                                // Email text field
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    'Email',
-                                    style: textTheme.bodyMedium,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                AuthTextField(
-                                  controller: _emailController,
-                                  obscureText: false,
-                                  validator: AuthValidators.validateEmail,
-                                ),
-                                const SizedBox(height: 16),
-                                // Password text field
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    'Password',
-                                    style: textTheme.bodyMedium,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                AuthTextField(
-                                  controller: _passwordController,
-                                  obscureText: true,
-                                  validator: AuthValidators.validatePassword,
+                                AuthCredentialsFields(
+                                  emailController: _emailController,
+                                  passwordController: _passwordController,
+                                  passwordFocus: _passwordFocus,
+                                  passwordAutofillHints: const [
+                                    AutofillHints.newPassword,
+                                  ],
+                                  onPasswordSubmitted: state is AuthLoading
+                                      ? null
+                                      : (_) => _signUp(
+                                            context,
+                                            authBloc,
+                                          ),
+                                  emailValidator: AuthValidators.validateEmail,
+                                  passwordValidator:
+                                      AuthValidators.validatePassword,
                                 ),
                                 const SizedBox(height: 32),
                                 // Sign up button

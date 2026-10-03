@@ -6,6 +6,7 @@ import 'package:doormer/src/features/questions/presentation/params/solve_status_
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/reveal_on_change_atom.dart';
 import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 
@@ -31,11 +32,9 @@ class AskByPhotoTemplate extends StatelessWidget {
     // something to act on: a picked photo, an in-flight solve, or a recoverable
     // failure. Without them onSubmit is unreachable and the solve flow dead-ends.
     //
-    // The upload panel is gated on `hasPhoto` alone, never on `isLoading`: with
-    // no bytes it renders a "choose a file" placeholder, which would contradict
-    // the status panel claiming to solve that photo. The loading state carries
-    // the photo, so `hasPhoto` stays true for the whole solve.
-    final showUploadPanel = hasPhoto;
+    // The upload panel normally needs bytes; the page may explicitly show the
+    // empty panel after a refused pick so the preview resets to its placeholder.
+    final showUploadPanel = hasPhoto || uploadParams.showWhenEmpty;
     final showStatusPanel = statusParams.content.showActions || isLoading;
     final showPanels = showUploadPanel || showStatusPanel;
 
@@ -43,20 +42,10 @@ class AskByPhotoTemplate extends StatelessWidget {
       body: SafeArea(
         child: Stack(
           children: [
-            Positioned(
-              top: 60.h,
-              right: -30.w,
-              child: Opacity(
-                opacity: 0.7,
-                child: Image.asset(
-                  'assets/images/starter_bg_person.png',
-                  width: 240.w,
-                ),
-              ),
-            ),
             if (showPanels)
               Positioned.fill(
-                  child: _buildSolvePanels(showUploadPanel, showStatusPanel))
+                child: _buildSolvePanels(showUploadPanel, showStatusPanel),
+              )
             else
               _buildHero(),
             Positioned(
@@ -73,18 +62,31 @@ class AskByPhotoTemplate extends StatelessWidget {
 
   Widget _buildHero() {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const AskByPhotoHeaderMolecule(),
-          SizedBox(height: 24.h),
-          AppButtonAtom(
-            label: 'UPLOAD & SOLVE',
-            icon: Icons.camera_alt,
-            variant: AppButtonVariant.accent,
-            onPressed: uploadParams.isLoading ? null : uploadParams.onPickPhoto,
-          ),
-        ],
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 120.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Opacity(
+              opacity: 0.7,
+              child: Image.asset(
+                'assets/images/starter_bg_person.png',
+                height: 180.h,
+                fit: BoxFit.contain,
+              ),
+            ),
+            SizedBox(height: 12.h),
+            const AskByPhotoHeaderMolecule(),
+            SizedBox(height: 24.h),
+            AppButtonAtom(
+              label: 'UPLOAD & SOLVE',
+              icon: Icons.camera_alt,
+              variant: AppButtonVariant.accent,
+              onPressed:
+                  uploadParams.isLoading ? null : uploadParams.onPickPhoto,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -101,7 +103,13 @@ class AskByPhotoTemplate extends StatelessWidget {
             PhotoUploadPanelOrganism(params: uploadParams),
             SizedBox(height: 16.h),
           ],
-          if (showStatusPanel) SolveStatusPanelOrganism(params: statusParams),
+          if (showStatusPanel)
+            RevealOnChangeAtom(
+              trigger: statusParams.content.showActions
+                  ? statusParams.content.title
+                  : null,
+              child: SolveStatusPanelOrganism(params: statusParams),
+            ),
         ],
       ),
     );
