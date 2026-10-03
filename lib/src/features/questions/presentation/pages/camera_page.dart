@@ -39,7 +39,7 @@ class _CameraPageState extends State<CameraPage> {
 
       final controller = CameraController(
         camera,
-        ResolutionPreset.high,
+        ResolutionPreset.max,
         enableAudio: false,
       );
 

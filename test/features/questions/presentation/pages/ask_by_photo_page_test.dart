@@ -4,8 +4,8 @@
 // and status panels, the enable/disable logic on the Submit button, and the
 // GoRouter hand-off on a solved outcome — backed by the real AskByPhotoBloc and
 // SubmitPhotoQuestionUseCase. Only the repository (network boundary) and,
-// where a test exercises the picker path, the platform file picker are
-// substituted.
+// where a test exercises the picker path, the platform photo picker/preparer
+// are substituted.
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -25,12 +25,14 @@ import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bl
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/photo_preview_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
+import 'package:doormer/src/features/questions/presentation/pages/camera_page.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
 import 'package:doormer/src/features/questions/presentation/templates/solution_reader_template.dart';
-import 'package:doormer/src/features/questions/utils/image_readability.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:doormer/src/features/questions/utils/photo/photo_file_input.dart';
+import 'package:doormer/src/features/questions/utils/photo/photo_preparer.dart';
+import 'package:doormer/src/features/questions/utils/photo/picked_photo_file.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -44,6 +46,7 @@ class _FakeQuestionsRepository implements QuestionsRepository {
   Failure? failure;
   int callCount = 0;
   Uint8List? lastBytes;
+  String? lastContentType;
 
   @override
   Future<PhotoQuestionSolveOutcome> submitPhotoQuestion({
@@ -52,6 +55,7 @@ class _FakeQuestionsRepository implements QuestionsRepository {
   }) async {
     callCount++;
     lastBytes = imageBytes;
+    lastContentType = contentType;
     if (failure != null) {
       throw failure!;
     }
@@ -75,38 +79,38 @@ class _FakeQuestionsRepository implements QuestionsRepository {
   }
 }
 
-class _FakeFilePicker extends FilePicker {
-  _FakeFilePicker(this.result);
+class _FakePhotoFileInput implements PhotoFileInput {
+  _FakePhotoFileInput({this.file, this.usesNativeCamera = false});
 
-  final FilePickerResult? result;
-  FileType? lastType;
-  List<String>? lastAllowedExtensions;
-  bool? lastAllowMultiple;
-  bool? lastWithData;
+  PickedPhotoFile? file;
+  Object? failure;
+  final List<bool> pickedFromCamera = [];
 
   @override
-  Future<FilePickerResult?> pickFiles({
-    String? dialogTitle,
-    String? initialDirectory,
-    FileType type = FileType.any,
-    List<String>? allowedExtensions,
-    Function(FilePickerStatus)? onFileLoading,
-    @Deprecated(
-      'allowCompression is deprecated and has no effect. Use compressionQuality instead.',
-    )
-    bool allowCompression = false,
-    int compressionQuality = 0,
-    bool allowMultiple = false,
-    bool withData = false,
-    bool withReadStream = false,
-    bool lockParentWindow = false,
-    bool readSequential = false,
-  }) async {
-    lastType = type;
-    lastAllowedExtensions = allowedExtensions;
-    lastAllowMultiple = allowMultiple;
-    lastWithData = withData;
-    return result;
+  final bool usesNativeCamera;
+
+  @override
+  Future<PickedPhotoFile?> pick({required bool fromCamera}) async {
+    pickedFromCamera.add(fromCamera);
+    if (failure != null) throw failure!;
+    return file;
+  }
+}
+
+class _FakePhotoPreparer implements PhotoPreparer {
+  _FakePhotoPreparer();
+
+  PreparedPhoto? result;
+  Object? failure;
+  Completer<PreparedPhoto>? pending;
+  final List<PickedPhotoFile> prepared = [];
+
+  @override
+  Future<PreparedPhoto> prepare(PickedPhotoFile file) async {
+    prepared.add(file);
+    if (failure != null) throw failure!;
+    if (pending != null) return pending!.future;
+    return result!;
   }
 }
 
@@ -138,11 +142,26 @@ final Uint8List _pngBytes = base64Decode(
   'YPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
 );
 
+final _pickedHeic = PickedPhotoFile(
+  bytes: Uint8List.fromList([0, 0, 0, 0x18, 0x66, 0x74, 0x79, 0x70]),
+  name: 'IMG_1.HEIC',
+  mimeType: 'image/heic',
+);
+
+final _preparedJpeg = PreparedPhoto(
+  bytes: _pngBytes,
+  fileName: 'IMG_1.jpg',
+  width: 1,
+  height: 1,
+);
+
 void main() {
   setUpAll(AppLogger.disable);
 
   late _FakeQuestionsRepository repository;
   late AskByPhotoBloc bloc;
+  late _FakePhotoFileInput fileInput;
+  late _FakePhotoPreparer preparer;
 
   void registerBloc() {
     bloc = AskByPhotoBloc(
@@ -156,6 +175,10 @@ void main() {
         revealAnswerUseCase: RevealAnswerUseCase(repository),
       ),
     );
+    fileInput = _FakePhotoFileInput();
+    preparer = _FakePhotoPreparer();
+    serviceLocator.registerLazySingleton<PhotoFileInput>(() => fileInput);
+    serviceLocator.registerLazySingleton<PhotoPreparer>(() => preparer);
   }
 
   tearDown(() async {
@@ -212,6 +235,15 @@ void main() {
         ),
       ),
     );
+    await tester.pump();
+  }
+
+  Future<void> chooseFrom(WidgetTester tester, String source) async {
+    await tester.tap(find.byIcon(Icons.document_scanner_outlined));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(source));
+    await tester.pump();
+    await tester.pump();
     await tester.pump();
   }
 
@@ -326,40 +358,14 @@ void main() {
       outcome: _outcome(PhotoQuestionSolveStatus.solved),
     );
     registerBloc();
-    final fakeFilePicker = _FakeFilePicker(
-      FilePickerResult([
-        PlatformFile(
-          name: 'photo.png',
-          size: 64,
-          bytes: Uint8List.fromList(List.filled(64, 7)),
-        ),
-      ]),
-    );
-    FilePicker? originalFilePicker;
-    try {
-      originalFilePicker = FilePicker.platform;
-    } catch (e) {
-      if (!e.toString().contains('has not been initialized')) rethrow;
-      originalFilePicker = null;
-    }
-    FilePicker.platform = fakeFilePicker;
-    addTearDown(() {
-      FilePicker.platform = originalFilePicker ?? _FakeFilePicker(null);
-    });
+    fileInput.file = _pickedHeic;
+    preparer.failure = ValidationFailure(photoUnreadableMessage);
     await pumpPage(tester);
 
-    await tester.tap(find.byIcon(Icons.document_scanner_outlined));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Choose from gallery'));
-    await tester.pump();
-    await tester.pump();
+    await chooseFrom(tester, 'Choose from gallery');
     await tester.pump(const Duration(milliseconds: 700));
 
-    expect(fakeFilePicker.lastType, FileType.custom);
-    expect(fakeFilePicker.lastAllowedExtensions, const ['jpg', 'jpeg', 'png']);
-    expect(fakeFilePicker.lastAllowMultiple, isFalse);
-    expect(fakeFilePicker.lastWithData, isTrue);
-    expect(find.text(unreadableImageMessage), findsOneWidget);
+    expect(find.text(photoUnreadableMessage), findsOneWidget);
     expect(find.text('JPG, PNG or HEIC'), findsOneWidget);
     expect(
       find.descendant(
@@ -370,6 +376,141 @@ void main() {
     );
     expect(submitButton(tester).onPressed, isNull);
     await drainToasts(tester);
+  });
+
+  testWidgets('a gallery photo is prepared, shown and sent as a JPEG',
+      (tester) async {
+    repository = _FakeQuestionsRepository(
+      outcome: _outcome(PhotoQuestionSolveStatus.unreadable),
+    );
+    registerBloc();
+    fileInput.file = _pickedHeic;
+    preparer.result = _preparedJpeg;
+    await pumpPage(tester);
+
+    await chooseFrom(tester, 'Choose from gallery');
+
+    expect(fileInput.pickedFromCamera, [false]);
+    expect(preparer.prepared.single.name, 'IMG_1.HEIC');
+    expect(find.text('IMG_1.jpg'), findsOneWidget);
+    expect(submitButton(tester).onPressed, isNotNull);
+
+    await tester.ensureVisible(
+      find.widgetWithText(FilledButton, 'Submit to solver'),
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(repository.lastBytes, _preparedJpeg.bytes);
+    expect(repository.lastContentType, 'image/jpeg');
+  });
+
+  testWidgets('while a photo is prepared, nothing can be picked or sent',
+      (tester) async {
+    repository = _FakeQuestionsRepository(
+      outcome: _outcome(PhotoQuestionSolveStatus.solved),
+    );
+    registerBloc();
+    fileInput.file = _pickedHeic;
+    preparer.pending = Completer<PreparedPhoto>();
+    await pumpPage(tester);
+
+    await chooseFrom(tester, 'Choose from gallery');
+
+    expect(find.text('Preparing your photo…'), findsOneWidget);
+    expect(submitButton(tester).onPressed, isNull);
+
+    await tester.tap(find.byIcon(Icons.document_scanner_outlined));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+    expect(
+        find.text('Still preparing your photo. One moment.'), findsOneWidget);
+    expect(find.text('Choose from gallery'), findsNothing);
+
+    preparer.pending!.complete(_preparedJpeg);
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Preparing your photo…'), findsNothing);
+    expect(find.text('IMG_1.jpg'), findsOneWidget);
+    await drainToasts(tester);
+  });
+
+  testWidgets('a HEIC the converter cannot open keeps the earlier photo',
+      (tester) async {
+    repository = _FakeQuestionsRepository(
+      outcome: _outcome(PhotoQuestionSolveStatus.solved),
+    );
+    registerBloc();
+    await pumpPage(tester);
+    await selectPhoto(tester);
+    fileInput.file = _pickedHeic;
+    preparer.failure = NetworkFailure(heicConverterUnavailableMessage);
+
+    await tester.tap(find.widgetWithText(AppButtonAtom, 'Change photo'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Choose from gallery'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+
+    expect(find.text(heicConverterUnavailableMessage), findsOneWidget);
+    expect(find.text('algebra.png'), findsOneWidget);
+    expect(submitButton(tester).onPressed, isNotNull);
+    await drainToasts(tester);
+  });
+
+  testWidgets('closing the chooser leaves things as they were', (tester) async {
+    repository = _FakeQuestionsRepository(
+      outcome: _outcome(PhotoQuestionSolveStatus.solved),
+    );
+    registerBloc();
+    await pumpPage(tester);
+
+    await chooseFrom(tester, 'Choose from gallery');
+
+    expect(fileInput.pickedFromCamera, [false]);
+    expect(preparer.prepared, isEmpty);
+    expect(find.text('Ready to solve?'), findsOneWidget);
+    await drainToasts(tester);
+  });
+
+  testWidgets("on a phone, the camera button opens the phone's camera app",
+      (tester) async {
+    repository = _FakeQuestionsRepository(
+      outcome: _outcome(PhotoQuestionSolveStatus.solved),
+    );
+    registerBloc();
+    serviceLocator.unregister<PhotoFileInput>();
+    fileInput = _FakePhotoFileInput(file: _pickedHeic, usesNativeCamera: true);
+    serviceLocator.registerLazySingleton<PhotoFileInput>(() => fileInput);
+    preparer.result = _preparedJpeg;
+    await pumpPage(tester);
+
+    await chooseFrom(tester, 'Open camera');
+
+    expect(fileInput.pickedFromCamera, [true]);
+    expect(find.byType(CameraPage), findsNothing);
+    expect(find.text('IMG_1.jpg'), findsOneWidget);
+  });
+
+  testWidgets('on a computer, the camera button opens the webcam page',
+      (tester) async {
+    repository = _FakeQuestionsRepository(
+      outcome: _outcome(PhotoQuestionSolveStatus.solved),
+    );
+    registerBloc();
+    await pumpPage(tester);
+
+    await chooseFrom(tester, 'Open camera');
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(fileInput.pickedFromCamera, isEmpty);
+    expect(find.byType(CameraPage), findsOneWidget);
+    // CameraPage reports the missing camera plugin with a snack bar.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
   });
 
   testWidgets(
@@ -623,6 +764,7 @@ void main() {
     // then animates it from zero height, so finders skip it until it has some.
     await tester.pump();
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
     await tester.pump(const Duration(milliseconds: 700));
 
     expect(find.text('Cards page'), findsNothing);

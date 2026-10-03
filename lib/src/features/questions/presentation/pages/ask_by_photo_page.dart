@@ -1,5 +1,6 @@
 import 'package:camera/camera.dart' show XFile;
 import 'package:doormer/src/core/di/service_locator.dart';
+import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/photo_upload_presenter.dart';
@@ -8,11 +9,12 @@ import 'package:doormer/src/features/questions/presentation/organisms/photo_sour
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/templates/ask_by_photo_template.dart';
-import 'package:doormer/src/features/questions/utils/image_readability.dart';
+import 'package:doormer/src/features/questions/utils/photo/photo_file_input.dart';
+import 'package:doormer/src/features/questions/utils/photo/photo_preparer.dart';
+import 'package:doormer/src/features/questions/utils/photo/picked_photo_file.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:doormer/src/shared/widget/coming_soon_toast.dart';
 import 'package:doormer/src/shared/widget/custom_toast.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -22,55 +24,56 @@ import 'camera_page.dart';
 class AskByPhotoPage extends StatelessWidget {
   const AskByPhotoPage({super.key});
 
-  Future<void> _pickPhoto(BuildContext context) async {
+  /// Opens the photo library or file chooser, or, with [fromCamera], the
+  /// phone's own camera app.
+  ///
+  /// Called straight from the sheet's tap handler: browsers only open a
+  /// chooser in response to a user gesture.
+  Future<void> _pickPhoto(
+    BuildContext context, {
+    bool fromCamera = false,
+  }) async {
+    final photoBloc = context.read<AskByPhotoBloc>();
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: const ['jpg', 'jpeg', 'png'],
-        allowMultiple: false,
-        withData: true,
-      );
-
-      if (!context.mounted) return;
-
-      if (result == null || result.files.isEmpty) {
-        context.read<AskByPhotoBloc>().add(const AskByPhotoPickCancelled());
-        return;
-      }
-
-      final file = result.files.first;
-      final bytes = file.bytes;
-      if (bytes == null) {
-        context.read<AskByPhotoBloc>().add(
-              const AskByPhotoPickUnavailable(
-                'We could not read that photo. Please try again.',
-              ),
-            );
-        return;
-      }
-
-      final photoBloc = context.read<AskByPhotoBloc>();
-      final isReadable = await isReadableImage(bytes);
+      final file =
+          await serviceLocator<PhotoFileInput>().pick(fromCamera: fromCamera);
       if (photoBloc.isClosed) return;
-      if (!isReadable) {
-        photoBloc.add(const AskByPhotoPickUnavailable(unreadableImageMessage));
+      if (file == null) {
+        photoBloc.add(const AskByPhotoPickCancelled());
         return;
       }
-      photoBloc.add(
-        AskByPhotoPhotoPicked(
-          imageBytes: bytes,
-          fileName: file.name,
-        ),
-      );
+      await _preparePhoto(photoBloc, file);
+    } on Failure catch (f, stackTrace) {
+      AppLogger.error('Photo pick failed', error: f, stackTrace: stackTrace);
+      if (!photoBloc.isClosed) {
+        photoBloc.add(AskByPhotoPickUnavailable(f.message));
+      }
     } catch (e, stackTrace) {
-      AppLogger.error('Photo picker failed', error: e, stackTrace: stackTrace);
-      if (!context.mounted) return;
-      context.read<AskByPhotoBloc>().add(
-            const AskByPhotoPickUnavailable(
-              'Camera or photo picker is unavailable. Please upload a JPEG or PNG instead.',
-            ),
-          );
+      AppLogger.error('Photo pick failed', error: e, stackTrace: stackTrace);
+      if (!photoBloc.isClosed) {
+        photoBloc.add(
+          const AskByPhotoPickUnavailable(photoPickerUnavailableMessage),
+        );
+      }
     }
+  }
+
+  /// Turns [file] into the upright, scaled-down JPEG the student sees and the
+  /// solver gets. Failures propagate to the caller, which reports them.
+  Future<void> _preparePhoto(
+    AskByPhotoBloc photoBloc,
+    PickedPhotoFile file,
+  ) async {
+    photoBloc.add(const AskByPhotoPreparationStarted());
+    final photo = await serviceLocator<PhotoPreparer>().prepare(file);
+    if (photoBloc.isClosed) return;
+    photoBloc.add(
+      AskByPhotoPhotoPicked(
+        imageBytes: photo.bytes,
+        fileName: photo.fileName,
+        mimeType: photo.mimeType,
+      ),
+    );
   }
 
   /// Opens the camera/gallery chooser, unless a solve is already running.
@@ -82,7 +85,17 @@ class AskByPhotoPage extends StatelessWidget {
   Future<void> _showPhotoSourceOptions(
     BuildContext context, {
     bool isSolving = false,
+    bool isPreparing = false,
   }) async {
+    if (isPreparing) {
+      CustomToast.show(
+        context,
+        message: 'Still preparing your photo. One moment.',
+        type: ToastificationType.info,
+      );
+      return;
+    }
+
     if (isSolving) {
       _showStillSolving(context);
       return;
@@ -94,7 +107,11 @@ class AskByPhotoPage extends StatelessWidget {
       builder: (sheetContext) => PhotoSourceSheetOrganism(
         onCamera: () {
           Navigator.of(sheetContext).pop();
-          _openCamera(context);
+          if (serviceLocator<PhotoFileInput>().usesNativeCamera) {
+            _pickPhoto(context, fromCamera: true);
+          } else {
+            _openCamera(context);
+          }
         },
         onGallery: () {
           Navigator.of(sheetContext).pop();
@@ -148,26 +165,30 @@ class AskByPhotoPage extends StatelessWidget {
 
     if (!context.mounted || capture == null) return;
 
+    final photoBloc = context.read<AskByPhotoBloc>();
     try {
       final bytes = await capture.readAsBytes();
-      if (!context.mounted) return;
-
-      context.read<AskByPhotoBloc>().add(
-            AskByPhotoPhotoPicked(
-              imageBytes: bytes,
-              fileName: capture.name,
-              mimeType: capture.mimeType,
-            ),
-          );
+      if (photoBloc.isClosed) return;
+      await _preparePhoto(
+        photoBloc,
+        PickedPhotoFile(
+          bytes: bytes,
+          name: capture.name,
+          mimeType: capture.mimeType,
+        ),
+      );
+    } on Failure catch (f, stackTrace) {
+      AppLogger.error('Camera photo could not be prepared',
+          error: f, stackTrace: stackTrace);
+      if (!photoBloc.isClosed) {
+        photoBloc.add(AskByPhotoPickUnavailable(f.message));
+      }
     } catch (e, stackTrace) {
       AppLogger.error('Camera capture failed',
           error: e, stackTrace: stackTrace);
-      if (!context.mounted) return;
-      context.read<AskByPhotoBloc>().add(
-            const AskByPhotoPickUnavailable(
-              'We could not read that photo. Please try again.',
-            ),
-          );
+      if (!photoBloc.isClosed) {
+        photoBloc.add(const AskByPhotoPickUnavailable(photoUnreadableMessage));
+      }
     }
   }
 
@@ -219,8 +240,10 @@ class AskByPhotoPage extends StatelessWidget {
           final imageBytes =
               selected?.imageBytes ?? loading?.imageBytes ?? failed?.imageBytes;
           final isRetry = failed?.isRetryable ?? false;
+          final isPreparing = state is AskByPhotoPreparingPhoto;
           final showEmptyUploadPanel = state is AskByPhotoNotice &&
-              state.message == unreadableImageMessage;
+              (state.message == photoUnreadableMessage ||
+                  state.message == heicConverterUnavailableMessage);
 
           return AskByPhotoTemplate(
             uploadParams: PhotoUploadPanelParams(
@@ -229,6 +252,7 @@ class AskByPhotoPage extends StatelessWidget {
                   selected?.fileName ?? loading?.fileName ?? failed?.fileName,
               isLoading: isLoading,
               showWhenEmpty: showEmptyUploadPanel,
+              isPreparing: isPreparing,
               copy: photoUploadCopyFor(
                 hasPhoto: imageBytes != null,
                 isRetry: isRetry,
@@ -253,8 +277,11 @@ class AskByPhotoPage extends StatelessWidget {
               current: AppDestination.solve,
               onSaved: () => showComingSoon(context),
               onAiTutor: () => showComingSoon(context),
-              onSolve: () =>
-                  _showPhotoSourceOptions(context, isSolving: isLoading),
+              onSolve: () => _showPhotoSourceOptions(
+                context,
+                isSolving: isLoading,
+                isPreparing: isPreparing,
+              ),
               onCards: () => _openCards(context, isSolving: isLoading),
               onProfile: () => _openProfile(context, isSolving: isLoading),
             ),
