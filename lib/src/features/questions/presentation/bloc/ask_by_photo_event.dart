@@ -46,3 +46,8 @@ class AskByPhotoPickUnavailable extends AskByPhotoEvent {
   @override
   List<Object?> get props => [message];
 }
+
+/// A chosen photo is being turned into the JPEG that will be shown and sent.
+class AskByPhotoPreparationStarted extends AskByPhotoEvent {
+  const AskByPhotoPreparationStarted();
+}

@@ -453,6 +453,96 @@ void main() {
     },
   );
 
+  group('preparing a photo', () {
+    final selected = AskByPhotoPhotoSelected(
+      imageBytes: Uint8List.fromList([9, 9, 9]),
+      fileName: 'earlier.jpg',
+      mimeType: 'image/jpeg',
+    );
+
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'starts with no earlier photo to fall back to',
+      build: () => _blocFor(_FakeQuestionsRepository()),
+      act: (bloc) => bloc.add(const AskByPhotoPreparationStarted()),
+      expect: () => [const AskByPhotoPreparingPhoto()],
+    );
+
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'remembers the photo it is replacing',
+      build: () => _blocFor(_FakeQuestionsRepository()),
+      seed: () => selected,
+      act: (bloc) => bloc.add(const AskByPhotoPreparationStarted()),
+      expect: () => [AskByPhotoPreparingPhoto(previousSelection: selected)],
+    );
+
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'shows the prepared photo when it is ready',
+      build: () => _blocFor(_FakeQuestionsRepository()),
+      seed: () => AskByPhotoPreparingPhoto(previousSelection: selected),
+      act: (bloc) => bloc.add(AskByPhotoPhotoPicked(
+        imageBytes: validBytes,
+        fileName: 'IMG_1.jpg',
+        mimeType: 'image/jpeg',
+      )),
+      expect: () => [
+        AskByPhotoPhotoSelected(
+          imageBytes: validBytes,
+          fileName: 'IMG_1.jpg',
+          mimeType: 'image/jpeg',
+        ),
+      ],
+    );
+
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'a failed preparation brings the earlier photo back',
+      build: () => _blocFor(_FakeQuestionsRepository()),
+      seed: () => AskByPhotoPreparingPhoto(previousSelection: selected),
+      act: (bloc) =>
+          bloc.add(const AskByPhotoPickUnavailable('Could not prepare it.')),
+      expect: () => [
+        const AskByPhotoNotice('Could not prepare it.'),
+        selected,
+      ],
+    );
+
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'a failed preparation with no earlier photo leaves just the notice',
+      build: () => _blocFor(_FakeQuestionsRepository()),
+      seed: () => const AskByPhotoPreparingPhoto(),
+      act: (bloc) =>
+          bloc.add(const AskByPhotoPickUnavailable('Could not prepare it.')),
+      expect: () => [const AskByPhotoNotice('Could not prepare it.')],
+    );
+
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'a second preparation still remembers the first earlier photo',
+      build: () => _blocFor(_FakeQuestionsRepository()),
+      seed: () => AskByPhotoPreparingPhoto(previousSelection: selected),
+      act: (bloc) => bloc.add(const AskByPhotoPreparationStarted()),
+      // Equal to the seed, so bloc_test sees no new state.
+      expect: () => const <AskByPhotoState>[],
+      verify: (bloc) => expect(
+        bloc.state,
+        AskByPhotoPreparingPhoto(previousSelection: selected),
+      ),
+    );
+
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'submitting while preparing does nothing',
+      build: () => _blocFor(_FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.solved),
+      )),
+      seed: () => AskByPhotoPreparingPhoto(previousSelection: selected),
+      act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+      expect: () => const <AskByPhotoState>[],
+      verify: (bloc) {
+        final repository = bloc.submitPhotoQuestionUseCase.repository
+            as _FakeQuestionsRepository;
+        expect(repository.callCount, 0);
+      },
+    );
+  });
+
   group('a failed solve keeps the photo', () {
     // Losing the bytes unmounts the preview and leaves no way back except
     // finding and picking the same file again. A dropped connection should

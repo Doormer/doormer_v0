@@ -26,6 +26,18 @@ class AskByPhotoPhotoSelected extends AskByPhotoState {
   List<Object?> get props => [imageBytes, fileName, mimeType];
 }
 
+/// A chosen photo is being turned upright, scaled down and saved as JPEG.
+class AskByPhotoPreparingPhoto extends AskByPhotoState {
+  /// The photo on screen before this one was chosen, brought back if the new
+  /// one cannot be prepared.
+  final AskByPhotoPhotoSelected? previousSelection;
+
+  const AskByPhotoPreparingPhoto({this.previousSelection});
+
+  @override
+  List<Object?> get props => [previousSelection];
+}
+
 class AskByPhotoLoading extends AskByPhotoState {
   /// The photo being solved, carried through so the preview stays on screen for
   /// the whole in-flight solve instead of collapsing to the empty placeholder.

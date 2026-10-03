@@ -20,6 +20,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
     on<AskByPhotoTypeInsteadRequested>(_onTypeInsteadRequested);
     on<AskByPhotoPickCancelled>(_onPickCancelled);
     on<AskByPhotoPickUnavailable>(_onPickUnavailable);
+    on<AskByPhotoPreparationStarted>(_onPreparationStarted);
   }
 
   void _onPhotoPicked(
@@ -37,6 +38,9 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
     AskByPhotoSubmitted event,
     Emitter<AskByPhotoState> emit,
   ) async {
+    // The panel disables Submit while preparing; this guards a stray event.
+    if (state is AskByPhotoPreparingPhoto) return;
+
     final selected = _photoInHand();
     emit(AskByPhotoLoading(
       imageBytes: selected?.imageBytes,
@@ -163,6 +167,21 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
     }
   }
 
+  void _onPreparationStarted(
+    AskByPhotoPreparationStarted event,
+    Emitter<AskByPhotoState> emit,
+  ) {
+    emit(AskByPhotoPreparingPhoto(previousSelection: _currentSelection()));
+  }
+
+  /// The photo on screen now, or the one a preparation in progress replaced.
+  AskByPhotoPhotoSelected? _currentSelection() {
+    final current = state;
+    if (current is AskByPhotoPhotoSelected) return current;
+    if (current is AskByPhotoPreparingPhoto) return current.previousSelection;
+    return null;
+  }
+
   void _onClearRequested(
     AskByPhotoClearRequested event,
     Emitter<AskByPhotoState> emit,
@@ -195,11 +214,11 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
     String message,
     Emitter<AskByPhotoState> emit,
   ) {
-    final previousState = state;
+    final selection = _currentSelection();
     emit(AskByPhotoNotice(message));
 
-    if (previousState is AskByPhotoPhotoSelected) {
-      emit(previousState);
+    if (selection != null) {
+      emit(selection);
     }
   }
 }
