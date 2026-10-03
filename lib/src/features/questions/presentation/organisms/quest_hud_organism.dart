@@ -1,17 +1,14 @@
+import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/stat_pill_atom.dart';
 import 'package:doormer/src/features/questions/presentation/params/quest_hud_params.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/punch_atom.dart';
 import 'package:flutter/widgets.dart';
-
-import 'package:doormer/src/core/theme/quest_palette.dart';
-import 'package:flutter/material.dart' show Icons;
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// The page's standing bar: where this question sits, what it is called, and
-/// what the student is carrying.
+/// The bar at the top of the reader.
 ///
-/// The pills are absent, not zeroed, until each has loaded. A "0 quarks" that
-/// silently becomes "120 quarks" a frame later reads as losing something.
+/// The topic and method stay in the tree even when blank, so their line height
+/// keeps the bar stable. The quark pill is absent until the balance loads.
 class QuestHudOrganism extends StatelessWidget {
   final QuestHudParams params;
 
@@ -32,6 +29,7 @@ class QuestHudOrganism extends StatelessWidget {
               children: [
                 Text(
                   params.topic.toUpperCase(),
+                  key: const Key('hud_topic'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -43,7 +41,8 @@ class QuestHudOrganism extends StatelessWidget {
                 ),
                 SizedBox(height: 2.h),
                 Text(
-                  params.questionTitle,
+                  params.method,
+                  key: const Key('hud_method'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -75,17 +74,6 @@ class QuestHudOrganism extends StatelessWidget {
                 label: params.quarkBalanceLabel,
                 accent: QuestPalette.amber,
               ),
-            ),
-          ],
-          if (params.streakLabel.isNotEmpty) ...[
-            SizedBox(width: 6.w),
-            StatPillAtom(
-              key: const Key('hud_streak'),
-              icon: Icons.local_fire_department_rounded,
-              alive: true,
-              atStake: params.streakAtStake,
-              label: params.streakLabel,
-              accent: QuestPalette.amber,
             ),
           ],
         ],

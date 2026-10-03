@@ -6,7 +6,6 @@ import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
-import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
@@ -45,13 +44,6 @@ class _FakeQuestionsRepository implements QuestionsRepository {
   }
 
   @override
-  Future<QuestProfile> loadQuestProfile() async => const QuestProfile(
-        streakDays: 3,
-        topic: 'Geometry - Area',
-        questionTitle: 'Road through a field',
-      );
-
-  @override
   Future<int> loadQuarkBalance() {
     throw UnimplementedError();
   }
@@ -65,11 +57,15 @@ class _FakeQuestionsRepository implements QuestionsRepository {
 PhotoQuestionSolveOutcome _outcome(
   PhotoQuestionSolveStatus status, {
   String note = '',
+  String topic = '',
+  String method = '',
 }) {
   return PhotoQuestionSolveOutcome(
     status: status,
     questionId: 'q_${status.name}',
     note: note,
+    topic: topic,
+    method: method,
     solution: status == PhotoQuestionSolveStatus.solved
         ? const SolutionDocument(
             schemaVersion: '1.0',
@@ -119,6 +115,29 @@ void main() {
         'note',
         'The rectangle width is derived, not printed.',
       ),
+    ],
+  );
+
+  blocTest<AskByPhotoBloc, AskByPhotoState>(
+    'carries the topic and the method across the solve handoff',
+    build: () => _blocFor(_FakeQuestionsRepository(
+      outcome: _outcome(
+        PhotoQuestionSolveStatus.solved,
+        topic: 'Algebra - Linear equations',
+        method: 'Inverse operations',
+      ),
+    )),
+    seed: () => AskByPhotoPhotoSelected(
+      imageBytes: validBytes,
+      fileName: 'problem.jpg',
+      mimeType: 'image/jpeg',
+    ),
+    act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+    expect: () => [
+      AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.jpg'),
+      isA<AskByPhotoSolved>()
+          .having((state) => state.topic, 'topic', 'Algebra - Linear equations')
+          .having((state) => state.method, 'method', 'Inverse operations'),
     ],
   );
 

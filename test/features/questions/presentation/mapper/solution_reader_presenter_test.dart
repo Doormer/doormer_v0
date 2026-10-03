@@ -1,5 +1,4 @@
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
-import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_reader_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/params/solution_trail_node.dart';
@@ -273,17 +272,6 @@ void main() {
     );
   });
 
-  test('puts the streak at stake only on the step that decides it', () {
-    bool atStake(int index) => solutionReaderContent(
-          SolutionReaderReady(document: _document, stepIndex: index),
-        ).streakAtStake;
-
-    expect(atStake(0), isFalse);
-    expect(atStake(1), isFalse);
-    expect(atStake(2), isTrue,
-        reason: 'the last step is the one that can lose the day');
-  });
-
   test('tells the student what they just did, counting properly', () {
     expect(
       solutionReaderContent(
@@ -474,31 +462,27 @@ void main() {
     });
   });
 
-  group('standing', () {
-    const profile = QuestProfile(
-      streakDays: 3,
-      topic: 'Geometry - Area',
-      questionTitle: 'Road through a field',
-    );
+  group('topic and method', () {
+    test('come from the state', () {
+      final content = solutionReaderContent(
+        const SolutionReaderReady(
+          document: _document,
+          topic: 'Geometry - Area',
+          method: 'Trigonometry and parallelogram area',
+        ),
+      );
 
-    test('leaves the standing copy empty until the standing loads', () {
+      expect(content.topic, 'Geometry - Area');
+      expect(content.method, 'Trigonometry and parallelogram area');
+    });
+
+    test('stay empty when the solver named none', () {
       final content = solutionReaderContent(
         const SolutionReaderReady(document: _document),
       );
 
-      expect(content.streakLabel, '');
       expect(content.topic, '');
-      expect(content.questionTitle, '');
-    });
-
-    test('names the streak in days', () {
-      final content = solutionReaderContent(
-        const SolutionReaderReady(document: _document, profile: profile),
-      );
-
-      expect(content.streakLabel, '3-day');
-      expect(content.topic, 'Geometry - Area');
-      expect(content.questionTitle, 'Road through a field');
+      expect(content.method, '');
     });
   });
 

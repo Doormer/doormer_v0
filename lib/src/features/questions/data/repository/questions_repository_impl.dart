@@ -6,7 +6,6 @@ import 'package:doormer/src/features/questions/data/datasource/questions_local_d
 import 'package:doormer/src/features/questions/data/datasource/questions_remote_datasource.dart';
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
-import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 import 'package:uuid/uuid.dart';
 
@@ -59,11 +58,6 @@ class QuestionsRepositoryImpl implements QuestionsRepository {
   @override
   Future<PhotoQuestionSolveOutcome> loadSampleSolution() {
     return localDataSource.loadSampleSolution();
-  }
-
-  @override
-  Future<QuestProfile> loadQuestProfile() {
-    return localDataSource.loadQuestProfile();
   }
 }
 

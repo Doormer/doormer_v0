@@ -2,9 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
-import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
-import 'package:doormer/src/features/questions/domain/usecase/load_quest_profile_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
 import 'package:equatable/equatable.dart';
@@ -15,13 +13,11 @@ part 'solution_reader_state.dart';
 class SolutionReaderBloc
     extends Bloc<SolutionReaderEvent, SolutionReaderState> {
   final LoadSampleSolutionUseCase loadSampleSolutionUseCase;
-  final LoadQuestProfileUseCase loadQuestProfileUseCase;
   final LoadQuarkBalanceUseCase loadQuarkBalanceUseCase;
   final RevealAnswerUseCase revealAnswerUseCase;
 
   SolutionReaderBloc({
     required this.loadSampleSolutionUseCase,
-    required this.loadQuestProfileUseCase,
     required this.loadQuarkBalanceUseCase,
     required this.revealAnswerUseCase,
   }) : super(const SolutionReaderInitial()) {
@@ -43,9 +39,10 @@ class SolutionReaderBloc
         document: handedOver,
         onBriefing: handedOver.approach.body.isNotEmpty,
         note: event.note,
+        topic: event.topic,
+        method: event.method,
       ));
       await _attachQuarkBalance(emit);
-      await _attachProfile(emit);
       return;
     }
 
@@ -61,9 +58,10 @@ class SolutionReaderBloc
         document: solution,
         onBriefing: solution.approach.body.isNotEmpty,
         note: outcome.note,
+        topic: outcome.topic,
+        method: outcome.method,
       ));
       await _attachQuarkBalance(emit);
-      await _attachProfile(emit);
     } on Failure catch (f, stackTrace) {
       emit(SolutionReaderError(f.message));
       AppLogger.error('Solution reader load failed',
@@ -88,25 +86,6 @@ class SolutionReaderBloc
       }
     } catch (e, stackTrace) {
       AppLogger.error('Quark balance load failed',
-          error: e, stackTrace: stackTrace);
-    }
-  }
-
-  /// Loads the student's standing behind the solution. A missing profile costs
-  /// the HUD its pills; it must never cost the student the solution, so a
-  /// failure here is logged and swallowed rather than surfaced as an error
-  /// state.
-  Future<void> _attachProfile(Emitter<SolutionReaderState> emit) async {
-    final current = state;
-    if (current is! SolutionReaderReady) return;
-    try {
-      final profile = await loadQuestProfileUseCase();
-      final latest = state;
-      if (latest is SolutionReaderReady) {
-        emit(latest.copyWith(profile: profile));
-      }
-    } catch (e, stackTrace) {
-      AppLogger.error('Quest profile load failed',
           error: e, stackTrace: stackTrace);
     }
   }

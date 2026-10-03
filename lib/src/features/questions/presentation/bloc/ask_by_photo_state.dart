@@ -48,14 +48,22 @@ class AskByPhotoSolved extends AskByPhotoState {
   /// note unreachable on the solve path.
   final String note;
 
+  /// Where the solved question sits. Empty when the solver named none.
+  final String topic;
+
+  /// The theory or rule the solution relies on. Empty when unnamed.
+  final String method;
+
   const AskByPhotoSolved({
     required this.questionId,
     required this.solution,
     this.note = '',
+    this.topic = '',
+    this.method = '',
   });
 
   @override
-  List<Object?> get props => [questionId, solution, note];
+  List<Object?> get props => [questionId, solution, note, topic, method];
 }
 
 /// A solve that ended without a solution, holding on to the photo that

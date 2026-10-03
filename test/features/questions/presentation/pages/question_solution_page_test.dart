@@ -8,10 +8,8 @@ import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
-import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
-import 'package:doormer/src/features/questions/domain/usecase/load_quest_profile_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
@@ -39,13 +37,6 @@ class _AssetRepository implements QuestionsRepository {
   }) {
     throw UnimplementedError();
   }
-
-  @override
-  Future<QuestProfile> loadQuestProfile() async => const QuestProfile(
-        streakDays: 3,
-        topic: 'Geometry - Area',
-        questionTitle: 'Road through a field',
-      );
 
   @override
   Future<int> loadQuarkBalance() async => 128;
@@ -95,7 +86,6 @@ void main() {
     serviceLocator.registerFactory<SolutionReaderBloc>(
       () => SolutionReaderBloc(
         loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
-        loadQuestProfileUseCase: LoadQuestProfileUseCase(repository),
         loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(repository),
         revealAnswerUseCase: RevealAnswerUseCase(repository),
       ),
@@ -163,6 +153,35 @@ void main() {
     expect(find.text('Handed over from the solve.'), findsOneWidget);
   });
 
+  testWidgets(
+      'shows the sample question\'s own topic and method, and no streak',
+      (tester) async {
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+
+    expect(find.text('GEOMETRY - AREA'), findsOneWidget);
+    expect(find.text('Trigonometry and parallelogram area'), findsOneWidget);
+    expect(find.byKey(const Key('hud_streak')), findsNothing);
+  });
+
+  testWidgets('shows the topic and method handed over from a solve',
+      (tester) async {
+    final outcome = await _AssetRepository().loadSampleSolution();
+
+    await tester.pumpWidget(_app(
+      solvedState: AskByPhotoSolved(
+        questionId: '57',
+        solution: outcome.solution!,
+        topic: 'Algebra - Linear equations',
+        method: 'Inverse operations',
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ALGEBRA - LINEAR EQUATIONS'), findsOneWidget);
+    expect(find.text('Inverse operations'), findsOneWidget);
+  });
+
   testWidgets('lands at the top of step one after a scrolled briefing',
       (tester) async {
     tester.view.physicalSize = const Size(360, 690);
@@ -191,7 +210,8 @@ void main() {
         .position;
 
     expect(position.pixels, 0);
-    expect(tester.getTopLeft(find.textContaining('LEVEL 1')).dy, greaterThanOrEqualTo(0),
+    expect(tester.getTopLeft(find.textContaining('LEVEL 1')).dy,
+        greaterThanOrEqualTo(0),
         reason: 'the step heading must not start scrolled off the top');
   });
 
@@ -205,7 +225,6 @@ void main() {
     serviceLocator.registerFactory<SolutionReaderBloc>(
       () => SolutionReaderBloc(
         loadSampleSolutionUseCase: LoadSampleSolutionUseCase(solvedRepository),
-        loadQuestProfileUseCase: LoadQuestProfileUseCase(solvedRepository),
         loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(solvedRepository),
         revealAnswerUseCase: RevealAnswerUseCase(solvedRepository),
       ),
@@ -231,7 +250,6 @@ void main() {
     serviceLocator.registerFactory<SolutionReaderBloc>(
       () => SolutionReaderBloc(
         loadSampleSolutionUseCase: LoadSampleSolutionUseCase(sampleRepository),
-        loadQuestProfileUseCase: LoadQuestProfileUseCase(sampleRepository),
         loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(sampleRepository),
         revealAnswerUseCase: RevealAnswerUseCase(sampleRepository),
       ),

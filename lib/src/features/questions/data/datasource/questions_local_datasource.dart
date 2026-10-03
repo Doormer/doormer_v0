@@ -4,13 +4,10 @@ import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
-import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:flutter/services.dart';
 
 abstract class QuestionsLocalDataSource {
   Future<PhotoQuestionSolveOutcome> loadSampleSolution();
-
-  Future<QuestProfile> loadQuestProfile();
 }
 
 /// Temporary bridge. The solve response only arrives via
@@ -38,16 +35,5 @@ class QuestionsLocalDataSourceImpl implements QuestionsLocalDataSource {
       );
       throw DatabaseFailure('We could not open the sample solution.');
     }
-  }
-
-  /// Mock standing. No endpoint serves streaks or syllabus placement yet;
-  /// replace this body with the remote call when one does.
-  @override
-  Future<QuestProfile> loadQuestProfile() async {
-    return const QuestProfile(
-      streakDays: 3,
-      topic: 'Geometry - Area',
-      questionTitle: 'Road through a field',
-    );
   }
 }

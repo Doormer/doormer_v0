@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
-import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,9 +21,6 @@ class _FakeRepository implements QuestionsRepository {
   @override
   Future<PhotoQuestionSolveOutcome> loadSampleSolution() =>
       throw UnimplementedError();
-
-  @override
-  Future<QuestProfile> loadQuestProfile() => throw UnimplementedError();
 
   @override
   Future<PhotoQuestionSolveOutcome> submitPhotoQuestion({

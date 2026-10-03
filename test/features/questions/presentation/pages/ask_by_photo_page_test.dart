@@ -16,11 +16,9 @@ import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
-import 'package:doormer/src/features/questions/domain/entity/quest_profile.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
-import 'package:doormer/src/features/questions/domain/usecase/load_quest_profile_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
@@ -65,13 +63,6 @@ class _FakeQuestionsRepository implements QuestionsRepository {
   Future<PhotoQuestionSolveOutcome> loadSampleSolution() {
     throw UnimplementedError();
   }
-
-  @override
-  Future<QuestProfile> loadQuestProfile() async => const QuestProfile(
-        streakDays: 3,
-        topic: 'Geometry - Area',
-        questionTitle: 'Road through a field',
-      );
 
   @override
   Future<int> loadQuarkBalance() async => 120;
@@ -123,7 +114,6 @@ void main() {
     serviceLocator.registerFactory<SolutionReaderBloc>(
       () => SolutionReaderBloc(
         loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
-        loadQuestProfileUseCase: LoadQuestProfileUseCase(repository),
         loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(repository),
         revealAnswerUseCase: RevealAnswerUseCase(repository),
       ),
@@ -440,7 +430,8 @@ void main() {
       repository.failure = null;
       repository.outcome = _outcome(PhotoQuestionSolveStatus.solved);
 
-      await tester.ensureVisible(find.widgetWithText(AppButtonAtom, 'Try again'));
+      await tester
+          .ensureVisible(find.widgetWithText(AppButtonAtom, 'Try again'));
       await tester.tap(find.widgetWithText(AppButtonAtom, 'Try again'));
       await tester.pump();
       await tester.pump();

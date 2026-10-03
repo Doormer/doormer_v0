@@ -5,12 +5,16 @@ class PhotoQuestionResponseModel {
   final String questionId;
   final SolutionDocumentModel? solution;
   final String note;
+  final String topic;
+  final String method;
 
   const PhotoQuestionResponseModel({
     required this.status,
     required this.questionId,
     required this.solution,
     this.note = '',
+    this.topic = '',
+    this.method = '',
   });
 
   factory PhotoQuestionResponseModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +33,8 @@ class PhotoQuestionResponseModel {
       questionId: json['question_id']?.toString() ?? '',
       solution: solution,
       note: json['note']?.toString() ?? '',
+      topic: json['topic']?.toString() ?? '',
+      method: json['method']?.toString() ?? '',
     );
   }
 
@@ -38,6 +44,8 @@ class PhotoQuestionResponseModel {
       questionId: questionId,
       solution: solution?.toEntity(),
       note: note,
+      topic: topic,
+      method: method,
     );
   }
 

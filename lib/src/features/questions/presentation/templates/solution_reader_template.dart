@@ -267,7 +267,8 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
     // the road is better spent standing up beside the reading than lying across
     // the top of it -- a wide window is short, and height is what it has least
     // of. Below that the window *is* the column, so the bar stays.
-    final asRail = MediaQuery.sizeOf(context).width >= AppLayout.maxContentWidth;
+    final asRail =
+        MediaQuery.sizeOf(context).width >= AppLayout.maxContentWidth;
 
     return Scaffold(
       body: SizedBox.expand(
@@ -280,13 +281,11 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
                   QuestHudOrganism(
                     params: QuestHudParams(
                       topic: content.topic,
-                      questionTitle: content.questionTitle,
+                      method: content.method,
                       // The shown balance, not the live one: while a reward is in
                       // flight the balance has not been paid yet, and a number that
                       // updates before the reward arrives makes the flight a lie.
                       quarkBalanceLabel: _shownQuarkBalanceLabel,
-                      streakLabel: content.streakLabel,
-                      streakAtStake: content.streakAtStake,
                       quarkKey: _quarkDotKey,
                       quarkTrigger: _quarkLandings,
                     ),
