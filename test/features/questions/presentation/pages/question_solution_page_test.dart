@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:doormer/src/core/di/service_locator.dart';
+import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
@@ -19,11 +20,13 @@ import 'package:doormer/src/features/questions/presentation/pages/question_solut
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 /// Serves the real bundled payload, so this exercises the content students
 /// actually get rather than a hand-written stand-in.
 class _AssetRepository implements QuestionsRepository {
   final List<String> loadedIds = [];
+  Object? loadQuestionError;
 
   @override
   Future<PhotoQuestionSolveOutcome> loadSampleSolution() async {
@@ -35,6 +38,9 @@ class _AssetRepository implements QuestionsRepository {
 
   @override
   Future<PhotoQuestionSolveOutcome> loadQuestion(String questionId) async {
+    final error = loadQuestionError;
+    if (error != null) throw error;
+
     loadedIds.add(questionId);
     final raw =
         File('assets/mock/mock_question_response.json').readAsStringSync();
@@ -148,6 +154,56 @@ void main() {
     expect(repository.loadedIds, ['57']);
     expect(find.byKey(const Key('solution_briefing')), findsOneWidget);
     expect(find.text('The plan'), findsOneWidget);
+  });
+
+  testWidgets('error state shows Back to Solve and returns to Solve',
+      (tester) async {
+    await serviceLocator.reset();
+    final repository = _AssetRepository()
+      ..loadQuestionError = ApiFailure(404, 'That question does not exist.');
+    serviceLocator.registerFactory<SolutionReaderBloc>(
+      () => SolutionReaderBloc(
+        loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
+        loadQuestionUseCase: LoadQuestionUseCase(repository),
+        loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(repository),
+        revealAnswerUseCase: RevealAnswerUseCase(repository),
+      ),
+    );
+    final router = GoRouter(
+      initialLocation: '/questions/999999/solution',
+      routes: [
+        GoRoute(
+          path: '/questions/photo',
+          builder: (_, __) => const Scaffold(body: Text('Solve page')),
+        ),
+        GoRoute(
+          path: '/questions/:questionId/solution',
+          builder: (_, state) => QuestionSolutionPage(
+            questionId: state.pathParameters['questionId'],
+          ),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(360, 690),
+        builder: (_, __) => MaterialApp.router(
+          theme: AppTheme.dark,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text("We couldn't find this question."), findsOneWidget);
+    expect(find.text('Back to Solve'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('solution_back')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Solve page'), findsOneWidget);
   });
 
   testWidgets('shows the solver note on the briefing', (tester) async {

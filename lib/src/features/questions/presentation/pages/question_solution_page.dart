@@ -58,7 +58,10 @@ class QuestionSolutionPage extends StatelessWidget {
           }
 
           if (state is SolutionReaderError) {
-            return SolutionReaderPlaceholderTemplate(message: state.message);
+            return SolutionReaderPlaceholderTemplate(
+              message: state.message,
+              onBack: () => context.go('/questions/photo'),
+            );
           }
 
           return const SolutionReaderPlaceholderTemplate();
