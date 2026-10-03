@@ -42,20 +42,10 @@ class AskByPhotoTemplate extends StatelessWidget {
       body: SafeArea(
         child: Stack(
           children: [
-            Positioned(
-              top: 60.h,
-              right: -30.w,
-              child: Opacity(
-                opacity: 0.7,
-                child: Image.asset(
-                  'assets/images/starter_bg_person.png',
-                  width: 240.w,
-                ),
-              ),
-            ),
             if (showPanels)
               Positioned.fill(
-                  child: _buildSolvePanels(showUploadPanel, showStatusPanel))
+                child: _buildSolvePanels(showUploadPanel, showStatusPanel),
+              )
             else
               _buildHero(),
             Positioned(
@@ -72,18 +62,31 @@ class AskByPhotoTemplate extends StatelessWidget {
 
   Widget _buildHero() {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const AskByPhotoHeaderMolecule(),
-          SizedBox(height: 24.h),
-          AppButtonAtom(
-            label: 'UPLOAD & SOLVE',
-            icon: Icons.camera_alt,
-            variant: AppButtonVariant.accent,
-            onPressed: uploadParams.isLoading ? null : uploadParams.onPickPhoto,
-          ),
-        ],
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 120.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Opacity(
+              opacity: 0.7,
+              child: Image.asset(
+                'assets/images/starter_bg_person.png',
+                height: 180.h,
+                fit: BoxFit.contain,
+              ),
+            ),
+            SizedBox(height: 12.h),
+            const AskByPhotoHeaderMolecule(),
+            SizedBox(height: 24.h),
+            AppButtonAtom(
+              label: 'UPLOAD & SOLVE',
+              icon: Icons.camera_alt,
+              variant: AppButtonVariant.accent,
+              onPressed:
+                  uploadParams.isLoading ? null : uploadParams.onPickPhoto,
+            ),
+          ],
+        ),
       ),
     );
   }

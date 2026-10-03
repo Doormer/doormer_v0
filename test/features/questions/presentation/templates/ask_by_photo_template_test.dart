@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
+import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/photo_upload_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solve_status_presenter.dart';
@@ -9,6 +12,7 @@ import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -200,9 +204,109 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  for (final window in const <String, Size>{
+    'phone': Size(390, 844),
+    'desktop': Size(1280, 800),
+  }.entries) {
+    testWidgets('the illustration never covers the heading on a ${window.key}',
+        (tester) async {
+      await _pumpTemplate(tester, window: window.value);
+
+      final illustration = tester.getRect(_starterIllustrationFinder());
+      expect(
+        illustration.overlaps(tester.getRect(find.text('Upload a photo'))),
+        isFalse,
+      );
+      expect(
+        illustration.overlaps(tester.getRect(find.text('Ready to solve?'))),
+        isFalse,
+      );
+    });
+  }
+
+  testWidgets('the illustration steps aside once a photo is picked',
+      (tester) async {
+    await _pumpTemplate(
+      tester,
+      window: const Size(390, 844),
+      imageBytes: _transparentPngBytes,
+    );
+
+    expect(_starterIllustrationFinder(), findsNothing);
+  });
+
+  testWidgets('headings use the display font and the button the body font',
+      (tester) async {
+    await _pumpTemplate(tester, window: const Size(390, 844));
+
+    final uploadHeading = tester.widget<Text>(find.text('Upload a photo'));
+    expect(uploadHeading.style?.fontFamily, kDisplayFont);
+
+    final buttonParagraph =
+        tester.renderObject<RenderParagraph>(find.text('UPLOAD & SOLVE'));
+    final buttonText = buttonParagraph.text as TextSpan;
+    final buttonStyle = buttonText.style;
+    final usesBodyFont = buttonStyle?.fontFamily == kBodyFont ||
+        (buttonStyle?.fontFamilyFallback ?? const <String>[])
+            .contains(kBodyFont);
+    expect(usesBodyFont, isTrue);
+  });
 }
 
 void _noop() {}
+
+Finder _starterIllustrationFinder() {
+  return find.byWidgetPredicate((widget) {
+    return widget is Image &&
+        widget.image is AssetImage &&
+        (widget.image as AssetImage).assetName ==
+            'assets/images/starter_bg_person.png';
+  });
+}
+
+Future<void> _pumpTemplate(
+  WidgetTester tester, {
+  required Size window,
+  Uint8List? imageBytes,
+}) async {
+  tester.view.physicalSize = window;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
+  await tester.pumpWidget(
+    ScreenUtilInit(
+      designSize: const Size(360, 690),
+      builder: (_, __) => MaterialApp(
+        theme: AppTheme.light,
+        home: AskByPhotoTemplate(
+          uploadParams: PhotoUploadPanelParams(
+            imageBytes: imageBytes,
+            isLoading: false,
+            copy: photoUploadCopyFor(
+              hasPhoto: imageBytes != null,
+              isRetry: false,
+            ),
+            onPickPhoto: () {},
+            onSubmit: () {},
+            onClear: () {},
+          ),
+          statusParams: const SolveStatusPanelParams(
+            content: SolveStatusContent(
+              title: '',
+              body: '',
+              showActions: false,
+            ),
+            onRetake: _noop,
+          ),
+          navigationBarParams: _navigationBarParams,
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+}
 
 const _navigationBarParams = NavigationBarParams(
   current: AppDestination.solve,
@@ -212,3 +316,73 @@ const _navigationBarParams = NavigationBarParams(
   onCards: _noop,
   onProfile: _noop,
 );
+
+final _transparentPngBytes = Uint8List.fromList(const [
+  0x89,
+  0x50,
+  0x4E,
+  0x47,
+  0x0D,
+  0x0A,
+  0x1A,
+  0x0A,
+  0x00,
+  0x00,
+  0x00,
+  0x0D,
+  0x49,
+  0x48,
+  0x44,
+  0x52,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x08,
+  0x06,
+  0x00,
+  0x00,
+  0x00,
+  0x1F,
+  0x15,
+  0xC4,
+  0x89,
+  0x00,
+  0x00,
+  0x00,
+  0x0A,
+  0x49,
+  0x44,
+  0x41,
+  0x54,
+  0x78,
+  0x9C,
+  0x63,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x05,
+  0x00,
+  0x01,
+  0x0D,
+  0x0A,
+  0x2D,
+  0xB4,
+  0x00,
+  0x00,
+  0x00,
+  0x00,
+  0x49,
+  0x45,
+  0x4E,
+  0x44,
+  0xAE,
+  0x42,
+  0x60,
+  0x82,
+]);

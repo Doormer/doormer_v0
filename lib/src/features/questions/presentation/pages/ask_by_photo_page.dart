@@ -4,6 +4,7 @@ import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/photo_upload_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solve_status_presenter.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/photo_source_sheet_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/templates/ask_by_photo_template.dart';
@@ -89,31 +90,18 @@ class AskByPhotoPage extends StatelessWidget {
 
     await showModalBottomSheet<void>(
       context: context,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.camera_alt_outlined),
-                title: const Text('Open camera'),
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  _openCamera(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('Choose from gallery'),
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  _pickPhoto(context);
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      showDragHandle: true,
+      builder: (sheetContext) => PhotoSourceSheetOrganism(
+        onCamera: () {
+          Navigator.of(sheetContext).pop();
+          _openCamera(context);
+        },
+        onGallery: () {
+          Navigator.of(sheetContext).pop();
+          _pickPhoto(context);
+        },
+        onCancel: () => Navigator.of(sheetContext).pop(),
+      ),
     );
   }
 
