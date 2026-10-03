@@ -5,6 +5,7 @@ class PhotoUploadPanelParams {
   final Uint8List? imageBytes;
   final String? fileName;
   final bool isLoading;
+  final bool showWhenEmpty;
 
   /// Button labels, resolved above this layer because they change with state —
   /// including whether the submit button is sending or resending.
@@ -18,6 +19,7 @@ class PhotoUploadPanelParams {
     this.imageBytes,
     this.fileName,
     required this.isLoading,
+    this.showWhenEmpty = false,
     required this.copy,
     required this.onPickPhoto,
     required this.onSubmit,

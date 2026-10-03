@@ -3,9 +3,9 @@
 // These pump the REAL AskByPhotoPage widget tree — its BlocConsumer, the upload
 // and status panels, the enable/disable logic on the Submit button, and the
 // GoRouter hand-off on a solved outcome — backed by the real AskByPhotoBloc and
-// SubmitPhotoQuestionUseCase. Only the repository (network boundary) and the
-// platform file picker are substituted: the picker result is simulated by
-// dispatching AskByPhotoPhotoPicked, exactly as AskByPhotoPage._pickPhoto does.
+// SubmitPhotoQuestionUseCase. Only the repository (network boundary) and,
+// where a test exercises the picker path, the platform file picker are
+// substituted.
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -31,6 +31,8 @@ import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
 import 'package:doormer/src/features/questions/presentation/templates/solution_reader_template.dart';
+import 'package:doormer/src/features/questions/utils/image_readability.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -82,6 +84,41 @@ class _FakeQuestionsRepository implements QuestionsRepository {
   }
 }
 
+class _FakeFilePicker extends FilePicker {
+  _FakeFilePicker(this.result);
+
+  final FilePickerResult? result;
+  FileType? lastType;
+  List<String>? lastAllowedExtensions;
+  bool? lastAllowMultiple;
+  bool? lastWithData;
+
+  @override
+  Future<FilePickerResult?> pickFiles({
+    String? dialogTitle,
+    String? initialDirectory,
+    FileType type = FileType.any,
+    List<String>? allowedExtensions,
+    Function(FilePickerStatus)? onFileLoading,
+    @Deprecated(
+      'allowCompression is deprecated and has no effect. Use compressionQuality instead.',
+    )
+    bool allowCompression = false,
+    int compressionQuality = 0,
+    bool allowMultiple = false,
+    bool withData = false,
+    bool withReadStream = false,
+    bool lockParentWindow = false,
+    bool readSequential = false,
+  }) async {
+    lastType = type;
+    lastAllowedExtensions = allowedExtensions;
+    lastAllowMultiple = allowMultiple;
+    lastWithData = withData;
+    return result;
+  }
+}
+
 PhotoQuestionSolveOutcome _outcome(PhotoQuestionSolveStatus status) {
   return PhotoQuestionSolveOutcome(
     status: status,
@@ -106,7 +143,8 @@ PhotoQuestionSolveOutcome _outcome(PhotoQuestionSolveStatus status) {
 // A real, decodable 1x1 transparent PNG so the in-tree Image.memory preview
 // decodes without raising a FlutterError during the test.
 final Uint8List _pngBytes = base64Decode(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk'
+  'YPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
 );
 
 void main() {
@@ -290,6 +328,48 @@ void main() {
       findsOneWidget,
     );
     expect(submitButton(tester).onPressed, isNotNull);
+  });
+
+  testWidgets('an unreadable file is refused with a friendly message',
+      (tester) async {
+    repository = _FakeQuestionsRepository(
+      outcome: _outcome(PhotoQuestionSolveStatus.solved),
+    );
+    registerBloc();
+    final fakeFilePicker = _FakeFilePicker(
+      FilePickerResult([
+        PlatformFile(
+          name: 'photo.png',
+          size: 64,
+          bytes: Uint8List.fromList(List.filled(64, 7)),
+        ),
+      ]),
+    );
+    FilePicker.platform = fakeFilePicker;
+    await pumpPage(tester);
+
+    await tester.tap(find.byIcon(Icons.document_scanner_outlined));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Choose from gallery'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+
+    expect(fakeFilePicker.lastType, FileType.custom);
+    expect(fakeFilePicker.lastAllowedExtensions, const ['jpg', 'jpeg', 'png']);
+    expect(fakeFilePicker.lastAllowMultiple, isFalse);
+    expect(fakeFilePicker.lastWithData, isTrue);
+    expect(find.text(unreadableImageMessage), findsOneWidget);
+    expect(find.text('JPEG or PNG · max 10 MB'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(PhotoPreviewMolecule),
+        matching: find.byType(Image),
+      ),
+      findsNothing,
+    );
+    expect(submitButton(tester).onPressed, isNull);
+    await drainToasts(tester);
   });
 
   testWidgets(

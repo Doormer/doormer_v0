@@ -7,6 +7,7 @@ import 'package:doormer/src/features/questions/presentation/mapper/solve_status_
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/templates/ask_by_photo_template.dart';
+import 'package:doormer/src/features/questions/utils/image_readability.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:doormer/src/shared/widget/coming_soon_toast.dart';
 import 'package:doormer/src/shared/widget/custom_toast.dart';
@@ -24,7 +25,7 @@ class AskByPhotoPage extends StatelessWidget {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: const ['jpg', 'jpeg', 'png', 'heic', 'heif'],
+        allowedExtensions: const ['jpg', 'jpeg', 'png'],
         allowMultiple: false,
         withData: true,
       );
@@ -47,12 +48,19 @@ class AskByPhotoPage extends StatelessWidget {
         return;
       }
 
-      context.read<AskByPhotoBloc>().add(
-            AskByPhotoPhotoPicked(
-              imageBytes: bytes,
-              fileName: file.name,
-            ),
-          );
+      final photoBloc = context.read<AskByPhotoBloc>();
+      final isReadable = await isReadableImage(bytes);
+      if (photoBloc.isClosed) return;
+      if (!isReadable) {
+        photoBloc.add(const AskByPhotoPickUnavailable(unreadableImageMessage));
+        return;
+      }
+      photoBloc.add(
+        AskByPhotoPhotoPicked(
+          imageBytes: bytes,
+          fileName: file.name,
+        ),
+      );
     } catch (e, stackTrace) {
       AppLogger.error('Photo picker failed', error: e, stackTrace: stackTrace);
       if (!context.mounted) return;
@@ -223,6 +231,8 @@ class AskByPhotoPage extends StatelessWidget {
           final imageBytes =
               selected?.imageBytes ?? loading?.imageBytes ?? failed?.imageBytes;
           final isRetry = failed?.isRetryable ?? false;
+          final showEmptyUploadPanel = state is AskByPhotoNotice &&
+              state.message == unreadableImageMessage;
 
           return AskByPhotoTemplate(
             uploadParams: PhotoUploadPanelParams(
@@ -230,6 +240,7 @@ class AskByPhotoPage extends StatelessWidget {
               fileName:
                   selected?.fileName ?? loading?.fileName ?? failed?.fileName,
               isLoading: isLoading,
+              showWhenEmpty: showEmptyUploadPanel,
               copy: photoUploadCopyFor(
                 hasPhoto: imageBytes != null,
                 isRetry: isRetry,
