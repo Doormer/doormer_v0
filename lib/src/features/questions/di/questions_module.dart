@@ -59,6 +59,7 @@ void initQuestionsModule() {
   serviceLocator.registerFactory<SolutionReaderBloc>(
     () => SolutionReaderBloc(
       loadSampleSolutionUseCase: serviceLocator<LoadSampleSolutionUseCase>(),
+      loadQuestionUseCase: serviceLocator<LoadQuestionUseCase>(),
       loadQuarkBalanceUseCase: serviceLocator<LoadQuarkBalanceUseCase>(),
       revealAnswerUseCase: serviceLocator<RevealAnswerUseCase>(),
     ),

@@ -13,12 +13,12 @@ import 'package:go_router/go_router.dart';
 
 /// The only layer that touches flutter_bloc.
 class QuestionSolutionPage extends StatelessWidget {
-  final String questionId;
+  final String? questionId;
   final AskByPhotoSolved? solvedState;
 
   const QuestionSolutionPage({
     super.key,
-    required this.questionId,
+    this.questionId,
     this.solvedState,
   });
 
@@ -31,7 +31,7 @@ class QuestionSolutionPage extends StatelessWidget {
           note: solvedState?.note ?? '',
           topic: solvedState?.topic ?? '',
           method: solvedState?.method ?? '',
-          questionId: solvedState == null ? null : questionId,
+          questionId: questionId,
         )),
       child: BlocBuilder<SolutionReaderBloc, SolutionReaderState>(
         builder: (context, state) {
@@ -48,7 +48,7 @@ class QuestionSolutionPage extends StatelessWidget {
                 onToggleRationale: () =>
                     bloc.add(const SolutionReaderRationaleToggled()),
                 onRevealAnswer: () => bloc.add(SolutionReaderAnswerRevealed(
-                  questionId: solvedState == null ? null : questionId,
+                  questionId: questionId,
                 )),
                 onTravelTo: (position) =>
                     bloc.add(SolutionReaderTravelled(position)),

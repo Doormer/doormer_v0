@@ -1,12 +1,11 @@
 import 'package:doormer/src/core/di/service_locator.dart';
+import 'package:doormer/src/core/routes/question_solution_routes.dart';
 import 'package:doormer/src/core/routes/popup_route_tracker.dart';
 import 'package:doormer/src/core/routes/route_guard.dart';
 import 'package:doormer/src/core/utils/token_storage/token_storage.dart';
 import 'package:doormer/src/features/auth/presentation/pages/login_page.dart';
 import 'package:doormer/src/features/auth/presentation/pages/signup_page.dart';
 import 'package:doormer/src/core/routes/destination_routes.dart';
-import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
-import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
 import 'package:doormer/src/features/registration/presentation/pages/candidate_registration.dart';
 import 'package:doormer/src/features/registration/presentation/pages/registration_complete_page.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
@@ -56,16 +55,7 @@ class WebRouter {
         ],
       ),
       ...destinationRoutes,
-      GoRoute(
-        path: '/questions/:questionId/solution',
-        builder: (context, state) {
-          final extra = state.extra;
-          return QuestionSolutionPage(
-            questionId: state.pathParameters['questionId'] ?? '',
-            solvedState: extra is AskByPhotoSolved ? extra : null,
-          );
-        },
-      ),
+      ...questionSolutionRoutes,
     ],
     errorBuilder: (context, state) {
       AppLogger.warn('Page not found: ${state.uri.path}');

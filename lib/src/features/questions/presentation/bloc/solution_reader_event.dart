@@ -8,13 +8,14 @@ abstract class SolutionReaderEvent extends Equatable {
 }
 
 /// Opens the reader. [document] is the solve result handed over through the
-/// route; when it is null the reader falls back to the bundled sample, which
-/// is what happens on a refresh or a shared link.
+/// route. When [document] is null and [questionId] is set, the reader loads
+/// that question by address. When both are null, the bundled sample at
+/// `/questions/sample/solution` opens and must never pay.
 class SolutionReaderStarted extends SolutionReaderEvent {
   final SolutionDocument? document;
 
-  /// The solved question that can pay when the answer opens. Null for the
-  /// bundled sample opened by URL, which must never pay.
+  /// The solved question that can pay when the answer opens. Null only for the
+  /// bundled sample URL, which must never pay.
   final String? questionId;
 
   /// Solver commentary handed over alongside [document]. Ignored when
