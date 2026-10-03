@@ -11,6 +11,8 @@ abstract class QuestionsRepository {
 
   Future<PhotoQuestionSolveOutcome> loadSampleSolution();
 
+  Future<PhotoQuestionSolveOutcome> loadQuestion(String questionId);
+
   Future<AnswerReward> revealAnswer(String questionId);
 
   Future<int> loadQuarkBalance();

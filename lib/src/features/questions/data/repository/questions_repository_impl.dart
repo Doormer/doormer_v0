@@ -59,6 +59,12 @@ class QuestionsRepositoryImpl implements QuestionsRepository {
   Future<PhotoQuestionSolveOutcome> loadSampleSolution() {
     return localDataSource.loadSampleSolution();
   }
+
+  @override
+  Future<PhotoQuestionSolveOutcome> loadQuestion(String questionId) async {
+    final response = await remoteDataSource.loadQuestion(questionId);
+    return response.toEntity();
+  }
 }
 
 String _newIdempotencyKey() => const Uuid().v4();

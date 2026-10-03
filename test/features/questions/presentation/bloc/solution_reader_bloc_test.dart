@@ -2,9 +2,11 @@ import 'dart:typed_data';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:doormer/src/core/errors/failure.dart';
+import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_question_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
@@ -47,6 +49,16 @@ const _briefedDocument = SolutionDocument(
 /// A single-step document with a briefing. This is the only shape that exposes
 /// the two isLastStep guards: at stepIndex 0 the reader is simultaneously on
 /// the briefing and on the last step.
+
+const _loadedOutcome = PhotoQuestionSolveOutcome(
+  status: PhotoQuestionSolveStatus.solved,
+  questionId: '57',
+  solution: _briefedDocument,
+  note: 'The width is derived.',
+  topic: 'Geometry - Area',
+  method: 'Trigonometry and parallelogram area',
+);
+
 const _oneStepBriefedDocument = SolutionDocument(
   schemaVersion: '3.0',
   steps: [
@@ -63,18 +75,31 @@ const _oneStepBriefedDocument = SolutionDocument(
 class _StubRepository implements QuestionsRepository {
   final PhotoQuestionSolveOutcome? outcome;
   final Failure? failure;
+  PhotoQuestionSolveOutcome? loadedOutcome;
+  Object? loadQuestionError;
   int balance = 128;
   AnswerReward reward = const AnswerReward(quarksEarned: 3, quarkBalance: 131);
   Object? balanceError;
   Object? revealError;
   final List<String> revealedIds = [];
+  final List<String> loadedIds = [];
+  int sampleCalls = 0;
 
-  _StubRepository({this.outcome, this.failure});
+  _StubRepository({this.outcome, this.failure, this.loadedOutcome});
 
   @override
   Future<PhotoQuestionSolveOutcome> loadSampleSolution() async {
+    sampleCalls++;
     if (failure != null) throw failure!;
     return outcome!;
+  }
+
+  @override
+  Future<PhotoQuestionSolveOutcome> loadQuestion(String questionId) async {
+    loadedIds.add(questionId);
+    final error = loadQuestionError;
+    if (error != null) throw error;
+    return loadedOutcome!;
   }
 
   @override
@@ -104,22 +129,37 @@ class _StubRepository implements QuestionsRepository {
 ({SolutionReaderBloc bloc, _StubRepository repository}) _blocWithRepository({
   PhotoQuestionSolveOutcome? outcome,
   Failure? failure,
+  PhotoQuestionSolveOutcome? loadedOutcome,
 }) {
-  final repository = _StubRepository(outcome: outcome, failure: failure);
+  final repository = _StubRepository(
+    outcome: outcome,
+    failure: failure,
+    loadedOutcome: loadedOutcome,
+  );
   final bloc = SolutionReaderBloc(
     loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
+    loadQuestionUseCase: LoadQuestionUseCase(repository),
     loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(repository),
     revealAnswerUseCase: RevealAnswerUseCase(repository),
   );
   return (bloc: bloc, repository: repository);
 }
 
-SolutionReaderBloc _bloc(
-    {PhotoQuestionSolveOutcome? outcome, Failure? failure}) {
-  return _blocWithRepository(outcome: outcome, failure: failure).bloc;
+SolutionReaderBloc _bloc({
+  PhotoQuestionSolveOutcome? outcome,
+  Failure? failure,
+  PhotoQuestionSolveOutcome? loadedOutcome,
+}) {
+  return _blocWithRepository(
+    outcome: outcome,
+    failure: failure,
+    loadedOutcome: loadedOutcome,
+  ).bloc;
 }
 
 void main() {
+  setUpAll(AppLogger.disable);
+
   group('SolutionReaderStarted', () {
     blocTest<SolutionReaderBloc, SolutionReaderState>(
       'uses the handed-over document without touching the usecase',
@@ -130,6 +170,157 @@ void main() {
       // call cost the student the thing they came for.
       expect: () => [
         const SolutionReaderReady(document: _document),
+        isA<SolutionReaderReady>()
+            .having((s) => s.quarkBalance, 'quarkBalance', 128),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'loads a question by id when no document is handed over',
+      build: () {
+        final built = _blocWithRepository(loadedOutcome: _loadedOutcome);
+        addTearDown(() {
+          expect(built.repository.loadedIds, ['57']);
+          expect(built.repository.sampleCalls, 0);
+        });
+        return built.bloc;
+      },
+      act: (bloc) => bloc.add(const SolutionReaderStarted(questionId: '57')),
+      expect: () => [
+        isA<SolutionReaderLoading>(),
+        isA<SolutionReaderReady>()
+            .having((s) => s.document, 'document', _briefedDocument)
+            .having((s) => s.note, 'note', 'The width is derived.')
+            .having((s) => s.topic, 'topic', 'Geometry - Area')
+            .having(
+              (s) => s.method,
+              'method',
+              'Trigonometry and parallelogram area',
+            )
+            .having((s) => s.onBriefing, 'onBriefing', isTrue),
+        isA<SolutionReaderReady>()
+            .having((s) => s.quarkBalance, 'quarkBalance', 128),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'handed-over document does not load by id',
+      build: () {
+        final built = _blocWithRepository(
+          loadedOutcome: const PhotoQuestionSolveOutcome(
+            status: PhotoQuestionSolveStatus.unreadable,
+            questionId: 'must-not-load',
+            solution: null,
+          ),
+        );
+        addTearDown(() => expect(built.repository.loadedIds, isEmpty));
+        return built.bloc;
+      },
+      act: (bloc) => bloc.add(const SolutionReaderStarted(
+        document: _document,
+        questionId: '57',
+      )),
+      expect: () => [
+        const SolutionReaderReady(document: _document),
+        isA<SolutionReaderReady>()
+            .having((s) => s.quarkBalance, 'quarkBalance', 128),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'loaded question with no solution shows the no-solution message',
+      build: () => _bloc(
+        loadedOutcome: const PhotoQuestionSolveOutcome(
+          status: PhotoQuestionSolveStatus.unreadable,
+          questionId: '57',
+          solution: null,
+        ),
+      ),
+      act: (bloc) => bloc.add(const SolutionReaderStarted(questionId: '57')),
+      expect: () => const [
+        SolutionReaderLoading(),
+        SolutionReaderError('This question has no solution yet.'),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      '404 while loading by id shows the not-found message',
+      build: () {
+        final built = _blocWithRepository(loadedOutcome: _loadedOutcome);
+        built.repository.loadQuestionError =
+            ApiFailure(404, 'That question does not exist.');
+        return built.bloc;
+      },
+      act: (bloc) => bloc.add(const SolutionReaderStarted(questionId: '404')),
+      expect: () => const [
+        SolutionReaderLoading(),
+        SolutionReaderError("We couldn't find this question."),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'network failure while loading by id shows the no-connection message',
+      build: () {
+        final built = _blocWithRepository(loadedOutcome: _loadedOutcome);
+        built.repository.loadQuestionError =
+            NetworkFailure('raw datasource text');
+        return built.bloc;
+      },
+      act: (bloc) => bloc.add(const SolutionReaderStarted(questionId: '57')),
+      expect: () => const [
+        SolutionReaderLoading(),
+        SolutionReaderError(
+            "We couldn't connect. Check your connection and try again."),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'other Failure while loading by id shows the generic open message',
+      build: () {
+        final built = _blocWithRepository(loadedOutcome: _loadedOutcome);
+        built.repository.loadQuestionError = ServerFailure('raw server text');
+        return built.bloc;
+      },
+      act: (bloc) => bloc.add(const SolutionReaderStarted(questionId: '57')),
+      expect: () => const [
+        SolutionReaderLoading(),
+        SolutionReaderError('We could not open this solution.'),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'non-Failure exception while loading by id shows the generic open message',
+      build: () {
+        final built = _blocWithRepository(loadedOutcome: _loadedOutcome);
+        built.repository.loadQuestionError = StateError('boom');
+        return built.bloc;
+      },
+      act: (bloc) => bloc.add(const SolutionReaderStarted(questionId: '57')),
+      expect: () => const [
+        SolutionReaderLoading(),
+        SolutionReaderError('We could not open this solution.'),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'sample path does not load by id',
+      build: () {
+        final built = _blocWithRepository(
+          outcome: const PhotoQuestionSolveOutcome(
+            status: PhotoQuestionSolveStatus.solved,
+            questionId: 'sample',
+            solution: _document,
+          ),
+          loadedOutcome: _loadedOutcome,
+        );
+        addTearDown(() => expect(built.repository.loadedIds, isEmpty));
+        return built.bloc;
+      },
+      act: (bloc) => bloc.add(const SolutionReaderStarted()),
+      expect: () => [
+        isA<SolutionReaderLoading>(),
+        isA<SolutionReaderReady>()
+            .having((s) => s.document.steps, 'steps', hasLength(3)),
         isA<SolutionReaderReady>()
             .having((s) => s.quarkBalance, 'quarkBalance', 128),
       ],
@@ -324,6 +515,34 @@ void main() {
   });
 
   group('reveals', () {
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'after loading by id, revealing pays with that id',
+      build: () {
+        final built = _blocWithRepository(
+          loadedOutcome: const PhotoQuestionSolveOutcome(
+            status: PhotoQuestionSolveStatus.solved,
+            questionId: '57',
+            solution: SolutionDocument(
+              schemaVersion: '3.0',
+              steps: [SolutionStep(title: 'Only', body: [])],
+              finalAnswer: FinalAnswer(body: []),
+            ),
+          ),
+        );
+        addTearDown(() => expect(built.repository.revealedIds, ['57']));
+        return built.bloc;
+      },
+      act: (bloc) async {
+        bloc.add(const SolutionReaderStarted(questionId: '57'));
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(const SolutionReaderAnswerRevealed(questionId: '57'));
+      },
+      wait: const Duration(milliseconds: 1),
+      verify: (bloc) {
+        expect(bloc.state, isA<SolutionReaderReady>());
+      },
+    );
+
     blocTest<SolutionReaderBloc, SolutionReaderState>(
       'toggles the rationale on and off',
       build: _bloc,

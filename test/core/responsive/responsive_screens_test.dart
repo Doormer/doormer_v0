@@ -17,6 +17,7 @@ import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_question_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
@@ -44,6 +45,10 @@ class _FakeQuestionsRepository implements QuestionsRepository {
   @override
   Future<PhotoQuestionSolveOutcome> loadSampleSolution() =>
       Completer<PhotoQuestionSolveOutcome>().future;
+
+  @override
+  Future<PhotoQuestionSolveOutcome> loadQuestion(String questionId) =>
+      throw UnimplementedError();
 
   @override
   Future<int> loadQuarkBalance() async => 120;
@@ -105,6 +110,7 @@ void main() {
     serviceLocator.registerFactory<SolutionReaderBloc>(
       () => SolutionReaderBloc(
         loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
+        loadQuestionUseCase: LoadQuestionUseCase(repository),
         loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(repository),
         revealAnswerUseCase: RevealAnswerUseCase(repository),
       ),

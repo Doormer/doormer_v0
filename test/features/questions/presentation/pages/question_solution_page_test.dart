@@ -3,12 +3,14 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:doormer/src/core/di/service_locator.dart';
+import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_question_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
@@ -18,16 +20,35 @@ import 'package:doormer/src/features/questions/presentation/pages/question_solut
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 /// Serves the real bundled payload, so this exercises the content students
 /// actually get rather than a hand-written stand-in.
 class _AssetRepository implements QuestionsRepository {
+  final List<String> loadedIds = [];
+  Object? loadQuestionError;
+
   @override
   Future<PhotoQuestionSolveOutcome> loadSampleSolution() async {
     final raw =
         File('assets/mock/mock_question_response.json').readAsStringSync();
     final json = jsonDecode(raw) as Map<String, dynamic>;
     return PhotoQuestionResponseModel.fromJson(json).toEntity();
+  }
+
+  @override
+  Future<PhotoQuestionSolveOutcome> loadQuestion(String questionId) async {
+    final error = loadQuestionError;
+    if (error != null) throw error;
+
+    loadedIds.add(questionId);
+    final raw =
+        File('assets/mock/mock_question_response.json').readAsStringSync();
+    final json = jsonDecode(raw) as Map<String, dynamic>;
+    return PhotoQuestionResponseModel.fromJson({
+      ...json,
+      'question_id': questionId,
+    }).toEntity();
   }
 
   @override
@@ -46,12 +67,15 @@ class _AssetRepository implements QuestionsRepository {
       const AnswerReward(quarksEarned: 3, quarkBalance: 131);
 }
 
-Widget _app({AskByPhotoSolved? solvedState}) {
+Widget _app({String? questionId = '57', AskByPhotoSolved? solvedState}) {
   return ScreenUtilInit(
     designSize: const Size(360, 690),
     builder: (_, __) => MaterialApp(
       theme: AppTheme.dark,
-      home: QuestionSolutionPage(questionId: '57', solvedState: solvedState),
+      home: QuestionSolutionPage(
+        questionId: questionId,
+        solvedState: solvedState,
+      ),
     ),
   );
 }
@@ -86,6 +110,7 @@ void main() {
     serviceLocator.registerFactory<SolutionReaderBloc>(
       () => SolutionReaderBloc(
         loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
+        loadQuestionUseCase: LoadQuestionUseCase(repository),
         loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(repository),
         revealAnswerUseCase: RevealAnswerUseCase(repository),
       ),
@@ -108,6 +133,77 @@ void main() {
     // The payload's approach opens with this phrase; asserting on real content
     // proves the text survived the whole chain, not just that a box exists.
     expect(find.textContaining('Frozen question-data ledger'), findsOneWidget);
+  });
+
+  testWidgets('with an id and no handover, loads that question by id',
+      (tester) async {
+    await serviceLocator.reset();
+    final repository = _AssetRepository();
+    serviceLocator.registerFactory<SolutionReaderBloc>(
+      () => SolutionReaderBloc(
+        loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
+        loadQuestionUseCase: LoadQuestionUseCase(repository),
+        loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(repository),
+        revealAnswerUseCase: RevealAnswerUseCase(repository),
+      ),
+    );
+
+    await tester.pumpWidget(_app(questionId: '57'));
+    await tester.pumpAndSettle();
+
+    expect(repository.loadedIds, ['57']);
+    expect(find.byKey(const Key('solution_briefing')), findsOneWidget);
+    expect(find.text('The plan'), findsOneWidget);
+  });
+
+  testWidgets('error state shows Back to Solve and returns to Solve',
+      (tester) async {
+    await serviceLocator.reset();
+    final repository = _AssetRepository()
+      ..loadQuestionError = ApiFailure(404, 'That question does not exist.');
+    serviceLocator.registerFactory<SolutionReaderBloc>(
+      () => SolutionReaderBloc(
+        loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
+        loadQuestionUseCase: LoadQuestionUseCase(repository),
+        loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(repository),
+        revealAnswerUseCase: RevealAnswerUseCase(repository),
+      ),
+    );
+    final router = GoRouter(
+      initialLocation: '/questions/999999/solution',
+      routes: [
+        GoRoute(
+          path: '/questions/photo',
+          builder: (_, __) => const Scaffold(body: Text('Solve page')),
+        ),
+        GoRoute(
+          path: '/questions/:questionId/solution',
+          builder: (_, state) => QuestionSolutionPage(
+            questionId: state.pathParameters['questionId'],
+          ),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(360, 690),
+        builder: (_, __) => MaterialApp.router(
+          theme: AppTheme.dark,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text("We couldn't find this question."), findsOneWidget);
+    expect(find.text('Back to Solve'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('solution_back')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Solve page'), findsOneWidget);
   });
 
   testWidgets('shows the solver note on the briefing', (tester) async {
@@ -215,7 +311,7 @@ void main() {
         reason: 'the step heading must not start scrolled off the top');
   });
 
-  testWidgets('passes questionId only when the page has a solved handoff',
+  testWidgets('passes questionId to reveal for handoff and id-loaded pages',
       (tester) async {
     final outcome = await _AssetRepository().loadSampleSolution();
     final stepCount = outcome.solution!.steps.length;
@@ -225,6 +321,7 @@ void main() {
     serviceLocator.registerFactory<SolutionReaderBloc>(
       () => SolutionReaderBloc(
         loadSampleSolutionUseCase: LoadSampleSolutionUseCase(solvedRepository),
+        loadQuestionUseCase: LoadQuestionUseCase(solvedRepository),
         loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(solvedRepository),
         revealAnswerUseCase: RevealAnswerUseCase(solvedRepository),
       ),
@@ -242,23 +339,46 @@ void main() {
 
     expect(solvedRepository.revealedIds, ['57']);
 
-    // Unmount the solved page so the sample run builds a fresh BLoC instead
-    // of reusing this one.
     await tester.pumpWidget(const SizedBox());
+    await serviceLocator.reset();
+    final loadedRepository = _RecordingRepository();
+    serviceLocator.registerFactory<SolutionReaderBloc>(
+      () => SolutionReaderBloc(
+        loadSampleSolutionUseCase: LoadSampleSolutionUseCase(loadedRepository),
+        loadQuestionUseCase: LoadQuestionUseCase(loadedRepository),
+        loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(loadedRepository),
+        revealAnswerUseCase: RevealAnswerUseCase(loadedRepository),
+      ),
+    );
+
+    await tester.pumpWidget(_app(questionId: '57'));
+    await tester.pumpAndSettle();
+    await _revealTheAnswer(tester, stepCount);
+
+    expect(loadedRepository.loadedIds, ['57']);
+    expect(loadedRepository.revealedIds, ['57']);
+  });
+
+  testWidgets('the sample page never pays', (tester) async {
+    final outcome = await _AssetRepository().loadSampleSolution();
+    final stepCount = outcome.solution!.steps.length;
+
     await serviceLocator.reset();
     final sampleRepository = _RecordingRepository();
     serviceLocator.registerFactory<SolutionReaderBloc>(
       () => SolutionReaderBloc(
         loadSampleSolutionUseCase: LoadSampleSolutionUseCase(sampleRepository),
+        loadQuestionUseCase: LoadQuestionUseCase(sampleRepository),
         loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(sampleRepository),
         revealAnswerUseCase: RevealAnswerUseCase(sampleRepository),
       ),
     );
 
-    await tester.pumpWidget(_app());
+    await tester.pumpWidget(_app(questionId: null));
     await tester.pumpAndSettle();
     await _revealTheAnswer(tester, stepCount);
 
+    expect(sampleRepository.loadedIds, isEmpty);
     expect(sampleRepository.revealedIds, isEmpty);
   });
 }

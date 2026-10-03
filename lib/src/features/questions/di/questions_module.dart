@@ -4,6 +4,7 @@ import 'package:doormer/src/features/questions/data/datasource/questions_remote_
 import 'package:doormer/src/features/questions/data/repository/questions_repository_impl.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_question_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
@@ -40,6 +41,10 @@ void initQuestionsModule() {
     () => LoadSampleSolutionUseCase(serviceLocator<QuestionsRepository>()),
   );
 
+  serviceLocator.registerLazySingleton<LoadQuestionUseCase>(
+    () => LoadQuestionUseCase(serviceLocator<QuestionsRepository>()),
+  );
+
   serviceLocator.registerFactory<AskByPhotoBloc>(
     () => AskByPhotoBloc(
       submitPhotoQuestionUseCase: serviceLocator<SubmitPhotoQuestionUseCase>(),
@@ -57,6 +62,7 @@ void initQuestionsModule() {
   serviceLocator.registerFactory<SolutionReaderBloc>(
     () => SolutionReaderBloc(
       loadSampleSolutionUseCase: serviceLocator<LoadSampleSolutionUseCase>(),
+      loadQuestionUseCase: serviceLocator<LoadQuestionUseCase>(),
       loadQuarkBalanceUseCase: serviceLocator<LoadQuarkBalanceUseCase>(),
       revealAnswerUseCase: serviceLocator<RevealAnswerUseCase>(),
     ),

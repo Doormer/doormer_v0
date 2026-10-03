@@ -10,9 +10,8 @@ abstract class QuestionsLocalDataSource {
   Future<PhotoQuestionSolveOutcome> loadSampleSolution();
 }
 
-/// Temporary bridge. The solve response only arrives via
-/// `POST /v1/questions/photo`, so a page opened directly by URL has no data.
-/// Serve the bundled sample until `GET /v1/questions/{id}` exists.
+/// Loads the bundled sample used by `/questions/sample/solution` for local
+/// testing and demos. Real question URLs load through the remote datasource.
 class QuestionsLocalDataSourceImpl implements QuestionsLocalDataSource {
   static const String mockAssetPath = 'assets/mock/mock_question_response.json';
 

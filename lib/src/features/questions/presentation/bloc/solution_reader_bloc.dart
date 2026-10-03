@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_question_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
@@ -13,11 +14,13 @@ part 'solution_reader_state.dart';
 class SolutionReaderBloc
     extends Bloc<SolutionReaderEvent, SolutionReaderState> {
   final LoadSampleSolutionUseCase loadSampleSolutionUseCase;
+  final LoadQuestionUseCase loadQuestionUseCase;
   final LoadQuarkBalanceUseCase loadQuarkBalanceUseCase;
   final RevealAnswerUseCase revealAnswerUseCase;
 
   SolutionReaderBloc({
     required this.loadSampleSolutionUseCase,
+    required this.loadQuestionUseCase,
     required this.loadQuarkBalanceUseCase,
     required this.revealAnswerUseCase,
   }) : super(const SolutionReaderInitial()) {
@@ -35,33 +38,57 @@ class SolutionReaderBloc
   ) async {
     final handedOver = event.document;
     if (handedOver != null) {
-      emit(SolutionReaderReady(
+      await _emitReady(
+        emit,
         document: handedOver,
-        onBriefing: handedOver.approach.body.isNotEmpty,
         note: event.note,
         topic: event.topic,
         method: event.method,
-      ));
-      await _attachQuarkBalance(emit);
+      );
       return;
     }
 
+    final questionId = event.questionId;
     emit(const SolutionReaderLoading());
+
+    if (questionId != null) {
+      await _loadQuestionById(questionId, emit);
+      return;
+    }
+
+    await _loadSample(emit);
+  }
+
+  Future<void> _loadQuestionById(
+    String questionId,
+    Emitter<SolutionReaderState> emit,
+  ) async {
+    try {
+      final outcome = await loadQuestionUseCase(questionId);
+      await _emitOutcome(
+        emit,
+        outcome,
+        noSolutionMessage: 'This question has no solution yet.',
+      );
+    } on Failure catch (f, stackTrace) {
+      emit(SolutionReaderError(_messageForQuestionLoadFailure(f)));
+      AppLogger.error('Solution reader question load failed',
+          error: f, stackTrace: stackTrace);
+    } catch (e, stackTrace) {
+      emit(const SolutionReaderError('We could not open this solution.'));
+      AppLogger.error('Solution reader question load unexpected error',
+          error: e, stackTrace: stackTrace);
+    }
+  }
+
+  Future<void> _loadSample(Emitter<SolutionReaderState> emit) async {
     try {
       final outcome = await loadSampleSolutionUseCase();
-      final solution = outcome.solution;
-      if (solution == null) {
-        emit(const SolutionReaderError('This question has no solution yet.'));
-        return;
-      }
-      emit(SolutionReaderReady(
-        document: solution,
-        onBriefing: solution.approach.body.isNotEmpty,
-        note: outcome.note,
-        topic: outcome.topic,
-        method: outcome.method,
-      ));
-      await _attachQuarkBalance(emit);
+      await _emitOutcome(
+        emit,
+        outcome,
+        noSolutionMessage: 'This question has no solution yet.',
+      );
     } on Failure catch (f, stackTrace) {
       emit(SolutionReaderError(f.message));
       AppLogger.error('Solution reader load failed',
@@ -72,6 +99,49 @@ class SolutionReaderBloc
           error: e, stackTrace: stackTrace);
     }
   }
+
+  Future<void> _emitOutcome(
+    Emitter<SolutionReaderState> emit,
+    PhotoQuestionSolveOutcome outcome, {
+    required String noSolutionMessage,
+  }) async {
+    final solution = outcome.solution;
+    if (solution == null) {
+      emit(SolutionReaderError(noSolutionMessage));
+      return;
+    }
+    await _emitReady(
+      emit,
+      document: solution,
+      note: outcome.note,
+      topic: outcome.topic,
+      method: outcome.method,
+    );
+  }
+
+  Future<void> _emitReady(
+    Emitter<SolutionReaderState> emit, {
+    required SolutionDocument document,
+    String note = '',
+    String topic = '',
+    String method = '',
+  }) async {
+    emit(SolutionReaderReady(
+      document: document,
+      onBriefing: document.approach.body.isNotEmpty,
+      note: note,
+      topic: topic,
+      method: method,
+    ));
+    await _attachQuarkBalance(emit);
+  }
+
+  String _messageForQuestionLoadFailure(Failure failure) => switch (failure) {
+        ApiFailure(statusCode: 404) => "We couldn't find this question.",
+        NetworkFailure() =>
+          "We couldn't connect. Check your connection and try again.",
+        _ => 'We could not open this solution.',
+      };
 
   /// Loads the real quark balance behind the solution. Failure hides the pill
   /// and is logged; it must not cost the student the solution.
