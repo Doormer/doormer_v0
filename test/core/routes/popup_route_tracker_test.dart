@@ -70,4 +70,84 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('hi'), findsOneWidget);
   });
+
+  test('tracks and closes page overlays', () {
+    final owner = Object();
+    var dismissed = 0;
+
+    tracker.openOverlay(
+      owner,
+      barrierColor: Colors.red,
+      onDismiss: () => dismissed++,
+    );
+
+    expect(tracker.hasOpenPopup, isTrue);
+    expect(tracker.barrierColor, Colors.red);
+
+    tracker.dismissTop();
+    expect(dismissed, 1);
+
+    tracker.closeOverlay(owner);
+    expect(tracker.hasOpenPopup, isFalse);
+  });
+
+  testWidgets('uses the most recently opened barrier and dismiss action',
+      (tester) async {
+    final context = await pump(tester);
+    final owner = Object();
+    var overlayDismissed = 0;
+
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.green,
+      builder: (_) => const Text('dialog'),
+    );
+    await tester.pumpAndSettle();
+
+    tracker.openOverlay(
+      owner,
+      barrierColor: Colors.blue,
+      onDismiss: () => overlayDismissed++,
+    );
+
+    expect(tracker.barrierColor, Colors.blue);
+    tracker.dismissTop();
+    expect(overlayDismissed, 1);
+    expect(find.text('dialog'), findsOneWidget);
+
+    tracker.closeOverlay(owner);
+    expect(tracker.barrierColor, Colors.green);
+
+    tracker.dismissTop();
+    await tester.pumpAndSettle();
+    expect(find.text('dialog'), findsNothing);
+  });
+
+  testWidgets('a popup opened after an overlay becomes the top barrier',
+      (tester) async {
+    final context = await pump(tester);
+    final owner = Object();
+    var overlayDismissed = 0;
+
+    tracker.openOverlay(
+      owner,
+      barrierColor: Colors.red,
+      onDismiss: () => overlayDismissed++,
+    );
+
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.green,
+      builder: (_) => const Text('dialog'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tracker.barrierColor, Colors.green);
+    tracker.dismissTop();
+    await tester.pumpAndSettle();
+
+    expect(find.text('dialog'), findsNothing);
+    expect(overlayDismissed, 0);
+    expect(tracker.barrierColor, Colors.red);
+  });
 }

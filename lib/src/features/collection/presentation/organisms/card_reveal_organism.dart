@@ -26,6 +26,8 @@ import '../params/reveal_params.dart';
 class CardRevealOrganism extends StatefulWidget {
   static const Duration totalDuration = Duration(milliseconds: 1600);
 
+  static final Color barrierColor = QuestPalette.night.withValues(alpha: 0.92);
+
   /// Phase boundaries, shared with [CardRevealState] so every layer's shape
   /// function is built from the same table rather than its own guess.
   static const double backEnd = 0.12;
@@ -299,7 +301,7 @@ class CardRevealState extends State<CardRevealOrganism>
             onTap: widget.params.onDismiss,
             behavior: HitTestBehavior.opaque,
             child: ColoredBox(
-              color: QuestPalette.night.withValues(alpha: 0.92),
+              color: CardRevealOrganism.barrierColor,
               child: Center(
                 child: AnimatedBuilder(
                   animation: Listenable.merge([_controller, _rayController]),

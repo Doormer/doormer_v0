@@ -4,6 +4,7 @@
 // 1440px-wide window rendered 14px body text at 56px and 16px gutters at 64px,
 // while corner radii grew only 1.3x. The numbers below are the contract.
 import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
+import 'package:doormer/src/core/responsive/margin_scrim_scope.dart';
 import 'package:doormer/src/core/routes/popup_route_tracker.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/quest_backdrop.dart';
@@ -231,6 +232,57 @@ void main() {
 
       expect(find.text('dialog'), findsOneWidget);
       expect(find.text('count 1'), findsOneWidget);
+    });
+
+    testWidgets('a page overlay dims margins and margin tap dismisses it',
+        (tester) async {
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final tracker = PopupRouteTracker();
+      const barrierColor = Colors.purple;
+      var dismissed = 0;
+      var showOverlay = true;
+
+      await tester.pumpWidget(MaterialApp(
+        builder: (context, child) =>
+            ResponsiveAppShell(popupRoutes: tracker, child: child!),
+        home: StatefulBuilder(
+          builder: (context, setState) {
+            return showOverlay
+                ? MarginScrimScope(
+                    tracker: tracker,
+                    barrierColor: barrierColor,
+                    onDismiss: () {
+                      dismissed++;
+                      setState(() => showOverlay = false);
+                    },
+                    child: const Scaffold(body: Text('overlay body')),
+                  )
+                : const Scaffold(body: Text('closed'));
+          },
+        ),
+      ));
+      await tester.pump();
+
+      expect(tracker.hasOpenPopup, isTrue);
+      expect(
+          tester.widget<AnimatedOpacity>(find.byType(AnimatedOpacity)).opacity,
+          1);
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is ColoredBox && widget.color == barrierColor,
+        ),
+        findsNWidgets(2),
+      );
+
+      await tester.tapAt(const Offset(40, 450));
+      await tester.pump();
+
+      expect(dismissed, 1);
+      expect(tracker.hasOpenPopup, isFalse);
+      expect(find.text('closed'), findsOneWidget);
     });
   });
 }

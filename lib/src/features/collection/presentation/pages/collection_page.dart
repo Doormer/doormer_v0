@@ -1,5 +1,7 @@
 // lib/src/features/collection/presentation/pages/collection_page.dart
 import 'package:doormer/src/core/di/service_locator.dart';
+import 'package:doormer/src/core/responsive/margin_scrim_scope.dart';
+import 'package:doormer/src/core/routes/app_router.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:doormer/src/shared/widget/coming_soon_toast.dart';
 import 'package:flutter/material.dart';
@@ -151,15 +153,20 @@ class _CollectionViewState extends State<_CollectionView> {
             ),
             if (reveal != null)
               Positioned.fill(
-                child: CardRevealOrganism(
-                  params: RevealParams(
-                    outcome: reveal.outcome,
-                    supportingLine: CollectionPresenter.revealSupportingLine(
+                child: MarginScrimScope(
+                  tracker: AppRouter.popupRoutes,
+                  barrierColor: CardRevealOrganism.barrierColor,
+                  onDismiss: () => bloc.add(const RevealDismissed()),
+                  child: CardRevealOrganism(
+                    params: RevealParams(
                       outcome: reveal.outcome,
-                      deckName: reveal.deckName,
-                      collectionAfterDraw: reveal.collectionAfterDraw,
+                      supportingLine: CollectionPresenter.revealSupportingLine(
+                        outcome: reveal.outcome,
+                        deckName: reveal.deckName,
+                        collectionAfterDraw: reveal.collectionAfterDraw,
+                      ),
+                      onDismiss: () => bloc.add(const RevealDismissed()),
                     ),
-                    onDismiss: () => bloc.add(const RevealDismissed()),
                   ),
                 ),
               ),

@@ -100,10 +100,11 @@ abstract final class AppLayout {
 /// a 1440x900 laptop scales to about 1.30, not [AppLayout.maxScale]. The
 /// ceiling is only reached when a window is tall enough to spend it.
 ///
-/// Route-level modals stay bounded to the column, which keeps dialogs and
-/// bottom sheets phone-shaped instead of stretching across a 1440px window.
-/// When [popupRoutes] is provided, the shell still dims the margins to match
-/// the top popup's scrim and closes that popup on a margin tap.
+/// Route-level modals and page overlays stay bounded to the column, which
+/// keeps dialogs, bottom sheets, and in-page reveals phone-shaped instead of
+/// stretching across a 1440px window. When [popupRoutes] is provided, the shell
+/// still dims the margins to match the top popup or page overlay scrim and
+/// closes that top entry on a margin tap.
 class ResponsiveAppShell extends StatelessWidget {
   final Widget child;
   final PopupRouteTracker? popupRoutes;
