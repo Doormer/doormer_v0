@@ -9,6 +9,9 @@ import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usec
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
+import 'package:doormer/src/features/questions/utils/photo/photo_file_input.dart';
+import 'package:doormer/src/features/questions/utils/photo/photo_platform.dart';
+import 'package:doormer/src/features/questions/utils/photo/photo_preparer.dart';
 import 'package:get_it/get_it.dart';
 
 final serviceLocator = GetIt.instance;
@@ -58,4 +61,8 @@ void initQuestionsModule() {
       revealAnswerUseCase: serviceLocator<RevealAnswerUseCase>(),
     ),
   );
+
+  serviceLocator.registerLazySingleton<PhotoFileInput>(createPhotoFileInput);
+
+  serviceLocator.registerLazySingleton<PhotoPreparer>(createPhotoPreparer);
 }
