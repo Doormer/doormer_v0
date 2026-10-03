@@ -121,7 +121,7 @@ class CollectionTemplate extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _header(context),
+        _header(context, useKeyedBalance: true),
         SizedBox(height: 12.h),
         Expanded(
           child: Row(
@@ -169,7 +169,7 @@ class CollectionTemplate extends StatelessWidget {
     return _deckBody(context, showBack: true);
   }
 
-  Widget _header(BuildContext context) {
+  Widget _header(BuildContext context, {bool useKeyedBalance = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -181,7 +181,14 @@ class CollectionTemplate extends StatelessWidget {
           ),
         ),
         SizedBox(width: 10.w),
-        Flexible(child: QuarkBalanceAtom(quarkBalance: quarkBalance)),
+        Flexible(
+          child: useKeyedBalance
+              ? QuarkBalanceMolecule(
+                  quarkBalance: quarkBalance,
+                  dotKey: quarkDotKey,
+                )
+              : QuarkBalanceAtom(quarkBalance: quarkBalance),
+        ),
       ],
     );
   }
@@ -239,13 +246,15 @@ class CollectionTemplate extends StatelessWidget {
                 style: TextStyle(fontSize: 11.5.sp, color: QuestPalette.dim),
               ),
             ),
-            SizedBox(width: 10.w),
-            Flexible(
-              child: QuarkBalanceMolecule(
-                quarkBalance: quarkBalance,
-                dotKey: quarkDotKey,
+            if (!isWide) ...[
+              SizedBox(width: 10.w),
+              Flexible(
+                child: QuarkBalanceMolecule(
+                  quarkBalance: quarkBalance,
+                  dotKey: quarkDotKey,
+                ),
               ),
-            ),
+            ],
           ],
         ),
         SizedBox(height: 14.h),

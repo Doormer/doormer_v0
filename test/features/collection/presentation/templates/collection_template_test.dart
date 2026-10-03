@@ -168,6 +168,24 @@ void main() {
     );
   });
 
+  testWidgets('a wide open deck shows one keyed quark balance', (tester) async {
+    final quarkDotKey = GlobalKey();
+
+    await _pumpAt(
+        tester,
+        _wideWindow,
+        _template(
+          selectedDeckId: 'meridian',
+          collection: _meridian,
+          quarkDotKey: quarkDotKey,
+        ));
+
+    expect(find.byType(QuarkBalanceMolecule), findsOneWidget);
+    expect(find.text('120 quarks'), findsOneWidget);
+    expect(quarkDotKey.currentContext, isNotNull);
+    expect(quarkDotKey.currentContext!.mounted, isTrue);
+  });
+
   testWidgets('a deck still loading shows its name and a spinner',
       (tester) async {
     await _pumpAt(tester, _phone, _template(selectedDeckId: 'meridian'));
