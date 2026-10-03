@@ -5,6 +5,7 @@ import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/photo_upload_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solve_status_presenter.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/photo_upload_panel_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/templates/ask_by_photo_template.dart';
@@ -122,6 +123,60 @@ void main() {
       findsAtLeastNWidgets(1),
       reason: 'FilledButton backing the accent CTA must resolve to tertiary',
     );
+  });
+
+  testWidgets('shows the upload panel while a photo is being prepared',
+      (tester) async {
+    var pickCount = 0;
+    var submitCount = 0;
+    var clearCount = 0;
+
+    tester.view.physicalSize = const Size(360, 690);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(360, 690),
+        builder: (_, __) => MaterialApp(
+          theme: AppTheme.light,
+          home: AskByPhotoTemplate(
+            uploadParams: PhotoUploadPanelParams(
+              isLoading: false,
+              isPreparing: true,
+              copy: photoUploadCopyFor(hasPhoto: false, isRetry: false),
+              onPickPhoto: () => pickCount++,
+              onSubmit: () => submitCount++,
+              onClear: () => clearCount++,
+            ),
+            statusParams: const SolveStatusPanelParams(
+              content: SolveStatusContent(
+                title: '',
+                body: '',
+                showActions: false,
+              ),
+              onRetake: _noop,
+            ),
+            navigationBarParams: _navigationBarParams,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Preparing your photo…'), findsOneWidget);
+    expect(find.text('UPLOAD & SOLVE'), findsNothing);
+
+    final buttons = tester.widgetList<AppButtonAtom>(find.descendant(
+      of: find.byType(PhotoUploadPanelOrganism),
+      matching: find.byType(AppButtonAtom),
+    ));
+    expect(buttons, isNotEmpty);
+    for (final button in buttons) {
+      expect(button.onPressed, isNull, reason: button.label);
+      expect(button.isLoading, isFalse, reason: button.label);
+    }
+    expect(pickCount + submitCount + clearCount, 0);
   });
 
   group('the dock on a wide window', () {

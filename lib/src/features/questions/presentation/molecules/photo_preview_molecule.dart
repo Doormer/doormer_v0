@@ -8,8 +8,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class PhotoPreviewMolecule extends StatelessWidget {
   final Uint8List? imageBytes;
+  final bool isPreparing;
 
-  const PhotoPreviewMolecule({super.key, this.imageBytes});
+  const PhotoPreviewMolecule({
+    super.key,
+    this.imageBytes,
+    this.isPreparing = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +33,9 @@ class PhotoPreviewMolecule extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (bytes == null)
+            if (isPreparing)
+              _buildPreparing(context)
+            else if (bytes == null)
               _buildEmptyHint(context)
             else
               Image.memory(
@@ -67,6 +74,26 @@ class PhotoPreviewMolecule extends StatelessWidget {
         Text(
           'JPG, PNG or HEIC',
           style: tt.bodyMedium?.copyWith(fontSize: 14.sp),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPreparing(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox.square(
+          dimension: 32.r,
+          child: CircularProgressIndicator(
+            strokeWidth: 3,
+            color: context.colorScheme.primary,
+          ),
+        ),
+        SizedBox(height: 12.h),
+        Text(
+          'Preparing your photo…',
+          style: context.textTheme.bodyMedium?.copyWith(fontSize: 14.sp),
         ),
       ],
     );

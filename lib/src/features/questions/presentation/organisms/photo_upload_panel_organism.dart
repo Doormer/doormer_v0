@@ -16,6 +16,7 @@ class PhotoUploadPanelOrganism extends StatelessWidget {
   Widget build(BuildContext context) {
     final tt = context.textTheme;
     final hasPhoto = params.imageBytes != null;
+    final isPreparing = params.isPreparing;
     final name = params.fileName;
 
     return SurfaceCardAtom(
@@ -27,8 +28,11 @@ class PhotoUploadPanelOrganism extends StatelessWidget {
             style: tt.titleLarge?.copyWith(fontSize: 20.sp),
           ),
           SizedBox(height: 16.h),
-          PhotoPreviewMolecule(imageBytes: params.imageBytes),
-          if (hasPhoto && name != null) ...[
+          PhotoPreviewMolecule(
+            imageBytes: params.imageBytes,
+            isPreparing: isPreparing,
+          ),
+          if (hasPhoto && name != null && !isPreparing) ...[
             SizedBox(height: 12.h),
             Text(
               name,
@@ -38,7 +42,7 @@ class PhotoUploadPanelOrganism extends StatelessWidget {
           SizedBox(height: 22.h),
           PhotoActionRowMolecule(
             hasPhoto: hasPhoto,
-            isLoading: params.isLoading,
+            isLoading: params.isLoading || isPreparing,
             pickLabel: params.copy.pickLabel,
             onPick: params.onPickPhoto,
             onClear: params.onClear,
@@ -51,7 +55,9 @@ class PhotoUploadPanelOrganism extends StatelessWidget {
             variant: AppButtonVariant.accent,
             expand: true,
             isLoading: params.isLoading,
-            onPressed: hasPhoto && !params.isLoading ? params.onSubmit : null,
+            onPressed: hasPhoto && !params.isLoading && !isPreparing
+                ? params.onSubmit
+                : null,
           ),
         ],
       ),

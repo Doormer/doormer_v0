@@ -7,6 +7,10 @@ class PhotoUploadPanelParams {
   final bool isLoading;
   final bool showWhenEmpty;
 
+  /// A chosen photo is being prepared; nothing can be picked, cleared or
+  /// submitted until it is ready.
+  final bool isPreparing;
+
   /// Button labels, resolved above this layer because they change with state —
   /// including whether the submit button is sending or resending.
   final PhotoUploadCopy copy;
@@ -20,6 +24,7 @@ class PhotoUploadPanelParams {
     this.fileName,
     required this.isLoading,
     this.showWhenEmpty = false,
+    this.isPreparing = false,
     required this.copy,
     required this.onPickPhoto,
     required this.onSubmit,

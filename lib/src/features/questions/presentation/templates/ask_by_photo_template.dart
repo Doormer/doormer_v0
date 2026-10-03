@@ -33,8 +33,10 @@ class AskByPhotoTemplate extends StatelessWidget {
     // failure. Without them onSubmit is unreachable and the solve flow dead-ends.
     //
     // The upload panel normally needs bytes; the page may explicitly show the
-    // empty panel after a refused pick so the preview resets to its placeholder.
-    final showUploadPanel = hasPhoto || uploadParams.showWhenEmpty;
+    // empty panel after a refused pick so the preview resets to its placeholder,
+    // or while a photo is being prepared.
+    final showUploadPanel =
+        hasPhoto || uploadParams.showWhenEmpty || uploadParams.isPreparing;
     final showStatusPanel = statusParams.content.showActions || isLoading;
     final showPanels = showUploadPanel || showStatusPanel;
 
@@ -82,8 +84,9 @@ class AskByPhotoTemplate extends StatelessWidget {
               label: 'UPLOAD & SOLVE',
               icon: Icons.camera_alt,
               variant: AppButtonVariant.accent,
-              onPressed:
-                  uploadParams.isLoading ? null : uploadParams.onPickPhoto,
+              onPressed: uploadParams.isLoading || uploadParams.isPreparing
+                  ? null
+                  : uploadParams.onPickPhoto,
             ),
           ],
         ),
