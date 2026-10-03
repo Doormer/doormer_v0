@@ -260,9 +260,6 @@ class AskByPhotoPage extends StatelessWidget {
               // to reach the camera; the picked photo replaces the selection
               // outright, so there is nothing to clear first.
               onRetake: () => _showPhotoSourceOptions(context),
-              onTypeInstead: () => context
-                  .read<AskByPhotoBloc>()
-                  .add(const AskByPhotoTypeInsteadRequested()),
             ),
             navigationBarParams: NavigationBarParams(
               current: AppDestination.solve,

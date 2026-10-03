@@ -6,6 +6,7 @@ import 'package:doormer/src/features/questions/presentation/params/solve_status_
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/reveal_on_change_atom.dart';
 import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 
@@ -99,7 +100,13 @@ class AskByPhotoTemplate extends StatelessWidget {
             PhotoUploadPanelOrganism(params: uploadParams),
             SizedBox(height: 16.h),
           ],
-          if (showStatusPanel) SolveStatusPanelOrganism(params: statusParams),
+          if (showStatusPanel)
+            RevealOnChangeAtom(
+              trigger: statusParams.content.showActions
+                  ? statusParams.content.title
+                  : null,
+              child: SolveStatusPanelOrganism(params: statusParams),
+            ),
         ],
       ),
     );

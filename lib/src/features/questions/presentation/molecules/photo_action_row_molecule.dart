@@ -29,7 +29,9 @@ class PhotoActionRowMolecule extends StatelessWidget {
         Expanded(
           child: AppButtonAtom(
             label: pickLabel,
-            icon: Icons.photo_camera_outlined,
+            icon: hasPhoto ? null : Icons.photo_camera_outlined,
+            variant:
+                hasPhoto ? AppButtonVariant.outlined : AppButtonVariant.filled,
             onPressed: isLoading ? null : onPick,
           ),
         ),

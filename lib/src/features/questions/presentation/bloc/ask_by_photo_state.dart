@@ -146,11 +146,16 @@ class AskByPhotoValidationError extends AskByPhotoState {
   List<Object?> get props => [message];
 }
 
+/// What a failed solve ran into, so the page can say which.
+enum SolveErrorCause { network, server, unknown }
+
 class AskByPhotoNetworkError extends AskByPhotoSolveFailed {
   final String message;
+  final SolveErrorCause cause;
 
   const AskByPhotoNetworkError(
     this.message, {
+    this.cause = SolveErrorCause.unknown,
     super.imageBytes,
     super.fileName,
     super.mimeType,
@@ -160,7 +165,7 @@ class AskByPhotoNetworkError extends AskByPhotoSolveFailed {
   bool get isRetryable => true;
 
   @override
-  List<Object?> get props => [message, imageBytes, fileName, mimeType];
+  List<Object?> get props => [message, cause, imageBytes, fileName, mimeType];
 }
 
 class AskByPhotoNotice extends AskByPhotoState {

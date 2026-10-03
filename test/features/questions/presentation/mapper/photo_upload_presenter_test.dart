@@ -9,7 +9,7 @@ void main() {
     );
     expect(
       photoUploadCopyFor(hasPhoto: true, isRetry: false).pickLabel,
-      'Retake',
+      'Change photo',
     );
   });
 

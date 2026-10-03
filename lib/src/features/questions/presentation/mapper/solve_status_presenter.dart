@@ -52,7 +52,7 @@ SolveStatusContent solveStatusContentFor(AskByPhotoState state) {
     return SolveStatusContent(
       title: 'This does not look like a question',
       body:
-          'The image was received, but it did not contain a question we can solve. Retake with the question visible or type it manually.',
+          'The image was received, but it did not contain a question we can solve. Retake it with the question clearly in frame.',
       showActions: true,
       photoOnScreen: photoOnScreen,
     );
@@ -62,7 +62,7 @@ SolveStatusContent solveStatusContentFor(AskByPhotoState state) {
       title: 'Solver timed out',
       body: canRetry
           ? 'The solver took too long on this photo. Your photo is still here — try again, or retake a sharper image.'
-          : 'The solver took too long on this photo. You can retake a sharper image or type the question instead.',
+          : 'The solver took too long on this photo. Retake a sharper image and try again.',
       showActions: true,
       canRetry: canRetry,
       photoOnScreen: photoOnScreen,
@@ -77,7 +77,11 @@ SolveStatusContent solveStatusContentFor(AskByPhotoState state) {
   }
   if (state is AskByPhotoNetworkError) {
     return SolveStatusContent(
-      title: 'Could not reach the solver',
+      title: switch (state.cause) {
+        SolveErrorCause.network => 'Could not reach the solver',
+        SolveErrorCause.server => 'The solver ran into a problem',
+        SolveErrorCause.unknown => 'Something went wrong',
+      },
       body: canRetry
           ? '${state.message} Your photo is still here, so you can send it again.'
           : state.message,
@@ -89,15 +93,14 @@ SolveStatusContent solveStatusContentFor(AskByPhotoState state) {
   if (state is AskByPhotoLoading) {
     return const SolveStatusContent(
       title: 'Solving your photo',
-      body:
-          'Uploading raw image bytes securely and waiting for the solver response.',
+      body: 'Reading your question and working out the steps.',
       showActions: false,
     );
   }
   return const SolveStatusContent(
     title: 'Ready when the page is readable',
     body:
-        'Use bright light, keep the question flat, and include every line of the problem. HEIC is not supported for this MVP.',
+        'Use bright light, keep the question flat, and include every line of the problem. JPG or PNG, up to 10 MB.',
     showActions: false,
   );
 }

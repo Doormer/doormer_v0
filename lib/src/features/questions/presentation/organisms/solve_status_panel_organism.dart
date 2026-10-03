@@ -28,11 +28,10 @@ class SolveStatusPanelOrganism extends StatelessWidget {
             content.body,
             style: tt.bodyMedium?.copyWith(fontSize: 14.sp),
           ),
-          if (content.showActions) ...[
+          if (content.showRetake) ...[
             SizedBox(height: 20.h),
             StatusActionRowMolecule(
-              onRetake: content.showRetake ? params.onRetake : null,
-              onTypeInstead: params.onTypeInstead,
+              onRetake: params.onRetake,
             ),
           ],
         ],

@@ -16,7 +16,7 @@ class _FakeQuestionsRepository implements QuestionsRepository {
   _FakeQuestionsRepository({this.outcome, this.failure, this.pending});
 
   PhotoQuestionSolveOutcome? outcome;
-  Failure? failure;
+  Object? failure;
   Completer<PhotoQuestionSolveOutcome>? pending;
   int callCount = 0;
   Uint8List? lastBytes;
@@ -247,12 +247,37 @@ void main() {
       AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.jpg'),
       AskByPhotoNetworkError(
         'We could not reach the solver. Try again.',
+        cause: SolveErrorCause.network,
         imageBytes: validBytes,
         fileName: 'problem.jpg',
         mimeType: 'image/jpeg',
       ),
     ],
   );
+
+  for (final (failure, cause) in [
+    (NetworkFailure(), SolveErrorCause.network),
+    (ServerFailure(), SolveErrorCause.server),
+    (ApiFailure(418), SolveErrorCause.unknown),
+    (Exception('boom'), SolveErrorCause.unknown),
+  ]) {
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'emits NetworkError cause $cause for ${failure.runtimeType}',
+      build: () => _blocFor(_FakeQuestionsRepository(failure: failure)),
+      seed: () => AskByPhotoPhotoSelected(
+        imageBytes: validBytes,
+        fileName: 'problem.jpg',
+        mimeType: 'image/jpeg',
+      ),
+      act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+      skip: 1,
+      expect: () => [
+        isA<AskByPhotoNetworkError>()
+            .having((state) => state.cause, 'cause', cause)
+            .having((state) => state.imageBytes, 'imageBytes', validBytes),
+      ],
+    );
+  }
 
   blocTest<AskByPhotoBloc, AskByPhotoState>(
     'carries the selected photo into Loading so the preview survives the solve',

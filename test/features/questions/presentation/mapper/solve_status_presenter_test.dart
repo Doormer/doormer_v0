@@ -66,8 +66,10 @@ void main() {
     });
 
     test('the idle and loading states offer no retry', () {
-      expect(solveStatusContentFor(const AskByPhotoInitial()).canRetry, isFalse);
-      expect(solveStatusContentFor(const AskByPhotoLoading()).canRetry, isFalse);
+      expect(
+          solveStatusContentFor(const AskByPhotoInitial()).canRetry, isFalse);
+      expect(
+          solveStatusContentFor(const AskByPhotoLoading()).canRetry, isFalse);
     });
   });
 
@@ -82,7 +84,7 @@ void main() {
       expect(content.photoOnScreen, isTrue);
       expect(content.showRetake, isFalse);
       expect(content.showActions, isTrue,
-          reason: 'Type instead is still offered');
+          reason: 'the status panel still explains what happened');
     });
 
     test('is shown when there is no photo to attach it to', () {
@@ -92,6 +94,38 @@ void main() {
 
       expect(content.photoOnScreen, isFalse);
       expect(content.showRetake, isTrue);
+    });
+  });
+
+  group('error copy', () {
+    for (final (cause, title) in [
+      (SolveErrorCause.network, 'Could not reach the solver'),
+      (SolveErrorCause.server, 'The solver ran into a problem'),
+      (SolveErrorCause.unknown, 'Something went wrong'),
+    ]) {
+      test('a $cause failure is titled "$title"', () {
+        final content = solveStatusContentFor(AskByPhotoNetworkError(
+          'Please try again.',
+          cause: cause,
+          imageBytes: Uint8List(1),
+        ));
+        expect(content.title, title);
+      });
+    }
+
+    test('no copy offers typing the question', () {
+      final states = <AskByPhotoState>[
+        const AskByPhotoInitial(),
+        AskByPhotoNotAQuestion(questionId: 'q', imageBytes: Uint8List(1)),
+        const AskByPhotoNotAQuestion(questionId: 'q'),
+        const AskByPhotoTimeout(questionId: 'q'),
+      ];
+      for (final state in states) {
+        expect(
+          solveStatusContentFor(state).body.toLowerCase(),
+          isNot(contains('type')),
+        );
+      }
     });
   });
 }

@@ -316,7 +316,7 @@ void main() {
     await selectPhoto(tester);
 
     expect(find.text('algebra.png'), findsOneWidget);
-    expect(find.text('Retake'), findsOneWidget);
+    expect(find.text('Change photo'), findsOneWidget);
     expect(find.text('Clear'), findsOneWidget);
     // Scoped to the preview: the template also paints a decorative background
     // Image.asset, so a bare byType(Image) finder matches two widgets.
@@ -345,7 +345,17 @@ void main() {
         ),
       ]),
     );
+    FilePicker? originalFilePicker;
+    try {
+      originalFilePicker = FilePicker.platform;
+    } catch (e) {
+      if (!e.toString().contains('has not been initialized')) rethrow;
+      originalFilePicker = null;
+    }
     FilePicker.platform = fakeFilePicker;
+    addTearDown(() {
+      FilePicker.platform = originalFilePicker ?? _FakeFilePicker(null);
+    });
     await pumpPage(tester);
 
     await tester.tap(find.byIcon(Icons.document_scanner_outlined));
@@ -441,14 +451,11 @@ void main() {
     expect(repository.callCount, 1);
     expect(find.byType(QuestionSolutionPage), findsNothing);
     expect(find.text('We could not read it'), findsOneWidget);
-    // Retake moved up to sit with the photo, which now survives the failure;
-    // the recovery panel keeps only the action the photo panel lacks.
-    expect(find.widgetWithText(AppButtonAtom, 'Retake'), findsOneWidget);
-    expect(find.widgetWithText(OutlinedButton, 'Type instead'), findsOneWidget);
+    expect(find.widgetWithText(AppButtonAtom, 'Change photo'), findsOneWidget);
+    expect(find.text('Type instead'), findsNothing);
   });
 
-  testWidgets('Retake on the recovery panel offers the camera, not just files',
-      (tester) async {
+  testWidgets('Change photo offers the camera, not just files', (tester) async {
     repository = _FakeQuestionsRepository(
       outcome: _outcome(PhotoQuestionSolveStatus.unreadable),
     );
@@ -466,10 +473,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     await tester.pump();
 
-    // The photo now survives the failure, so Retake lives with it in the
+    // The photo now survives the failure, so Change photo lives with it in the
     // upload panel rather than being repeated in the recovery panel below.
-    expect(find.widgetWithText(AppButtonAtom, 'Retake'), findsOneWidget);
-    await tester.tap(find.widgetWithText(AppButtonAtom, 'Retake'));
+    expect(find.widgetWithText(AppButtonAtom, 'Change photo'), findsOneWidget);
+    await tester.tap(find.widgetWithText(AppButtonAtom, 'Change photo'));
     await tester.pumpAndSettle();
 
     // The recovery copy tells the student to retake the shot, so this button
@@ -503,9 +510,11 @@ void main() {
       // control competing with it.
       expect(find.widgetWithText(AppButtonAtom, 'Try again'), findsOneWidget);
       expect(find.text('Submit to solver'), findsNothing);
-      expect(find.widgetWithText(AppButtonAtom, 'Retake'), findsOneWidget,
-          reason: 'exactly one Retake: the status panel must not repeat the '
+      expect(find.widgetWithText(AppButtonAtom, 'Change photo'), findsOneWidget,
+          reason:
+              'exactly one Change photo: the status panel must not repeat the '
               'button the upload panel is already showing');
+      expect(find.text('Type instead'), findsNothing);
       await drainToasts(tester);
     });
 
@@ -548,7 +557,8 @@ void main() {
           reason: 'the same blurry bytes read as blurry every time');
       expect(find.text('Submit to solver'), findsOneWidget,
           reason: 'the button stays generic when a resend would not help');
-      expect(find.widgetWithText(AppButtonAtom, 'Retake'), findsOneWidget);
+      expect(
+          find.widgetWithText(AppButtonAtom, 'Change photo'), findsOneWidget);
     });
   });
 
