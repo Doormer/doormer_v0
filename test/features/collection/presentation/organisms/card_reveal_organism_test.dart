@@ -402,6 +402,23 @@ void main() {
     expect(dismissed, 1);
   });
 
+  testWidgets('Esc dismisses the reveal after another widget had focus',
+      (tester) async {
+    var dismissed = 0;
+    await tester.pumpWidget(_host(_RevealAfterFocusedButton(
+      onDismiss: () => dismissed++,
+    )));
+
+    await tester.tap(find.text('Draw a card'));
+    await tester.pump();
+    expect(find.byType(CardRevealOrganism), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
+
+    expect(dismissed, 1);
+  });
+
   testWidgets('the headline stays hidden until the card has landed',
       (tester) async {
     tester.view.physicalSize = const Size(360, 690);
@@ -583,4 +600,53 @@ void main() {
     expect(state.headlineOpacity, closeTo(1.0, 0.001),
         reason: 'motion off must cost movement, never information');
   });
+}
+
+class _RevealAfterFocusedButton extends StatefulWidget {
+  final VoidCallback onDismiss;
+
+  const _RevealAfterFocusedButton({required this.onDismiss});
+
+  @override
+  State<_RevealAfterFocusedButton> createState() =>
+      _RevealAfterFocusedButtonState();
+}
+
+class _RevealAfterFocusedButtonState extends State<_RevealAfterFocusedButton> {
+  final _buttonFocus = FocusNode();
+  bool _showReveal = false;
+
+  @override
+  void dispose() {
+    _buttonFocus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Center(
+          child: TextButton(
+            focusNode: _buttonFocus,
+            onPressed: () {
+              _buttonFocus.requestFocus();
+              setState(() => _showReveal = true);
+            },
+            child: const Text('Draw a card'),
+          ),
+        ),
+        if (_showReveal)
+          Positioned.fill(
+            child: CardRevealOrganism(
+              params: RevealParams(
+                supportingLine: '1 of 6 Cinder cards collected',
+                outcome: _outcome(DrawResult.newCard),
+                onDismiss: widget.onDismiss,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }

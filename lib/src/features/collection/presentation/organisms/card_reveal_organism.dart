@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:doormer/src/core/motion/motion_policy.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter/services.dart';
 
@@ -66,6 +67,8 @@ class CardRevealState extends State<CardRevealOrganism>
   /// this loop keeps turning long after [_controller] has finished — the
   /// rays are ambient, not part of the one-shot reveal.
   late final AnimationController _rayController;
+
+  late final FocusNode _focusNode;
 
   /// 0 face-down, 1 face-up.
   double get rotation => _flip.value;
@@ -199,6 +202,7 @@ class CardRevealState extends State<CardRevealOrganism>
   @override
   void initState() {
     super.initState();
+    _focusNode = FocusNode();
     _controller = AnimationController(
       vsync: this,
       duration: CardRevealOrganism.totalDuration,
@@ -225,6 +229,9 @@ class CardRevealState extends State<CardRevealOrganism>
       parent: _controller,
       curve: const Interval(0.66, 0.85, curve: Curves.easeOut),
     );
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNode.requestFocus();
+    });
   }
 
   @override
@@ -260,6 +267,7 @@ class CardRevealState extends State<CardRevealOrganism>
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _controller.dispose();
     _rayController.dispose();
     super.dispose();
@@ -284,7 +292,7 @@ class CardRevealState extends State<CardRevealOrganism>
             widget.params.onDismiss,
       },
       child: Focus(
-        autofocus: true,
+        focusNode: _focusNode,
         child: Material(
           type: MaterialType.transparency,
           child: GestureDetector(
