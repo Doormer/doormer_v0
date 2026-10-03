@@ -72,6 +72,27 @@ Future<PhotoSize> _decodedSize(Uint8List bytes) async {
   }
 }
 
+String _retryOnlyHeicConverterUrl() {
+  const source = '''
+if (!import.meta.url.includes('cache=warm') ||
+    !import.meta.url.includes('retry=1')) {
+  throw new Error('retry query missing');
+}
+
+export async function heicTo() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 3;
+  canvas.height = 2;
+  const context = canvas.getContext('2d');
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, 3, 2);
+  return await createImageBitmap(canvas);
+}
+//''';
+  return 'data:text/javascript;charset=utf-8,${Uri.encodeComponent(source)}'
+      '?cache=warm';
+}
+
 void main() {
   setUpAll(AppLogger.disable);
 
@@ -170,6 +191,45 @@ void main() {
           ),
         ),
       );
+    },
+  );
+
+  test(
+    'uses a fresh HEIC converter URL after a failed load',
+    () async {
+      final heicHeader = Uint8List.fromList([
+        0,
+        0,
+        0,
+        0x18,
+        ...'ftypheic'.codeUnits,
+        ...List.filled(56, 0),
+      ]);
+      final preparer = WebPhotoPreparer(
+        heicConverterUrl: _retryOnlyHeicConverterUrl(),
+      );
+
+      await expectLater(
+        preparer.prepare(
+          PickedPhotoFile(bytes: heicHeader, name: 'IMG_3.HEIC'),
+        ),
+        throwsA(
+          isA<NetworkFailure>().having(
+            (f) => f.message,
+            'message',
+            heicConverterUnavailableMessage,
+          ),
+        ),
+      );
+
+      final photo = await preparer.prepare(
+        PickedPhotoFile(bytes: heicHeader, name: 'IMG_3.HEIC'),
+      );
+
+      expect(photo.width, 3);
+      expect(photo.height, 2);
+      expect(photo.fileName, 'IMG_3.jpg');
+      expect(photo.bytes.sublist(0, 3), [0xFF, 0xD8, 0xFF]);
     },
   );
 }

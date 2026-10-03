@@ -25,7 +25,11 @@ class CustomToast {
   }) {
     toastification.show(
       context: context,
-      title: Text(message),
+      title: Text(
+        message,
+        maxLines: 6,
+        overflow: TextOverflow.visible,
+      ),
       autoCloseDuration: autoCloseDuration ?? defaultDurationFor(type),
       type: type,
       style: style,

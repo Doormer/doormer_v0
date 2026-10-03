@@ -25,6 +25,7 @@ class WebPhotoPreparer implements PhotoPreparer {
   /// Loaded on first need and kept; reset after a failed load so the next
   /// HEIC photo can try again.
   Future<_HeicToModule>? _heicConverter;
+  int _failedHeicConverterLoads = 0;
 
   @override
   Future<PreparedPhoto> prepare(PickedPhotoFile file) async {
@@ -81,26 +82,44 @@ class WebPhotoPreparer implements PhotoPreparer {
     }
   }
 
-  Future<_HeicToModule> _loadHeicConverter() async {
-    final pending = _heicConverter ??= _importHeicConverter();
-    try {
-      return await pending;
-    } catch (e, stackTrace) {
-      _heicConverter = null;
-      AppLogger.error(
-        'HEIC converter could not be loaded',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      throw NetworkFailure(heicConverterUnavailableMessage);
-    }
+  Future<_HeicToModule> _loadHeicConverter() {
+    final pending = _heicConverter;
+    if (pending != null) return pending;
+
+    late final Future<_HeicToModule> loading;
+    loading = _importHeicConverter().catchError(
+      (Object e, StackTrace stackTrace) {
+        if (identical(_heicConverter, loading)) {
+          _heicConverter = null;
+          _failedHeicConverterLoads += 1;
+        }
+        AppLogger.error(
+          'HEIC converter could not be loaded',
+          error: e,
+          stackTrace: stackTrace,
+        );
+        throw NetworkFailure(heicConverterUnavailableMessage);
+      },
+    );
+    _heicConverter = loading;
+    return loading;
   }
 
   Future<_HeicToModule> _importHeicConverter() async {
     final url = _heicConverterUrl ??
         Uri.parse(web.document.baseURI).resolve(_heicConverterPath).toString();
-    final module = await importModule(url.toJS).toDart;
+    final module = await importModule(_heicConverterImportUrl(url).toJS).toDart;
     return module as _HeicToModule;
+  }
+
+  String _heicConverterImportUrl(String url) {
+    if (_failedHeicConverterLoads == 0) return url;
+
+    final uri = Uri.parse(url);
+    final queryParameters =
+        Map<String, List<String>>.from(uri.queryParametersAll);
+    queryParameters['retry'] = [_failedHeicConverterLoads.toString()];
+    return uri.replace(queryParameters: queryParameters).toString();
   }
 
   Future<PreparedPhoto> _scaleAndEncode(
