@@ -7,6 +7,16 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final bytes = Uint8List.fromList([1, 2, 3]);
 
+  test('the starting tips say which photo formats work', () {
+    final content = solveStatusContentFor(const AskByPhotoInitial());
+
+    expect(
+      content.body,
+      'Use bright light, keep the question flat, and include every line of '
+      'the problem. JPG, PNG or HEIC.',
+    );
+  });
+
   group('canRetry', () {
     // Retry is only worth offering where resubmitting the identical bytes
     // could plausibly land differently.

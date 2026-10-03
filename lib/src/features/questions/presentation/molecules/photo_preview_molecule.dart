@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/viewfinder_corners_atom.dart';
-import 'package:doormer/src/features/questions/utils/image_readability.dart';
+import 'package:doormer/src/features/questions/utils/photo/photo_preparer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -38,7 +38,7 @@ class PhotoPreviewMolecule extends StatelessWidget {
                   child: Padding(
                     padding: EdgeInsets.all(16.w),
                     child: Text(
-                      unreadableImageMessage,
+                      photoUnreadableMessage,
                       textAlign: TextAlign.center,
                       style: context.textTheme.bodyMedium,
                     ),
@@ -65,7 +65,7 @@ class PhotoPreviewMolecule extends StatelessWidget {
         ),
         SizedBox(height: 10.h),
         Text(
-          'JPEG or PNG · max 10 MB',
+          'JPG, PNG or HEIC',
           style: tt.bodyMedium?.copyWith(fontSize: 14.sp),
         ),
       ],

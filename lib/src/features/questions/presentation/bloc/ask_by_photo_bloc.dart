@@ -3,6 +3,7 @@ import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
+import 'package:doormer/src/features/questions/utils/photo_question_image_validator.dart';
 import 'package:equatable/equatable.dart';
 import 'dart:typed_data';
 
@@ -49,7 +50,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
 
     if (selected == null) {
       emit(const AskByPhotoValidationError(
-        'Please choose a JPEG or PNG photo before submitting.',
+        PhotoQuestionImageValidator.missingImageMessage,
       ));
       return;
     }

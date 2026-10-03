@@ -100,7 +100,7 @@ SolveStatusContent solveStatusContentFor(AskByPhotoState state) {
   return const SolveStatusContent(
     title: 'Ready when the page is readable',
     body:
-        'Use bright light, keep the question flat, and include every line of the problem. JPG or PNG, up to 10 MB.',
+        'Use bright light, keep the question flat, and include every line of the problem. JPG, PNG or HEIC.',
     showActions: false,
   );
 }

@@ -360,7 +360,7 @@ void main() {
     expect(fakeFilePicker.lastAllowMultiple, isFalse);
     expect(fakeFilePicker.lastWithData, isTrue);
     expect(find.text(unreadableImageMessage), findsOneWidget);
-    expect(find.text('JPEG or PNG · max 10 MB'), findsOneWidget);
+    expect(find.text('JPG, PNG or HEIC'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byType(PhotoPreviewMolecule),
@@ -406,7 +406,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('JPEG or PNG · max 10 MB'), findsNothing);
+    expect(find.text('JPG, PNG or HEIC'), findsNothing);
 
     pending.complete(_outcome(PhotoQuestionSolveStatus.solved));
     await tester.pump(); // Solved state -> listener fires GoRouter.go

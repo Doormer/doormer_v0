@@ -9,6 +9,7 @@ import 'package:doormer/src/features/questions/domain/entity/photo_question_solv
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
+import 'package:doormer/src/features/questions/utils/photo/photo_preparer.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeQuestionsRepository implements QuestionsRepository {
@@ -228,7 +229,7 @@ void main() {
   );
 
   blocTest<AskByPhotoBloc, AskByPhotoState>(
-    'emits ValidationError and skips repository for HEIC selection',
+    'refuses a photo that is not JPEG or PNG without calling the solver',
     build: () => _blocFor(_FakeQuestionsRepository(
       outcome: _outcome(PhotoQuestionSolveStatus.solved),
     )),
@@ -240,9 +241,7 @@ void main() {
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
       AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.heic'),
-      const AskByPhotoValidationError(
-        "HEIC isn't supported — please use JPEG or PNG.",
-      ),
+      const AskByPhotoValidationError(photoUnreadableMessage),
     ],
     verify: (bloc) {
       final repository = bloc.submitPhotoQuestionUseCase.repository
@@ -326,7 +325,7 @@ void main() {
     expect: () => [
       const AskByPhotoLoading(),
       const AskByPhotoValidationError(
-        'Please choose a JPEG or PNG photo before submitting.',
+        'Please choose a photo before submitting.',
       ),
     ],
   );

@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:doormer/src/features/questions/utils/photo/photo_preparer.dart';
 import 'package:doormer/src/features/questions/utils/photo_question_image_validator.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -41,34 +42,28 @@ void main() {
       expect(result.message, 'Photo must be 10 MB or smaller.');
     });
 
-    test('rejects HEIC files by extension with a helpful message', () {
+    test('refuses anything that is not JPEG or PNG', () {
+      // Photos are prepared as JPEG before they get here; this is the last
+      // guard against a file that skipped preparation.
       final result = PhotoQuestionImageValidator.validate(
         imageBytes: Uint8List.fromList([1, 2, 3]),
         fileName: 'homework.heic',
-        mimeType: null,
+        mimeType: 'image/heic',
       );
 
       expect(result.isValid, isFalse);
       expect(result.contentType, isNull);
-      expect(
-        result.message,
-        "HEIC isn't supported — please use JPEG or PNG.",
-      );
+      expect(result.message, photoUnreadableMessage);
     });
 
-    test('rejects HEIC files by mime type with a helpful message', () {
+    test('asks for a photo when there is none', () {
       final result = PhotoQuestionImageValidator.validate(
-        imageBytes: Uint8List.fromList([1, 2, 3]),
-        fileName: 'camera-upload',
-        mimeType: 'image/heif',
+        imageBytes: Uint8List(0),
+        fileName: 'photo.jpg',
       );
 
       expect(result.isValid, isFalse);
-      expect(result.contentType, isNull);
-      expect(
-        result.message,
-        "HEIC isn't supported — please use JPEG or PNG.",
-      );
+      expect(result.message, 'Please choose a photo before submitting.');
     });
   });
 }
