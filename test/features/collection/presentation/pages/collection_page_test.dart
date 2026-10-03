@@ -22,7 +22,6 @@ import 'package:doormer/src/features/collection/presentation/organisms/card_reve
 import 'package:doormer/src/features/collection/presentation/organisms/deck_list_organism.dart';
 import 'package:doormer/src/features/collection/presentation/organisms/empty_deck_organism.dart';
 import 'package:doormer/src/features/collection/presentation/pages/collection_page.dart';
-import 'package:doormer/src/features/collection/presentation/templates/collection_template.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
@@ -238,7 +237,15 @@ Widget _app() => ScreenUtilInit(
     );
 
 Future<void> _pumpPhone(WidgetTester tester, {Widget? app}) async {
-  tester.view.physicalSize = const Size(360, 690);
+  await _pumpAtSize(tester, const Size(360, 690), app: app);
+}
+
+Future<void> _pumpAtSize(
+  WidgetTester tester,
+  Size size, {
+  Widget? app,
+}) async {
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(app ?? _app());
@@ -409,6 +416,32 @@ void main() {
     expect(find.textContaining('600 quarks'), findsOneWidget,
         reason:
             'the quark balance must follow the student to where they spend');
+  });
+
+  testWidgets('the desktop layout has the same header as phones',
+      (tester) async {
+    await _pumpAtSize(tester, const Size(1280, 800));
+
+    expect(find.textContaining('decks'), findsOneWidget);
+    expect(find.byType(QuarkBalanceAtom), findsOneWidget);
+  });
+
+  testWidgets('the desktop layout asks for a deck before showing cards',
+      (tester) async {
+    await _pumpAtSize(tester, const Size(1280, 800));
+
+    expect(find.text('Pick a deck to see its cards.'), findsOneWidget);
+
+    await _openDeck(tester, 'Meridian');
+
+    expect(find.text('Pick a deck to see its cards.'), findsNothing);
+  });
+
+  testWidgets('the phone layout does not ask for a deck in the list',
+      (tester) async {
+    await _pumpAtSize(tester, const Size(390, 844));
+
+    expect(find.text('Pick a deck to see its cards.'), findsNothing);
   });
 
   testWidgets('every reveal pairs its headline with a supporting line',
@@ -723,14 +756,28 @@ void main() {
     });
   });
 
-  // The decks paint the collection's dark background. The loading and error
-  // screens painted none, so the app's purple backdrop showed through, and
-  // arriving on Cards flashed purple before the decks turned it dark.
+  // The app backdrop lives behind the route; every collection Scaffold stays
+  // transparent so all states sit on the same surface.
   group('the background', () {
     Color? painted(WidgetTester tester) =>
         tester.widget<Scaffold>(find.byType(Scaffold).first).backgroundColor;
 
-    testWidgets("is the collection's while the decks load", (tester) async {
+    Future<void> restartWithFreshServer(
+      WidgetTester tester, {
+      Failure? failNextLoadWith,
+    }) async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+      await GetIt.instance.reset();
+      initCollectionModule();
+      await GetIt.instance.unregister<CollectionRepository>();
+      server = _InMemoryCollectionRepository()
+        ..failNextLoadWith = failNextLoadWith;
+      GetIt.instance.registerSingleton<CollectionRepository>(server);
+    }
+
+    testWidgets('lets the app backdrop show on every collection screen',
+        (tester) async {
       tester.view.physicalSize = const Size(360, 690);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -738,28 +785,24 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget,
           reason: 'the decks are still loading');
-      expect(painted(tester), CollectionTemplate.background);
+      expect(painted(tester), isNull);
 
       // Let the load finish, so the spinner stops asking for frames.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pumpAndSettle();
-    });
 
-    testWidgets("is the collection's when the decks cannot load",
-        (tester) async {
-      server.failNextLoadWith = _noConnection;
+      await restartWithFreshServer(tester, failNextLoadWith: _noConnection);
       await _pumpPhone(tester);
 
       expect(find.text(_noConnection.message), findsOneWidget);
-      expect(painted(tester), CollectionTemplate.background);
-    });
+      expect(painted(tester), isNull);
 
-    testWidgets("is the collection's with the decks", (tester) async {
+      await restartWithFreshServer(tester);
       await _pumpPhone(tester);
 
       expect(find.byType(DeckListOrganism), findsOneWidget);
-      expect(painted(tester), CollectionTemplate.background);
+      expect(painted(tester), isNull);
     });
   });
 }
