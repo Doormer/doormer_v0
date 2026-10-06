@@ -9,6 +9,7 @@ import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
+import 'package:doormer/src/features/questions/domain/entity/solved_questions_page.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_question_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
@@ -61,6 +62,10 @@ class _AssetRepository implements QuestionsRepository {
 
   @override
   Future<int> loadQuarkBalance() async => 128;
+
+  @override
+  Future<SolvedQuestionsPage> loadSolvedQuestions({String? cursor}) =>
+      throw UnimplementedError();
 
   @override
   Future<AnswerReward> revealAnswer(String questionId) async =>

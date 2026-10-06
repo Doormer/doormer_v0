@@ -6,6 +6,7 @@ import 'package:doormer/src/features/questions/domain/repository/questions_repos
 import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_question_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_solved_questions_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
@@ -43,6 +44,10 @@ void initQuestionsModule() {
 
   serviceLocator.registerLazySingleton<LoadQuestionUseCase>(
     () => LoadQuestionUseCase(serviceLocator<QuestionsRepository>()),
+  );
+
+  serviceLocator.registerLazySingleton<LoadSolvedQuestionsUseCase>(
+    () => LoadSolvedQuestionsUseCase(serviceLocator<QuestionsRepository>()),
   );
 
   serviceLocator.registerFactory<AskByPhotoBloc>(

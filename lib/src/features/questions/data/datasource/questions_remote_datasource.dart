@@ -7,6 +7,7 @@ import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/data/model/answer_reward_model.dart';
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
 import 'package:doormer/src/features/questions/data/model/quark_balance_model.dart';
+import 'package:doormer/src/features/questions/data/model/solved_questions_response_model.dart';
 
 abstract class QuestionsRemoteDataSource {
   Future<PhotoQuestionResponseModel> submitPhotoQuestion({
@@ -16,6 +17,10 @@ abstract class QuestionsRemoteDataSource {
   });
 
   Future<PhotoQuestionResponseModel> loadQuestion(String questionId);
+
+  /// One page of the student's solved questions, newest first. No cursor
+  /// asks for the first page.
+  Future<SolvedQuestionsResponseModel> loadSolvedQuestions({String? cursor});
 
   Future<AnswerRewardModel> revealAnswer(String questionId);
 
@@ -85,6 +90,14 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
         '/v1/questions/solution',
         {'question_id': questionId},
         PhotoQuestionResponseModel.fromJson,
+      );
+
+  @override
+  Future<SolvedQuestionsResponseModel> loadSolvedQuestions({String? cursor}) =>
+      _post(
+        '/v1/questions/solved',
+        {if (cursor != null) 'cursor': cursor},
+        SolvedQuestionsResponseModel.fromJson,
       );
 
   @override

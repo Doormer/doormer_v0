@@ -6,6 +6,7 @@ import 'package:doormer/src/features/questions/data/datasource/questions_local_d
 import 'package:doormer/src/features/questions/data/datasource/questions_remote_datasource.dart';
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
+import 'package:doormer/src/features/questions/domain/entity/solved_questions_page.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 import 'package:uuid/uuid.dart';
 
@@ -63,6 +64,12 @@ class QuestionsRepositoryImpl implements QuestionsRepository {
   @override
   Future<PhotoQuestionSolveOutcome> loadQuestion(String questionId) async {
     final response = await remoteDataSource.loadQuestion(questionId);
+    return response.toEntity();
+  }
+
+  @override
+  Future<SolvedQuestionsPage> loadSolvedQuestions({String? cursor}) async {
+    final response = await remoteDataSource.loadSolvedQuestions(cursor: cursor);
     return response.toEntity();
   }
 }

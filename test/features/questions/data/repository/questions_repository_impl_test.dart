@@ -5,6 +5,7 @@ import 'package:doormer/src/features/questions/data/datasource/questions_remote_
 import 'package:doormer/src/features/questions/data/model/answer_reward_model.dart';
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
 import 'package:doormer/src/features/questions/data/model/quark_balance_model.dart';
+import 'package:doormer/src/features/questions/data/model/solved_questions_response_model.dart';
 import 'package:doormer/src/features/questions/data/repository/questions_repository_impl.dart';
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
@@ -17,6 +18,7 @@ class _FakeQuestionsRemoteDataSource implements QuestionsRemoteDataSource {
   String? idempotencyKey;
   String? revealedQuestionId;
   String? loadedQuestionId;
+  String? solvedCursor;
   int balanceCalls = 0;
 
   @override
@@ -57,6 +59,22 @@ class _FakeQuestionsRemoteDataSource implements QuestionsRemoteDataSource {
         ],
         'final_answer': {'body': []},
       },
+    });
+  }
+
+  @override
+  Future<SolvedQuestionsResponseModel> loadSolvedQuestions(
+      {String? cursor}) async {
+    solvedCursor = cursor;
+    return SolvedQuestionsResponseModel.fromJson({
+      'questions': [
+        {
+          'question_id': '41',
+          'topic': 'Geometry - Area',
+          'asked_at': '2026-10-06T07:05:00Z',
+        },
+      ],
+      'next_cursor': '41',
     });
   }
 
@@ -167,5 +185,20 @@ void main() {
 
     expect(remote.balanceCalls, 1);
     expect(balance, 128);
+  });
+
+  test('loadSolvedQuestions passes the cursor and reads the page', () async {
+    final remote = _FakeQuestionsRemoteDataSource();
+    final repository = QuestionsRepositoryImpl(
+      remoteDataSource: remote,
+      localDataSource: _FakeQuestionsLocalDataSource(),
+    );
+
+    final page = await repository.loadSolvedQuestions(cursor: '42');
+
+    expect(remote.solvedCursor, '42');
+    expect(page.questions.single.questionId, '41');
+    expect(page.questions.single.topic, 'Geometry - Area');
+    expect(page.nextCursor, '41');
   });
 }

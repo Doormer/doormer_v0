@@ -151,6 +151,56 @@ void main() {
     });
   });
 
+  group('loadSolvedQuestions', () {
+    const row = {
+      'question_id': '42',
+      'topic': 'Geometry - Area',
+      'method': 'Area by decomposition',
+      'question_text': 'Find the area of the paddock.',
+      'asked_at': '2026-10-06T07:05:00Z',
+      'photo_url': 'https://example.test/photo/42.jpg?sig=p',
+    };
+
+    test('asks for the first page with an empty body', () async {
+      final adapter = _FakeAdapter(body: {
+        'questions': [row],
+        'next_cursor': '42',
+      });
+
+      final reply = await _dataSource(adapter).loadSolvedQuestions();
+
+      expect(adapter.request!.method, 'POST');
+      expect(adapter.request!.path, '/v1/questions/solved');
+      expect(adapter.request!.data, isEmpty);
+      expect(reply.questions.single.questionId, '42');
+      expect(reply.nextCursor, '42');
+    });
+
+    test('asks for a later page with its cursor', () async {
+      final adapter = _FakeAdapter(body: {'questions': []});
+
+      await _dataSource(adapter).loadSolvedQuestions(cursor: '42');
+
+      expect(adapter.request!.data, {'cursor': '42'});
+    });
+
+    test('no connection reads as a network failure', () async {
+      await expectLater(
+        _dataSource(_FakeAdapter(throws: DioExceptionType.connectionError))
+            .loadSolvedQuestions(),
+        _throws<NetworkFailure>(_couldNotConnect),
+      );
+    });
+
+    test('a body it cannot read is an unknown failure', () async {
+      await expectLater(
+        _dataSource(_FakeAdapter(body: {'questions': 'not a list'}))
+            .loadSolvedQuestions(),
+        _throws<UnknownFailure>(_somethingWentWrong),
+      );
+    });
+  });
+
   group('failures carry the collection-style messages', () {
     test('a timeout or no connection', () async {
       for (final type in [
