@@ -38,7 +38,7 @@ const _fallback = Key('photo_thumbnail_fallback');
 void main() {
   testWidgets('shows a plain tile when there is no thumbnail', (tester) async {
     await tester
-        .pumpWidget(_host(const PhotoThumbnailAtom(url: null, size: 80)));
+        .pumpWidget(_host(const PhotoThumbnailAtom(url: null, height: 80)));
 
     expect(find.byKey(_fallback), findsOneWidget);
     expect(find.byIcon(Icons.image_outlined), findsOneWidget);
@@ -48,7 +48,7 @@ void main() {
   testWidgets('shows the photo when there is one', (tester) async {
     await tester.pumpWidget(_host(PhotoThumbnailAtom(
       url: 'https://example.test/thumbnail/42.jpg',
-      size: 80,
+      height: 80,
       imageProviderBuilder: (_) => MemoryImage(_pngBytes),
     )));
 
@@ -60,7 +60,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(_host(PhotoThumbnailAtom(
       url: 'https://example.test/thumbnail/42.jpg',
-      size: 80,
+      height: 80,
       imageProviderBuilder: (_) => _FailingImageProvider(),
     )));
     await tester.pump();
@@ -69,10 +69,25 @@ void main() {
     expect(find.byKey(_fallback), findsOneWidget);
   });
 
-  testWidgets('is a square of the size it is given', (tester) async {
+  // Thumbnails are made 3:2, so a one-line question can run the full width.
+  testWidgets('is three wide for every two high', (tester) async {
     await tester
-        .pumpWidget(_host(const PhotoThumbnailAtom(url: null, size: 80)));
+        .pumpWidget(_host(const PhotoThumbnailAtom(url: null, height: 80)));
 
-    expect(tester.getSize(find.byType(PhotoThumbnailAtom)), const Size(80, 80));
+    expect(
+        tester.getSize(find.byType(PhotoThumbnailAtom)), const Size(120, 80));
+  });
+
+  // A thumbnail of another shape, made before thumbnails were 3:2, must still
+  // show the whole question rather than its middle.
+  testWidgets('draws the whole thumbnail, never a crop of it', (tester) async {
+    await tester.pumpWidget(_host(PhotoThumbnailAtom(
+      url: 'https://example.test/thumbnail/42.jpg',
+      height: 80,
+      imageProviderBuilder: (_) => MemoryImage(_pngBytes),
+    )));
+    await tester.pump();
+
+    expect(tester.widget<RawImage>(find.byType(RawImage)).fit, BoxFit.contain);
   });
 }

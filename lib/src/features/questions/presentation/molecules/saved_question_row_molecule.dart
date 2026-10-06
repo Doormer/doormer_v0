@@ -38,7 +38,7 @@ class SavedQuestionRowMolecule extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10.r),
                   child: PhotoThumbnailAtom(
                     url: params.thumbnailUrl,
-                    size: 80.w,
+                    height: 80.w,
                     imageProviderBuilder: imageProviderBuilder,
                   ),
                 ),

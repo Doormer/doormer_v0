@@ -7,41 +7,47 @@ typedef PhotoImageProviderBuilder = ImageProvider Function(String url);
 
 ImageProvider networkPhotoImageProvider(String url) => NetworkImage(url);
 
-/// A square crop of the student's photo, for spotting a question by its shape.
+/// The student's photo, small, for spotting a question at a glance. The API
+/// makes every thumbnail 3:2 with the whole question fitted in, so the frame
+/// has that shape too; a thumbnail of another shape is shown whole, not cut.
 /// With no link, or a photo that will not load, it shows a plain tile with an
 /// image icon instead.
 class PhotoThumbnailAtom extends StatelessWidget {
+  /// The frame's width for each point of its height.
+  static const double aspectRatio = 3 / 2;
+
   /// Null when the question has no thumbnail.
   final String? url;
-  final double size;
+  final double height;
   final PhotoImageProviderBuilder imageProviderBuilder;
 
   const PhotoThumbnailAtom({
     super.key,
     required this.url,
-    required this.size,
+    required this.height,
     this.imageProviderBuilder = networkPhotoImageProvider,
   });
 
   @override
   Widget build(BuildContext context) {
     final url = this.url;
+    final iconSize = height * 0.4;
     return ClipRRect(
       borderRadius: BorderRadius.circular(10.r),
-      child: SizedBox.square(
-        dimension: size,
+      child: SizedBox(
+        width: height * aspectRatio,
+        height: height,
         child: url == null
-            ? _PlainTile(size: size)
-            : Image(
-                image: imageProviderBuilder(url),
-                fit: BoxFit.cover,
-                excludeFromSemantics: true,
-                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                  if (frame != null || wasSynchronouslyLoaded) return child;
-                  return const ColoredBox(color: QuestPalette.card);
-                },
-                errorBuilder: (context, error, stackTrace) =>
-                    _PlainTile(size: size),
+            ? _PlainTile(iconSize: iconSize)
+            : ColoredBox(
+                color: QuestPalette.card,
+                child: Image(
+                  image: imageProviderBuilder(url),
+                  fit: BoxFit.contain,
+                  excludeFromSemantics: true,
+                  errorBuilder: (context, error, stackTrace) =>
+                      _PlainTile(iconSize: iconSize),
+                ),
               ),
       ),
     );
@@ -49,9 +55,9 @@ class PhotoThumbnailAtom extends StatelessWidget {
 }
 
 class _PlainTile extends StatelessWidget {
-  final double size;
+  final double iconSize;
 
-  const _PlainTile({required this.size});
+  const _PlainTile({required this.iconSize});
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +67,7 @@ class _PlainTile extends StatelessWidget {
       child: Center(
         child: Icon(
           Icons.image_outlined,
-          size: size * 0.4,
+          size: iconSize,
           color: QuestPalette.muted,
         ),
       ),
