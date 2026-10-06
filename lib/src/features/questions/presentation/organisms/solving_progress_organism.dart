@@ -43,7 +43,7 @@ class SolvingProgressOrganism extends StatelessWidget {
               SizedBox.square(
                 dimension: 18.r,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
+                  strokeWidth: 2.5.w,
                   color: cs.tertiary,
                 ),
               ),
