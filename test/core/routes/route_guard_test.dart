@@ -6,6 +6,7 @@ void main() {
     for (final path in [
       '/questions/photo',
       '/questions/abc/solution',
+      '/saved',
       '/collection',
       '/profile',
     ]) {
@@ -32,7 +33,12 @@ void main() {
       });
     }
 
-    for (final path in ['/questions/photo', '/collection', '/profile']) {
+    for (final path in [
+      '/questions/photo',
+      '/saved',
+      '/collection',
+      '/profile'
+    ]) {
       test('$path stays', () {
         expect(redirectFor(path, isSignedIn: true), isNull);
       });

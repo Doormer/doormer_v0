@@ -769,6 +769,35 @@ void main() {
       expect(find.text('Home page'), findsOneWidget);
       expect(find.byType(CollectionPage), findsNothing);
     });
+
+    testWidgets('Saved opens the saved questions', (tester) async {
+      final router = GoRouter(
+        initialLocation: '/collection',
+        routes: [
+          GoRoute(
+            path: '/collection',
+            builder: (_, __) => const CollectionPage(),
+          ),
+          GoRoute(
+            path: '/saved',
+            builder: (_, __) => const Scaffold(body: Text('Saved page')),
+          ),
+        ],
+      );
+      await _pumpPhone(
+        tester,
+        app: ScreenUtilInit(
+          designSize: const Size(360, 690),
+          builder: (_, __) => MaterialApp.router(routerConfig: router),
+        ),
+      );
+
+      await tester.tap(find.byIcon(Icons.bookmark_outline));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Saved page'), findsOneWidget);
+      expect(find.byType(CollectionPage), findsNothing);
+    });
   });
 
   // The app backdrop lives behind the route; every collection Scaffold stays

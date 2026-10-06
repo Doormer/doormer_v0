@@ -48,7 +48,7 @@ class _CollectionViewState extends State<_CollectionView> {
     // One set for all three screens: loading, error and ready.
     final navigationBarParams = NavigationBarParams(
       current: AppDestination.cards,
-      onSaved: () => showComingSoon(context),
+      onSaved: () => context.go('/saved'),
       onAiTutor: () => showComingSoon(context),
       onSolve: () => context.go('/questions/photo'),
       // Already here.

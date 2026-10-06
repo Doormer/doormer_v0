@@ -36,7 +36,7 @@ class ProfilePage extends StatelessWidget {
                 context.read<ProfileBloc>().add(const SignOutRequested()),
             navigationBarParams: NavigationBarParams(
               current: AppDestination.profile,
-              onSaved: () => showComingSoon(context),
+              onSaved: () => context.go('/saved'),
               onAiTutor: () => showComingSoon(context),
               onSolve: () => context.go('/questions/photo'),
               onCards: () => context.go('/collection'),

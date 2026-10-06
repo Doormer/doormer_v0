@@ -212,6 +212,10 @@ void main() {
           builder: (_, __) => const Scaffold(body: Text('Cards page')),
         ),
         GoRoute(
+          path: '/saved',
+          builder: (_, __) => const Scaffold(body: Text('Saved page')),
+        ),
+        GoRoute(
           path: '/questions/:questionId/solution',
           builder: (context, state) {
             final extra = state.extra;
@@ -799,6 +803,61 @@ void main() {
       tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
       AppDestination.solve.index,
       reason: 'a refused tap must not leave Cards lit',
+    );
+
+    pending.complete(_outcome(PhotoQuestionSolveStatus.solved));
+    await tester.pump();
+    await tester.pump();
+    await drainToasts(tester);
+  });
+
+  testWidgets('the Saved action opens the saved questions', (tester) async {
+    repository = _FakeQuestionsRepository(
+      outcome: _outcome(PhotoQuestionSolveStatus.solved),
+    );
+    registerBloc();
+    await pumpPage(tester);
+
+    await tester.tap(find.byIcon(Icons.bookmark_outline));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Saved page'), findsOneWidget);
+    expect(find.byType(AskByPhotoPage), findsNothing);
+  });
+
+  testWidgets('the Saved action stays on home mid-solve, and says why',
+      (tester) async {
+    // Leaving would lose the answer, and photographing the same question again
+    // would then count as a repeat and pay nothing.
+    final pending = Completer<PhotoQuestionSolveOutcome>();
+    repository = _FakeQuestionsRepository(pending: pending);
+    registerBloc();
+    await pumpPage(tester);
+
+    await selectPhoto(tester);
+    await tester.ensureVisible(
+      find.widgetWithText(FilledButton, 'Submit to solver'),
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.byIcon(Icons.bookmark_outline));
+    // Not pumpAndSettle: the submit button's spinner animates for as long as
+    // the solve runs. The toast is inserted after a frame and grows from zero.
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pump(const Duration(milliseconds: 700));
+
+    expect(find.text('Saved page'), findsNothing);
+    expect(find.byType(AskByPhotoPage), findsOneWidget);
+    expect(find.text('Still solving your last photo. One moment.'),
+        findsOneWidget);
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      AppDestination.solve.index,
+      reason: 'a refused tap must not leave Saved lit',
     );
 
     pending.complete(_outcome(PhotoQuestionSolveStatus.solved));

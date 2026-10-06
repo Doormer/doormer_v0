@@ -126,7 +126,19 @@ class AskByPhotoPage extends StatelessWidget {
     );
   }
 
-  /// Opens the collection, unless a solve is still running.
+  /// Opens the saved questions, unless a solve is still running.
+  ///
+  /// Leaving mid-solve would lose the answer, and photographing the same
+  /// question again would then count as a repeat and pay nothing.
+  void _openSaved(BuildContext context, {required bool isSolving}) {
+    if (isSolving) {
+      _showStillSolving(context);
+      return;
+    }
+    context.go('/saved');
+  }
+
+  /// Opens the card collection, unless a solve is still running.
   ///
   /// Leaving mid-solve would lose the answer, and photographing the same
   /// question again would then count as a repeat and pay nothing.
@@ -150,8 +162,8 @@ class AskByPhotoPage extends StatelessWidget {
     context.go('/profile');
   }
 
-  /// Says a solve is still running, so the tap has to wait. Solve and Cards
-  /// both use it, so their wording cannot drift apart.
+  /// Says a solve is still running, so the tap has to wait. Every nav item
+  /// that leaves home uses it, so their wording cannot drift apart.
   void _showStillSolving(BuildContext context) {
     CustomToast.show(
       context,
@@ -295,7 +307,7 @@ class AskByPhotoPage extends StatelessWidget {
             solving: loading == null ? null : _solvingViewFor(loading),
             navigationBarParams: NavigationBarParams(
               current: AppDestination.solve,
-              onSaved: () => showComingSoon(context),
+              onSaved: () => _openSaved(context, isSolving: isLoading),
               onAiTutor: () => showComingSoon(context),
               onSolve: () => _showPhotoSourceOptions(
                 context,

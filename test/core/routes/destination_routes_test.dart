@@ -16,11 +16,16 @@ import 'package:doormer/src/features/collection/presentation/pages/collection_pa
 import 'package:doormer/src/features/profile/domain/usecase/sign_out_usecase.dart';
 import 'package:doormer/src/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
+import 'package:doormer/src/features/questions/domain/entity/solved_questions_page.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_solved_questions_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/bloc/saved_questions_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
+import 'package:doormer/src/features/questions/presentation/pages/saved_questions_page.dart';
 import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
+import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -53,6 +58,18 @@ class _PendingCollectionRepository implements CollectionRepository {
       throw UnimplementedError('${invocation.memberName}');
 }
 
+/// Never answers, so Saved stays on its loading screen - the screen a switch
+/// to Saved lands on first.
+class _PendingSavedQuestionsRepository implements QuestionsRepository {
+  @override
+  Future<SolvedQuestionsPage> loadSolvedQuestions({String? cursor}) =>
+      Completer<SolvedQuestionsPage>().future;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('${invocation.memberName}');
+}
+
 class _FakeSessionService implements SessionService {
   @override
   Future<void> logout() async {}
@@ -69,6 +86,12 @@ void main() {
       () => AskByPhotoBloc(
         submitPhotoQuestionUseCase:
             SubmitPhotoQuestionUseCase(_UnusedQuestionsRepository()),
+      ),
+    );
+    serviceLocator.registerFactory<SavedQuestionsBloc>(
+      () => SavedQuestionsBloc(
+        loadSolvedQuestions:
+            LoadSolvedQuestionsUseCase(_PendingSavedQuestionsRepository()),
       ),
     );
     final collection = _PendingCollectionRepository();
@@ -165,5 +188,39 @@ void main() {
       4,
     );
     expect(tester.getRect(find.byType(NavigationBarOrganism)), bar);
+  });
+
+  testWidgets('Saved swaps in place, with Saved lit', (tester) async {
+    tester.view.physicalSize = const Size(360, 690);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final router = GoRouter(
+      initialLocation: '/questions/photo',
+      routes: destinationRoutes,
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(360, 690),
+        builder: (_, __) => MaterialApp.router(
+          theme: AppTheme.light,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pump();
+    final bar = tester.getRect(find.byType(NavigationBarOrganism));
+
+    await tester.tap(find.byIcon(Icons.bookmark_outline));
+    await tester.pump();
+
+    expect(find.byType(AskByPhotoPage), findsNothing);
+    expect(find.byType(SavedQuestionsPage), findsOneWidget);
+    expect(tester.getRect(find.byType(NavigationBarOrganism)), bar);
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      AppDestination.saved.index,
+    );
   });
 }

@@ -4,6 +4,7 @@
 String? redirectFor(String path, {required bool isSignedIn}) {
   const authEntry = {'/auth', '/auth/signup', '/auth/login'};
   final needsSession = path.startsWith('/questions/') ||
+      path == '/saved' ||
       path == '/collection' ||
       path == '/profile';
 

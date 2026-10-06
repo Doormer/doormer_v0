@@ -1,10 +1,11 @@
 import 'package:doormer/src/features/collection/presentation/pages/collection_page.dart';
 import 'package:doormer/src/features/profile/presentation/pages/profile_page.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
+import 'package:doormer/src/features/questions/presentation/pages/saved_questions_page.dart';
 import 'package:go_router/go_router.dart';
 
-/// The routes of the pages on the nav bar, one per destination that has a
-/// page so far: Solve, Cards, and Profile.
+/// The routes of the pages on the nav bar, one per destination that has a page
+/// so far: Saved, Solve, Cards, and Profile.
 ///
 /// They're tabs, so they swap in place with no page transition. The default
 /// one slid the whole page in, bar and all, and two bars crossed mid-switch.
@@ -12,6 +13,13 @@ import 'package:go_router/go_router.dart';
 /// Kept apart from `WebRouter` so a test can load them: the router also holds
 /// the auth pages, which only compile for the browser.
 final List<GoRoute> destinationRoutes = [
+  GoRoute(
+    path: '/saved',
+    pageBuilder: (context, state) => NoTransitionPage(
+      key: state.pageKey,
+      child: const SavedQuestionsPage(),
+    ),
+  ),
   GoRoute(
     path: '/questions/photo',
     pageBuilder: (context, state) => NoTransitionPage(
