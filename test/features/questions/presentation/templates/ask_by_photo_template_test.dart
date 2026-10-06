@@ -1,15 +1,23 @@
 import 'dart:typed_data';
 
+import 'package:doormer/src/core/ads/display_ad_unit.dart';
 import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/photo_upload_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solve_status_presenter.dart';
+import 'package:doormer/src/features/questions/presentation/molecules/study_tip_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/photo_upload_panel_organism.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/solve_status_panel_organism.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/solving_progress_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
+import 'package:doormer/src/features/questions/presentation/params/solving_progress_params.dart';
+import 'package:doormer/src/features/questions/presentation/params/solving_view_params.dart';
 import 'package:doormer/src/features/questions/presentation/templates/ask_by_photo_template.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/display_ad_atom.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/show_after_delay_atom.dart';
 import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:flutter/material.dart';
@@ -224,6 +232,68 @@ void main() {
     expect(submit, findsOneWidget);
   });
 
+  group('while a photo is being solved', () {
+    final adUnit = DisplayAdUnit.tryCreate(
+      clientId: 'ca-pub-1234567890123456',
+      slotId: '1234567890',
+    )!;
+
+    testWidgets('the solving view replaces the heading and the photo panels',
+        (tester) async {
+      await _pumpSolving(tester);
+
+      expect(find.byType(SolvingProgressOrganism), findsOneWidget);
+      expect(find.byType(StudyTipMolecule), findsOneWidget);
+      expect(find.text('Check your answer.'), findsOneWidget);
+      expect(find.text('Upload a photo'), findsNothing);
+      expect(find.byType(PhotoUploadPanelOrganism), findsNothing);
+      expect(find.byType(SolveStatusPanelOrganism), findsNothing);
+      expect(find.byType(NavigationBarOrganism), findsOneWidget);
+    });
+
+    testWidgets('the view sits at the top of the screen', (tester) async {
+      await _pumpSolving(tester);
+
+      expect(
+        tester.getTopLeft(find.byType(SolvingProgressOrganism)).dy,
+        lessThan(100),
+        reason: 'a centred view would move up when the ad card appears '
+            'below it, and could slide a button under a finger',
+      );
+    });
+
+    testWidgets('the ad card appears once the solve has run for 3 s',
+        (tester) async {
+      await _pumpSolving(tester, adUnit: adUnit);
+
+      await tester.pump(const Duration(milliseconds: 2999));
+      expect(find.byType(DisplayAdAtom), findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(find.byType(DisplayAdAtom), findsOneWidget);
+    });
+
+    testWidgets('the ad card comes last, below the tip', (tester) async {
+      await _pumpSolving(tester, adUnit: adUnit);
+      await tester.pump(AskByPhotoTemplate.adDelay);
+
+      expect(
+        tester.getTopLeft(find.byType(DisplayAdAtom)).dy,
+        greaterThanOrEqualTo(
+          tester.getBottomLeft(find.byType(StudyTipMolecule)).dy,
+        ),
+      );
+    });
+
+    testWidgets('with ads off there is never an ad card', (tester) async {
+      await _pumpSolving(tester);
+      await tester.pump(const Duration(seconds: 5));
+
+      expect(find.byType(ShowAfterDelayAtom), findsNothing);
+      expect(find.byType(DisplayAdAtom), findsNothing);
+    });
+  });
+
   group('the dock on a wide window', () {
     // Mounted the way the app mounts it: inside the shell, which caps and
     // centres the column, and inside the page's own side margins. Handing the
@@ -406,6 +476,51 @@ Future<void> _pumpTemplate(
     ),
   );
   await tester.pump();
+}
+
+Future<void> _pumpSolving(WidgetTester tester, {DisplayAdUnit? adUnit}) async {
+  tester.view.physicalSize = const Size(390, 844);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
+  await tester.pumpWidget(
+    ScreenUtilInit(
+      designSize: const Size(360, 690),
+      builder: (_, __) => MaterialApp(
+        theme: AppTheme.dark,
+        home: AskByPhotoTemplate(
+          uploadParams: PhotoUploadPanelParams(
+            imageBytes: _transparentPngBytes,
+            fileName: 'question.jpg',
+            isLoading: true,
+            copy: photoUploadCopyFor(hasPhoto: true, isRetry: false),
+            onPickPhoto: _noop,
+            onSubmit: _noop,
+            onClear: _noop,
+          ),
+          statusParams: const SolveStatusPanelParams(
+            content: SolveStatusContent(
+              title: 'Solving your photo',
+              body: '',
+              showActions: false,
+            ),
+            onRetake: _noop,
+          ),
+          solving: SolvingViewParams(
+            progress: SolvingProgressParams(
+              imageBytes: _transparentPngBytes,
+              title: 'Solving your photo',
+              body: 'This can take from a few seconds to a few minutes.',
+            ),
+            tip: 'Check your answer.',
+            adUnit: adUnit,
+          ),
+          navigationBarParams: _navigationBarParams,
+        ),
+      ),
+    ),
+  );
 }
 
 const _navigationBarParams = NavigationBarParams(

@@ -25,9 +25,11 @@ import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usec
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/photo_preview_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/solving_progress_organism.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
 import 'package:doormer/src/features/questions/presentation/pages/camera_page.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/display_ad_atom.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
 import 'package:doormer/src/features/questions/presentation/templates/solution_reader_template.dart';
@@ -537,24 +539,31 @@ void main() {
     await tester.pump(); // dispatch AskByPhotoSubmitted
     await tester.pump(); // BlocConsumer rebuilds into the Loading state
 
-    // While the solver call is in flight the page shows a busy spinner.
+    // While the solver call is in flight, the solving view replaces the photo
+    // panels: a spinner, the time so far and a study tip.
+    expect(find.byType(SolvingProgressOrganism), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     expect(find.text('Solving your photo'), findsOneWidget);
+    expect(find.text('Tip'), findsOneWidget);
+    expect(find.byType(PhotoPreviewMolecule), findsNothing);
     expect(repository.callCount, 1);
 
     // The submitted photo must stay on screen for the whole solve. Regression
-    // guard: AskByPhotoLoading used to drop the selection, so the preview
-    // collapsed back to the "pick a file" placeholder while the status panel
-    // underneath still claimed to be solving that very photo.
-    expect(find.text('algebra.png'), findsOneWidget);
+    // guard: AskByPhotoLoading used to drop the selection, so the screen fell
+    // back to the "pick a file" placeholder while still claiming to be
+    // solving that very photo.
     expect(
       find.descendant(
-        of: find.byType(PhotoPreviewMolecule),
+        of: find.byType(SolvingProgressOrganism),
         matching: find.byType(Image),
       ),
       findsOneWidget,
     );
     expect(find.text('JPG, PNG or HEIC'), findsNothing);
+
+    // Tests build without the AdSense IDs, like local builds: never an ad.
+    await tester.pump(const Duration(seconds: 4));
+    expect(find.byType(DisplayAdAtom), findsNothing);
 
     pending.complete(_outcome(PhotoQuestionSolveStatus.solved));
     await tester.pump(); // Solved state -> listener fires GoRouter.go
@@ -723,7 +732,7 @@ void main() {
     await tester.pump();
 
     await tester.tap(find.byIcon(Icons.document_scanner_outlined));
-    // Not pumpAndSettle: the submit button's spinner animates for as long as
+    // Not pumpAndSettle: the solving view's spinner animates for as long as
     // the solve runs, so nothing settles until it finishes.
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
@@ -769,7 +778,7 @@ void main() {
     await tester.pump();
 
     await tester.tap(find.byIcon(Icons.style_outlined));
-    // Not pumpAndSettle: the submit button's spinner animates for as long as
+    // Not pumpAndSettle: the solving view's spinner animates for as long as
     // the solve runs. Toastification 3.x inserts the toast after a frame and
     // then animates it from zero height, so finders skip it until it has some.
     await tester.pump();
