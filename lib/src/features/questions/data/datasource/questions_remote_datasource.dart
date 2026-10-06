@@ -27,6 +27,10 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
       "We couldn't connect. Check your connection and try again.";
   static const _somethingWentWrong = 'Something went wrong. Try again.';
 
+  // Matches the API's 660s limit on a photo solve, which can take minutes. On
+  // web the shorter default makes the browser give up after 30s.
+  static const _solveTimeout = Duration(seconds: 660);
+
   final Dio dio;
 
   const QuestionsRemoteDataSourceImpl({required this.dio});
@@ -46,6 +50,7 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
             'Content-Type': contentType,
             'Idempotency-Key': idempotencyKey,
           },
+          receiveTimeout: _solveTimeout,
         ),
       );
 
