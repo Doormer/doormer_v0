@@ -201,6 +201,7 @@ class DisplayAdLoader {
       _stop();
       return;
     }
+    if (status != 'unfilled' && status != 'unfill-optimized') return;
     AppLogger.debug('Google had no display ad ($status)');
     _finishWithoutAd();
   }

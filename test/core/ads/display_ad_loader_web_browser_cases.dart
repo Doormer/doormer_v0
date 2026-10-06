@@ -168,6 +168,23 @@ void main() {
     expect(noAds, 0);
   });
 
+  test('an unknown ad status waits for the time limit', () async {
+    var noAds = 0;
+    start(
+      onNoAd: () => noAds++,
+      fillTimeout: const Duration(milliseconds: 300),
+    );
+
+    adElement().setAttribute('data-ad-status', 'something-new');
+    await settle(const Duration(milliseconds: 50));
+
+    expect(noAds, 0);
+
+    await settle(const Duration(milliseconds: 300));
+
+    expect(noAds, 1);
+  });
+
   for (final status in ['unfilled', 'unfill-optimized']) {
     test('"$status" means no ad, reported once', () async {
       var noAds = 0;
