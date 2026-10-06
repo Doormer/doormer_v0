@@ -614,6 +614,9 @@ void main() {
     // The photo now survives the failure, so Change photo lives with it in the
     // upload panel rather than being repeated in the recovery panel below.
     expect(find.widgetWithText(AppButtonAtom, 'Change photo'), findsOneWidget);
+    await tester.ensureVisible(
+      find.widgetWithText(AppButtonAtom, 'Change photo'),
+    );
     await tester.tap(find.widgetWithText(AppButtonAtom, 'Change photo'));
     await tester.pumpAndSettle();
 

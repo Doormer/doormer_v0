@@ -1,9 +1,12 @@
 import 'package:flutter/widgets.dart';
 
-/// Scrolls [child] into view whenever [trigger] changes to a non-null value.
+/// Scrolls [child] into view when it first appears with a non-null
+/// [trigger], and whenever [trigger] changes to a non-null value.
 ///
 /// For content that appears below the fold in response to something the user
-/// did, like an error under a tall photo.
+/// did, like an error under a tall photo. The error can arrive either way: as
+/// a change to a panel already on screen, or with a panel that has just
+/// replaced the solving view.
 class RevealOnChangeAtom extends StatefulWidget {
   final Object? trigger;
   final Widget child;
@@ -20,19 +23,29 @@ class RevealOnChangeAtom extends StatefulWidget {
 
 class _RevealOnChangeAtomState extends State<RevealOnChangeAtom> {
   @override
+  void initState() {
+    super.initState();
+    if (widget.trigger != null) _revealAfterThisFrame();
+  }
+
+  @override
   void didUpdateWidget(covariant RevealOnChangeAtom oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.trigger != null && widget.trigger != oldWidget.trigger) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        Scrollable.ensureVisible(
-          context,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-          alignment: 0.1,
-        );
-      });
+      _revealAfterThisFrame();
     }
+  }
+
+  void _revealAfterThisFrame() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+        alignment: 0.1,
+      );
+    });
   }
 
   @override

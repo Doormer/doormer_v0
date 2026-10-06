@@ -30,6 +30,17 @@ void main() {
         tester.getTopLeft(find.byKey(const Key('target'))).dy, lessThan(600));
   });
 
+  testWidgets(
+      'scrolls the child into view when it first appears with a '
+      'trigger', (tester) async {
+    // A failed solve mounts the status panel fresh, already holding its
+    // message, where the solving view was.
+    await tester.pumpWidget(page('error'));
+    await tester.pumpAndSettle();
+    expect(
+        tester.getTopLeft(find.byKey(const Key('target'))).dy, lessThan(600));
+  });
+
   testWidgets('does nothing when the trigger goes back to null',
       (tester) async {
     await tester.pumpWidget(page(null));
