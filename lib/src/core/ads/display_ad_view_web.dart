@@ -21,11 +21,13 @@ String Function(String clientId) displayAdScriptUrl = _googleAdScriptUrl;
 /// Whether Google's script loaded. Shared by every ad in the visit and never
 /// retried: whatever blocked it once, usually an ad blocker, blocks it again.
 Future<bool>? _scriptLoaded;
+bool _scriptFailed = false;
 
 /// Forgets the script and Google's ad queue, so the next ad starts afresh.
 @visibleForTesting
 void resetDisplayAdScriptForTest() {
   _scriptLoaded = null;
+  _scriptFailed = false;
   displayAdScriptUrl = _googleAdScriptUrl;
   final scripts =
       web.document.querySelectorAll('script[data-display-ad-script]');
@@ -103,6 +105,10 @@ class DisplayAdLoader {
   /// Adds the ad element to [host] and, once [host] is on the page, asks
   /// Google to fill it.
   void start(web.HTMLElement host) {
+    if (_scriptFailed) {
+      scheduleMicrotask(_finishWithoutAd);
+      return;
+    }
     _fillTimer = Timer(fillTimeout, () {
       if (_finished) return;
       AppLogger.debug('No display ad within ${fillTimeout.inSeconds} s');
@@ -203,6 +209,7 @@ class DisplayAdLoader {
   }
 
   void _onScriptLoaded(bool loaded) {
+    if (!loaded) _scriptFailed = true;
     if (loaded || _finished) return;
     AppLogger.info(
       'The ad script did not load. An ad blocker or a dropped connection '
@@ -218,6 +225,7 @@ class DisplayAdLoader {
   }
 
   void _finishWithoutAd() {
+    if (_finished) return;
     _finished = true;
     _stop();
     onNoAd();

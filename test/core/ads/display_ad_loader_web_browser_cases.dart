@@ -74,6 +74,9 @@ void main() {
     return queue == null ? 0 : (queue as JSArray<JSAny?>).toDart.length;
   }
 
+  int adElementCount() =>
+      web.document.querySelectorAll('ins.adsbygoogle').length;
+
   int scriptTags() =>
       web.document.querySelectorAll('script[data-display-ad-script]').length;
 
@@ -201,9 +204,14 @@ void main() {
     final first = Completer<void>();
     start(onNoAd: first.complete);
     await first.future.timeout(const Duration(seconds: 5));
+    final requestsAfterFailure = adRequests();
+    final adElementsAfterFailure = adElementCount();
 
     final second = Completer<void>();
     start(onNoAd: second.complete, into: extraHost());
+    expect(second.isCompleted, isFalse);
+    expect(adRequests(), requestsAfterFailure);
+    expect(adElementCount(), adElementsAfterFailure);
     await second.future.timeout(const Duration(seconds: 1));
 
     expect(scriptTags(), 1);
