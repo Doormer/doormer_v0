@@ -93,7 +93,8 @@ SolveStatusContent solveStatusContentFor(AskByPhotoState state) {
   if (state is AskByPhotoLoading) {
     return const SolveStatusContent(
       title: 'Solving your photo',
-      body: 'Reading your question and working out the steps.',
+      body: 'This can take from a few seconds to a few minutes. Keep this '
+          "page open and your solution opens as soon as it's ready.",
       showActions: false,
     );
   }
