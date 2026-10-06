@@ -1,5 +1,6 @@
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/molecules/error_with_retry_molecule.dart';
 import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +11,6 @@ import '../../domain/entity/deck_progress.dart';
 import '../../domain/entity/holding.dart';
 import '../atoms/quark_balance_atom.dart';
 import '../mapper/collection_presenter.dart';
-import '../molecules/error_with_retry_molecule.dart';
 import '../molecules/quark_balance_molecule.dart';
 import '../organisms/card_grid_organism.dart';
 import '../organisms/deck_list_organism.dart';

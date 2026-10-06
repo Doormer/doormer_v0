@@ -2,6 +2,7 @@
 import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/responsive/margin_scrim_scope.dart';
 import 'package:doormer/src/core/routes/app_router.dart';
+import 'package:doormer/src/shared/design/atomic/molecules/error_with_retry_molecule.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:doormer/src/shared/widget/coming_soon_toast.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../bloc/collection_bloc.dart';
-import '../molecules/error_with_retry_molecule.dart';
 import '../organisms/card_detail_organism.dart';
 import '../organisms/card_reveal_organism.dart';
 import '../params/card_detail_params.dart';

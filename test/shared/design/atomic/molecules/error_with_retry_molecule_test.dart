@@ -1,4 +1,4 @@
-import 'package:doormer/src/features/collection/presentation/molecules/error_with_retry_molecule.dart';
+import 'package:doormer/src/shared/design/atomic/molecules/error_with_retry_molecule.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,6 +21,20 @@ void main() {
       findsOneWidget,
     );
     await tester.tap(find.text('Retry'));
+    expect(retries, 1);
+  });
+
+  testWidgets('names its button as the screen asks', (tester) async {
+    var retries = 0;
+    await tester.pumpWidget(_host(ErrorWithRetryMolecule(
+      message: "We couldn't load your questions.",
+      onRetry: () => retries++,
+      retryLabel: 'Try again',
+    )));
+
+    await tester.tap(find.text('Try again'));
+
+    expect(find.text('Retry'), findsNothing);
     expect(retries, 1);
   });
 }
