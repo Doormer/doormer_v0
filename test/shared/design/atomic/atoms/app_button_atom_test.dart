@@ -50,4 +50,99 @@ void main() {
       );
     });
   });
+
+  group('AppButtonAtom loading', () {
+    Color paintedBackground(WidgetTester tester) {
+      final material = tester.widget<Material>(find.descendant(
+        of: find.byType(FilledButton),
+        matching: find.byType(Material),
+      ));
+      return material.color!;
+    }
+
+    testWidgets(
+        'accent keeps its tertiary background while loading so the '
+        'onTertiary spinner stays visible', (tester) async {
+      final darkTheme = AppTheme.dark;
+
+      await tester.pumpWidget(_pump(
+        AppButtonAtom(
+          label: 'Submit',
+          variant: AppButtonVariant.accent,
+          isLoading: true,
+          onPressed: () {},
+        ),
+        theme: darkTheme,
+      ));
+
+      expect(paintedBackground(tester), darkTheme.colorScheme.tertiary);
+      final spinner = tester.widget<CircularProgressIndicator>(
+        find.byType(CircularProgressIndicator),
+      );
+      expect(spinner.color, darkTheme.colorScheme.onTertiary);
+    });
+
+    testWidgets('filled keeps its primary background while loading',
+        (tester) async {
+      final darkTheme = AppTheme.dark;
+
+      await tester.pumpWidget(_pump(
+        const AppButtonAtom(label: 'Sign out', isLoading: true),
+        theme: darkTheme,
+      ));
+
+      expect(paintedBackground(tester), darkTheme.colorScheme.primary);
+    });
+
+    testWidgets('a loading button cannot be pressed', (tester) async {
+      var presses = 0;
+
+      await tester.pumpWidget(_pump(
+        AppButtonAtom(
+          label: 'Submit',
+          isLoading: true,
+          onPressed: () => presses++,
+        ),
+      ));
+      await tester.tap(find.byType(FilledButton));
+
+      expect(presses, 0);
+    });
+
+    testWidgets('shows only the spinner when no loading label is given',
+        (tester) async {
+      await tester.pumpWidget(_pump(
+        const AppButtonAtom(label: 'Submit', isLoading: true),
+      ));
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text('Submit'), findsNothing);
+    });
+
+    testWidgets('shows the loading label next to the spinner', (tester) async {
+      await tester.pumpWidget(_pump(
+        const AppButtonAtom(
+          label: 'Submit',
+          loadingLabel: 'Solving your photo…',
+          isLoading: true,
+        ),
+      ));
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text('Solving your photo…'), findsOneWidget);
+      expect(find.text('Submit'), findsNothing);
+    });
+
+    testWidgets('ignores the loading label when not loading', (tester) async {
+      await tester.pumpWidget(_pump(
+        const AppButtonAtom(
+          label: 'Submit',
+          loadingLabel: 'Solving your photo…',
+        ),
+      ));
+
+      expect(find.text('Submit'), findsOneWidget);
+      expect(find.text('Solving your photo…'), findsNothing);
+    });
+  });
 }

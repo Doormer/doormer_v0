@@ -10,6 +10,11 @@ class AppButtonAtom extends StatelessWidget {
   final AppButtonVariant variant;
   final IconData? icon;
   final bool isLoading;
+
+  /// Shown next to the spinner while [isLoading]. Without it the spinner
+  /// stands alone, which is enough for a quick wait but says nothing during
+  /// a long one.
+  final String? loadingLabel;
   final bool expand;
   final Color? borderColor;
 
@@ -20,6 +25,7 @@ class AppButtonAtom extends StatelessWidget {
     this.variant = AppButtonVariant.filled,
     this.icon,
     this.isLoading = false,
+    this.loadingLabel,
     this.expand = false,
     this.borderColor,
   });
@@ -45,23 +51,41 @@ class AppButtonAtom extends StatelessWidget {
       spinnerColor = cs.onPrimary;
     }
 
-    final Widget content = isLoading
-        ? SizedBox(
-            height: 20.h,
-            width: 20.w,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.w,
-              color: spinnerColor,
-            ),
-          )
-        : Text(label);
+    final Widget spinner = SizedBox(
+      height: 20.h,
+      width: 20.w,
+      child: CircularProgressIndicator(
+        strokeWidth: 2.w,
+        color: spinnerColor,
+      ),
+    );
+    final busyLabel = loadingLabel;
+    final Widget content = !isLoading
+        ? Text(label)
+        : busyLabel == null
+            ? spinner
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  spinner,
+                  SizedBox(width: 10.w),
+                  Flexible(
+                    child: Text(busyLabel, overflow: TextOverflow.ellipsis),
+                  ),
+                ],
+              );
 
     final VoidCallback? effectiveOnPressed = isLoading ? null : onPressed;
 
+    // A loading button is untappable, so Flutter would paint it with its
+    // disabled colours. The spinner is coloured for the enabled background,
+    // so keep that background while loading or the spinner disappears into
+    // the disabled grey.
     Widget button;
     if (variant == AppButtonVariant.outlined) {
       final style = OutlinedButton.styleFrom(
         foregroundColor: cs.primary,
+        disabledForegroundColor: isLoading ? cs.primary : null,
         side: BorderSide(color: borderColor ?? cs.outlineVariant),
         padding: padding,
         shape: shape,
@@ -82,6 +106,8 @@ class AppButtonAtom extends StatelessWidget {
       final style = FilledButton.styleFrom(
         backgroundColor: cs.tertiary,
         foregroundColor: cs.onTertiary,
+        disabledBackgroundColor: isLoading ? cs.tertiary : null,
+        disabledForegroundColor: isLoading ? cs.onTertiary : null,
         padding: padding,
         shape: shape,
       );
@@ -101,6 +127,8 @@ class AppButtonAtom extends StatelessWidget {
       final style = FilledButton.styleFrom(
         backgroundColor: cs.primary,
         foregroundColor: cs.onPrimary,
+        disabledBackgroundColor: isLoading ? cs.primary : null,
+        disabledForegroundColor: isLoading ? cs.onPrimary : null,
         padding: padding,
         shape: shape,
       );

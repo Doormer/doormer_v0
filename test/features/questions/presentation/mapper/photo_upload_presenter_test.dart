@@ -23,4 +23,11 @@ void main() {
       'Try again',
     );
   });
+
+  test('says the photo is being solved while the send is in flight', () {
+    expect(
+      photoUploadCopyFor(hasPhoto: true, isRetry: false).solvingLabel,
+      'Solving your photo…',
+    );
+  });
 }
