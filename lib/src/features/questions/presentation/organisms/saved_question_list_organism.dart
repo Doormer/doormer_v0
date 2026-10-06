@@ -68,13 +68,13 @@ class _LoadingMoreRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 16.h),
-      child: const Center(
+      child: Center(
         child: SizedBox(
-          width: 22,
-          height: 22,
+          width: 22.w,
+          height: 22.w,
           child: CircularProgressIndicator(
-            key: Key('saved_question_list_loading_more'),
-            strokeWidth: 2.5,
+            key: const Key('saved_question_list_loading_more'),
+            strokeWidth: 2.5.w,
             color: QuestPalette.violet,
           ),
         ),
