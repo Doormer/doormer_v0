@@ -84,6 +84,21 @@ void main() {
     });
   });
 
+  group('submitPhotoQuestion', () {
+    test('waits as long as the API gives a solve', () async {
+      final adapter = _FakeAdapter(body: {'status': 'unreadable'});
+
+      await _dataSource(adapter).submitPhotoQuestion(
+        imageBytes: Uint8List.fromList([1, 2, 3]),
+        contentType: 'image/png',
+        idempotencyKey: 'key-1',
+      );
+
+      expect(adapter.request!.path, '/v1/questions/photo');
+      expect(adapter.request!.receiveTimeout, const Duration(seconds: 660));
+    });
+  });
+
   group('loadQuarkBalance', () {
     test('posts an empty body and reads the balance', () async {
       final adapter = _FakeAdapter(body: {'quark_balance': 128});

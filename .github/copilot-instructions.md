@@ -96,7 +96,7 @@ lib/src/
 
 ### HTTP (Dio)
 
-- Client: `core/connection/dio_client.dart` — 15s timeouts.
+- Client: `core/connection/dio_client.dart` — 15s timeouts. On web the browser gives up after the connect and receive timeouts added together, so a call that can run longer sets its own `receiveTimeout` (sending a photo waits up to the API's 660s solve limit).
 - `SessionInterceptor` (`core/connection/interceptors/`) attaches Bearer tokens; 401 → auto session expiry.
 - Skip auth: `Options(extra: {'skipAuth': true})`.
 - In datasources, catch `DioException` and convert it with `dioExceptionToFailure` (see Error Handling).
