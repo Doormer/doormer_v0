@@ -22,6 +22,7 @@ String Function(String clientId) displayAdScriptUrl = _googleAdScriptUrl;
 /// retried: whatever blocked it once, usually an ad blocker, blocks it again.
 Future<bool>? _scriptLoaded;
 bool _scriptFailed = false;
+const _displayAdScriptId = 'display-ad-script';
 
 /// Forgets the script and Google's ad queue, so the next ad starts afresh.
 @visibleForTesting
@@ -29,11 +30,7 @@ void resetDisplayAdScriptForTest() {
   _scriptLoaded = null;
   _scriptFailed = false;
   displayAdScriptUrl = _googleAdScriptUrl;
-  final scripts =
-      web.document.querySelectorAll('script[data-display-ad-script]');
-  for (var i = scripts.length - 1; i >= 0; i--) {
-    (scripts.item(i)! as web.Element).remove();
-  }
+  web.document.getElementById(_displayAdScriptId)?.remove();
   globalContext.delete('adsbygoogle'.toJS);
 }
 
@@ -45,8 +42,8 @@ Future<bool> _addScript(String url) {
   final script = web.HTMLScriptElement()
     ..async = true
     ..crossOrigin = 'anonymous'
+    ..id = _displayAdScriptId
     ..src = url;
-  script.setAttribute('data-display-ad-script', '');
   script.addEventListener(
     'load',
     ((web.Event _) {

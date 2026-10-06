@@ -78,7 +78,7 @@ void main() {
       web.document.querySelectorAll('ins.adsbygoogle').length;
 
   int scriptTags() =>
-      web.document.querySelectorAll('script[data-display-ad-script]').length;
+      web.document.querySelectorAll('script#display-ad-script').length;
 
   /// Lets the browser deliver attribute changes, observers and script events.
   Future<void> settle([Duration wait = Duration.zero]) =>
@@ -135,10 +135,14 @@ void main() {
     start(into: extraHost());
 
     expect(scriptTags(), 1);
-    final script = web.document.querySelector('script[data-display-ad-script]')
+    final script = web.document.querySelector('script#display-ad-script')
         as web.HTMLScriptElement;
     expect(script.async, isTrue);
     expect(script.crossOrigin, 'anonymous');
+    expect(
+      script.getAttributeNames().toDart.map((name) => name.toDart),
+      isNot(contains(startsWith('data-'))),
+    );
   });
 
   test('the real script comes from Google, with the publisher ID', () {
