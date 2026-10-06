@@ -25,8 +25,44 @@ import 'package:go_router/go_router.dart';
 import 'package:toastification/toastification.dart';
 import 'camera_page.dart';
 
-class AskByPhotoPage extends StatelessWidget {
-  const AskByPhotoPage({super.key});
+/// Passed as the route's `extra` to open Solve with the photo options already
+/// up, for buttons that promise to solve a question.
+///
+/// It is not JSON, so go_router leaves it out of the browser history: back,
+/// forward and a refresh show Solve as a plain tab.
+class ShowPhotoSourceOptionsOnOpen {
+  const ShowPhotoSourceOptionsOnOpen();
+}
+
+class AskByPhotoPage extends StatefulWidget {
+  /// Whether the camera and gallery options open as soon as the page shows.
+  ///
+  /// The options, not the file chooser itself: browsers only open a chooser in
+  /// response to a tap, and the student's tap on an option is that tap.
+  final bool showPhotoSourceOptionsOnOpen;
+
+  const AskByPhotoPage({super.key, this.showPhotoSourceOptionsOnOpen = false});
+
+  @override
+  State<AskByPhotoPage> createState() => _AskByPhotoPageState();
+}
+
+class _AskByPhotoPageState extends State<AskByPhotoPage> {
+  /// The screen inside the bloc provider. Picking a photo reads the bloc from
+  /// the context it is given, and this page's own context sits above the
+  /// provider.
+  final _screenKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.showPhotoSourceOptionsOnOpen) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final screen = _screenKey.currentContext;
+        if (screen != null) _showPhotoSourceOptions(screen);
+      });
+    }
+  }
 
   /// Opens the photo library or file chooser, or, with [fromCamera], the
   /// phone's own camera app.
@@ -228,6 +264,7 @@ class AskByPhotoPage extends StatelessWidget {
     return BlocProvider<AskByPhotoBloc>(
       create: (_) => serviceLocator<AskByPhotoBloc>(),
       child: BlocConsumer<AskByPhotoBloc, AskByPhotoState>(
+        key: _screenKey,
         listener: (context, state) {
           if (state is AskByPhotoNotice) {
             CustomToast.show(

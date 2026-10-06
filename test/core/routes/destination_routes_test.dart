@@ -70,6 +70,18 @@ class _PendingSavedQuestionsRepository implements QuestionsRepository {
       throw UnimplementedError('${invocation.memberName}');
 }
 
+/// Has nothing solved, so Saved shows its empty state and its Solve a question
+/// button.
+class _EmptySavedQuestionsRepository implements QuestionsRepository {
+  @override
+  Future<SolvedQuestionsPage> loadSolvedQuestions({String? cursor}) async =>
+      const SolvedQuestionsPage(questions: []);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('${invocation.memberName}');
+}
+
 class _FakeSessionService implements SessionService {
   @override
   Future<void> logout() async {}
@@ -222,5 +234,63 @@ void main() {
       tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
       AppDestination.saved.index,
     );
+  });
+
+  group('from an empty Saved', () {
+    setUp(() {
+      serviceLocator.unregister<SavedQuestionsBloc>();
+      serviceLocator.registerFactory<SavedQuestionsBloc>(
+        () => SavedQuestionsBloc(
+          loadSolvedQuestions:
+              LoadSolvedQuestionsUseCase(_EmptySavedQuestionsRepository()),
+        ),
+      );
+    });
+
+    Future<void> pumpEmptySaved(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(360, 690);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final router = GoRouter(
+        initialLocation: '/saved',
+        routes: destinationRoutes,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ScreenUtilInit(
+          designSize: const Size(360, 690),
+          builder: (_, __) => MaterialApp.router(
+            theme: AppTheme.light,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    // The button promises a solve, so a second tap on UPLOAD & SOLVE would be
+    // one too many.
+    testWidgets('Solve a question opens Solve with the photo options up',
+        (tester) async {
+      await pumpEmptySaved(tester);
+
+      await tester.tap(find.text('Solve a question'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AskByPhotoPage), findsOneWidget);
+      expect(find.text('Open camera'), findsOneWidget);
+      expect(find.text('Choose from gallery'), findsOneWidget);
+    });
+
+    testWidgets('the Solve tab opens Solve without them', (tester) async {
+      await pumpEmptySaved(tester);
+
+      await tester.tap(find.byIcon(Icons.document_scanner_outlined));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AskByPhotoPage), findsOneWidget);
+      expect(find.text('Open camera'), findsNothing);
+    });
   });
 }

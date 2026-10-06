@@ -199,13 +199,15 @@ void main() {
     await serviceLocator.reset();
   });
 
-  GoRouter buildRouter() {
+  GoRouter buildRouter({bool showPhotoSourceOptionsOnOpen = false}) {
     return GoRouter(
       initialLocation: '/questions/photo',
       routes: [
         GoRoute(
           path: '/questions/photo',
-          builder: (_, __) => const AskByPhotoPage(),
+          builder: (_, __) => AskByPhotoPage(
+            showPhotoSourceOptionsOnOpen: showPhotoSourceOptionsOnOpen,
+          ),
         ),
         GoRoute(
           path: '/collection',
@@ -237,7 +239,10 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Future<void> pumpPage(WidgetTester tester) async {
+  Future<void> pumpPage(
+    WidgetTester tester, {
+    bool showPhotoSourceOptionsOnOpen = false,
+  }) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -249,7 +254,9 @@ void main() {
         builder: (_, __) => MaterialApp.router(
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
-          routerConfig: buildRouter(),
+          routerConfig: buildRouter(
+            showPhotoSourceOptionsOnOpen: showPhotoSourceOptionsOnOpen,
+          ),
         ),
       ),
     );
@@ -319,6 +326,54 @@ void main() {
 
     expect(find.text('Open camera'), findsOneWidget);
     expect(find.text('Choose from gallery'), findsOneWidget);
+  });
+
+  testWidgets('opened to solve straight away, it shows the photo options',
+      (tester) async {
+    repository = _FakeQuestionsRepository(
+      outcome: _outcome(PhotoQuestionSolveStatus.solved),
+    );
+    registerBloc();
+
+    await pumpPage(tester, showPhotoSourceOptionsOnOpen: true);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Open camera'), findsOneWidget);
+    expect(find.text('Choose from gallery'), findsOneWidget);
+  });
+
+  testWidgets('a gallery photo picked from the options it opened with is shown',
+      (tester) async {
+    repository = _FakeQuestionsRepository(
+      outcome: _outcome(PhotoQuestionSolveStatus.solved),
+    );
+    registerBloc();
+    fileInput.file = _pickedHeic;
+    preparer.result = _preparedJpeg;
+    await pumpPage(tester, showPhotoSourceOptionsOnOpen: true);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Choose from gallery'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+
+    expect(fileInput.pickedFromCamera, [false]);
+    expect(find.text('IMG_1.jpg'), findsOneWidget);
+  });
+
+  testWidgets('opened as a tab, it waits for a tap before showing the options',
+      (tester) async {
+    repository = _FakeQuestionsRepository(
+      outcome: _outcome(PhotoQuestionSolveStatus.solved),
+    );
+    registerBloc();
+
+    await pumpPage(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.text('UPLOAD & SOLVE'), findsOneWidget);
+    expect(find.text('Open camera'), findsNothing);
   });
 
   testWidgets('template owns one scaffold and lets the app backdrop through',

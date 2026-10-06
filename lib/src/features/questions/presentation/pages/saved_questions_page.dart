@@ -4,6 +4,7 @@ import 'package:doormer/src/features/questions/presentation/bloc/saved_questions
 import 'package:doormer/src/features/questions/presentation/mapper/saved_question_row_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/enlarge_sheet_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/photo_enlarge_organism.dart';
+import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
 import 'package:doormer/src/features/questions/presentation/params/saved_question_row_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/saved_questions_body_params.dart';
 import 'package:doormer/src/features/questions/presentation/templates/saved_questions_template.dart';
@@ -51,7 +52,10 @@ class SavedQuestionsPage extends StatelessWidget {
     return switch (state) {
       SavedQuestionsLoading() => const SavedQuestionsLoadingParams(),
       SavedQuestionsEmpty() => SavedQuestionsEmptyParams(
-          onSolve: () => context.go('/questions/photo'),
+          onSolve: () => context.go(
+            '/questions/photo',
+            extra: const ShowPhotoSourceOptionsOnOpen(),
+          ),
         ),
       SavedQuestionsError(:final message) => SavedQuestionsErrorParams(
           message: message,

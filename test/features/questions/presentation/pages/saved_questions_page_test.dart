@@ -8,6 +8,7 @@ import 'package:doormer/src/features/questions/domain/repository/questions_repos
 import 'package:doormer/src/features/questions/domain/usecase/load_solved_questions_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/saved_questions_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/photo_enlarge_organism.dart';
+import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
 import 'package:doormer/src/features/questions/presentation/pages/saved_questions_page.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:flutter/material.dart';
@@ -84,7 +85,11 @@ void main() {
         ),
         GoRoute(
           path: '/questions/photo',
-          builder: (_, __) => const Scaffold(body: Text('Solve page')),
+          builder: (_, state) => Scaffold(
+            body: Text(state.extra is ShowPhotoSourceOptionsOnOpen
+                ? 'Solve page, photo options up'
+                : 'Solve page'),
+          ),
         ),
         GoRoute(
           path: '/questions/:questionId/solution',
@@ -163,8 +168,9 @@ void main() {
     expect(find.text('Question 42 text'), findsOneWidget);
   });
 
-  testWidgets('with nothing solved, Solve a question goes to Solve',
-      (tester) async {
+  testWidgets(
+      'with nothing solved, Solve a question opens Solve with the photo '
+      'options up', (tester) async {
     repository = _ScriptedRepository({
       null: [const SolvedQuestionsPage(questions: [])],
     });
@@ -174,7 +180,7 @@ void main() {
     await tester.tap(find.text('Solve a question'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Solve page'), findsOneWidget);
+    expect(find.text('Solve page, photo options up'), findsOneWidget);
   });
 
   testWidgets('a first page that fails offers Try again, which loads it',

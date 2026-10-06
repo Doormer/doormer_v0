@@ -24,7 +24,10 @@ final List<GoRoute> destinationRoutes = [
     path: '/questions/photo',
     pageBuilder: (context, state) => NoTransitionPage(
       key: state.pageKey,
-      child: const AskByPhotoPage(),
+      child: AskByPhotoPage(
+        showPhotoSourceOptionsOnOpen:
+            state.extra is ShowPhotoSourceOptionsOnOpen,
+      ),
     ),
   ),
   GoRoute(
