@@ -20,6 +20,15 @@ class AppConfig {
   static bool get enableSemantics =>
       const bool.fromEnvironment('ENABLE_SEMANTICS');
 
+  // AdSense, for the ad shown while a photo is being solved. Ads stay off
+  // unless both IDs are set.
+  static String get adsenseClientId =>
+      const String.fromEnvironment('ADSENSE_CLIENT_ID');
+  static String get adsenseSolvingSlotId =>
+      const String.fromEnvironment('ADSENSE_SOLVING_SLOT_ID');
+  static bool get adsenseTestMode =>
+      const bool.fromEnvironment('ADSENSE_TEST_MODE');
+
   static const String surveyURL =
       'https://forms.office.com/Pages/ResponsePage.aspx?id=DQSIkWdsW0yxEjajBLZtrQAAAAAAAAAAAAMAALkU5oxUM002V0xCM1RRTzFIUVJEU0xRNDJMSlpTSC4u';
 }
