@@ -1,29 +1,44 @@
 import 'package:doormer/src/features/questions/presentation/molecules/ask_by_photo_header_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/molecules/study_tip_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/photo_upload_panel_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solve_status_panel_organism.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/solving_progress_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
+import 'package:doormer/src/features/questions/presentation/params/solving_view_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/display_ad_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/reveal_on_change_atom.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/show_after_delay_atom.dart';
 import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 
 class AskByPhotoTemplate extends StatelessWidget {
+  /// How long a solve runs before the ad card appears. Shorter solves show
+  /// no ad.
+  static const Duration adDelay = Duration(seconds: 3);
+
   final PhotoUploadPanelParams uploadParams;
   final SolveStatusPanelParams statusParams;
   final NavigationBarParams navigationBarParams;
+
+  /// Set while a photo is being solved. The solving view then replaces the
+  /// heading and the photo panels.
+  final SolvingViewParams? solving;
 
   const AskByPhotoTemplate({
     super.key,
     required this.uploadParams,
     required this.statusParams,
     required this.navigationBarParams,
+    this.solving,
   });
 
   @override
   Widget build(BuildContext context) {
+    final solving = this.solving;
     final hasPhoto = uploadParams.imageBytes != null;
     final isLoading = uploadParams.isLoading;
 
@@ -44,7 +59,9 @@ class AskByPhotoTemplate extends StatelessWidget {
       body: SafeArea(
         child: Stack(
           children: [
-            if (showPanels)
+            if (solving != null)
+              Positioned.fill(child: _buildSolvingView(solving))
+            else if (showPanels)
               Positioned.fill(
                 child: _buildSolvePanels(showUploadPanel, showStatusPanel),
               )
@@ -90,6 +107,33 @@ class AskByPhotoTemplate extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSolvingView(SolvingViewParams solving) {
+    final adUnit = solving.adUnit;
+
+    return SingleChildScrollView(
+      // Bottom padding clears the pinned navigation bar.
+      padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 120.h),
+      // Top-aligned, with the ad card last: it appears and disappears without
+      // moving anything above it, and an ad below the main content doesn't
+      // count toward the Better Ads 30% ad-density limit.
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SolvingProgressOrganism(params: solving.progress),
+          SizedBox(height: 16.h),
+          StudyTipMolecule(tip: solving.tip),
+          if (adUnit != null) ...[
+            SizedBox(height: 24.h),
+            ShowAfterDelayAtom(
+              delay: adDelay,
+              child: DisplayAdAtom(unit: adUnit),
+            ),
+          ],
+        ],
       ),
     );
   }

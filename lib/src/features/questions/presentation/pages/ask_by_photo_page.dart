@@ -1,13 +1,17 @@
 import 'package:camera/camera.dart' show XFile;
+import 'package:doormer/src/core/ads/display_ad_unit.dart';
 import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/photo_upload_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solve_status_presenter.dart';
+import 'package:doormer/src/features/questions/presentation/mapper/solving_tip_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/photo_source_sheet_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
+import 'package:doormer/src/features/questions/presentation/params/solving_progress_params.dart';
+import 'package:doormer/src/features/questions/presentation/params/solving_view_params.dart';
 import 'package:doormer/src/features/questions/presentation/templates/ask_by_photo_template.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_file_input.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_preparer.dart';
@@ -192,6 +196,21 @@ class AskByPhotoPage extends StatelessWidget {
     }
   }
 
+  /// What the screen shows while [state]'s photo is being solved.
+  SolvingViewParams _solvingViewFor(AskByPhotoLoading state) {
+    final content = solveStatusContentFor(state);
+    final photo = state.imageBytes;
+    return SolvingViewParams(
+      progress: SolvingProgressParams(
+        imageBytes: photo,
+        title: content.title,
+        body: content.body,
+      ),
+      tip: solvingTipFor(photoSize: photo?.length ?? 0),
+      adUnit: DisplayAdUnit.solvingScreen(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider<AskByPhotoBloc>(
@@ -273,6 +292,7 @@ class AskByPhotoPage extends StatelessWidget {
               // outright, so there is nothing to clear first.
               onRetake: () => _showPhotoSourceOptions(context),
             ),
+            solving: loading == null ? null : _solvingViewFor(loading),
             navigationBarParams: NavigationBarParams(
               current: AppDestination.solve,
               onSaved: () => showComingSoon(context),

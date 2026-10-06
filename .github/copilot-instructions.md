@@ -32,6 +32,9 @@ flutter test
 | `API_BASE_URL` | `http://localhost:8888` | Backend API root |
 | `GOOGLE_CLIENT_ID` | hardcoded dev ID | Google OAuth client |
 | `ENABLE_SEMANTICS` | `false` | Builds the accessibility tree so browser-automation agents can read the UI. Dev and agent use only |
+| `ADSENSE_CLIENT_ID` | empty (ads off) | AdSense publisher ID (`ca-pub-…`) for the ad shown while a photo is being solved |
+| `ADSENSE_SOLVING_SLOT_ID` | empty (ads off) | AdSense ad unit ID for that 300×250 ad. Ads load only when both IDs are set |
+| `ADSENSE_TEST_MODE` | `false` | Asks Google for test ads instead of real ones. Staging only |
 
 See `lib/src/core/config/app_config.dart` for all config values.
 

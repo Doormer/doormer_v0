@@ -17,6 +17,18 @@ void main() {
     );
   });
 
+  test('while solving, says how long it can take and that it opens by itself',
+      () {
+    final content = solveStatusContentFor(const AskByPhotoLoading());
+
+    expect(content.title, 'Solving your photo');
+    expect(
+      content.body,
+      'This can take from a few seconds to a few minutes. Keep this page '
+      "open and your solution opens as soon as it's ready.",
+    );
+  });
+
   group('canRetry', () {
     // Retry is only worth offering where resubmitting the identical bytes
     // could plausibly land differently.

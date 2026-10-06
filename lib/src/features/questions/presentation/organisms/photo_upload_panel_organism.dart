@@ -55,7 +55,6 @@ class PhotoUploadPanelOrganism extends StatelessWidget {
             variant: AppButtonVariant.accent,
             expand: true,
             isLoading: params.isLoading,
-            loadingLabel: params.copy.solvingLabel,
             onPressed: hasPhoto && !params.isLoading && !isPreparing
                 ? params.onSubmit
                 : null,
