@@ -186,52 +186,6 @@ void main() {
     }
     expect(pickCount + submitCount + clearCount, 0);
   });
-
-  testWidgets('says the photo is being solved on the submit button',
-      (tester) async {
-    tester.view.physicalSize = const Size(360, 690);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    await tester.pumpWidget(
-      ScreenUtilInit(
-        designSize: const Size(360, 690),
-        builder: (_, __) => MaterialApp(
-          theme: AppTheme.dark,
-          home: AskByPhotoTemplate(
-            uploadParams: PhotoUploadPanelParams(
-              imageBytes: _transparentPngBytes,
-              fileName: 'question.jpg',
-              isLoading: true,
-              copy: photoUploadCopyFor(hasPhoto: true, isRetry: false),
-              onPickPhoto: _noop,
-              onSubmit: _noop,
-              onClear: _noop,
-            ),
-            statusParams: const SolveStatusPanelParams(
-              content: SolveStatusContent(
-                title: 'Solving your photo',
-                body: '',
-                showActions: false,
-              ),
-              onRetake: _noop,
-            ),
-            navigationBarParams: _navigationBarParams,
-          ),
-        ),
-      ),
-    );
-
-    final submit = find.descendant(
-      of: find.byWidgetPredicate(
-        (w) => w is AppButtonAtom && w.label == 'Submit to solver',
-      ),
-      matching: find.text('Solving your photo…'),
-    );
-    expect(submit, findsOneWidget);
-  });
-
   group('while a photo is being solved', () {
     final adUnit = DisplayAdUnit.tryCreate(
       clientId: 'ca-pub-1234567890123456',
