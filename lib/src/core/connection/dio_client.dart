@@ -38,6 +38,7 @@ class DioClient {
     dio.interceptors.add(SessionInterceptor(
       sessionService: sessionService,
       globalSessionBloc: sessionBloc,
+      dio: dio,
     ));
 
     return dio;

@@ -42,7 +42,7 @@ class SessionServiceImpl implements SessionService {
   @override
   Future<String?> refreshToken() async {
     final refreshToken = await _tokenStorage.getRefreshToken();
-    if (refreshToken == null) {
+    if (refreshToken == null || refreshToken.isEmpty) {
       AppLogger.error(
           'No refresh token available. User needs to log in again.');
       throw AuthFailure('No refresh token available');
@@ -50,19 +50,17 @@ class SessionServiceImpl implements SessionService {
 
     try {
       final response = await _dio.post(
-        '/auth/refresh-token', //TODO: change to actual API route
-        data: {
-          'refresh_token': refreshToken,
-        },
+        '/v1/token/refresh',
+        options: Options(
+          extra: {'skipAuth': true},
+          headers: {'Authorization': 'Bearer $refreshToken'},
+        ),
       );
 
-      final newAccessToken = response.data['access_token'];
-      final newRefreshToken = response.data['refresh_token'];
-
+      final newAccessToken = response.data['access_token'] as String;
       await _tokenStorage.saveAccessToken(newAccessToken);
-      await _tokenStorage.saveRefreshToken(newRefreshToken);
 
-      AppLogger.info('Tokens refreshed successfully.');
+      AppLogger.info('Access token renewed.');
       return newAccessToken;
     } on DioException catch (e, stackTrace) {
       AppLogger.error('Failed to refresh token',

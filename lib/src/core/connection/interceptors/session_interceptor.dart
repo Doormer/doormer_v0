@@ -5,23 +5,33 @@ import 'package:doormer/src/shared/sessions/bloc/global_session_bloc.dart';
 
 /// An interceptor for handling session-related logic in network requests.
 ///
-/// [SessionInterceptor] is responsible for attaching the access token to
-/// request headers, and handling 401 Unauthorized responses by logging out
-/// the user when no refresh token mechanism is available.
+/// [SessionInterceptor] attaches the access token to request headers. When a
+/// request is rejected with 401, it renews the access token with the stored
+/// refresh token and retries the request once; if renewal fails, it expires
+/// the session and logs the user out.
 class SessionInterceptor extends Interceptor {
+  /// Marks a request already retried with a renewed access token, so a second
+  /// 401 ends the session instead of refreshing again.
+  static const retriedAfterRefreshKey = 'retriedAfterRefresh';
+
   final SessionService _sessionService;
   final GlobalSessionBloc _globalSessionBloc;
+  final Dio _dio;
+  Future<String?>? _refreshInFlight;
 
   /// Creates a [SessionInterceptor] instance.
   ///
   /// Parameters:
-  /// - [sessionService]: Provides methods to retrieve session tokens.
+  /// - [sessionService]: Provides methods to retrieve and renew session tokens.
   /// - [globalSessionBloc]: Manages session state and handles session expiration.
+  /// - [dio]: The client this interceptor belongs to, used to retry requests.
   SessionInterceptor({
     required SessionService sessionService,
     required GlobalSessionBloc globalSessionBloc,
+    required Dio dio,
   })  : _sessionService = sessionService,
-        _globalSessionBloc = globalSessionBloc;
+        _globalSessionBloc = globalSessionBloc,
+        _dio = dio;
 
   /// Attaches the access token to the request headers.
   ///
@@ -46,19 +56,48 @@ class SessionInterceptor extends Interceptor {
     handler.next(options);
   }
 
-  /// Handles errors and attempts to resolve 401 Unauthorized responses.
+  /// Renews the access token after a 401 and retries the request once.
   ///
-  /// Since there is no refresh token mechanism available, if a 401 error occurs,
-  /// the user is immediately logged out.
+  /// Requests that skip auth (login, signup, the refresh call itself) and
+  /// errors other than 401 are passed on untouched.
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    if (err.response?.statusCode == 401) {
-      // No refresh token available; expire session and log out.
-      _globalSessionBloc.add(ExpireSession());
-      await _sessionService.logout();
+    final request = err.requestOptions;
+    if (err.response?.statusCode != 401 || request.extra['skipAuth'] == true) {
+      return handler.next(err);
+    }
+    if (request.extra[retriedAfterRefreshKey] == true) {
+      await _expireSession();
+      return handler.next(err);
     }
 
-    // Forward the error if it can't be resolved.
-    handler.next(err);
+    try {
+      await _renewAccessToken();
+    } catch (e, stackTrace) {
+      AppLogger.error('Could not renew the session',
+          error: e, stackTrace: stackTrace);
+      await _expireSession();
+      return handler.next(err);
+    }
+
+    request.extra[retriedAfterRefreshKey] = true;
+    // Dio sends a FormData body only once, so the retry needs a fresh copy.
+    final body = request.data;
+    if (body is FormData) request.data = body.clone();
+    try {
+      handler.resolve(await _dio.fetch(request));
+    } on DioException catch (retryError) {
+      handler.next(retryError);
+    }
+  }
+
+  /// Requests rejected at the same time wait on one refresh call.
+  Future<String?> _renewAccessToken() => _refreshInFlight ??= _sessionService
+      .refreshToken()
+      .whenComplete(() => _refreshInFlight = null);
+
+  Future<void> _expireSession() async {
+    _globalSessionBloc.add(ExpireSession());
+    await _sessionService.logout();
   }
 }
