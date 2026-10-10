@@ -19,6 +19,10 @@ class PhotoUploadPanelParams {
   final VoidCallback onSubmit;
   final VoidCallback onClear;
 
+  /// Opens the explanation of why Doormer shows ads. Null when ads are off,
+  /// which also hides the ads notice.
+  final VoidCallback? onWhyAds;
+
   const PhotoUploadPanelParams({
     this.imageBytes,
     this.fileName,
@@ -29,5 +33,6 @@ class PhotoUploadPanelParams {
     required this.onPickPhoto,
     required this.onSubmit,
     required this.onClear,
+    this.onWhyAds,
   });
 }

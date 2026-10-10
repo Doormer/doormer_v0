@@ -4,11 +4,9 @@ import 'package:doormer/src/shared/design/atomic/atoms/surface_card_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// A study tip to read while a photo is being solved.
-class StudyTipMolecule extends StatelessWidget {
-  final String tip;
-
-  const StudyTipMolecule({super.key, required this.tip});
+/// What the solver is doing, and why a solve can take minutes.
+class SolvingExplanationMolecule extends StatelessWidget {
+  const SolvingExplanationMolecule({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +18,7 @@ class StudyTipMolecule extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            Icons.lightbulb_outline_rounded,
+            Icons.auto_awesome_rounded,
             size: 20.sp,
             color: QuestPalette.amber,
           ),
@@ -29,9 +27,16 @@ class StudyTipMolecule extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Tip', style: tt.titleSmall?.copyWith(fontSize: 14.sp)),
+                Text(
+                  "What's happening",
+                  style: tt.titleSmall?.copyWith(fontSize: 14.sp),
+                ),
                 SizedBox(height: 4.h),
-                Text(tip, style: tt.bodyMedium?.copyWith(fontSize: 14.sp)),
+                Text(
+                  'A powerful AI is reading your photo and working through '
+                  'the question step by step. Harder questions take longer.',
+                  style: tt.bodyMedium?.copyWith(fontSize: 14.sp),
+                ),
               ],
             ),
           ),
