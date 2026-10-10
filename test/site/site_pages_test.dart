@@ -39,6 +39,10 @@ const footerLinks = <String>[
 ];
 
 const pagesDir = 'web/site/pages';
+const homeHtmlBudgetBytes = 70 * 1000;
+const cssGzipBudgetBytes = 20 * 1000;
+const javascriptBudgetBytes = 20 * 1000;
+const fontBudgetBytes = 120 * 1000;
 
 String fileForRoute(String route) =>
     route == '/' ? '$pagesDir/home.html' : '$pagesDir$route.html';
@@ -57,6 +61,12 @@ List<File> sitePageFiles() => Directory(pagesDir)
     .where((file) => file.path.endsWith('.html'))
     .toList()
   ..sort((a, b) => a.path.compareTo(b.path));
+
+int totalBytes(String directory, String extension) => Directory(directory)
+    .listSync()
+    .whereType<File>()
+    .where((file) => file.path.endsWith(extension))
+    .fold(0, (total, file) => total + file.lengthSync());
 
 Document parsePage(File file) => html_parser.parse(file.readAsStringSync());
 
@@ -79,6 +89,33 @@ void main() {
           .where((path) => !expectedRoutes.contains(routeForFile(path)))
           .toList();
       expect(strays, isEmpty);
+    });
+  });
+
+  group('the website stays within its size budgets', () {
+    test('home page HTML stays at or below 70 KB', () {
+      expect(File(fileForRoute('/')).lengthSync(),
+          lessThanOrEqualTo(homeHtmlBudgetBytes),
+          reason: 'home.html must stay at or below 70 KB');
+    });
+
+    test('site CSS stays at or below 20 KB gzipped', () {
+      final cssGzipBytes =
+          gzip.encode(File('web/site/css/site.css').readAsBytesSync()).length;
+      expect(cssGzipBytes, lessThanOrEqualTo(cssGzipBudgetBytes),
+          reason: 'site.css must stay at or below 20 KB gzipped');
+    });
+
+    test('site JavaScript stays at or below 20 KB', () {
+      expect(totalBytes('web/site/js', '.js'),
+          lessThanOrEqualTo(javascriptBudgetBytes),
+          reason: 'web/site/js/*.js must stay at or below 20 KB total');
+    });
+
+    test('site fonts stay at or below 120 KB', () {
+      expect(totalBytes('web/site/fonts', '.woff2'),
+          lessThanOrEqualTo(fontBudgetBytes),
+          reason: 'web/site/fonts/*.woff2 must stay at or below 120 KB total');
     });
   });
 
