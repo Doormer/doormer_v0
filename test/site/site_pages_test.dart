@@ -73,6 +73,33 @@ Document parsePage(File file) => html_parser.parse(file.readAsStringSync());
 Set<String> idsIn(Document document) =>
     document.querySelectorAll('[id]').map((element) => element.id).toSet();
 
+/// Words that would scope Doormer to one audience. The card collection is a
+/// gender-neutral set of instruments, not spaceships, and Doormer is for
+/// learners of every age.
+final scopingWords = <String, RegExp>{
+  'spaceship framing': RegExp(
+      r'\b(star ?ships?|space ?ships?|ships?|shipyards?|fleets?)\b',
+      caseSensitive: false),
+  'the 12–18 age range': RegExp(r'12\s*(–|-|to)\s*18', caseSensitive: false),
+  'teen-only wording': RegExp(r'\bteens?\b', caseSensitive: false),
+};
+
+/// Everything a reader, a screen reader or a search result can show: the
+/// page's visible text, its title, labels and image descriptions, and the
+/// descriptions shared with search engines and social apps.
+String readableText(Document page) => [
+      page.querySelector('title')?.text ?? '',
+      for (final meta in page.querySelectorAll(
+          'meta[name="description"], meta[property^="og:"], meta[name^="twitter:"]'))
+        meta.attributes['content'] ?? '',
+      for (final script
+          in page.querySelectorAll('script[type="application/ld+json"]'))
+        script.text,
+      for (final labelled in page.querySelectorAll('[aria-label], img[alt]'))
+        '${labelled.attributes['aria-label'] ?? ''} ${labelled.attributes['alt'] ?? ''}',
+      page.body?.text ?? '',
+    ].join('\n');
+
 void main() {
   group('the website has exactly the planned pages', () {
     for (final route in expectedRoutes) {
@@ -177,6 +204,16 @@ void main() {
         final text = page.body!.text.toLowerCase();
         for (final marker in ['todo', 'lorem', 'tbd', 'placeholder']) {
           expect(text.contains(marker), isFalse, reason: marker);
+        }
+      });
+
+      test('keeps its words gender-neutral and open to all ages', () {
+        final text = readableText(page);
+        for (final MapEntry(key: rule, value: pattern)
+            in scopingWords.entries) {
+          final found =
+              pattern.allMatches(text).map((match) => match[0]).toSet();
+          expect(found, isEmpty, reason: 'Found $rule: $found');
         }
       });
 
