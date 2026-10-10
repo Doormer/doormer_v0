@@ -41,6 +41,7 @@ jobs:
           docker build --no-cache \
             --build-arg API_BASE_URL=${{ secrets.API_BASE_URL }} \
             --build-arg GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} \
+            --build-arg ADSENSE_CLIENT_ID=${{ secrets.ADSENSE_CLIENT_ID }} \
             -t takadev1acr.azurecr.io/taka-dev-1-fe:${{ github.sha }} \
             -f Dockerfile .
           
