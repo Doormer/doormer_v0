@@ -1,0 +1,28 @@
+/// Stands in for every diagram in the fake's worked solution: graph paper
+/// with a parallelogram, 300 × 200. The diagrams in the bundled solution
+/// are signed links that have expired, so they no longer load.
+const fakeDiagramUrl = 'data:image/png;base64,'
+    'iVBORw0KGgoAAAANSUhEUgAAASwAAADICAIAAADdvUsCAAAEiklEQVR42u3dPU7DQBBA'
+    '4ZyYE3AizkDJGSgpqCkRBRWpUJTEznp/Zi3PJ037KJ7mJQsk69Pb67sxZuKcKDBmFxH+'
+    'fP9WzOfHVx2IxWLPI0IsVoRYrAhFiMWKEIsVoQixWBFisSIUIRYrQixWhGRhsSLEYkVI'
+    'FhYrQixWhGRhsSLEYkVIFhYrQixWhGRhsZERnn+EMSZ4vBNisY6jWKwIRYjFihCLFaEI'
+    'sVgRYrEiFCEWK0IsVoRkYbEixGJFSBYWK0IsVoRkYbEixGJFSBYWK0IsVoRkYbEixGJF'
+    'SBYWGxWh2z6McccMFus4ShYWK0IsVoRkYbEixGJFSBYWK0IsVoRkYbEixGJFSBYWK0Is'
+    'VoRkYbEixGJFSBYWK0IsVoREY7EixGJFSDQWK0Is9rgRuu2jfZ6fXkzYuGPGq92dEUbk'
+    'OI6KcLFArngW4QT24WZwxbMII5aDK55FaDl4FmFKtuSMxBXPIhzFFm4GVzyLcOxycMWz'
+    'CC0HzyJMyZafkbjiWYT92U2bISSeRThqObjiWYSWg2cRplyOrWckEfIswp5sxWaIkGcR'
+    '9l8OrngWoeXgWYQpl6PujCRCnkXYh63eDBHy/DhCN8SU3yLDA8/umJn8Cs0Vz46jc9iW'
+    'M5IIeRZhK9u4GSLkWYR9lkNIPIvQcvAswpTLcXnrs5B4FmE0e/lbipB4FuG05RASzyK0'
+    'HDyLMOVyXP3FXEg8izCUvf2flZB4FuGE5RASzyK0HDyLMOVy3P38lJB4FmEQu/QJRiHx'
+    'LMLQ5RASzyK0HDyLMOVyrHybRkg8i3A4u/59NiHxPDBC95q4RYZnd8zs6BXauxnPjqNz'
+    '2Id3KwiJZxEOZEtuNxESzyIcvhxC4lmEloNnEaZcjsKb9oTEswiHsOV3XQqJZxEOXA4h'
+    '8SxCy8GzCFMux6Z714XEswg7s1uffCBCnkU4ZDmExLMILQfPIkwZYcVTuETIswi7sXXP'
+    'wRMhzyLsvBxC4lmEloNnEaaMsPqZzCLkWYQd2JanoouQ54ERut3E8OyOmdBXaO9mPDuO'
+    'zmFbzkgi5FmErWzjZoiQZxH2WQ4h8SxCy8EzVykj/D8jWQ6eRTiBvfwtxXLwLMJpyyEk'
+    'nkVoOUTIVcoIr/5ibjl4FmEoe/s/K8vBswgnLIeQeBah5RAhVykjvPv5KcvBswiD2KVP'
+    'MFoOnkUYuhxC4lmElkOEXKWMcOXbNJaDZxEOZ9e/z2Y5eN5phMe73cTEjHti3DGz9gpt'
+    'Asa7meMoFitCorFYEWKxIsRisSLEYkWIxWJFiMWKEIvFihCLFSEWixUhFitCLBYrQixW'
+    'hFgsVoRYrAixWKwIsVgRYrHYogjd9mGMO2awWMdRsrBYEWKxIiQLixUhFitCsrBYEWKx'
+    'IiQLixUhFitCsrBYEWKxIiQLixUhFitCsrBYEWKxIiQaixUhFitCorFYEWKxx43QbR/G'
+    'uGMGi3UcJQuLFSEWK0KysFgRYrEiJAuLFSEWK0KysFgRYrEiJAuLFSEWK0KysFgRYrEi'
+    'JAuLFSEWK0KisVgRYrHHjtAYM2tEaMzk+QPnFI+ZTj/N2wAAAABJRU5ErkJggg==';

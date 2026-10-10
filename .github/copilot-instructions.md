@@ -12,6 +12,9 @@ flutter pub get
 # Run on web (dev)
 flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8888
 
+# Run on web with no backend: a fake one answers in memory (see below)
+flutter run -d chrome -t lib/main_fake_backend.dart
+
 # Production build
 flutter build web --dart-define=API_BASE_URL=<prod-url> --dart-define=GOOGLE_CLIENT_ID=<id>
 
@@ -39,6 +42,10 @@ flutter test
 See `lib/src/core/config/app_config.dart` for all config values.
 
 To check the UI in a real browser, follow `.agents/skills/browser-testing/SKILL.md`.
+
+### Running without the backend
+
+`lib/main_fake_backend.dart` starts the app as `main.dart` does, then answers every API request from a fake backend held in memory (`lib/src/dev/fake_backend/`), so `taka-api` isn't needed. Any email and password signs in, as one student with quarks, cards and saved questions. The data starts over on every page reload. To change an answer, edit its route in `lib/src/dev/fake_backend/routes/`. Production builds use `lib/main.dart`, which never imports any of it. Google sign-in, the camera and ads don't go through it.
 
 ## Architecture — Clean Architecture
 
