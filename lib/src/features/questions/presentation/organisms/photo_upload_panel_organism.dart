@@ -48,6 +48,7 @@ class PhotoUploadPanelOrganism extends StatelessWidget {
             pickLabel: params.copy.pickLabel,
             onPick: params.onPickPhoto,
             onClear: params.onClear,
+            onEdit: params.onEditPhoto,
           ),
           SizedBox(height: 12.h),
           AppButtonAtom(

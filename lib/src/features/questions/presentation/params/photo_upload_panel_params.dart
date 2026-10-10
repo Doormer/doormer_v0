@@ -19,6 +19,10 @@ class PhotoUploadPanelParams {
   final VoidCallback onSubmit;
   final VoidCallback onClear;
 
+  /// Opens the crop & rotate screen on the photo on screen. Null when the
+  /// photo cannot be edited, which hides the button.
+  final VoidCallback? onEditPhoto;
+
   /// Opens the explanation of why Doormer shows ads. Null when ads are off,
   /// which also hides the ads notice.
   final VoidCallback? onWhyAds;
@@ -33,6 +37,7 @@ class PhotoUploadPanelParams {
     required this.onPickPhoto,
     required this.onSubmit,
     required this.onClear,
+    this.onEditPhoto,
     this.onWhyAds,
   });
 }

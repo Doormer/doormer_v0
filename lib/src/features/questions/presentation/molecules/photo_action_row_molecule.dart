@@ -13,6 +13,9 @@ class PhotoActionRowMolecule extends StatelessWidget {
   final VoidCallback onPick;
   final VoidCallback onClear;
 
+  /// Opens the crop & rotate screen. Null hides the button.
+  final VoidCallback? onEdit;
+
   const PhotoActionRowMolecule({
     super.key,
     required this.hasPhoto,
@@ -20,6 +23,7 @@ class PhotoActionRowMolecule extends StatelessWidget {
     required this.pickLabel,
     required this.onPick,
     required this.onClear,
+    this.onEdit,
   });
 
   @override
@@ -36,6 +40,14 @@ class PhotoActionRowMolecule extends StatelessWidget {
           ),
         ),
         if (hasPhoto) ...[
+          if (onEdit != null) ...[
+            SizedBox(width: 12.w),
+            IconButton.outlined(
+              tooltip: 'Crop & rotate',
+              icon: const Icon(Icons.crop_rotate),
+              onPressed: isLoading ? null : onEdit,
+            ),
+          ],
           SizedBox(width: 12.w),
           AppButtonAtom(
             label: 'Clear',
