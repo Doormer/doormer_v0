@@ -7,6 +7,7 @@ import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bl
 import 'package:doormer/src/features/questions/presentation/mapper/photo_upload_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solve_status_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/photo_source_sheet_organism.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/why_ads_sheet_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solving_progress_params.dart';
@@ -40,7 +41,16 @@ class AskByPhotoPage extends StatefulWidget {
   /// response to a tap, and the student's tap on an option is that tap.
   final bool showPhotoSourceOptionsOnOpen;
 
-  const AskByPhotoPage({super.key, this.showPhotoSourceOptionsOnOpen = false});
+  /// The ad shown while a photo is being solved, or null when ads are off.
+  /// Ads also bring the notice under Submit that says why they show.
+  /// Defaults to the build's AdSense settings.
+  final DisplayAdUnit? Function() solvingAdUnit;
+
+  const AskByPhotoPage({
+    super.key,
+    this.showPhotoSourceOptionsOnOpen = false,
+    this.solvingAdUnit = DisplayAdUnit.solvingScreen,
+  });
 
   @override
   State<AskByPhotoPage> createState() => _AskByPhotoPageState();
@@ -244,7 +254,10 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
   }
 
   /// What the screen shows while [state]'s photo is being solved.
-  SolvingViewParams _solvingViewFor(AskByPhotoLoading state) {
+  SolvingViewParams _solvingViewFor(
+    AskByPhotoLoading state, {
+    required DisplayAdUnit? adUnit,
+  }) {
     final content = solveStatusContentFor(state);
     final photo = state.imageBytes;
     return SolvingViewParams(
@@ -253,12 +266,26 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
         title: content.title,
         body: content.body,
       ),
-      adUnit: DisplayAdUnit.solvingScreen(),
+      adUnit: adUnit,
+    );
+  }
+
+  /// Explains, for students and the parents helping them, why ads show while
+  /// a photo is being solved.
+  Future<void> _showWhyAds(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => WhyAdsSheetOrganism(
+        onClose: () => Navigator.of(sheetContext).pop(),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final adUnit = widget.solvingAdUnit();
+
     return BlocProvider<AskByPhotoBloc>(
       create: (_) => serviceLocator<AskByPhotoBloc>(),
       child: BlocConsumer<AskByPhotoBloc, AskByPhotoState>(
@@ -330,6 +357,7 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
               onClear: () => context
                   .read<AskByPhotoBloc>()
                   .add(const AskByPhotoClearRequested()),
+              onWhyAds: adUnit == null ? null : () => _showWhyAds(context),
             ),
             statusParams: SolveStatusPanelParams(
               content: solveStatusContentFor(state),
@@ -339,7 +367,9 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
               // outright, so there is nothing to clear first.
               onRetake: () => _showPhotoSourceOptions(context),
             ),
-            solving: loading == null ? null : _solvingViewFor(loading),
+            solving: loading == null
+                ? null
+                : _solvingViewFor(loading, adUnit: adUnit),
             navigationBarParams: NavigationBarParams(
               current: AppDestination.solve,
               onSaved: () => _openSaved(context, isSolving: isLoading),

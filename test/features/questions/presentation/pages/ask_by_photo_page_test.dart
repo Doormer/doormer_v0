@@ -10,6 +10,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:doormer/src/core/ads/display_ad_unit.dart';
 import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
@@ -27,6 +28,7 @@ import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bl
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/photo_preview_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solving_progress_organism.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/why_ads_sheet_organism.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
 import 'package:doormer/src/features/questions/presentation/pages/camera_page.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
@@ -199,7 +201,10 @@ void main() {
     await serviceLocator.reset();
   });
 
-  GoRouter buildRouter({bool showPhotoSourceOptionsOnOpen = false}) {
+  GoRouter buildRouter({
+    bool showPhotoSourceOptionsOnOpen = false,
+    DisplayAdUnit? adUnit,
+  }) {
     return GoRouter(
       initialLocation: '/questions/photo',
       routes: [
@@ -207,6 +212,8 @@ void main() {
           path: '/questions/photo',
           builder: (_, __) => AskByPhotoPage(
             showPhotoSourceOptionsOnOpen: showPhotoSourceOptionsOnOpen,
+            solvingAdUnit:
+                adUnit == null ? DisplayAdUnit.solvingScreen : () => adUnit,
           ),
         ),
         GoRoute(
@@ -242,6 +249,7 @@ void main() {
   Future<void> pumpPage(
     WidgetTester tester, {
     bool showPhotoSourceOptionsOnOpen = false,
+    DisplayAdUnit? adUnit,
   }) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
@@ -256,6 +264,7 @@ void main() {
           theme: AppTheme.light,
           routerConfig: buildRouter(
             showPhotoSourceOptionsOnOpen: showPhotoSourceOptionsOnOpen,
+            adUnit: adUnit,
           ),
         ),
       ),
@@ -919,5 +928,70 @@ void main() {
     await tester.pump();
     await tester.pump();
     await drainToasts(tester);
+  });
+
+  group('ads', () {
+    final adUnit = DisplayAdUnit.tryCreate(
+      clientId: 'ca-pub-1234567890123456',
+      slotId: '1234567890',
+    )!;
+
+    testWidgets('with ads off, the photo panel has no ads notice',
+        (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.solved),
+      );
+      registerBloc();
+      await pumpPage(tester);
+      await selectPhoto(tester);
+
+      expect(
+        find.widgetWithText(FilledButton, 'Submit to solver'),
+        findsOneWidget,
+      );
+      expect(find.text('Why ads?'), findsNothing);
+    });
+
+    testWidgets(
+        'with ads on, "Why ads?" opens the explanation and "Got it" closes '
+        'it', (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.solved),
+      );
+      registerBloc();
+      await pumpPage(tester, adUnit: adUnit);
+      await selectPhoto(tester);
+
+      await tester.tap(find.text('Why ads?'));
+      await tester.pumpAndSettle();
+      expect(find.byType(WhyAdsSheetOrganism), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Got it'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Got it'));
+      await tester.pumpAndSettle();
+      expect(find.byType(WhyAdsSheetOrganism), findsNothing);
+    });
+
+    testWidgets('with ads on, the solving view shows the ad card after 3 s',
+        (tester) async {
+      final pending = Completer<PhotoQuestionSolveOutcome>();
+      repository = _FakeQuestionsRepository(pending: pending);
+      registerBloc();
+      await pumpPage(tester, adUnit: adUnit);
+      await selectPhoto(tester);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 3));
+
+      expect(find.byType(DisplayAdAtom), findsOneWidget);
+
+      pending.complete(_outcome(PhotoQuestionSolveStatus.solved));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+    });
   });
 }
