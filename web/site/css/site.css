@@ -93,10 +93,15 @@
 html {
   background: var(--night);
   color-scheme: dark;
-  scroll-behavior: smooth;
   scroll-padding-top: calc(var(--header-height) + 16px);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+}
+
+/* Added by site.js once the page has loaded, so only jumps within the page
+   glide; arriving from another page lands on the section at once. */
+html.smooth-scroll {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -642,12 +647,31 @@ html:not(.js) .site-header {
 }
 
 @media (max-width: 380px) {
+  :root {
+    --gutter: 16px;
+  }
+
+  .site-header__inner {
+    gap: 10px;
+  }
+
+  .site-header__actions {
+    gap: 8px;
+  }
+
   .brand {
-    font-size: 1.35rem;
+    gap: 8px;
+    font-size: 1.3rem;
+  }
+
+  .brand__mark {
+    width: 30px;
+    height: 30px;
   }
 
   .site-header__actions .btn--small {
-    padding: 0 14px;
+    padding: 0 13px;
+    font-size: .875rem;
   }
 }
 
@@ -1227,7 +1251,8 @@ html:not(.js) .site-header {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html {
+  html,
+  html.smooth-scroll {
     scroll-behavior: auto;
   }
 

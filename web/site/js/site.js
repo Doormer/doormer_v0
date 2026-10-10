@@ -3,6 +3,11 @@
 (() => {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  if (!reduceMotion) {
+    window.addEventListener('load', () => {
+      requestAnimationFrame(() => document.documentElement.classList.add('smooth-scroll'));
+    }, { once: true });
+  }
   const header = document.querySelector('[data-site-header]');
   if (header) {
     const updateHeader = () => header.classList.toggle('is-scrolled', window.scrollY > 8);
