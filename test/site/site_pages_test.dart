@@ -310,6 +310,28 @@ void main() {
         .firstMatch(config)
         ?.group(1);
 
+    // Site files keep the same names when they change. If a browser reused a
+    // cached stylesheet with a newer page, the page would show unstyled.
+    test('makes browsers check for a newer copy of every site file', () {
+      final siteFilesRule =
+          RegExp(r'location \^~ /site/ \{([^}]*)\}').firstMatch(config)?.group(1);
+      expect(siteFilesRule, isNotNull);
+      expect(siteFilesRule, contains('add_header Cache-Control "no-cache";'));
+      expect(siteFilesRule, isNot(contains('expires')));
+    });
+
+    test('makes browsers check for a newer copy of every page', () {
+      final homeRule =
+          RegExp(r'location = / \{([^}]*)\}').firstMatch(config)?.group(1);
+      final pageRule = RegExp(r'location ~ \^/\(about[^{]*\{([^}]*)\}')
+          .firstMatch(config)
+          ?.group(1);
+      for (final rule in [homeRule, pageRule]) {
+        expect(rule, isNotNull);
+        expect(rule, contains('add_header Cache-Control "no-cache";'));
+      }
+    });
+
     test('has a rule for the site pages and for the home page', () {
       expect(pageRule, isNotNull);
       expect(config, contains('location = / {'));
