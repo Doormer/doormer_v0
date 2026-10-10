@@ -29,8 +29,14 @@
     const observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (!entry.isIntersecting) continue;
-        entry.target.classList.add('is-visible');
-        observer.unobserve(entry.target);
+        const element = entry.target;
+        element.classList.add('is-visible');
+        // Once in place, hand the element's transform back to its own styles
+        // (hover lifts, tilts).
+        element.addEventListener('transitionend', () => {
+          element.classList.remove('reveal-pending', 'is-visible');
+        }, { once: true });
+        observer.unobserve(element);
       }
     }, { rootMargin: '0px 0px -8% 0px' });
     document.querySelectorAll('[data-reveal]').forEach((element) => {
