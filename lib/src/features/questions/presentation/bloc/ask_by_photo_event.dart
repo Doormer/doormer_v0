@@ -12,14 +12,19 @@ class AskByPhotoPhotoPicked extends AskByPhotoEvent {
   final String fileName;
   final String? mimeType;
 
+  /// Lets the student crop and rotate this photo again. Null only for photos
+  /// that did not come through the picker.
+  final EditablePhoto? editablePhoto;
+
   const AskByPhotoPhotoPicked({
     required this.imageBytes,
     required this.fileName,
     this.mimeType,
+    this.editablePhoto,
   });
 
   @override
-  List<Object?> get props => [imageBytes, fileName, mimeType];
+  List<Object?> get props => [imageBytes, fileName, mimeType, editablePhoto];
 }
 
 class AskByPhotoSubmitted extends AskByPhotoEvent {

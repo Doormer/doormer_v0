@@ -10,7 +10,10 @@ import 'package:doormer/src/features/questions/domain/entity/solved_questions_pa
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
+import 'package:doormer/src/features/questions/utils/photo/editable_photo.dart';
+import 'package:doormer/src/features/questions/utils/photo/photo_edit.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_preparer.dart';
+import 'package:doormer/src/features/questions/utils/photo/picked_photo_file.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeQuestionsRepository implements QuestionsRepository {
@@ -708,6 +711,113 @@ void main() {
             as _FakeQuestionsRepository;
         expect(repository.callCount, 0);
       },
+    );
+  });
+
+  group('the photo stays editable', () {
+    final editable = EditablePhoto(
+      original: PickedPhotoFile(
+        bytes: Uint8List.fromList([7, 7, 7]),
+        name: 'IMG_9.HEIC',
+      ),
+      unedited: PreparedPhoto(
+        bytes: Uint8List.fromList([8, 8, 8]),
+        fileName: 'IMG_9.jpg',
+        width: 4,
+        height: 3,
+      ),
+      edit: const PhotoEdit(quarterTurns: 1),
+    );
+
+    AskByPhotoPhotoSelected selectedWithEditable() => AskByPhotoPhotoSelected(
+          imageBytes: validBytes,
+          fileName: 'IMG_9.jpg',
+          mimeType: 'image/jpeg',
+          editablePhoto: editable,
+        );
+
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'a picked photo keeps what is needed to edit it again',
+      build: () => _blocFor(_FakeQuestionsRepository()),
+      act: (bloc) => bloc.add(AskByPhotoPhotoPicked(
+        imageBytes: validBytes,
+        fileName: 'IMG_9.jpg',
+        mimeType: 'image/jpeg',
+        editablePhoto: editable,
+      )),
+      expect: () => [selectedWithEditable()],
+    );
+
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'a solve in flight and a failed one keep it too',
+      build: () => _blocFor(_FakeQuestionsRepository(
+        failure: NetworkFailure('No connection.'),
+      )),
+      seed: selectedWithEditable,
+      act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+      expect: () => [
+        isA<AskByPhotoLoading>()
+            .having((s) => s.editablePhoto, 'editablePhoto', editable),
+        isA<AskByPhotoNetworkError>()
+            .having((s) => s.editablePhoto, 'editablePhoto', editable),
+      ],
+    );
+
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'a photo the solver found no question in keeps it',
+      build: () => _blocFor(_FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.notAQuestion),
+      )),
+      seed: selectedWithEditable,
+      act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+      skip: 1,
+      expect: () => [
+        isA<AskByPhotoNotAQuestion>()
+            .having((s) => s.editablePhoto, 'editablePhoto', editable),
+      ],
+    );
+
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'a retry after a failure keeps it',
+      build: () => _blocFor(_FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.timeout),
+      )),
+      seed: () => AskByPhotoNetworkError(
+        'No connection.',
+        imageBytes: validBytes,
+        fileName: 'IMG_9.jpg',
+        mimeType: 'image/jpeg',
+        editablePhoto: editable,
+      ),
+      act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+      expect: () => [
+        isA<AskByPhotoLoading>()
+            .having((s) => s.editablePhoto, 'editablePhoto', editable),
+        isA<AskByPhotoTimeout>()
+            .having((s) => s.editablePhoto, 'editablePhoto', editable),
+      ],
+    );
+
+    // Editing the photo after a failed solve prepares it again. If that fails,
+    // the photo must come back rather than vanish.
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'preparing again after a failed solve can fall back to its photo',
+      build: () => _blocFor(_FakeQuestionsRepository()),
+      seed: () => AskByPhotoNotAQuestion(
+        questionId: 'q_1',
+        imageBytes: validBytes,
+        fileName: 'IMG_9.jpg',
+        mimeType: 'image/jpeg',
+        editablePhoto: editable,
+      ),
+      act: (bloc) => bloc
+        ..add(const AskByPhotoPreparationStarted())
+        ..add(const AskByPhotoPickUnavailable('Could not prepare it.')),
+      expect: () => [
+        AskByPhotoPreparingPhoto(previousSelection: selectedWithEditable()),
+        const AskByPhotoNotice('Could not prepare it.'),
+        selectedWithEditable(),
+      ],
     );
   });
 }

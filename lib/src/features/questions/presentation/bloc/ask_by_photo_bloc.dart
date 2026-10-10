@@ -3,6 +3,7 @@ import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
+import 'package:doormer/src/features/questions/utils/photo/editable_photo.dart';
 import 'package:doormer/src/features/questions/utils/photo_question_image_validator.dart';
 import 'package:equatable/equatable.dart';
 import 'dart:typed_data';
@@ -32,6 +33,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
       imageBytes: event.imageBytes,
       fileName: event.fileName,
       mimeType: event.mimeType,
+      editablePhoto: event.editablePhoto,
     ));
   }
 
@@ -46,6 +48,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
     emit(AskByPhotoLoading(
       imageBytes: selected?.imageBytes,
       fileName: selected?.fileName,
+      editablePhoto: selected?.editablePhoto,
     ));
 
     if (selected == null) {
@@ -77,6 +80,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
         imageBytes: selected.imageBytes,
         fileName: selected.fileName,
         mimeType: selected.mimeType,
+        editablePhoto: selected.editablePhoto,
       ));
       AppLogger.error('Photo question submission failed',
           error: f, stackTrace: stackTrace);
@@ -87,6 +91,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
         imageBytes: selected.imageBytes,
         fileName: selected.fileName,
         mimeType: selected.mimeType,
+        editablePhoto: selected.editablePhoto,
       ));
       AppLogger.error('Photo question unexpected error',
           error: e, stackTrace: stackTrace);
@@ -105,6 +110,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
         imageBytes: current.imageBytes,
         fileName: current.fileName,
         mimeType: current.mimeType,
+        editablePhoto: current.editablePhoto,
       );
     }
     if (current is AskByPhotoSolveFailed && current.isRetryable) {
@@ -114,6 +120,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
           imageBytes: bytes,
           fileName: current.fileName ?? 'photo.jpg',
           mimeType: current.mimeType,
+          editablePhoto: current.editablePhoto,
         );
       }
     }
@@ -134,6 +141,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
             imageBytes: photo.imageBytes,
             fileName: photo.fileName,
             mimeType: photo.mimeType,
+            editablePhoto: photo.editablePhoto,
           ));
           return;
         }
@@ -150,6 +158,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
           imageBytes: photo.imageBytes,
           fileName: photo.fileName,
           mimeType: photo.mimeType,
+          editablePhoto: photo.editablePhoto,
         ));
       case PhotoQuestionSolveStatus.notAQuestion:
         emit(AskByPhotoNotAQuestion(
@@ -157,6 +166,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
           imageBytes: photo.imageBytes,
           fileName: photo.fileName,
           mimeType: photo.mimeType,
+          editablePhoto: photo.editablePhoto,
         ));
       case PhotoQuestionSolveStatus.timeout:
         emit(AskByPhotoTimeout(
@@ -164,6 +174,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
           imageBytes: photo.imageBytes,
           fileName: photo.fileName,
           mimeType: photo.mimeType,
+          editablePhoto: photo.editablePhoto,
         ));
     }
   }
@@ -176,10 +187,24 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
   }
 
   /// The photo on screen now, or the one a preparation in progress replaced.
+  ///
+  /// A failed solve's photo counts: editing it prepares it again, and if that
+  /// fails the photo must come back rather than vanish.
   AskByPhotoPhotoSelected? _currentSelection() {
     final current = state;
     if (current is AskByPhotoPhotoSelected) return current;
     if (current is AskByPhotoPreparingPhoto) return current.previousSelection;
+    if (current is AskByPhotoSolveFailed) {
+      final bytes = current.imageBytes;
+      if (bytes != null) {
+        return AskByPhotoPhotoSelected(
+          imageBytes: bytes,
+          fileName: current.fileName ?? 'photo.jpg',
+          mimeType: current.mimeType,
+          editablePhoto: current.editablePhoto,
+        );
+      }
+    }
     return null;
   }
 
@@ -230,10 +255,12 @@ class _PhotoInHand {
   final Uint8List imageBytes;
   final String fileName;
   final String? mimeType;
+  final EditablePhoto? editablePhoto;
 
   const _PhotoInHand({
     required this.imageBytes,
     required this.fileName,
     this.mimeType,
+    this.editablePhoto,
   });
 }

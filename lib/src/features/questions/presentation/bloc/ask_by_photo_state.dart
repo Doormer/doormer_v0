@@ -16,14 +16,19 @@ class AskByPhotoPhotoSelected extends AskByPhotoState {
   final String fileName;
   final String? mimeType;
 
+  /// Lets the student crop and rotate this photo again. Null only for photos
+  /// that did not come through the picker.
+  final EditablePhoto? editablePhoto;
+
   const AskByPhotoPhotoSelected({
     required this.imageBytes,
     required this.fileName,
     this.mimeType,
+    this.editablePhoto,
   });
 
   @override
-  List<Object?> get props => [imageBytes, fileName, mimeType];
+  List<Object?> get props => [imageBytes, fileName, mimeType, editablePhoto];
 }
 
 /// A chosen photo is being turned upright, scaled down and saved as JPEG.
@@ -45,10 +50,14 @@ class AskByPhotoLoading extends AskByPhotoState {
   final Uint8List? imageBytes;
   final String? fileName;
 
-  const AskByPhotoLoading({this.imageBytes, this.fileName});
+  /// Carried so the Crop & rotate button keeps its place, disabled, while the
+  /// solve runs, and so a failure can hand it on.
+  final EditablePhoto? editablePhoto;
+
+  const AskByPhotoLoading({this.imageBytes, this.fileName, this.editablePhoto});
 
   @override
-  List<Object?> get props => [imageBytes, fileName];
+  List<Object?> get props => [imageBytes, fileName, editablePhoto];
 }
 
 class AskByPhotoSolved extends AskByPhotoState {
@@ -88,10 +97,14 @@ abstract class AskByPhotoSolveFailed extends AskByPhotoState {
   final String? fileName;
   final String? mimeType;
 
+  /// Lets the student crop out what confused the solver and send it again.
+  final EditablePhoto? editablePhoto;
+
   const AskByPhotoSolveFailed({
     this.imageBytes,
     this.fileName,
     this.mimeType,
+    this.editablePhoto,
   });
 
   /// Whether resubmitting these exact bytes could plausibly succeed.
@@ -111,13 +124,15 @@ class AskByPhotoUnreadable extends AskByPhotoSolveFailed {
     super.imageBytes,
     super.fileName,
     super.mimeType,
+    super.editablePhoto,
   });
 
   @override
   bool get isRetryable => false;
 
   @override
-  List<Object?> get props => [questionId, imageBytes, fileName, mimeType];
+  List<Object?> get props =>
+      [questionId, imageBytes, fileName, mimeType, editablePhoto];
 }
 
 class AskByPhotoNotAQuestion extends AskByPhotoSolveFailed {
@@ -128,13 +143,15 @@ class AskByPhotoNotAQuestion extends AskByPhotoSolveFailed {
     super.imageBytes,
     super.fileName,
     super.mimeType,
+    super.editablePhoto,
   });
 
   @override
   bool get isRetryable => false;
 
   @override
-  List<Object?> get props => [questionId, imageBytes, fileName, mimeType];
+  List<Object?> get props =>
+      [questionId, imageBytes, fileName, mimeType, editablePhoto];
 }
 
 class AskByPhotoTimeout extends AskByPhotoSolveFailed {
@@ -145,13 +162,15 @@ class AskByPhotoTimeout extends AskByPhotoSolveFailed {
     super.imageBytes,
     super.fileName,
     super.mimeType,
+    super.editablePhoto,
   });
 
   @override
   bool get isRetryable => true;
 
   @override
-  List<Object?> get props => [questionId, imageBytes, fileName, mimeType];
+  List<Object?> get props =>
+      [questionId, imageBytes, fileName, mimeType, editablePhoto];
 }
 
 /// Not an [AskByPhotoSolveFailed]: this is raised both when the file itself is
@@ -179,13 +198,15 @@ class AskByPhotoNetworkError extends AskByPhotoSolveFailed {
     super.imageBytes,
     super.fileName,
     super.mimeType,
+    super.editablePhoto,
   });
 
   @override
   bool get isRetryable => true;
 
   @override
-  List<Object?> get props => [message, cause, imageBytes, fileName, mimeType];
+  List<Object?> get props =>
+      [message, cause, imageBytes, fileName, mimeType, editablePhoto];
 }
 
 class AskByPhotoNotice extends AskByPhotoState {
