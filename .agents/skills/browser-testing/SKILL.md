@@ -14,7 +14,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST http://localhost:8888/v1/login 
   -H 'Content-Type: application/json' -d '{}'
 ```
 
-`400` means `taka-api` is up. Otherwise ask the user to start it, unless your check makes no API calls (then report that).
+`400` means `taka-api` is up. Otherwise run the app on the fake backend (step 2) and say so in your report. It answers every request from memory, so a check that needs real data, like a real photo solve, still needs `taka-api`: ask the user to start it.
 
 ## 2. Start the app in the background
 
@@ -23,6 +23,8 @@ flutter run -d web-server --web-hostname localhost --web-port 62299 \
   --dart-define=API_BASE_URL=http://localhost:8888 \
   --dart-define=ENABLE_SEMANTICS=true
 ```
+
+On the fake backend, also pass `-t lib/main_fake_backend.dart`.
 
 Ready when it prints `is being served at` (about 30 s). Port taken? Use another everywhere. After code changes, restart it and reload the page.
 
@@ -42,7 +44,7 @@ In VS Code, use its built-in browser tools. Elsewhere, use Playwright MCP from `
 
 ## 4. Need a signed-in user?
 
-Sign up a throwaway account at `/auth/signup`: `agent+<current time in ms>@example.com` (digits only; no hyphens), any password of 6+ characters. You land on `/auth/registration`. Never use a real account. Google sign-in can't be automated.
+Sign up a throwaway account at `/auth/signup`: `agent+<current time in ms>@example.com` (digits only; no hyphens), any password of 6+ characters. You land on `/auth/registration`. Never use a real account. On the fake backend, any email and password signs in, as a registered student with quarks, cards and saved questions; sign up to see registration instead. Google sign-in can't be automated.
 
 ## 5. Flutter rules
 
@@ -58,7 +60,7 @@ Sign up a throwaway account at `/auth/signup`: `agent+<current time in ms>@examp
 ## 6. Known limits
 
 - The camera can't be tested headless.
-- "Choose from gallery" opens a file chooser. Playwright MCP: `browser_file_upload` with absolute `paths`; no `paths` cancels. VS Code: `handleDialog` with absolute `selectFiles`; empty cancels. A picked photo starts a real solve.
+- "Choose from gallery" opens a file chooser. Playwright MCP: `browser_file_upload` with absolute `paths`; no `paths` cancels. VS Code: `handleDialog` with absolute `selectFiles`; empty cancels. A picked photo starts a real solve; on the fake backend, it comes back as the same worked solution after about 3 s.
 - Judge visuals from screenshots only.
 
 ## 7. Finish
