@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:doormer/src/dev/fake_backend/fake_backend_adapter.dart';
 import 'package:doormer/src/dev/fake_backend/fake_backend_state.dart';
 import 'package:doormer/src/dev/fake_backend/routes/auth_routes.dart';
+import 'package:doormer/src/dev/fake_backend/routes/collection_routes.dart';
 import 'package:doormer/src/dev/fake_backend/routes/registration_routes.dart';
 import 'package:flutter/services.dart';
 
@@ -25,6 +26,7 @@ FakeBackendAdapter fakeBackend({
     [
       ...AuthRoutes(state).routes,
       ...RegistrationRoutes(state).routes,
+      ...CollectionRoutes(state, random ?? Random(7)).routes,
     ],
     delay: delay,
   );
