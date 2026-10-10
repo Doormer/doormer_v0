@@ -10,7 +10,6 @@ const expectedRoutes = <String>{
   '/',
   '/about',
   '/contact',
-  '/privacy',
   '/terms',
   '/guides',
   '/guides/homework-photo-tips',
@@ -34,7 +33,6 @@ const headerLinks = <String>[
 const footerLinks = <String>[
   '/about',
   '/contact',
-  '/privacy',
   '/terms',
   '/guides',
 ];
