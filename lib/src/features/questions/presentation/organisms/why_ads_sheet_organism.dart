@@ -16,7 +16,6 @@ class WhyAdsSheetOrganism extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = context.textTheme;
-    final paragraphStyle = tt.bodyMedium?.copyWith(fontSize: 14.sp);
 
     return SafeArea(
       top: false,
@@ -33,23 +32,10 @@ class WhyAdsSheetOrganism extends StatelessWidget {
             ),
             SizedBox(height: 12.h),
             Text(
-              'Solving a question takes a powerful AI, and every solve costs '
-              'us money. An ad shown while you wait helps cover that cost, so '
-              'we can keep Doormer free for students.',
-              style: paragraphStyle,
-            ),
-            SizedBox(height: 12.h),
-            Text(
-              "We ask Google to handle every ad on Doormer as if it's shown "
-              'to a child. That turns off ads based on browsing history, and '
-              'ads that follow you from other sites.',
-              style: paragraphStyle,
-            ),
-            SizedBox(height: 12.h),
-            Text(
-              'Ads only appear while a question is being solved, and they '
-              'never hold up the answer.',
-              style: paragraphStyle,
+              'Every solve runs on a powerful AI that costs us money. Ads '
+              'shown while you wait help keep Doormer free for students. We '
+              'ask Google not to base them on your browsing history.',
+              style: tt.bodyMedium?.copyWith(fontSize: 14.sp),
             ),
             SizedBox(height: 20.h),
             AppButtonAtom(
