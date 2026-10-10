@@ -5,8 +5,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Why Doormer shows ads, written for students and the parents helping them.
 ///
-/// Opened from the ads notice and never shown next to an ad. Google doesn't
-/// allow wording near its ads that could lead people to click them.
+/// Opened from the "Why ads?" link at the top of the solving view, away from
+/// the ad. It never asks anyone to tap or look at ads: Google doesn't allow
+/// wording that could lead people to click them.
 class WhyAdsSheetOrganism extends StatelessWidget {
   final VoidCallback onClose;
 

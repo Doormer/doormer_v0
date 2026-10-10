@@ -44,7 +44,7 @@ class AskByPhotoPage extends StatefulWidget {
   final bool showPhotoSourceOptionsOnOpen;
 
   /// The ad shown while a photo is being solved, or null when ads are off.
-  /// Ads also bring the notice under Submit that says why they show.
+  /// Ads also bring the "Why ads?" link on the solving view.
   /// Defaults to the build's AdSense settings.
   final DisplayAdUnit? Function() solvingAdUnit;
 
@@ -345,14 +345,35 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
 
   /// Explains, for students and the parents helping them, why ads show while
   /// a photo is being solved.
+  ///
+  /// The panel closes itself when the solve ends, however it ends, so it
+  /// never covers the solution or the way to try again.
   Future<void> _showWhyAds(BuildContext context) {
+    final photoBloc = context.read<AskByPhotoBloc>();
     return showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      builder: (sheetContext) => WhyAdsSheetOrganism(
-        onClose: () => Navigator.of(sheetContext).pop(),
+      builder: (sheetContext) => BlocListener<AskByPhotoBloc, AskByPhotoState>(
+        bloc: photoBloc,
+        listenWhen: (_, state) => state is! AskByPhotoLoading,
+        listener: (_, __) => _closeSheet(sheetContext),
+        child: WhyAdsSheetOrganism(
+          onClose: () => Navigator.of(sheetContext).pop(),
+        ),
       ),
     );
+  }
+
+  /// Closes the sheet built in [sheetContext], and only that sheet.
+  void _closeSheet(BuildContext sheetContext) {
+    final route = ModalRoute.of(sheetContext);
+    if (route == null || !route.isActive) return;
+    final navigator = Navigator.of(sheetContext);
+    if (route.isCurrent) {
+      navigator.pop();
+    } else {
+      navigator.removeRoute(route);
+    }
   }
 
   @override

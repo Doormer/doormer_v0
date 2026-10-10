@@ -1066,6 +1066,31 @@ void main() {
       );
     });
 
+    testWidgets(
+        'a solve that fails while the explanation is open closes it, so Try '
+        'again is in reach', (tester) async {
+      final pending = Completer<PhotoQuestionSolveOutcome>();
+      repository = _FakeQuestionsRepository(pending: pending);
+      registerBloc();
+      await pumpPage(tester, solvingAdUnit: () => adUnit);
+      await selectPhoto(tester);
+      await submitAndWait(tester);
+
+      await tester.tap(find.text('Why ads?'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(WhyAdsSheetOrganism), findsOneWidget);
+
+      pending.completeError(NetworkFailure('No connection.'));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.byType(WhyAdsSheetOrganism), findsNothing);
+      expect(find.widgetWithText(AppButtonAtom, 'Try again'), findsOneWidget);
+      await drainToasts(tester);
+    });
+
     testWidgets('with ads on, the solving view shows the ad card after 3 s',
         (tester) async {
       final pending = Completer<PhotoQuestionSolveOutcome>();
