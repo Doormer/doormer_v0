@@ -246,6 +246,9 @@ void main() {
         '/profile',
         '/site/pages/home.html',
         '/index.html',
+        '/about/team',
+        '/privacy/settings',
+        '/guides/nested/page',
       ]) {
         expect(rule.hasMatch(path), isFalse, reason: path);
       }
