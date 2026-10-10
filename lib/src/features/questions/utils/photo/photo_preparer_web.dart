@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:js_interop';
 import 'dart:typed_data';
 
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/utils/photo/heic_detection.dart';
+import 'package:doormer/src/features/questions/utils/photo/photo_edit.dart';
+import 'package:doormer/src/features/questions/utils/photo/photo_edit_geometry.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_preparer.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_scaling.dart';
 import 'package:doormer/src/features/questions/utils/photo/picked_photo_file.dart';
@@ -35,14 +38,21 @@ class WebPhotoPreparer implements PhotoPreparer {
   int _failedHeicConverterLoads = 0;
 
   @override
-  Future<PreparedPhoto> prepare(PickedPhotoFile file) async {
+  Future<PreparedPhoto> prepare(
+    PickedPhotoFile file, {
+    PhotoEdit edit = PhotoEdit.none,
+  }) async {
     final blob = web.Blob(
       <JSAny>[file.bytes.toJS].toJS,
       web.BlobPropertyBag(type: file.mimeType ?? ''),
     );
     final bitmap = await _decode(blob, file);
     try {
-      return await _scaleAndEncode(bitmap, preparedFileNameFor(file.name));
+      return await _scaleAndEncode(
+        bitmap,
+        preparedFileNameFor(file.name),
+        edit,
+      );
     } on Failure {
       rethrow;
     } catch (e, stackTrace) {
@@ -141,12 +151,13 @@ class WebPhotoPreparer implements PhotoPreparer {
   Future<PreparedPhoto> _scaleAndEncode(
     web.ImageBitmap bitmap,
     String fileName,
+    PhotoEdit edit,
   ) async {
-    web.CanvasImageSource source = bitmap;
+    final drawing = drawingFor(edit, PhotoSize(bitmap.width, bitmap.height));
     web.HTMLCanvasElement? canvas;
     var didFinishScaling = false;
     try {
-      for (final step in scalingSteps(PhotoSize(bitmap.width, bitmap.height))) {
+      for (final step in scalingSteps(drawing.outputSize)) {
         final next = web.HTMLCanvasElement();
         var didDraw = false;
         try {
@@ -159,15 +170,19 @@ class WebPhotoPreparer implements PhotoPreparer {
             ..imageSmoothingEnabled = true
             ..imageSmoothingQuality = 'high'
             ..fillStyle = '#ffffff'.toJS
-            ..fillRect(0, 0, step.width, step.height)
-            ..drawImage(source, 0, 0, step.width, step.height);
+            ..fillRect(0, 0, step.width, step.height);
+          final previous = canvas;
+          if (previous == null) {
+            _drawEdited(context, bitmap, drawing, step);
+          } else {
+            context.drawImage(previous, 0, 0, step.width, step.height);
+          }
           didDraw = true;
         } finally {
           if (!didDraw) _release(next);
         }
         if (canvas != null) _release(canvas);
         canvas = next;
-        source = next;
       }
       didFinishScaling = true;
     } finally {
@@ -185,6 +200,36 @@ class WebPhotoPreparer implements PhotoPreparer {
     } finally {
       _release(last);
     }
+  }
+
+  /// Draws the part of [bitmap] that [drawing] keeps onto the first canvas,
+  /// turned clockwise by its quarter turns and scaled to fill [step].
+  ///
+  /// Reading straight from the full-size bitmap is what keeps a crop sharp.
+  void _drawEdited(
+    web.CanvasRenderingContext2D context,
+    web.ImageBitmap bitmap,
+    PhotoEditDrawing drawing,
+    PhotoSize step,
+  ) {
+    // Before the canvas turns, a sideways photo's width runs along its height.
+    final sideways = drawing.quarterTurns.isOdd;
+    final drawnWidth = sideways ? step.height : step.width;
+    final drawnHeight = sideways ? step.width : step.height;
+    context
+      ..translate(step.width / 2, step.height / 2)
+      ..rotate(drawing.quarterTurns * math.pi / 2)
+      ..drawImage(
+        bitmap,
+        drawing.sourceX,
+        drawing.sourceY,
+        drawing.sourceWidth,
+        drawing.sourceHeight,
+        -drawnWidth / 2,
+        -drawnHeight / 2,
+        drawnWidth,
+        drawnHeight,
+      );
   }
 
   Future<Uint8List> _encodeJpegWithOverride(

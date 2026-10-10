@@ -36,6 +36,7 @@ import 'package:doormer/src/shared/design/atomic/atoms/display_ad_atom.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
 import 'package:doormer/src/features/questions/presentation/templates/solution_reader_template.dart';
+import 'package:doormer/src/features/questions/utils/photo/photo_edit.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_file_input.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_preparer.dart';
 import 'package:doormer/src/features/questions/utils/photo/picked_photo_file.dart';
@@ -119,12 +120,23 @@ class _FakePhotoPreparer implements PhotoPreparer {
   Object? failure;
   Completer<PreparedPhoto>? pending;
   final List<PickedPhotoFile> prepared = [];
+  final List<PhotoEdit> edits = [];
+
+  /// Returned, or thrown, instead of [result] when a turn or crop is applied.
+  PreparedPhoto? editedResult;
+  Object? editedFailure;
 
   @override
-  Future<PreparedPhoto> prepare(PickedPhotoFile file) async {
+  Future<PreparedPhoto> prepare(
+    PickedPhotoFile file, {
+    PhotoEdit edit = PhotoEdit.none,
+  }) async {
     prepared.add(file);
+    edits.add(edit);
     if (failure != null) throw failure!;
+    if (!edit.isNone && editedFailure != null) throw editedFailure!;
     if (pending != null) return pending!.future;
+    if (!edit.isNone && editedResult != null) return editedResult!;
     return result!;
   }
 }

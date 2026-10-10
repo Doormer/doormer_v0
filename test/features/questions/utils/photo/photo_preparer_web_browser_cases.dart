@@ -8,6 +8,7 @@ import 'dart:typed_data';
 
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
+import 'package:doormer/src/features/questions/utils/photo/photo_edit.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_preparer.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_preparer_web.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_scaling.dart';
@@ -55,6 +56,55 @@ Future<Uint8List> _canvasImage(int width, int height, String type) async {
   final blob = (await done.future)!;
   return (await blob.arrayBuffer().toDart).toDart.asUint8List();
 }
+
+/// A PNG split into four solid quarters: red top-left, green top-right, blue
+/// bottom-left, black bottom-right.
+Future<Uint8List> _quartersPng(int width, int height) async {
+  final canvas = web.HTMLCanvasElement()
+    ..width = width
+    ..height = height;
+  final context = canvas.getContext('2d')! as web.CanvasRenderingContext2D;
+  void fill(String colour, int x, int y) => context
+    ..fillStyle = colour.toJS
+    ..fillRect(x, y, width / 2, height / 2);
+  fill('#ff0000', 0, 0);
+  fill('#00ff00', width ~/ 2, 0);
+  fill('#0000ff', 0, height ~/ 2);
+  fill('#000000', width ~/ 2, height ~/ 2);
+  final done = Completer<web.Blob?>();
+  canvas.toBlob(((web.Blob? blob) => done.complete(blob)).toJS, 'image/png');
+  final blob = (await done.future)!;
+  return (await blob.arrayBuffer().toDart).toDart.asUint8List();
+}
+
+/// The red, green and blue of the pixel at ([x], [y]) in [jpeg].
+Future<List<int>> _colourAt(Uint8List jpeg, int x, int y) async {
+  final bitmap = await web.window
+      .createImageBitmap(
+        web.Blob(
+          <JSAny>[jpeg.toJS].toJS,
+          web.BlobPropertyBag(type: 'image/jpeg'),
+        ),
+      )
+      .toDart;
+  try {
+    final canvas = web.HTMLCanvasElement()
+      ..width = bitmap.width
+      ..height = bitmap.height;
+    final context = canvas.getContext('2d')! as web.CanvasRenderingContext2D;
+    context.drawImage(bitmap, 0, 0);
+    final data = context.getImageData(x, y, 1, 1).data.toDart;
+    return [data[0], data[1], data[2]];
+  } finally {
+    bitmap.close();
+  }
+}
+
+/// JPEG shifts colours a little, so compare each channel loosely.
+Matcher _isColour(int red, int green, int blue) => isA<List<int>>()
+    .having((c) => c[0], 'red', closeTo(red, 40))
+    .having((c) => c[1], 'green', closeTo(green, 40))
+    .having((c) => c[2], 'blue', closeTo(blue, 40));
 
 Future<PhotoSize> _decodedSize(Uint8List bytes) async {
   final bitmap = await web.window
@@ -262,6 +312,64 @@ void main() {
       expect(photo.height, 2);
       expect(photo.fileName, 'IMG_3.jpg');
       expect(photo.bytes.sublist(0, 3), [0xFF, 0xD8, 0xFF]);
+    },
+  );
+
+  test(
+    'crops the original at full resolution before scaling',
+    () async {
+      final bytes = await _quartersPng(4000, 3000);
+
+      final photo = await WebPhotoPreparer().prepare(
+        PickedPhotoFile(bytes: bytes, name: 'page.png', mimeType: 'image/png'),
+        edit: const PhotoEdit(
+          crop: CropArea(left: 0.5, top: 0, right: 1, bottom: 0.5),
+        ),
+      );
+
+      // Cropping the 2048 px preview instead would give only 1024 x 768.
+      expect(photo.width, 2000);
+      expect(photo.height, 1500);
+      expect(await _colourAt(photo.bytes, 1000, 750), _isColour(0, 255, 0));
+    },
+  );
+
+  test(
+    'turns the photo a quarter clockwise',
+    () async {
+      final bytes = await _quartersPng(800, 600);
+
+      final photo = await WebPhotoPreparer().prepare(
+        PickedPhotoFile(bytes: bytes, name: 'page.png', mimeType: 'image/png'),
+        edit: const PhotoEdit(quarterTurns: 1),
+      );
+
+      expect(photo.width, 600);
+      expect(photo.height, 800);
+      // The bottom-left (blue) moves to the top-left on a clockwise turn.
+      expect(await _colourAt(photo.bytes, 150, 200), _isColour(0, 0, 255));
+      expect(await _colourAt(photo.bytes, 450, 200), _isColour(255, 0, 0));
+    },
+  );
+
+  test(
+    'turns and crops together',
+    () async {
+      final bytes = await _quartersPng(800, 600);
+
+      final photo = await WebPhotoPreparer().prepare(
+        PickedPhotoFile(bytes: bytes, name: 'page.png', mimeType: 'image/png'),
+        edit: const PhotoEdit(
+          quarterTurns: 1,
+          crop: CropArea(left: 0, top: 0, right: 1, bottom: 0.5),
+        ),
+      );
+
+      // The top half after the turn is the upright photo's left half.
+      expect(photo.width, 600);
+      expect(photo.height, 400);
+      expect(await _colourAt(photo.bytes, 150, 200), _isColour(0, 0, 255));
+      expect(await _colourAt(photo.bytes, 450, 200), _isColour(255, 0, 0));
     },
   );
 }
