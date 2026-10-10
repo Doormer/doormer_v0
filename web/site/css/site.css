@@ -1944,7 +1944,7 @@ html:not(.js) .site-header {
   padding: 2px 4px;
   margin: -2px -4px;
   border-radius: 6px;
-  transition: background-color .35s ease, box-shadow .35s ease;
+  transition: background-color .3s ease, box-shadow .3s ease;
 }
 
 .paper__number {
@@ -1960,7 +1960,7 @@ html:not(.js) .site-header {
 }
 
 .paper__labels text {
-  transition: stroke .35s ease;
+  transition: stroke .3s ease;
 }
 
 .paper__scribble {
@@ -3282,7 +3282,7 @@ html:not(.js) .site-header {
   border: 1px solid;
   background: linear-gradient(180deg, #1E1640, #0B0818);
   transform: rotate(var(--rot)) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
-  transition: transform .35s var(--ease-out), box-shadow .35s ease;
+  transition: transform .35s var(--ease-out), box-shadow .3s ease;
   overflow: hidden;
 }
 
