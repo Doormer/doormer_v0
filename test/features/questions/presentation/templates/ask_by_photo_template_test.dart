@@ -249,15 +249,15 @@ void main() {
     });
 
     testWidgets(
-        'the "Why ads?" link stays away from the ad, above the explanation '
-        'card', (tester) async {
+        'the "Why ads?" link stays away from the ad, with the explanation '
+        'between them', (tester) async {
       await _pumpSolving(tester, adUnit: adUnit, onWhyAds: _noop);
       await tester.pump(AskByPhotoTemplate.adDelay);
 
       expect(
         tester.getBottomLeft(find.text('Why ads?')).dy,
         lessThanOrEqualTo(
-          tester.getTopLeft(find.byType(SolvingExplanationMolecule)).dy,
+          tester.getTopLeft(find.textContaining('A powerful AI')).dy,
         ),
         reason: 'a link right beside the ad invites accidental taps on it, '
             'and Google could read the wording as part of the ad',
@@ -487,9 +487,9 @@ Future<void> _pumpSolving(
               imageBytes: _transparentPngBytes,
               title: 'Solving your photo',
               body: 'This can take from a few seconds to a few minutes.',
-              onWhyAds: onWhyAds,
             ),
             adUnit: adUnit,
+            onWhyAds: onWhyAds,
           ),
           navigationBarParams: _navigationBarParams,
         ),

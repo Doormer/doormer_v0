@@ -7,14 +7,9 @@ class SolvingProgressParams {
   final String title;
   final String body;
 
-  /// Opens the explanation of why Doormer shows ads. Null when ads are off,
-  /// which also hides the "Why ads?" link.
-  final VoidCallback? onWhyAds;
-
   const SolvingProgressParams({
     this.imageBytes,
     required this.title,
     required this.body,
-    this.onWhyAds,
   });
 }
