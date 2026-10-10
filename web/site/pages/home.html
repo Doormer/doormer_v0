@@ -108,11 +108,12 @@
           <span class="scene__star" style="--x: 4%; --y: 70%; --d: .6s"></span>
 
           <div class="scene__card">
-            <img src="/site/img/cards/meridian-orrery.jpg" alt="" width="400" height="600" loading="lazy" decoding="async">
-            <div class="scene__card-label">
-              <p class="scene__card-name">The Orrery</p>
-              <p class="scene__card-scale">Capital</p>
+            <div class="scene__card-art">
+              <img src="/site/img/cards/meridian-orrery.jpg" alt="" width="400" height="600" decoding="async">
             </div>
+            <p class="scene__card-pips">◆◆◆</p>
+            <p class="scene__card-name">The Orrery</p>
+            <p class="scene__card-class">Meridian · Capital</p>
           </div>
 
           <div class="scene__phone">
@@ -568,69 +569,75 @@
     </section>
 
     <section class="section rewards" id="rewards" aria-labelledby="rewards-title">
-      <div class="container">
-        <div class="rewards__intro">
-          <div class="rewards__copy">
-            <p class="eyebrow eyebrow--mint">Learning that pays off</p>
-            <h2 id="rewards-title">Finish questions. Earn quarks. Collect cards.</h2>
-            <p class="rewards__lede">Every question you crack earns quarks — the more thinking it takes, the more you earn. Spend them on card draws to build your collection, and shatter spare copies back into quarks.</p>
-            <p class="rewards__welcome"><span class="chip chip--mint">40 quarks to start</span> Your first card is on us.</p>
-          </div>
-          <div class="collection-intro">
-            <p class="collection-intro__label">The first collection</p>
-            <h3 class="collection-intro__name" id="meridian-title">Meridian</h3>
-            <p>Six cards named after old instruments for measuring the sky and finding the way. The rarest, The Orrery, carries a working model of the system it is crossing.</p>
+      <div class="container rewards__grid">
+        <div class="rewards__copy">
+          <p class="eyebrow eyebrow--mint">Learning that pays off</p>
+          <h2 id="rewards-title">Finish questions. Earn quarks. Collect cards.</h2>
+          <p class="rewards__lede">Every question you crack earns quarks — the more thinking it takes, the more you earn. Spend them on card draws to build your collection, and shatter spare copies back into quarks.</p>
+          <p class="rewards__welcome"><span class="chip chip--mint">40 quarks to start</span> Your first card is on us.</p>
+          <div class="collections">
+            <div class="collection collection--meridian">
+              <p class="collection__name">Meridian</p>
+              <p class="collection__motto">“Nothing is real until it’s measured.”</p>
+              <p class="collection__about">White, brass and glass. Six cards named after instruments for measuring the sky and finding the way.</p>
+            </div>
+            <div class="collection collection--coming-soon">
+              <p class="collection__name">More collections</p>
+              <p class="collection__motto">Coming soon</p>
+              <p class="collection__about">New card collections are on the way, with more to discover and collect.</p>
+            </div>
           </div>
         </div>
 
-        <ul class="collection-shelf" aria-labelledby="meridian-title">
-        <li class="collectible-card collectible-card--common" data-tilt>
-          <img src="/site/img/cards/meridian-gnomon.jpg" alt="" width="400" height="600" loading="lazy" decoding="async">
-          <div class="collectible-card__label">
-            <p class="collectible-card__name">Gnomon</p>
-            <p class="collectible-card__scale">Small<span class="visually-hidden">, common</span></p>
-          </div>
-        </li>
-        <li class="collectible-card collectible-card--common" data-tilt>
-          <img src="/site/img/cards/meridian-vernier.jpg" alt="" width="400" height="600" loading="lazy" decoding="async">
-          <div class="collectible-card__label">
-            <p class="collectible-card__name">Vernier</p>
-            <p class="collectible-card__scale">Small<span class="visually-hidden">, common</span></p>
-          </div>
-        </li>
-        <li class="collectible-card collectible-card--common" data-tilt>
-          <img src="/site/img/cards/meridian-lodestone.jpg" alt="" width="400" height="600" loading="lazy" decoding="async">
-          <div class="collectible-card__label">
-            <p class="collectible-card__name">Lodestone</p>
-            <p class="collectible-card__scale">Small<span class="visually-hidden">, common</span></p>
-          </div>
-        </li>
-        <li class="collectible-card collectible-card--uncommon" data-tilt>
-          <img src="/site/img/cards/meridian-astrolabe.jpg" alt="" width="400" height="600" loading="lazy" decoding="async">
-          <div class="collectible-card__label">
-            <p class="collectible-card__name">Astrolabe</p>
-            <p class="collectible-card__scale">Medium<span class="visually-hidden">, uncommon</span></p>
-          </div>
-        </li>
-        <li class="collectible-card collectible-card--uncommon" data-tilt>
-          <img src="/site/img/cards/meridian-quadrant.jpg" alt="" width="400" height="600" loading="lazy" decoding="async">
-          <div class="collectible-card__label">
-            <p class="collectible-card__name">Quadrant</p>
-            <p class="collectible-card__scale">Medium<span class="visually-hidden">, uncommon</span></p>
-          </div>
-        </li>
-        <li class="collectible-card collectible-card--rare" data-tilt>
-          <img src="/site/img/cards/meridian-orrery.jpg" alt="" width="400" height="600" loading="lazy" decoding="async">
-          <div class="collectible-card__label">
-            <p class="collectible-card__name">The Orrery</p>
-            <p class="collectible-card__scale">Capital<span class="visually-hidden">, rare</span></p>
-          </div>
-        </li>
-        <li class="card-back">
-          <div class="card-back__face" aria-hidden="true"><span class="card-back__seal"></span></div>
-          <p class="card-back__label"><strong>More collections</strong> coming soon</p>
-        </li>
-        </ul>
+        <div class="rewards__cards">
+          <article class="collectible-card" data-tilt>
+            <div class="collectible-card__art">
+              <img src="/site/img/cards/meridian-orrery.jpg" alt="" width="400" height="600" loading="lazy" decoding="async">
+            </div>
+            <div class="collectible-card__body">
+              <p class="collectible-card__pips"><span aria-hidden="true">◆◆◆</span><span class="visually-hidden">Rare</span></p>
+              <h3 class="collectible-card__name">The Orrery</h3>
+              <p class="collectible-card__set">Meridian · Capital</p>
+              <p class="collectible-card__description">Carries a working model of the system it is crossing.</p>
+            </div>
+          </article>
+
+          <article class="collectible-card" data-tilt>
+            <div class="collectible-card__art">
+              <img src="/site/img/cards/meridian-astrolabe.jpg" alt="" width="400" height="600" loading="lazy" decoding="async">
+            </div>
+            <div class="collectible-card__body">
+              <p class="collectible-card__pips"><span aria-hidden="true">◆◆</span><span class="visually-hidden">Uncommon</span></p>
+              <h3 class="collectible-card__name">Astrolabe</h3>
+              <p class="collectible-card__set">Meridian · Medium</p>
+              <p class="collectible-card__description">Unfolds into a ring wider than itself to take one reading, then folds away.</p>
+            </div>
+          </article>
+
+          <article class="collectible-card" data-tilt>
+            <div class="collectible-card__art">
+              <img src="/site/img/cards/meridian-quadrant.jpg" alt="" width="400" height="600" loading="lazy" decoding="async">
+            </div>
+            <div class="collectible-card__body">
+              <p class="collectible-card__pips"><span aria-hidden="true">◆◆</span><span class="visually-hidden">Uncommon</span></p>
+              <h3 class="collectible-card__name">Quadrant</h3>
+              <p class="collectible-card__set">Meridian · Medium</p>
+              <p class="collectible-card__description">A quarter arc that measures the angle to anything it can see.</p>
+            </div>
+          </article>
+
+          <article class="collectible-card" data-tilt>
+            <div class="collectible-card__art">
+              <img src="/site/img/cards/meridian-gnomon.jpg" alt="" width="400" height="600" loading="lazy" decoding="async">
+            </div>
+            <div class="collectible-card__body">
+              <p class="collectible-card__pips"><span aria-hidden="true">◆</span><span class="visually-hidden">Common</span></p>
+              <h3 class="collectible-card__name">Gnomon</h3>
+              <p class="collectible-card__set">Meridian · Small</p>
+              <p class="collectible-card__description">Casts a shadow long enough to read a heading from.</p>
+            </div>
+          </article>
+        </div>
       </div>
     </section>
 

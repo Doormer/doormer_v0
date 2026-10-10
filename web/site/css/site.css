@@ -1699,63 +1699,66 @@ html:not(.js) .site-header {
   right: 0;
   top: 3.6em;
   width: 10.5em;
-  aspect-ratio: 2 / 3;
-  border-radius: .75em;
-  border: 2px solid rgba(255, 216, 77, .9);
-  background: var(--ink);
+  padding: .6em .6em .9em;
+  border-radius: 1em;
+  border: 1px solid rgba(233, 201, 139, .55);
+  background: linear-gradient(180deg, #1E1640, #0B0818);
   transform: rotate(9deg);
-  box-shadow: 0 1.6em 3em -1em rgba(0, 0, 0, .85), 0 0 2.4em .3em rgba(255, 216, 77, .45);
+  box-shadow: 0 1.6em 3em -1em rgba(0, 0, 0, .85), 0 0 3em -1em rgba(233, 201, 139, .45);
   overflow: hidden;
   display: none;
-}
-
-.scene__card img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.scene__card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(7, 9, 17, 0) 38%, rgba(7, 9, 17, .9) 70%, #070911 88%);
 }
 
 .scene__card::after {
   content: "";
   position: absolute;
   inset: -40% -100%;
-  background: linear-gradient(115deg, transparent 42%, rgba(255, 244, 214, .22) 48%, rgba(255, 255, 255, .16) 52%, transparent 58%);
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 171, 243, .2) 48%, rgba(0, 229, 160, .16) 52%, transparent 58%);
   transform: translateX(-35%);
   animation: shine 6s ease-in-out infinite;
   mix-blend-mode: screen;
   pointer-events: none;
 }
 
-.scene__card-label {
-  position: absolute;
-  left: .75em;
-  right: .75em;
-  bottom: .7em;
-  z-index: 1;
+.scene__card-art {
+  aspect-ratio: 4 / 3;
+  border-radius: .6em;
+  background: radial-gradient(8em 5em at 50% 50%, rgba(108, 77, 255, .35), transparent 70%), #070512;
+}
+
+.scene__card-art {
+  overflow: hidden;
+}
+
+.scene__card-art img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.scene__card-pips {
+  margin-top: .6em;
+  color: var(--brass);
+  font-size: .6em;
+  letter-spacing: .25em;
 }
 
 .scene__card-name {
-  color: var(--cream);
+  font-family: var(--font-display);
   font-size: .95em;
   font-weight: 700;
-  line-height: 1.1;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--cream);
 }
 
-.scene__card-scale {
-  margin-top: .15em;
-  color: var(--amber);
-  font-size: .56em;
-  letter-spacing: .14em;
+.scene__card-class {
+  font-size: .52em;
+  font-weight: 700;
+  letter-spacing: .16em;
   text-transform: uppercase;
+  color: var(--brass);
 }
 
 .scene__chip {
@@ -3211,16 +3214,15 @@ html:not(.js) .site-header {
   top: 10%;
   width: 70%;
   height: 80%;
-  background: radial-gradient(closest-side, rgba(255, 216, 77, .1), transparent), radial-gradient(closest-side at 30% 60%, rgba(108, 77, 255, .14), transparent);
+  background: radial-gradient(closest-side, rgba(255, 122, 61, .14), transparent), radial-gradient(closest-side at 30% 60%, rgba(233, 201, 139, .12), transparent);
   pointer-events: none;
 }
 
-.rewards__intro {
+.rewards__grid {
   position: relative;
   display: grid;
-  gap: 32px;
-  align-items: end;
-  margin-bottom: clamp(32px, 4vw, 48px);
+  gap: 48px;
+  align-items: center;
 }
 
 .rewards__copy {
@@ -3243,71 +3245,78 @@ html:not(.js) .site-header {
   font-weight: 600;
 }
 
-.collection-intro {
+.collections {
   display: grid;
-  gap: 6px;
-  padding: 20px 22px;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 216, 77, .32);
-  background: linear-gradient(180deg, rgba(255, 216, 77, .08), rgba(30, 22, 64, .5));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 8px;
 }
 
-.collection-intro__label {
-  color: var(--amber);
-  font-size: .75rem;
+.collection {
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid;
+}
+
+.collection--coming-soon {
+  border-style: dashed;
+  border-color: rgba(155, 130, 255, .55);
+  background: linear-gradient(180deg, rgba(108, 77, 255, .14), rgba(108, 77, 255, .03));
+}
+
+.collection--coming-soon .collection__name {
+  color: var(--marker);
+}
+
+.collection--meridian {
+  border-color: rgba(233, 201, 139, .45);
+  background: linear-gradient(180deg, rgba(233, 201, 139, .11), rgba(255, 244, 255, .03));
+}
+
+.collection__name {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
   font-weight: 700;
-  letter-spacing: .16em;
+  letter-spacing: .05em;
   text-transform: uppercase;
 }
 
-.collection-intro__name {
-  font-size: 1.6rem;
+.collection--meridian .collection__name {
+  color: var(--brass);
 }
 
-.collection-intro p:last-child {
-  color: var(--dim);
+.collection__motto {
+  margin-top: 6px;
+  color: var(--cream);
+  font-size: .98rem;
+  font-style: italic;
 }
 
-/* The shelf shows the whole first collection the way the app draws a card:
-   full-bleed art, a dark scrim, the name and the size label. Rarity is a brass
-   halo that grows with scarcity; a common card has none. */
-.collection-shelf {
-  --shelf-columns: 2;
-  --shelf-gap: 14px;
-  position: relative;
-  list-style: none;
+.collection__about {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+
+.rewards__cards {
   display: grid;
-  grid-template-columns: repeat(var(--shelf-columns), minmax(0, 1fr));
-  gap: var(--shelf-gap);
-  margin: 0;
-  padding: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
   perspective: 1200px;
 }
 
+/* Meridian cards: a brass edge and glow. */
 .collectible-card {
+  --rot: 0deg;
   position: relative;
-  aspect-ratio: 2 / 3;
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--ink);
-  box-shadow: 0 22px 40px -22px rgba(0, 0, 0, .9);
-  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  padding: 10px 10px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(233, 201, 139, .6);
+  background: linear-gradient(180deg, #1E1640, #0B0818);
+  box-shadow: 0 30px 50px -25px rgba(0, 0, 0, .9), 0 0 42px -12px rgba(233, 201, 139, .45);
+  transform: rotate(var(--rot)) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
   transition: transform .35s var(--ease-out), box-shadow .3s ease;
-}
-
-.collectible-card img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.collectible-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(7, 9, 17, 0) 38%, rgba(7, 9, 17, .9) 70%, #070911 88%);
+  overflow: hidden;
 }
 
 .collectible-card::after {
@@ -3316,139 +3325,128 @@ html:not(.js) .site-header {
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: radial-gradient(circle at var(--glare-x, 30%) var(--glare-y, 0%), rgba(255, 255, 255, .2), transparent 45%);
-  opacity: 0;
-  transition: opacity .3s ease;
+  background:
+    radial-gradient(circle at var(--glare-x, 30%) var(--glare-y, 0%), rgba(255, 255, 255, .22), transparent 45%),
+    linear-gradient(115deg, transparent 30%, rgba(255, 171, 243, .15) 45%, rgba(0, 229, 160, .12) 52%, rgba(155, 130, 255, .12) 58%, transparent 70%);
+  background-size: 100% 100%, 250% 250%;
+  background-position: center, var(--glare-x, 0%) var(--glare-y, 0%);
+  mix-blend-mode: screen;
 }
 
 .collectible-card:hover {
-  z-index: 2;
-  transform: translateY(-8px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  z-index: 10;
+  transform: translateY(-14px) rotate(0deg) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) scale(1.03);
 }
 
-.collectible-card:hover::after {
-  opacity: 1;
+.collectible-card__art {
+  aspect-ratio: 1;
+  border-radius: 14px;
+  overflow: hidden;
+  background:
+    radial-gradient(1px 1px at 18% 28%, #fff, transparent),
+    radial-gradient(1px 1px at 72% 62%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 42% 84%, rgba(255, 255, 255, .8), transparent),
+    radial-gradient(1px 1px at 86% 18%, #fff, transparent),
+    radial-gradient(160px 100px at 50% 50%, rgba(108, 77, 255, .38), transparent 70%),
+    #070512;
 }
 
-.collectible-card--uncommon {
-  border: 1.5px solid rgba(255, 216, 77, .45);
-  box-shadow: 0 22px 40px -22px rgba(0, 0, 0, .9), 0 0 16px 1px rgba(255, 216, 77, .45);
+.collectible-card__art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.collectible-card--rare {
-  border: 2px solid rgba(255, 216, 77, .9);
-  box-shadow: 0 22px 40px -22px rgba(0, 0, 0, .9), 0 0 32px 5px rgba(255, 216, 77, .55);
+.collectible-card__body {
+  display: grid;
+  gap: 4px;
+  padding: 12px 6px 0;
 }
 
-.collectible-card__label {
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 10px;
-  z-index: 1;
+.collectible-card__pips {
+  font-size: .75rem;
+  letter-spacing: .25em;
 }
 
 .collectible-card__name {
-  overflow: hidden;
-  color: var(--cream);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, .8);
-  font-size: clamp(.9rem, 1.3vw, 1.05rem);
-  font-weight: 700;
-  line-height: 1.15;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.collectible-card__scale {
-  margin-top: 2px;
-  color: var(--amber);
-  text-shadow: 0 1px 6px rgba(0, 0, 0, .8);
-  font-size: .68rem;
-  letter-spacing: .14em;
+  font-size: 1.2rem;
+  letter-spacing: .02em;
   text-transform: uppercase;
 }
 
-/* The face-down card from the app: fine brass lattice over deep violet, with a
-   ring and a dot at its centre. It stands for the collections still to come. */
-.card-back {
-  grid-column: 1 / -1;
-  justify-self: center;
-  width: calc((100% - (var(--shelf-columns) - 1) * var(--shelf-gap)) / var(--shelf-columns));
-  display: grid;
-  gap: 10px;
-  text-align: center;
+.collectible-card__set {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
 }
 
-.card-back__face {
-  position: relative;
-  display: grid;
-  place-items: center;
-  aspect-ratio: 2 / 3;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 216, 77, .2);
-  background:
-    repeating-linear-gradient(45deg, rgba(255, 216, 77, .13) 0 1px, transparent 1px 12px),
-    repeating-linear-gradient(-45deg, rgba(255, 216, 77, .13) 0 1px, transparent 1px 12px),
-    linear-gradient(135deg, #241D4C, #141030 55%, #0A0818);
-  box-shadow: 0 22px 40px -22px rgba(0, 0, 0, .9);
+.collectible-card__pips,
+.collectible-card__set {
+  color: var(--brass);
 }
 
-.card-back__seal {
-  display: grid;
-  place-items: center;
-  width: 30%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  border: 1.5px solid rgba(255, 216, 77, .5);
-}
-
-.card-back__seal::after {
-  content: "";
-  width: 24%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: rgba(255, 216, 77, .78);
-}
-
-.card-back__label {
+.collectible-card__description {
+  margin-top: 4px;
   color: var(--dim);
-  font-size: .9rem;
-  line-height: 1.35;
+  font-size: .85rem;
+  line-height: 1.45;
 }
 
-.card-back__label strong {
-  display: block;
-  color: var(--cream);
-}
+@media (max-width: 480px) {
+  .collections {
+    grid-template-columns: 1fr;
+  }
 
-@media (min-width: 640px) {
-  .collection-shelf {
-    --shelf-columns: 3;
-    --shelf-gap: 18px;
+  .collectible-card__description {
+    display: none;
   }
 }
 
-@media (min-width: 900px) {
-  .rewards__intro {
-    grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr);
-    gap: 48px;
-  }
-}
-
-@media (min-width: 1100px) {
-  .collection-shelf {
-    --shelf-columns: 7;
-    --shelf-gap: 16px;
+@media (min-width: 1024px) {
+  .rewards__grid {
+    grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr);
+    gap: 56px;
   }
 
-  .card-back {
-    grid-column: auto;
-    width: auto;
-    align-self: start;
+  .rewards__cards {
+    display: block;
+    position: relative;
+    height: 500px;
   }
 
-  .card-back__label {
-    font-size: .82rem;
+  .collectible-card {
+    position: absolute;
+    width: 38%;
+  }
+
+  .collectible-card:nth-child(1) {
+    --rot: -11deg;
+    left: 0;
+    top: 60px;
+    z-index: 1;
+  }
+
+  .collectible-card:nth-child(2) {
+    --rot: -4deg;
+    left: 21%;
+    top: 10px;
+    z-index: 2;
+  }
+
+  .collectible-card:nth-child(3) {
+    --rot: 4deg;
+    left: 42%;
+    top: 30px;
+    z-index: 3;
+  }
+
+  .collectible-card:nth-child(4) {
+    --rot: 12deg;
+    left: 62%;
+    top: 84px;
+    z-index: 4;
   }
 }
 
