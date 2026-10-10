@@ -50,6 +50,8 @@ dev_dependencies:
   build_runner: ^2.4.6
   freezed: ^2.5.7
   json_serializable: ^6.9.0
+  # Parses the public website's pages in test/site.
+  html: ^0.15.6
 
 flutter:
   uses-material-design: true
