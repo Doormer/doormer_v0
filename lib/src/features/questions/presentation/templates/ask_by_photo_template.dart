@@ -1,5 +1,5 @@
 import 'package:doormer/src/features/questions/presentation/molecules/ask_by_photo_header_molecule.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/study_tip_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/molecules/solving_explanation_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/photo_upload_panel_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solve_status_panel_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solving_progress_organism.dart';
@@ -125,7 +125,7 @@ class AskByPhotoTemplate extends StatelessWidget {
         children: [
           SolvingProgressOrganism(params: solving.progress),
           SizedBox(height: 16.h),
-          StudyTipMolecule(tip: solving.tip),
+          const SolvingExplanationMolecule(),
           if (adUnit != null) ...[
             SizedBox(height: 24.h),
             ShowAfterDelayAtom(

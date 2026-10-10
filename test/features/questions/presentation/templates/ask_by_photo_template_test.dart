@@ -6,7 +6,7 @@ import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/photo_upload_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solve_status_presenter.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/study_tip_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/molecules/solving_explanation_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/photo_upload_panel_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solve_status_panel_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solving_progress_organism.dart';
@@ -197,8 +197,8 @@ void main() {
       await _pumpSolving(tester);
 
       expect(find.byType(SolvingProgressOrganism), findsOneWidget);
-      expect(find.byType(StudyTipMolecule), findsOneWidget);
-      expect(find.text('Check your answer.'), findsOneWidget);
+      expect(find.byType(SolvingExplanationMolecule), findsOneWidget);
+      expect(find.text("What's happening"), findsOneWidget);
       expect(find.text('Upload a photo'), findsNothing);
       expect(find.byType(PhotoUploadPanelOrganism), findsNothing);
       expect(find.byType(SolveStatusPanelOrganism), findsNothing);
@@ -227,14 +227,15 @@ void main() {
       expect(find.byType(DisplayAdAtom), findsOneWidget);
     });
 
-    testWidgets('the ad card comes last, below the tip', (tester) async {
+    testWidgets('the ad card comes last, below the explanation',
+        (tester) async {
       await _pumpSolving(tester, adUnit: adUnit);
       await tester.pump(AskByPhotoTemplate.adDelay);
 
       expect(
         tester.getTopLeft(find.byType(DisplayAdAtom)).dy,
         greaterThanOrEqualTo(
-          tester.getBottomLeft(find.byType(StudyTipMolecule)).dy,
+          tester.getBottomLeft(find.byType(SolvingExplanationMolecule)).dy,
         ),
       );
     });
@@ -467,7 +468,6 @@ Future<void> _pumpSolving(WidgetTester tester, {DisplayAdUnit? adUnit}) async {
               title: 'Solving your photo',
               body: 'This can take from a few seconds to a few minutes.',
             ),
-            tip: 'Check your answer.',
             adUnit: adUnit,
           ),
           navigationBarParams: _navigationBarParams,

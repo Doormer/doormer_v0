@@ -6,7 +6,6 @@ import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/photo_upload_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solve_status_presenter.dart';
-import 'package:doormer/src/features/questions/presentation/mapper/solving_tip_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/photo_source_sheet_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
@@ -254,7 +253,6 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
         title: content.title,
         body: content.body,
       ),
-      tip: solvingTipFor(photoSize: photo?.length ?? 0),
       adUnit: DisplayAdUnit.solvingScreen(),
     );
   }

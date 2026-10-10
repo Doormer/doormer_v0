@@ -604,11 +604,11 @@ void main() {
     await tester.pump(); // BlocConsumer rebuilds into the Loading state
 
     // While the solver call is in flight, the solving view replaces the photo
-    // panels: a spinner, the time so far and a study tip.
+    // panels: a spinner, the time so far and what the solver is doing.
     expect(find.byType(SolvingProgressOrganism), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     expect(find.text('Solving your photo'), findsOneWidget);
-    expect(find.text('Tip'), findsOneWidget);
+    expect(find.text("What's happening"), findsOneWidget);
     expect(find.byType(PhotoPreviewMolecule), findsNothing);
     expect(repository.callCount, 1);
 
