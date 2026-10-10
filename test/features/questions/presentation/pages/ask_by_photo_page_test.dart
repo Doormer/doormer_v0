@@ -31,6 +31,8 @@ import 'package:doormer/src/features/questions/presentation/organisms/solving_pr
 import 'package:doormer/src/features/questions/presentation/organisms/why_ads_sheet_organism.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
 import 'package:doormer/src/features/questions/presentation/pages/camera_page.dart';
+import 'package:doormer/src/features/questions/presentation/pages/photo_edit_page.dart';
+import 'package:doormer/src/features/questions/utils/photo/editable_photo.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/display_ad_atom.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
@@ -175,6 +177,18 @@ final _pickedHeic = PickedPhotoFile(
   mimeType: 'image/heic',
 );
 
+// A 1x1 white PNG, so an edited photo's bytes differ from the unedited one's.
+final Uint8List _whitePngBytes = base64Decode(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC',
+);
+
+final _editedJpeg = PreparedPhoto(
+  bytes: _whitePngBytes,
+  fileName: 'IMG_1.jpg',
+  width: 1,
+  height: 1,
+);
+
 final _preparedJpeg = PreparedPhoto(
   bytes: _pngBytes,
   fileName: 'IMG_1.jpg',
@@ -189,6 +203,20 @@ void main() {
   late AskByPhotoBloc bloc;
   late _FakePhotoFileInput fileInput;
   late _FakePhotoPreparer preparer;
+
+  // The crop & rotate screen opens after every pick. Most tests are not about
+  // it, so a fake stands in that records each opening and closes at once.
+  // Returning null is what Cancel does, and keeps the photo as it was.
+  late List<EditablePhoto> openedEditorWith;
+  PhotoEdit? editorResult;
+
+  Future<PhotoEdit?> fakeOpenPhotoEditor(
+    BuildContext context,
+    EditablePhoto photo,
+  ) async {
+    openedEditorWith.add(photo);
+    return editorResult;
+  }
 
   void registerBloc() {
     bloc = AskByPhotoBloc(
@@ -207,6 +235,8 @@ void main() {
     preparer = _FakePhotoPreparer();
     serviceLocator.registerLazySingleton<PhotoFileInput>(() => fileInput);
     serviceLocator.registerLazySingleton<PhotoPreparer>(() => preparer);
+    openedEditorWith = [];
+    editorResult = null;
   }
 
   tearDown(() async {
@@ -216,6 +246,7 @@ void main() {
   GoRouter buildRouter({
     bool showPhotoSourceOptionsOnOpen = false,
     DisplayAdUnit? Function()? solvingAdUnit,
+    PhotoEditorOpener? openPhotoEditor,
   }) {
     return GoRouter(
       initialLocation: '/questions/photo',
@@ -225,6 +256,7 @@ void main() {
           builder: (_, __) => AskByPhotoPage(
             showPhotoSourceOptionsOnOpen: showPhotoSourceOptionsOnOpen,
             solvingAdUnit: solvingAdUnit ?? DisplayAdUnit.solvingScreen,
+            openPhotoEditor: openPhotoEditor ?? fakeOpenPhotoEditor,
           ),
         ),
         GoRoute(
@@ -261,6 +293,7 @@ void main() {
     WidgetTester tester, {
     bool showPhotoSourceOptionsOnOpen = false,
     DisplayAdUnit? Function()? solvingAdUnit,
+    PhotoEditorOpener? openPhotoEditor,
   }) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
@@ -276,6 +309,7 @@ void main() {
           routerConfig: buildRouter(
             showPhotoSourceOptionsOnOpen: showPhotoSourceOptionsOnOpen,
             solvingAdUnit: solvingAdUnit,
+            openPhotoEditor: openPhotoEditor,
           ),
         ),
       ),
@@ -1003,6 +1037,180 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
       await tester.pump();
+    });
+  });
+
+  group('crop & rotate', () {
+    const turned = PhotoEdit(quarterTurns: 1);
+
+    Future<void> pickFromGallery(WidgetTester tester) async {
+      await chooseFrom(tester, 'Choose from gallery');
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a picked photo opens the editor on it', (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.solved),
+      );
+      registerBloc();
+      fileInput.file = _pickedHeic;
+      preparer.result = _preparedJpeg;
+      await pumpPage(tester);
+
+      await pickFromGallery(tester);
+
+      expect(openedEditorWith, hasLength(1));
+      expect(openedEditorWith.single.original, _pickedHeic);
+      expect(openedEditorWith.single.unedited, _preparedJpeg);
+      expect(openedEditorWith.single.edit, PhotoEdit.none);
+    });
+
+    testWidgets('leaving the editor keeps the whole photo', (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.solved),
+      );
+      registerBloc();
+      fileInput.file = _pickedHeic;
+      preparer.result = _preparedJpeg;
+      await pumpPage(tester);
+
+      await pickFromGallery(tester);
+
+      expect(preparer.edits, [PhotoEdit.none]);
+      expect(find.text('IMG_1.jpg'), findsOneWidget);
+      expect(submitButton(tester).onPressed, isNotNull);
+    });
+
+    testWidgets('an edit is applied to the original, and that is sent',
+        (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.unreadable),
+      );
+      registerBloc();
+      fileInput.file = _pickedHeic;
+      preparer
+        ..result = _preparedJpeg
+        ..editedResult = _editedJpeg;
+      editorResult = turned;
+      await pumpPage(tester);
+
+      await pickFromGallery(tester);
+
+      expect(preparer.prepared, [_pickedHeic, _pickedHeic]);
+      expect(preparer.edits, [PhotoEdit.none, turned]);
+
+      await tester.ensureVisible(
+        find.widgetWithText(FilledButton, 'Submit to solver'),
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(repository.lastBytes, _whitePngBytes);
+    });
+
+    testWidgets('Crop & rotate reopens the editor on the last edit',
+        (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.solved),
+      );
+      registerBloc();
+      fileInput.file = _pickedHeic;
+      preparer
+        ..result = _preparedJpeg
+        ..editedResult = _editedJpeg;
+      editorResult = turned;
+      await pumpPage(tester);
+      await pickFromGallery(tester);
+
+      editorResult = null;
+      await tester.ensureVisible(find.byTooltip('Crop & rotate'));
+      await tester.tap(find.byTooltip('Crop & rotate'));
+      await tester.pumpAndSettle();
+
+      expect(openedEditorWith, hasLength(2));
+      expect(openedEditorWith.last.original, _pickedHeic);
+      expect(openedEditorWith.last.unedited, _preparedJpeg);
+      expect(openedEditorWith.last.edit, turned);
+      // Leaving changed nothing, so nothing was prepared again.
+      expect(preparer.prepared, hasLength(2));
+    });
+
+    testWidgets('after the solver finds no question, a crop can be sent',
+        (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.notAQuestion),
+      );
+      registerBloc();
+      fileInput.file = _pickedHeic;
+      preparer
+        ..result = _preparedJpeg
+        ..editedResult = _editedJpeg;
+      await pumpPage(tester);
+      await pickFromGallery(tester);
+      await tester.ensureVisible(
+        find.widgetWithText(FilledButton, 'Submit to solver'),
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+      await tester.pump();
+      await tester.pump();
+
+      const cropped = PhotoEdit(
+        crop: CropArea(left: 0, top: 0.5, right: 1, bottom: 1),
+      );
+      editorResult = cropped;
+      await tester.ensureVisible(find.byTooltip('Crop & rotate'));
+      await tester.tap(find.byTooltip('Crop & rotate'));
+      await tester.pumpAndSettle();
+
+      expect(preparer.edits.last, cropped);
+      expect(submitButton(tester).onPressed, isNotNull);
+    });
+
+    testWidgets('an edit that cannot be prepared keeps the photo',
+        (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.solved),
+      );
+      registerBloc();
+      fileInput.file = _pickedHeic;
+      preparer
+        ..result = _preparedJpeg
+        ..editedFailure = ValidationFailure(photoUnreadableMessage);
+      editorResult = turned;
+      await pumpPage(tester);
+
+      await chooseFrom(tester, 'Choose from gallery');
+      await tester.pump(const Duration(milliseconds: 700));
+
+      expect(find.text(photoUnreadableMessage), findsOneWidget);
+      expect(find.text('IMG_1.jpg'), findsOneWidget);
+      expect(submitButton(tester).onPressed, isNotNull);
+      await drainToasts(tester);
+    });
+
+    testWidgets('with the real editor, Use photo applies the turn',
+        (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.solved),
+      );
+      registerBloc();
+      fileInput.file = _pickedHeic;
+      preparer
+        ..result = _preparedJpeg
+        ..editedResult = _editedJpeg;
+      await pumpPage(tester, openPhotoEditor: openPhotoEditPage);
+
+      await pickFromGallery(tester);
+      expect(find.text('Crop & rotate'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Turn right'));
+      await tester.pump();
+      await tester.tap(find.text('Use photo'));
+      await tester.pumpAndSettle();
+
+      expect(preparer.edits, [PhotoEdit.none, turned]);
+      expect(find.text('IMG_1.jpg'), findsOneWidget);
     });
   });
 }

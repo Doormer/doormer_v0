@@ -7,6 +7,8 @@ import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bl
 import 'package:doormer/src/features/questions/presentation/mapper/photo_upload_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solve_status_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/photo_source_sheet_organism.dart';
+import 'package:doormer/src/features/questions/presentation/pages/photo_edit_page.dart';
+import 'package:doormer/src/features/questions/utils/photo/editable_photo.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/why_ads_sheet_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
@@ -46,10 +48,14 @@ class AskByPhotoPage extends StatefulWidget {
   /// Defaults to the build's AdSense settings.
   final DisplayAdUnit? Function() solvingAdUnit;
 
+  /// Opens the crop & rotate screen. Tests swap in a fake.
+  final PhotoEditorOpener openPhotoEditor;
+
   const AskByPhotoPage({
     super.key,
     this.showPhotoSourceOptionsOnOpen = false,
     this.solvingAdUnit = DisplayAdUnit.solvingScreen,
+    this.openPhotoEditor = openPhotoEditPage,
   });
 
   @override
@@ -91,7 +97,7 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
         photoBloc.add(const AskByPhotoPickCancelled());
         return;
       }
-      await _preparePhoto(photoBloc, file);
+      await _preparePhoto(context, photoBloc, file);
     } on Failure catch (f, stackTrace) {
       AppLogger.error('Photo pick failed', error: f, stackTrace: stackTrace);
       if (!photoBloc.isClosed) {
@@ -108,21 +114,81 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
   }
 
   /// Turns [file] into the upright, scaled-down JPEG the student sees and the
-  /// solver gets. Failures propagate to the caller, which reports them.
+  /// solver gets, shows it, then opens the crop & rotate screen on it.
+  ///
+  /// Shown before the editor opens, so leaving the editor keeps the whole
+  /// photo. Failures propagate to the caller, which reports them.
   Future<void> _preparePhoto(
+    BuildContext context,
     AskByPhotoBloc photoBloc,
     PickedPhotoFile file,
   ) async {
     photoBloc.add(const AskByPhotoPreparationStarted());
-    final photo = await serviceLocator<PhotoPreparer>().prepare(file);
+    final unedited = await serviceLocator<PhotoPreparer>().prepare(file);
     if (photoBloc.isClosed) return;
+    final photo = EditablePhoto(original: file, unedited: unedited);
+    _showPhoto(photoBloc, photo, unedited);
+    if (!context.mounted) return;
+    await _applyEditFromEditor(context, photoBloc, photo);
+  }
+
+  /// Opens the crop & rotate screen on [photo] and, if the student changed
+  /// anything, prepares the original again with their edit.
+  ///
+  /// Leaving the screen without Use photo changes nothing. Failures propagate
+  /// to the caller, which reports them.
+  Future<void> _applyEditFromEditor(
+    BuildContext context,
+    AskByPhotoBloc photoBloc,
+    EditablePhoto photo,
+  ) async {
+    final edit = await widget.openPhotoEditor(context, photo);
+    if (edit == null || edit == photo.edit || photoBloc.isClosed) return;
+    final edited = photo.withEdit(edit);
+    if (edit.isNone) {
+      _showPhoto(photoBloc, edited, photo.unedited);
+      return;
+    }
+    photoBloc.add(const AskByPhotoPreparationStarted());
+    final prepared = await serviceLocator<PhotoPreparer>()
+        .prepare(photo.original, edit: edit);
+    if (photoBloc.isClosed) return;
+    _showPhoto(photoBloc, edited, prepared);
+  }
+
+  void _showPhoto(
+    AskByPhotoBloc photoBloc,
+    EditablePhoto photo,
+    PreparedPhoto prepared,
+  ) {
     photoBloc.add(
       AskByPhotoPhotoPicked(
-        imageBytes: photo.bytes,
-        fileName: photo.fileName,
-        mimeType: photo.mimeType,
+        imageBytes: prepared.bytes,
+        fileName: prepared.fileName,
+        mimeType: prepared.mimeType,
+        editablePhoto: photo,
       ),
     );
+  }
+
+  /// Reopens the crop & rotate screen on the photo on screen.
+  Future<void> _editPhoto(BuildContext context, EditablePhoto photo) async {
+    final photoBloc = context.read<AskByPhotoBloc>();
+    try {
+      await _applyEditFromEditor(context, photoBloc, photo);
+    } on Failure catch (f, stackTrace) {
+      AppLogger.error('Edited photo could not be prepared',
+          error: f, stackTrace: stackTrace);
+      if (!photoBloc.isClosed) {
+        photoBloc.add(AskByPhotoPickUnavailable(f.message));
+      }
+    } catch (e, stackTrace) {
+      AppLogger.error('Edited photo could not be prepared',
+          error: e, stackTrace: stackTrace);
+      if (!photoBloc.isClosed) {
+        photoBloc.add(const AskByPhotoPickUnavailable(photoUnreadableMessage));
+      }
+    }
   }
 
   /// Opens the camera/gallery chooser, unless a solve is already running.
@@ -231,6 +297,7 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
       final bytes = await capture.readAsBytes();
       if (photoBloc.isClosed) return;
       await _preparePhoto(
+        context,
         photoBloc,
         PickedPhotoFile(
           bytes: bytes,
@@ -329,6 +396,11 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
           // A failure keeps the bytes so the preview does not collapse the
           // moment the solve goes wrong.
           final failed = state is AskByPhotoSolveFailed ? state : null;
+          // Kept through a solve so the button holds its place, disabled,
+          // and comes back after a failure.
+          final editablePhoto = selected?.editablePhoto ??
+              loading?.editablePhoto ??
+              failed?.editablePhoto;
           final isLoading = loading != null;
           final imageBytes =
               selected?.imageBytes ?? loading?.imageBytes ?? failed?.imageBytes;
@@ -357,6 +429,9 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
               onClear: () => context
                   .read<AskByPhotoBloc>()
                   .add(const AskByPhotoClearRequested()),
+              onEditPhoto: editablePhoto == null
+                  ? null
+                  : () => _editPhoto(context, editablePhoto),
               onWhyAds: adUnit == null ? null : () => _showWhyAds(context),
             ),
             statusParams: SolveStatusPanelParams(
