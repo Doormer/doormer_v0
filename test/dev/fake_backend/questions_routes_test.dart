@@ -6,6 +6,7 @@ import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/dev/fake_backend/fake_backend.dart';
 import 'package:doormer/src/features/collection/data/datasource/collection_remote_datasource.dart';
 import 'package:doormer/src/features/questions/data/datasource/questions_remote_datasource.dart';
+import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -82,5 +83,19 @@ void main() {
     await collection.draw('meridian-01', idempotencyKey: 'draw-1');
 
     expect((await questions.loadQuarkBalance()).quarkBalance, 163);
+  });
+
+  test('every diagram is a placeholder that loads without the network',
+      () async {
+    final opened = await questions.loadQuestion('101');
+    final diagrams = [
+      for (final step in opened.solution!.steps)
+        for (final segment in step.body)
+          if (segment is VisualSolutionSegmentModel) segment,
+    ];
+
+    expect(diagrams, isNotEmpty);
+    expect([for (final diagram in diagrams) diagram.url],
+        everyElement(startsWith('data:image/png;base64,')));
   });
 }

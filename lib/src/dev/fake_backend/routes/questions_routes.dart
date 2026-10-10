@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:doormer/src/dev/fake_backend/fake_backend_state.dart';
+import 'package:doormer/src/dev/fake_backend/fake_diagram.dart';
 import 'package:doormer/src/dev/fake_backend/fake_request.dart';
 import 'package:doormer/src/dev/fake_backend/fake_response.dart';
 import 'package:doormer/src/dev/fake_backend/fake_route.dart';
@@ -101,7 +102,24 @@ class QuestionsRoutes {
         'method': question.method,
       };
 
+  /// The bundled solution, with its diagrams swapped for [fakeDiagramUrl].
   Future<Map<String, dynamic>> _workedSolution() async =>
-      jsonDecode(await _bundle.loadString(solutionAsset))
+      _withPlaceholderDiagrams(
+              jsonDecode(await _bundle.loadString(solutionAsset)))
           as Map<String, dynamic>;
+
+  static Object? _withPlaceholderDiagrams(Object? json) => switch (json) {
+        Map<String, dynamic>() when json['type'] == 'visual' => {
+            ...json,
+            'url': fakeDiagramUrl,
+          },
+        Map<String, dynamic>() => {
+            for (final field in json.entries)
+              field.key: _withPlaceholderDiagrams(field.value),
+          },
+        List<dynamic>() => [
+            for (final item in json) _withPlaceholderDiagrams(item),
+          ],
+        _ => json,
+      };
 }

@@ -8,6 +8,9 @@ import 'package:doormer/src/dev/fake_backend/fake_route.dart';
 const fakeStorageHost = 'fake-storage.invalid';
 
 /// Uploading a CV and preferences, and registering as a candidate.
+///
+/// These are the paths the app calls today. `taka-api` serves them under
+/// `/v1`, so against the real API these requests fail.
 class RegistrationRoutes {
   final FakeBackendState _state;
 

@@ -18,7 +18,9 @@ class FakeBackendAdapter implements HttpClientAdapter {
   final Map<String, FakeRoute> _routes;
 
   /// Successful answers, by request and `Idempotency-Key`, given again when
-  /// the same key comes back.
+  /// the same key comes back. Simpler than `taka-api`, which re-reads the
+  /// balance and checks the request matches; the app never re-sends a key
+  /// with a different request.
   final _answersByIdempotencyKey = <String, FakeResponse>{};
 
   FakeBackendAdapter(Iterable<FakeRoute> routes, {this.delay = Duration.zero})

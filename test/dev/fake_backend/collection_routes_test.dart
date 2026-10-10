@@ -9,6 +9,39 @@ import 'package:doormer/src/features/collection/domain/entity/card_rarity.dart';
 import 'package:doormer/src/features/collection/domain/entity/draw_outcome.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+/// Plays a draw's rolls from a script: [doubles] decide the variant, then
+/// the rarity; [ints] pick the card within that rarity.
+class _ScriptedRandom implements Random {
+  final List<double> doubles;
+  final List<int> ints;
+  var _doublesUsed = 0;
+  var _intsUsed = 0;
+
+  _ScriptedRandom({required this.doubles, required this.ints});
+
+  @override
+  double nextDouble() => doubles[_doublesUsed++];
+
+  @override
+  int nextInt(int max) => ints[_intsUsed++];
+
+  @override
+  bool nextBool() => throw UnimplementedError();
+}
+
+CollectionRemoteDataSource _collection(Random random) =>
+    CollectionRemoteDataSourceImpl(
+      dio: Dio(BaseOptions(
+        baseUrl: 'https://api.test',
+        headers: {'Authorization': 'Bearer test-token'},
+      ))
+        ..httpClientAdapter = fakeBackend(
+          delay: Duration.zero,
+          solveDelay: Duration.zero,
+          random: random,
+        ),
+    );
+
 void main() {
   setUpAll(AppLogger.disable);
 
@@ -16,18 +49,7 @@ void main() {
   var keysUsed = 0;
   String newKey() => 'key-${keysUsed++}';
 
-  setUp(() {
-    final dio = Dio(BaseOptions(
-      baseUrl: 'https://api.test',
-      headers: {'Authorization': 'Bearer test-token'},
-    ))
-      ..httpClientAdapter = fakeBackend(
-        delay: Duration.zero,
-        solveDelay: Duration.zero,
-        random: Random(1),
-      );
-    collection = CollectionRemoteDataSourceImpl(dio: dio);
-  });
+  setUp(() => collection = _collection(Random(1)));
 
   test('starts with 200 quarks and three Meridian cards held', () async {
     final decks = await collection.decks();
@@ -38,7 +60,7 @@ void main() {
         for (final deck in decks.decks)
           (deck.name, deck.cardsHeld, deck.cardsTotal)
       ],
-      [('Meridian', 3, 6), ('Cinder', 0, 6)],
+      [('Cinder', 0, 6), ('Meridian', 3, 6)],
     );
   });
 
@@ -124,5 +146,63 @@ void main() {
   test('an unknown deck is an error', () async {
     await expectLater(
         collection.cards('no-such-deck'), throwsA(isA<Failure>()));
+  });
+
+  group('by taka-api\'s rules', () {
+    // A special common draw from Meridian, picking the card at [index] among
+    // Gnomon, Vernier and Lodestone.
+    Random specialCommon(int index) =>
+        _ScriptedRandom(doubles: [0.1, 0.0], ints: [index]);
+
+    test('a first special copy of a held card is an upgrade', () async {
+      final drawn = await _collection(specialCommon(0))
+          .draw('meridian-01', idempotencyKey: newKey());
+
+      expect(drawn.card.cardId, 'gnomon');
+      expect(drawn.variant, CardVariant.special);
+      expect(drawn.result, DrawResult.upgrade);
+      expect(drawn.copiesAfter, 3);
+    });
+
+    test('another special copy is a duplicate', () async {
+      final drawn = await _collection(specialCommon(1))
+          .draw('meridian-01', idempotencyKey: newKey());
+
+      expect(drawn.card.cardId, 'vernier');
+      expect(drawn.result, DrawResult.duplicate);
+      expect(drawn.copiesAfter, 3);
+    });
+
+    test('a special copy shatters for twice a standard one', () async {
+      final shattered = await collection.shatter(
+          'meridian-01', 'vernier', CardVariant.special,
+          idempotencyKey: newKey());
+
+      expect(
+        (
+          shattered.quarkBalance,
+          shattered.standardCopies,
+          shattered.specialCopies
+        ),
+        (210, 1, 0),
+      );
+    });
+
+    test('a variant not held cannot be shattered', () async {
+      await expectLater(
+        collection.shatter('meridian-01', 'gnomon', CardVariant.special,
+            idempotencyKey: newKey()),
+        throwsA(isA<ValidationFailure>()),
+      );
+    });
+
+    test('a draw from an unknown deck is an error, and costs nothing',
+        () async {
+      await expectLater(
+        collection.draw('no-such-deck', idempotencyKey: newKey()),
+        throwsA(isA<Failure>()),
+      );
+      expect((await collection.decks()).quarkBalance, 200);
+    });
   });
 }

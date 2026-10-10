@@ -45,7 +45,7 @@ To check the UI in a real browser, follow `.agents/skills/browser-testing/SKILL.
 
 ### Running without the backend
 
-`lib/main_fake_backend.dart` starts the app as `main.dart` does, then answers every request from a fake backend held in memory (`lib/src/dev/fake_backend/`), so `taka-api` isn't needed. Any email and password signs in, as one student with quarks, cards and saved questions. The data starts over on every page reload. To change an answer, edit its route in `lib/src/dev/fake_backend/routes/`. Production builds use `lib/main.dart`, which never imports any of it. Google sign-in, the camera and ads don't go through it.
+`lib/main_fake_backend.dart` starts the app as `main.dart` does, then answers every API request from a fake backend held in memory (`lib/src/dev/fake_backend/`), so `taka-api` isn't needed. Any email and password signs in, as one student with quarks, cards and saved questions. The data starts over on every page reload. To change an answer, edit its route in `lib/src/dev/fake_backend/routes/`. Production builds use `lib/main.dart`, which never imports any of it. Google sign-in, the camera and ads don't go through it.
 
 ## Architecture — Clean Architecture
 

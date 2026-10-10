@@ -64,7 +64,59 @@ FakeDeck? fakeDeckById(String? id) =>
 
 const _art = 'https://takadev1cv.blob.core.windows.net/card-art';
 
+/// In file-name order, the order `taka-api` lists them in.
 const fakeDecks = [
+  FakeDeck(id: 'cinder-01', name: 'Cinder', cards: [
+    FakeCard(
+      id: 'flint',
+      name: 'Flint',
+      rarity: FakeRarity.common,
+      scaleLabel: 'Small',
+      description: 'Three striker arms that throw sparks to start something '
+          'bigger.',
+      artUrl: '$_art/cinder-01/flint.jpg',
+    ),
+    FakeCard(
+      id: 'wick',
+      name: 'Wick',
+      rarity: FakeRarity.common,
+      scaleLabel: 'Small',
+      description: 'Burns slowly and on purpose.',
+      artUrl: '$_art/cinder-01/wick.jpg',
+    ),
+    FakeCard(
+      id: 'rasp',
+      name: 'Rasp',
+      rarity: FakeRarity.common,
+      scaleLabel: 'Small',
+      description: 'Strips plating off anything it is dragged along.',
+      artUrl: '$_art/cinder-01/rasp.jpg',
+    ),
+    FakeCard(
+      id: 'scorch',
+      name: 'Scorch',
+      rarity: FakeRarity.uncommon,
+      scaleLabel: 'Medium',
+      description: 'Leaves a blackened wake it never outruns.',
+      artUrl: '$_art/cinder-01/scorch.jpg',
+    ),
+    FakeCard(
+      id: 'kiln',
+      name: 'Kiln',
+      rarity: FakeRarity.uncommon,
+      scaleLabel: 'Medium',
+      description: 'Holds a fire hot enough to reshape what it carries.',
+      artUrl: '$_art/cinder-01/kiln.jpg',
+    ),
+    FakeCard(
+      id: 'crucible',
+      name: 'The Crucible',
+      rarity: FakeRarity.rare,
+      scaleLabel: 'Capital',
+      description: 'Everything it takes in comes out as something else.',
+      artUrl: '$_art/cinder-01/crucible.jpg',
+    ),
+  ]),
   FakeDeck(id: 'meridian-01', name: 'Meridian', cards: [
     FakeCard(
       id: 'gnomon',
@@ -115,57 +167,6 @@ const fakeDecks = [
       scaleLabel: 'Capital',
       description: 'Carries a working model of the system it is crossing.',
       artUrl: '$_art/meridian-01/orrery.jpg',
-    ),
-  ]),
-  FakeDeck(id: 'cinder-01', name: 'Cinder', cards: [
-    FakeCard(
-      id: 'flint',
-      name: 'Flint',
-      rarity: FakeRarity.common,
-      scaleLabel: 'Small',
-      description: 'Three striker arms that throw sparks to start something '
-          'bigger.',
-      artUrl: '$_art/cinder-01/flint.jpg',
-    ),
-    FakeCard(
-      id: 'wick',
-      name: 'Wick',
-      rarity: FakeRarity.common,
-      scaleLabel: 'Small',
-      description: 'Burns slowly and on purpose.',
-      artUrl: '$_art/cinder-01/wick.jpg',
-    ),
-    FakeCard(
-      id: 'rasp',
-      name: 'Rasp',
-      rarity: FakeRarity.common,
-      scaleLabel: 'Small',
-      description: 'Strips plating off anything it is dragged along.',
-      artUrl: '$_art/cinder-01/rasp.jpg',
-    ),
-    FakeCard(
-      id: 'scorch',
-      name: 'Scorch',
-      rarity: FakeRarity.uncommon,
-      scaleLabel: 'Medium',
-      description: 'Leaves a blackened wake it never outruns.',
-      artUrl: '$_art/cinder-01/scorch.jpg',
-    ),
-    FakeCard(
-      id: 'kiln',
-      name: 'Kiln',
-      rarity: FakeRarity.uncommon,
-      scaleLabel: 'Medium',
-      description: 'Holds a fire hot enough to reshape what it carries.',
-      artUrl: '$_art/cinder-01/kiln.jpg',
-    ),
-    FakeCard(
-      id: 'crucible',
-      name: 'The Crucible',
-      rarity: FakeRarity.rare,
-      scaleLabel: 'Capital',
-      description: 'Everything it takes in comes out as something else.',
-      artUrl: '$_art/cinder-01/crucible.jpg',
     ),
   ]),
 ];

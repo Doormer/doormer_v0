@@ -13,6 +13,7 @@ class AuthRoutes {
   List<FakeRoute> get routes => [
         FakeRoute('POST', '/v1/signup', _signUp, needsToken: false),
         FakeRoute('POST', '/v1/login', _signIn, needsToken: false),
+        // The app calls this, but `taka-api` has no such route.
         FakeRoute('POST', '/confirm-email', _confirmEmail, needsToken: false),
         // The app sends the refresh token as the bearer token.
         FakeRoute('POST', '/v1/token/refresh', _renewAccessToken),

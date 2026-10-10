@@ -23,7 +23,7 @@ void main() async {
 
   // Every request goes through this one Dio, token renewal included.
   serviceLocator<Dio>().httpClientAdapter = fakeBackend();
-  AppLogger.warn('Running on the fake backend: no request leaves the app.');
+  AppLogger.warn('Running on the fake backend: no API request leaves the app.');
 
   runApp(const MyApp());
 }

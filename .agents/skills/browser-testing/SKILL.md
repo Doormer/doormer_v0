@@ -14,7 +14,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST http://localhost:8888/v1/login 
   -H 'Content-Type: application/json' -d '{}'
 ```
 
-`400` means `taka-api` is up. Otherwise run the app on the fake backend (step 2) and say so in your report. It answers every request from memory, so a check that needs real data, like a real photo solve, still needs `taka-api`: ask the user to start it.
+`400` means `taka-api` is up. Otherwise run the app on the fake backend (step 2) and say so in your report. It answers every API request from memory, so a check that needs real data, like a real photo solve, still needs `taka-api`: ask the user to start it.
 
 ## 2. Start the app in the background
 
@@ -24,7 +24,7 @@ flutter run -d web-server --web-hostname localhost --web-port 62299 \
   --dart-define=ENABLE_SEMANTICS=true
 ```
 
-On the fake backend, also pass `-t lib/main_fake_backend.dart`.
+On the fake backend, also pass `-t lib/main_fake_backend.dart`. Its data starts over whenever the page reloads, so a question solved before a reload is gone: reopen one of the three saved questions instead.
 
 Ready when it prints `is being served at` (about 30 s). Port taken? Use another everywhere. After code changes, restart it and reload the page.
 
@@ -44,7 +44,7 @@ In VS Code, use its built-in browser tools. Elsewhere, use Playwright MCP from `
 
 ## 4. Need a signed-in user?
 
-Sign up a throwaway account at `/auth/signup`: `agent+<current time in ms>@example.com` (digits only; no hyphens), any password of 6+ characters. You land on `/auth/registration`. Never use a real account. On the fake backend, any email and password signs in, as a registered student with quarks, cards and saved questions; sign up to see registration instead. Google sign-in can't be automated.
+Sign up a throwaway account at `/auth/signup`: `agent+<current time in ms>@example.com` (digits only; no hyphens), any password of 6+ characters. You land on `/auth/registration`. Never use a real account. On the fake backend, any email and password signs in, as a registered student with quarks, cards and saved questions. Signing up opens registration instead, and so does every sign-in after it until you register or reload. Google sign-in can't be automated.
 
 ## 5. Flutter rules
 
