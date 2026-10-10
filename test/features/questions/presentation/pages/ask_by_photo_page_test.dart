@@ -203,7 +203,7 @@ void main() {
 
   GoRouter buildRouter({
     bool showPhotoSourceOptionsOnOpen = false,
-    DisplayAdUnit? adUnit,
+    DisplayAdUnit? Function()? solvingAdUnit,
   }) {
     return GoRouter(
       initialLocation: '/questions/photo',
@@ -212,8 +212,7 @@ void main() {
           path: '/questions/photo',
           builder: (_, __) => AskByPhotoPage(
             showPhotoSourceOptionsOnOpen: showPhotoSourceOptionsOnOpen,
-            solvingAdUnit:
-                adUnit == null ? DisplayAdUnit.solvingScreen : () => adUnit,
+            solvingAdUnit: solvingAdUnit ?? DisplayAdUnit.solvingScreen,
           ),
         ),
         GoRoute(
@@ -249,7 +248,7 @@ void main() {
   Future<void> pumpPage(
     WidgetTester tester, {
     bool showPhotoSourceOptionsOnOpen = false,
-    DisplayAdUnit? adUnit,
+    DisplayAdUnit? Function()? solvingAdUnit,
   }) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
@@ -264,7 +263,7 @@ void main() {
           theme: AppTheme.light,
           routerConfig: buildRouter(
             showPhotoSourceOptionsOnOpen: showPhotoSourceOptionsOnOpen,
-            adUnit: adUnit,
+            solvingAdUnit: solvingAdUnit,
           ),
         ),
       ),
@@ -942,7 +941,7 @@ void main() {
         outcome: _outcome(PhotoQuestionSolveStatus.solved),
       );
       registerBloc();
-      await pumpPage(tester);
+      await pumpPage(tester, solvingAdUnit: () => null);
       await selectPhoto(tester);
 
       expect(
@@ -959,7 +958,7 @@ void main() {
         outcome: _outcome(PhotoQuestionSolveStatus.solved),
       );
       registerBloc();
-      await pumpPage(tester, adUnit: adUnit);
+      await pumpPage(tester, solvingAdUnit: () => adUnit);
       await selectPhoto(tester);
 
       await tester.tap(find.text('Why ads?'));
@@ -978,7 +977,7 @@ void main() {
       final pending = Completer<PhotoQuestionSolveOutcome>();
       repository = _FakeQuestionsRepository(pending: pending);
       registerBloc();
-      await pumpPage(tester, adUnit: adUnit);
+      await pumpPage(tester, solvingAdUnit: () => adUnit);
       await selectPhoto(tester);
 
       await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
