@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:doormer/src/dev/fake_backend/fake_backend_adapter.dart';
 import 'package:doormer/src/dev/fake_backend/fake_backend_state.dart';
 import 'package:doormer/src/dev/fake_backend/routes/auth_routes.dart';
+import 'package:doormer/src/dev/fake_backend/routes/registration_routes.dart';
 import 'package:flutter/services.dart';
 
 /// A fake `taka-api`: one student's data, kept in memory, and an answer to
@@ -23,6 +24,7 @@ FakeBackendAdapter fakeBackend({
   return FakeBackendAdapter(
     [
       ...AuthRoutes(state).routes,
+      ...RegistrationRoutes(state).routes,
     ],
     delay: delay,
   );
