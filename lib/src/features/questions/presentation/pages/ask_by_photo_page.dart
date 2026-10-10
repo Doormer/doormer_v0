@@ -348,9 +348,13 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
   ///
   /// The panel closes itself when the solve ends, however it ends, so it
   /// never covers the solution or the way to try again.
-  Future<void> _showWhyAds(BuildContext context) {
+  Future<void> _showWhyAds(BuildContext context) async {
     final photoBloc = context.read<AskByPhotoBloc>();
-    return showModalBottomSheet<void>(
+    // A tap can land just after the solve ends, before the link leaves the
+    // screen. The listener below only hears later changes, so nothing would
+    // close a panel opened then.
+    if (photoBloc.state is! AskByPhotoLoading) return;
+    await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       builder: (sheetContext) => BlocListener<AskByPhotoBloc, AskByPhotoState>(

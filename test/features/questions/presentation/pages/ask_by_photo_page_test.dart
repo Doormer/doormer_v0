@@ -27,6 +27,7 @@ import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usec
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/photo_preview_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/molecules/solving_explanation_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solving_progress_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/why_ads_sheet_organism.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
@@ -1088,6 +1089,38 @@ void main() {
 
       expect(find.byType(WhyAdsSheetOrganism), findsNothing);
       expect(find.widgetWithText(AppButtonAtom, 'Try again'), findsOneWidget);
+      await drainToasts(tester);
+    });
+
+    testWidgets(
+        'a "Why ads?" tap that lands after the solve has ended opens nothing',
+        (tester) async {
+      final pending = Completer<PhotoQuestionSolveOutcome>();
+      repository = _FakeQuestionsRepository(pending: pending);
+      registerBloc();
+      await pumpPage(tester, solvingAdUnit: () => adUnit);
+      await selectPhoto(tester);
+      await submitAndWait(tester);
+      // What a tap arriving just after the solve ends still calls: the link
+      // stays on screen until the next frame.
+      final lateTap = tester
+          .widget<SolvingExplanationMolecule>(
+            find.byType(SolvingExplanationMolecule),
+          )
+          .onWhyAds!;
+
+      pending.completeError(NetworkFailure('No connection.'));
+      await tester.pump();
+      await tester.pump();
+      lateTap();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(
+        find.byType(WhyAdsSheetOrganism),
+        findsNothing,
+        reason: 'nothing would ever close a panel opened after the solve',
+      );
       await drainToasts(tester);
     });
 
