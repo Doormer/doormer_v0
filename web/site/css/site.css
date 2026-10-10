@@ -1203,13 +1203,15 @@ html:not(.js) .site-header {
   }
 }
 
-@keyframes pulse-ring {
+@keyframes ring-out {
   0% {
-    box-shadow: 0 0 0 0 rgba(255, 171, 243, .5);
+    transform: scale(.85);
+    opacity: .9;
   }
 
   100% {
-    box-shadow: 0 0 0 14px rgba(255, 171, 243, 0);
+    transform: scale(1.5);
+    opacity: 0;
   }
 }
 
@@ -1349,8 +1351,8 @@ html:not(.js) .site-header {
   overflow: visible;
 }
 
-.scene__trail path {
-  animation: trail-flow 1.4s linear infinite;
+.scene__trail {
+  animation: glow-breathe 4s ease-in-out infinite;
 }
 
 .scene__star {
@@ -1492,10 +1494,19 @@ html:not(.js) .site-header {
 }
 
 .mini-trail__node.is-current {
+  position: relative;
   border-color: var(--pink);
   background: var(--pink);
   color: #3A0B33;
-  animation: pulse-ring 2.4s ease-out infinite;
+}
+
+.mini-trail__node.is-current::after {
+  content: "";
+  position: absolute;
+  inset: -.35em;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 171, 243, .65);
+  animation: ring-out 3s ease-out infinite;
 }
 
 .mini-trail__node--vault {
@@ -1676,9 +1687,9 @@ html:not(.js) .site-header {
 .scene__card::after {
   content: "";
   position: absolute;
-  inset: 0;
-  background: linear-gradient(115deg, transparent 30%, rgba(255, 171, 243, .18) 45%, rgba(0, 229, 160, .14) 52%, transparent 66%);
-  background-size: 250% 250%;
+  inset: -40% -100%;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 171, 243, .2) 48%, rgba(0, 229, 160, .16) 52%, transparent 58%);
+  transform: translateX(-35%);
   animation: shine 6s ease-in-out infinite;
   mix-blend-mode: screen;
   pointer-events: none;
@@ -2106,22 +2117,23 @@ html:not(.js) .site-header {
   content: "";
   position: absolute;
   left: 22px;
+  right: 22px;
   top: 50%;
   height: 2px;
+  margin-top: -1px;
   border-radius: 2px;
-  transform: translateY(-50%);
 }
 
 .trail::before {
-  right: 22px;
   background: var(--outline-strong);
 }
 
 .trail::after {
-  width: calc((100% - 44px) * var(--trail-progress));
   background: var(--mint);
   box-shadow: 0 0 10px rgba(0, 229, 160, .6);
-  transition: width .5s var(--ease-out);
+  transform: scaleX(var(--trail-progress));
+  transform-origin: left center;
+  transition: transform .5s var(--ease-out);
 }
 
 .trail li {
@@ -2373,13 +2385,33 @@ html:not(.js) .site-header {
 }
 
 .vault {
+  position: relative;
   display: grid;
   justify-items: center;
   gap: 10px;
   padding-top: 6px;
 }
 
+.vault::before {
+  content: "";
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  width: 220px;
+  height: 220px;
+  margin-left: -110px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 216, 77, .45), transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vault.is-ready::before {
+  animation: glow-breathe 3s ease-in-out infinite;
+}
+
 .vault__art {
+  position: relative;
   width: 180px;
   height: 180px;
   overflow: visible;
@@ -2419,7 +2451,6 @@ html:not(.js) .site-header {
 
 .vault.is-ready .vault__art {
   cursor: pointer;
-  animation: vault-pulse 2.2s ease-in-out infinite;
 }
 
 .vault.is-cracking .vault__art {
@@ -2448,11 +2479,6 @@ html:not(.js) .site-header {
 .vault.is-cracked .vault__burst {
   opacity: 1;
   transform: scale(1.1);
-}
-
-.vault.is-cracked .vault__art {
-  height: 110px;
-  transition: height .6s var(--ease-out);
 }
 
 .vault__summary {
@@ -3658,12 +3684,6 @@ html:not(.js) .site-header {
 
 /* ---------- Home motion ---------- */
 
-@keyframes trail-flow {
-  to {
-    stroke-dashoffset: -28;
-  }
-}
-
 @keyframes card-float {
   0%,
   100% {
@@ -3678,11 +3698,11 @@ html:not(.js) .site-header {
 @keyframes shine {
   0%,
   100% {
-    background-position: 0% 0%;
+    transform: translateX(-35%);
   }
 
   50% {
-    background-position: 100% 100%;
+    transform: translateX(35%);
   }
 }
 
@@ -3704,17 +3724,6 @@ html:not(.js) .site-header {
 
   100% {
     transform: scale(1);
-  }
-}
-
-@keyframes vault-pulse {
-  0%,
-  100% {
-    filter: drop-shadow(0 0 14px rgba(255, 216, 77, .35));
-  }
-
-  50% {
-    filter: drop-shadow(0 0 32px rgba(255, 216, 77, .75));
   }
 }
 
