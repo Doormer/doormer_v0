@@ -52,6 +52,8 @@ dev_dependencies:
   json_serializable: ^6.9.0
   # Parses the public website's pages in test/site.
   html: ^0.15.6
+  # Version tags for the website's stylesheet and scripts (tool/stamp_site_assets.dart).
+  crypto: ^3.0.6
 
 flutter:
   uses-material-design: true

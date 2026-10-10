@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html_parser;
@@ -69,6 +70,12 @@ int totalBytes(String directory, String extension) => Directory(directory)
     .fold(0, (total, file) => total + file.lengthSync());
 
 Document parsePage(File file) => html_parser.parse(file.readAsStringSync());
+
+/// The version tag a page puts on the address of a site stylesheet or script.
+/// It changes whenever the file does, so a browser never pairs a page with an
+/// old copy of the file it saved earlier.
+String versionTagOf(File file) =>
+    sha256.convert(file.readAsBytesSync()).toString().substring(0, 10);
 
 Set<String> idsIn(Document document) =>
     document.querySelectorAll('[id]').map((element) => element.id).toSet();
@@ -217,6 +224,26 @@ void main() {
         }
       });
 
+      test('asks for the current version of the site stylesheet and scripts',
+          () {
+        final references = [
+          ...page
+              .querySelectorAll('link[rel="stylesheet"]')
+              .map((link) => link.attributes['href']!),
+          ...page
+              .querySelectorAll('script[src]')
+              .map((script) => script.attributes['src']!),
+        ].where((reference) => reference.startsWith('/site/'));
+        expect(references, isNotEmpty);
+        for (final reference in references) {
+          final address = Uri.parse(reference);
+          expect(address.queryParameters['h'],
+              versionTagOf(File('web${address.path}')),
+              reason: '$reference is out of date. '
+                  'Run: dart run tool/stamp_site_assets.dart');
+        }
+      });
+
       test('links only to pages, anchors and files that exist', () {
         final broken = <String>[];
         final ownIds = idsIn(page);
@@ -265,7 +292,8 @@ void main() {
             continue;
           }
           if (appRoutes.contains(path)) continue;
-          if (!File('web$path').existsSync()) broken.add(reference);
+          final filePath = path.split('?').first;
+          if (!File('web$filePath').existsSync()) broken.add(reference);
         }
         expect(broken, isEmpty);
       });
