@@ -981,41 +981,89 @@ void main() {
       slotId: '1234567890',
     )!;
 
-    testWidgets('with ads off, the photo panel has no ads notice',
+    // The solving view's spinner and timer never settle, so these tests pump
+    // set durations instead of pumpAndSettle.
+    Future<void> submitAndWait(WidgetTester tester) async {
+      await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+      await tester.pump();
+      await tester.pump();
+    }
+
+    Future<void> openSolution(
+      WidgetTester tester,
+      Completer<PhotoQuestionSolveOutcome> pending,
+    ) async {
+      pending.complete(_outcome(PhotoQuestionSolveStatus.solved));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+    }
+
+    testWidgets('with ads off, the solving view has no "Why ads?" link',
         (tester) async {
-      repository = _FakeQuestionsRepository(
-        outcome: _outcome(PhotoQuestionSolveStatus.solved),
-      );
+      final pending = Completer<PhotoQuestionSolveOutcome>();
+      repository = _FakeQuestionsRepository(pending: pending);
       registerBloc();
       await pumpPage(tester, solvingAdUnit: () => null);
       await selectPhoto(tester);
+      await submitAndWait(tester);
 
-      expect(
-        find.widgetWithText(FilledButton, 'Submit to solver'),
-        findsOneWidget,
-      );
+      expect(find.byType(SolvingProgressOrganism), findsOneWidget);
       expect(find.text('Why ads?'), findsNothing);
+
+      await openSolution(tester, pending);
     });
 
     testWidgets(
-        'with ads on, "Why ads?" opens the explanation and "Got it" closes '
-        'it', (tester) async {
-      repository = _FakeQuestionsRepository(
-        outcome: _outcome(PhotoQuestionSolveStatus.solved),
-      );
+        'with ads on, "Why ads?" in the solving view opens the explanation '
+        'and "Got it" closes it', (tester) async {
+      final pending = Completer<PhotoQuestionSolveOutcome>();
+      repository = _FakeQuestionsRepository(pending: pending);
       registerBloc();
       await pumpPage(tester, solvingAdUnit: () => adUnit);
       await selectPhoto(tester);
+      await submitAndWait(tester);
 
       await tester.tap(find.text('Why ads?'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
       expect(find.byType(WhyAdsSheetOrganism), findsOneWidget);
 
       await tester.ensureVisible(find.text('Got it'));
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(find.text('Got it'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
       expect(find.byType(WhyAdsSheetOrganism), findsNothing);
+      expect(find.byType(SolvingProgressOrganism), findsOneWidget);
+
+      await openSolution(tester, pending);
+    });
+
+    testWidgets(
+        'a solve that finishes while the explanation is open still opens '
+        'the solution', (tester) async {
+      final pending = Completer<PhotoQuestionSolveOutcome>();
+      repository = _FakeQuestionsRepository(pending: pending);
+      registerBloc();
+      await pumpPage(tester, solvingAdUnit: () => adUnit);
+      await selectPhoto(tester);
+      await submitAndWait(tester);
+
+      await tester.tap(find.text('Why ads?'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(WhyAdsSheetOrganism), findsOneWidget);
+
+      await openSolution(tester, pending);
+
+      expect(find.byType(QuestionSolutionPage), findsOneWidget);
+      expect(
+        find.byType(WhyAdsSheetOrganism),
+        findsNothing,
+        reason: 'the explanation must never stand between a student and '
+            'their answer',
+      );
     });
 
     testWidgets('with ads on, the solving view shows the ad card after 3 s',

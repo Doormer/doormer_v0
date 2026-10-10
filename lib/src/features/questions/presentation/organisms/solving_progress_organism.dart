@@ -6,7 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// The photo being solved, a spinner, how long it has been, and what to
-/// expect.
+/// expect. With ads on, a "Why ads?" link sits at the bottom of the card,
+/// well away from the ad.
 class SolvingProgressOrganism extends StatelessWidget {
   final SolvingProgressParams params;
 
@@ -17,6 +18,7 @@ class SolvingProgressOrganism extends StatelessWidget {
     final tt = context.textTheme;
     final cs = context.colorScheme;
     final photo = params.imageBytes;
+    final onWhyAds = params.onWhyAds;
     final thumbnailSize = 56.r;
 
     return SurfaceCardAtom(
@@ -67,6 +69,18 @@ class SolvingProgressOrganism extends StatelessWidget {
           ),
           SizedBox(height: 14.h),
           Text(params.body, style: tt.bodyMedium?.copyWith(fontSize: 14.sp)),
+          if (onWhyAds != null) ...[
+            SizedBox(height: 4.h),
+            TextButton(
+              onPressed: onWhyAds,
+              // No side padding, so the link lines up with the text above.
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: Size(0, 36.h),
+              ),
+              child: Text('Why ads?', style: TextStyle(fontSize: 13.sp)),
+            ),
+          ],
         ],
       ),
     );

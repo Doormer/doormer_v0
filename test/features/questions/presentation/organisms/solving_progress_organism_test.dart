@@ -59,4 +59,33 @@ void main() {
     expect(find.byType(Image), findsNothing);
     expect(find.text('Solving your photo'), findsOneWidget);
   });
+
+  testWidgets('tapping "Why ads?" asks for the explanation', (tester) async {
+    var whyAdsCount = 0;
+    await _pump(
+      tester,
+      SolvingProgressParams(
+        title: 'Solving your photo',
+        body: 'This can take a while.',
+        onWhyAds: () => whyAdsCount++,
+      ),
+    );
+
+    await tester.tap(find.text('Why ads?'));
+    await tester.pump();
+
+    expect(whyAdsCount, 1);
+  });
+
+  testWidgets('with ads off, there is no "Why ads?" link', (tester) async {
+    await _pump(
+      tester,
+      const SolvingProgressParams(
+        title: 'Solving your photo',
+        body: 'This can take a while.',
+      ),
+    );
+
+    expect(find.text('Why ads?'), findsNothing);
+  });
 }

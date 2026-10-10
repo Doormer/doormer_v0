@@ -247,6 +247,22 @@ void main() {
       expect(find.byType(ShowAfterDelayAtom), findsNothing);
       expect(find.byType(DisplayAdAtom), findsNothing);
     });
+
+    testWidgets(
+        'the "Why ads?" link stays away from the ad, above the explanation '
+        'card', (tester) async {
+      await _pumpSolving(tester, adUnit: adUnit, onWhyAds: _noop);
+      await tester.pump(AskByPhotoTemplate.adDelay);
+
+      expect(
+        tester.getBottomLeft(find.text('Why ads?')).dy,
+        lessThanOrEqualTo(
+          tester.getTopLeft(find.byType(SolvingExplanationMolecule)).dy,
+        ),
+        reason: 'a link right beside the ad invites accidental taps on it, '
+            'and Google could read the wording as part of the ad',
+      );
+    });
   });
 
   group('the dock on a wide window', () {
@@ -433,7 +449,11 @@ Future<void> _pumpTemplate(
   await tester.pump();
 }
 
-Future<void> _pumpSolving(WidgetTester tester, {DisplayAdUnit? adUnit}) async {
+Future<void> _pumpSolving(
+  WidgetTester tester, {
+  DisplayAdUnit? adUnit,
+  VoidCallback? onWhyAds,
+}) async {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
@@ -467,6 +487,7 @@ Future<void> _pumpSolving(WidgetTester tester, {DisplayAdUnit? adUnit}) async {
               imageBytes: _transparentPngBytes,
               title: 'Solving your photo',
               body: 'This can take from a few seconds to a few minutes.',
+              onWhyAds: onWhyAds,
             ),
             adUnit: adUnit,
           ),

@@ -322,7 +322,11 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
   }
 
   /// What the screen shows while [state]'s photo is being solved.
+  ///
+  /// With ads on, the progress card links to why there are ads. The link
+  /// shows only while solving, when an ad may be on screen.
   SolvingViewParams _solvingViewFor(
+    BuildContext context,
     AskByPhotoLoading state, {
     required DisplayAdUnit? adUnit,
   }) {
@@ -333,6 +337,7 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
         imageBytes: photo,
         title: content.title,
         body: content.body,
+        onWhyAds: adUnit == null ? null : () => _showWhyAds(context),
       ),
       adUnit: adUnit,
     );
@@ -433,7 +438,6 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
               onEditPhoto: editablePhoto == null
                   ? null
                   : () => _editPhoto(context, editablePhoto),
-              onWhyAds: adUnit == null ? null : () => _showWhyAds(context),
             ),
             statusParams: SolveStatusPanelParams(
               content: solveStatusContentFor(state),
@@ -445,7 +449,7 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
             ),
             solving: loading == null
                 ? null
-                : _solvingViewFor(loading, adUnit: adUnit),
+                : _solvingViewFor(context, loading, adUnit: adUnit),
             navigationBarParams: NavigationBarParams(
               current: AppDestination.solve,
               onSaved: () => _openSaved(context, isSolving: isLoading),
