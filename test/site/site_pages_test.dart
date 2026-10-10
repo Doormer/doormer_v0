@@ -91,6 +91,27 @@ final scopingWords = <String, RegExp>{
   'teen-only wording': RegExp(r'\bteens?\b', caseSensitive: false),
 };
 
+/// Reward amounts the site must not promise. The quark economy is still being
+/// tuned, so the words stay generic: "earn quarks", "collect cards". Pictures
+/// of the app screen (the hero scene and the demo) may show sample amounts.
+final specificRewardPromises = <String, RegExp>{
+  'an amount of quarks':
+      RegExp(r'\b\d+\s+quarks?\b|\bquarks? to start\b', caseSensitive: false),
+  'a free first card': RegExp(r'\bfirst card\b', caseSensitive: false),
+  'a number of cards': RegExp(
+      r'\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+(?:\w+\s+)?cards\b',
+      caseSensitive: false),
+};
+
+/// The page's readable text without its pictures of the app screen.
+String readableTextOutsideAppPictures(File file) {
+  final page = parsePage(file);
+  for (final picture in page.querySelectorAll('.hero__scene, [data-demo]')) {
+    picture.remove();
+  }
+  return readableText(page);
+}
+
 /// Everything a reader, a screen reader or a search result can show: the
 /// page's visible text, its title, labels and image descriptions, and the
 /// descriptions shared with search engines and social apps.
@@ -218,6 +239,16 @@ void main() {
         final text = readableText(page);
         for (final MapEntry(key: rule, value: pattern)
             in scopingWords.entries) {
+          final found =
+              pattern.allMatches(text).map((match) => match[0]).toSet();
+          expect(found, isEmpty, reason: 'Found $rule: $found');
+        }
+      });
+
+      test('describes rewards without promising specific amounts', () {
+        final text = readableTextOutsideAppPictures(file);
+        for (final MapEntry(key: rule, value: pattern)
+            in specificRewardPromises.entries) {
           final found =
               pattern.allMatches(text).map((match) => match[0]).toSet();
           expect(found, isEmpty, reason: 'Found $rule: $found');
