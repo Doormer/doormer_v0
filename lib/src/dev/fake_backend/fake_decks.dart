@@ -74,7 +74,7 @@ const fakeDecks = [
       scaleLabel: 'Small',
       description: 'Three striker arms that throw sparks to start something '
           'bigger.',
-      artUrl: '$_art/cinder-01/flint.jpg',
+      artUrl: '$_art/cinder-01/flint.png',
     ),
     FakeCard(
       id: 'wick',
@@ -82,7 +82,7 @@ const fakeDecks = [
       rarity: FakeRarity.common,
       scaleLabel: 'Small',
       description: 'Burns slowly and on purpose.',
-      artUrl: '$_art/cinder-01/wick.jpg',
+      artUrl: '$_art/cinder-01/wick.png',
     ),
     FakeCard(
       id: 'rasp',
@@ -90,7 +90,7 @@ const fakeDecks = [
       rarity: FakeRarity.common,
       scaleLabel: 'Small',
       description: 'Strips plating off anything it is dragged along.',
-      artUrl: '$_art/cinder-01/rasp.jpg',
+      artUrl: '$_art/cinder-01/rasp.png',
     ),
     FakeCard(
       id: 'scorch',
@@ -98,7 +98,7 @@ const fakeDecks = [
       rarity: FakeRarity.uncommon,
       scaleLabel: 'Medium',
       description: 'Leaves a blackened wake it never outruns.',
-      artUrl: '$_art/cinder-01/scorch.jpg',
+      artUrl: '$_art/cinder-01/scorch.png',
     ),
     FakeCard(
       id: 'kiln',
@@ -106,7 +106,7 @@ const fakeDecks = [
       rarity: FakeRarity.uncommon,
       scaleLabel: 'Medium',
       description: 'Holds a fire hot enough to reshape what it carries.',
-      artUrl: '$_art/cinder-01/kiln.jpg',
+      artUrl: '$_art/cinder-01/kiln.png',
     ),
     FakeCard(
       id: 'crucible',
@@ -114,7 +114,7 @@ const fakeDecks = [
       rarity: FakeRarity.rare,
       scaleLabel: 'Capital',
       description: 'Everything it takes in comes out as something else.',
-      artUrl: '$_art/cinder-01/crucible.jpg',
+      artUrl: '$_art/cinder-01/crucible.png',
     ),
   ]),
   FakeDeck(id: 'meridian-01', name: 'Meridian', cards: [
