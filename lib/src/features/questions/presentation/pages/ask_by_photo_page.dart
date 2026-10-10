@@ -97,6 +97,7 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
         photoBloc.add(const AskByPhotoPickCancelled());
         return;
       }
+      if (!context.mounted) return;
       await _preparePhoto(context, photoBloc, file);
     } on Failure catch (f, stackTrace) {
       AppLogger.error('Photo pick failed', error: f, stackTrace: stackTrace);
@@ -295,7 +296,7 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
     final photoBloc = context.read<AskByPhotoBloc>();
     try {
       final bytes = await capture.readAsBytes();
-      if (photoBloc.isClosed) return;
+      if (photoBloc.isClosed || !context.mounted) return;
       await _preparePhoto(
         context,
         photoBloc,
