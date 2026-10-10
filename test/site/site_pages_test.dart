@@ -215,11 +215,7 @@ void main() {
               pattern.allMatches(text).map((match) => match[0]).toSet();
           expect(found, isEmpty, reason: 'Found $rule: $found');
         }
-      },
-          skip: file.path.endsWith('/home.html')
-              ? 'The cards section is back to its original design for review; '
-                  'its wording changes once the product owner approves it.'
-              : false);
+      });
 
       test('links only to pages, anchors and files that exist', () {
         final broken = <String>[];
@@ -279,6 +275,19 @@ void main() {
   test('the home page has the AdSense verification marker once', () {
     final home = File(fileForRoute('/')).readAsStringSync();
     expect('<!-- google-adsense-account -->'.allMatches(home), hasLength(1));
+  });
+
+  test('every card on the home page shows real card art, not a drawing', () {
+    final home = parsePage(File(fileForRoute('/')));
+    final cardArt = home.querySelectorAll(
+        '.collectible-card__art, .scene__card-art');
+    expect(cardArt, isNotEmpty);
+    for (final art in cardArt) {
+      final image = art.querySelector('img');
+      expect(image?.attributes['src'], startsWith('/site/img/cards/'),
+          reason: art.outerHtml);
+      expect(art.querySelector('svg'), isNull, reason: art.outerHtml);
+    }
   });
 
   test('the sitemap lists every page and nothing else', () {

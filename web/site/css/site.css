@@ -1723,13 +1723,15 @@ html:not(.js) .site-header {
 .scene__card-art {
   aspect-ratio: 4 / 3;
   border-radius: .6em;
+  overflow: hidden;
   background: radial-gradient(8em 5em at 50% 50%, rgba(108, 77, 255, .35), transparent 70%), #070512;
 }
 
-.scene__card-art svg {
+.scene__card-art img {
   width: 100%;
   height: 100%;
   display: block;
+  object-fit: cover;
 }
 
 .scene__card-pips {
@@ -3240,30 +3242,30 @@ html:not(.js) .site-header {
   font-weight: 600;
 }
 
-.fleets {
+.collections {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   margin-top: 8px;
 }
 
-.fleet {
+.collection {
   padding: 18px;
   border-radius: 18px;
   border: 1px solid;
 }
 
-.fleet--meridian {
+.collection--meridian {
   border-color: rgba(233, 201, 139, .45);
   background: linear-gradient(180deg, rgba(233, 201, 139, .11), rgba(255, 244, 255, .03));
 }
 
-.fleet--cinder {
+.collection--coming-soon {
   border-color: rgba(255, 122, 61, .45);
   background: linear-gradient(180deg, rgba(255, 122, 61, .13), rgba(255, 122, 61, .03));
 }
 
-.fleet__name {
+.collection__name {
   font-family: var(--font-display);
   font-size: 1.35rem;
   font-weight: 700;
@@ -3271,22 +3273,22 @@ html:not(.js) .site-header {
   text-transform: uppercase;
 }
 
-.fleet--meridian .fleet__name {
+.collection--meridian .collection__name {
   color: var(--brass);
 }
 
-.fleet--cinder .fleet__name {
+.collection--coming-soon .collection__name {
   color: var(--ember);
 }
 
-.fleet__motto {
+.collection__motto {
   margin-top: 6px;
   color: var(--cream);
   font-size: .98rem;
   font-style: italic;
 }
 
-.fleet__about {
+.collection__about {
   margin-top: 6px;
   color: var(--muted);
   font-size: .9rem;
@@ -3299,7 +3301,7 @@ html:not(.js) .site-header {
   perspective: 1200px;
 }
 
-.ship-card {
+.collectible-card {
   --rot: 0deg;
   position: relative;
   padding: 10px 10px 16px;
@@ -3311,7 +3313,7 @@ html:not(.js) .site-header {
   overflow: hidden;
 }
 
-.ship-card::after {
+.collectible-card::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -3325,22 +3327,17 @@ html:not(.js) .site-header {
   mix-blend-mode: screen;
 }
 
-.ship-card:hover {
+.collectible-card:hover {
   z-index: 10;
   transform: translateY(-14px) rotate(0deg) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) scale(1.03);
 }
 
-.ship-card--meridian {
+.collectible-card--meridian {
   border-color: rgba(233, 201, 139, .6);
   box-shadow: 0 30px 50px -25px rgba(0, 0, 0, .9), 0 0 42px -12px rgba(233, 201, 139, .45);
 }
 
-.ship-card--cinder {
-  border-color: rgba(255, 122, 61, .6);
-  box-shadow: 0 30px 50px -25px rgba(0, 0, 0, .9), 0 0 42px -12px rgba(255, 122, 61, .5);
-}
-
-.ship-card__art {
+.collectible-card__art {
   aspect-ratio: 4 / 3;
   border-radius: 14px;
   overflow: hidden;
@@ -3353,56 +3350,43 @@ html:not(.js) .site-header {
     #070512;
 }
 
-.ship-card--cinder .ship-card__art {
-  background:
-    radial-gradient(1px 1px at 18% 28%, #fff, transparent),
-    radial-gradient(1px 1px at 72% 62%, #fff, transparent),
-    radial-gradient(1.5px 1.5px at 42% 84%, rgba(255, 255, 255, .8), transparent),
-    radial-gradient(160px 100px at 50% 55%, rgba(255, 122, 61, .3), transparent 70%),
-    #0C0507;
-}
-
-.ship-card__art svg {
+.collectible-card__art img {
   display: block;
   width: 100%;
   height: 100%;
+  object-fit: cover;
 }
 
-.ship-card__body {
+.collectible-card__body {
   display: grid;
   gap: 4px;
   padding: 12px 6px 0;
 }
 
-.ship-card__pips {
+.collectible-card__pips {
   font-size: .75rem;
   letter-spacing: .25em;
 }
 
-.ship-card__name {
+.collectible-card__name {
   font-size: 1.2rem;
   letter-spacing: .02em;
   text-transform: uppercase;
 }
 
-.ship-card__class {
+.collectible-card__collection {
   font-size: .68rem;
   font-weight: 700;
   letter-spacing: .16em;
   text-transform: uppercase;
 }
 
-.ship-card--meridian .ship-card__pips,
-.ship-card--meridian .ship-card__class {
+.collectible-card--meridian .collectible-card__pips,
+.collectible-card--meridian .collectible-card__collection {
   color: var(--brass);
 }
 
-.ship-card--cinder .ship-card__pips,
-.ship-card--cinder .ship-card__class {
-  color: var(--ember);
-}
-
-.ship-card__hook {
+.collectible-card__description {
   margin-top: 4px;
   color: var(--dim);
   font-size: .85rem;
@@ -3410,11 +3394,11 @@ html:not(.js) .site-header {
 }
 
 @media (max-width: 480px) {
-  .fleets {
+  .collections {
     grid-template-columns: 1fr;
   }
 
-  .ship-card__hook {
+  .collectible-card__description {
     display: none;
   }
 }
@@ -3431,33 +3415,33 @@ html:not(.js) .site-header {
     height: 500px;
   }
 
-  .ship-card {
+  .collectible-card {
     position: absolute;
     width: 38%;
   }
 
-  .ship-card:nth-child(1) {
+  .collectible-card:nth-child(1) {
     --rot: -11deg;
     left: 0;
     top: 60px;
     z-index: 1;
   }
 
-  .ship-card:nth-child(2) {
+  .collectible-card:nth-child(2) {
     --rot: -4deg;
     left: 21%;
     top: 10px;
     z-index: 2;
   }
 
-  .ship-card:nth-child(3) {
+  .collectible-card:nth-child(3) {
     --rot: 4deg;
     left: 42%;
     top: 30px;
     z-index: 3;
   }
 
-  .ship-card:nth-child(4) {
+  .collectible-card:nth-child(4) {
     --rot: 12deg;
     left: 62%;
     top: 84px;
