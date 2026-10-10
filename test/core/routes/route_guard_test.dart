@@ -58,4 +58,19 @@ void main() {
       }
     }
   });
+
+  group('hasSignedInSession', () {
+    test('an access token alone is signed in', () {
+      expect(hasSignedInSession(accessToken: 'access'), isTrue);
+    });
+
+    test('a refresh token alone is signed in, as after a browser restart', () {
+      expect(hasSignedInSession(refreshToken: 'refresh'), isTrue);
+    });
+
+    test('no tokens, or only empty ones, is signed out', () {
+      expect(hasSignedInSession(), isFalse);
+      expect(hasSignedInSession(accessToken: '', refreshToken: ''), isFalse);
+    });
+  });
 }

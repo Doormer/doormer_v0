@@ -25,10 +25,13 @@ class WebRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/auth',
     redirect: (context, state) async {
-      final token = await serviceLocator<TokenStorage>().getAccessToken();
+      final tokens = serviceLocator<TokenStorage>();
       return redirectFor(
         state.uri.path,
-        isSignedIn: token != null && token.isNotEmpty,
+        isSignedIn: hasSignedInSession(
+          accessToken: await tokens.getAccessToken(),
+          refreshToken: await tokens.getRefreshToken(),
+        ),
       );
     },
     observers: [popupRoutes],

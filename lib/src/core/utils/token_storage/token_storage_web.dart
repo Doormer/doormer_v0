@@ -6,8 +6,13 @@ class TokenStorageWeb implements TokenStorage {
   static const _accessTokenKey = 'access_token';
   static const _refreshTokenKey = 'refresh_token';
 
-  String _createCookie(String name, String value) {
-    return '$name=${Uri.encodeFull(value)}; path=/; Secure; SameSite=Strict';
+  /// Matches RefreshAuth.ExpiresInSec in taka-api: a refresh token is good for
+  /// 30 days after login, so its cookie outlives the browser session.
+  static const _refreshTokenLifetime = Duration(days: 30);
+
+  String _createCookie(String name, String value, {Duration? maxAge}) {
+    final lifetime = maxAge == null ? '' : '; Max-Age=${maxAge.inSeconds}';
+    return '$name=${Uri.encodeFull(value)}; path=/$lifetime; Secure; SameSite=Strict';
   }
 
   String _createDeleteCookie(String name) {
@@ -44,7 +49,8 @@ class TokenStorageWeb implements TokenStorage {
 
   @override
   Future<void> saveRefreshToken(String token) async {
-    html.document.cookie = _createCookie(_refreshTokenKey, token);
+    html.document.cookie =
+        _createCookie(_refreshTokenKey, token, maxAge: _refreshTokenLifetime);
   }
 
   @override
