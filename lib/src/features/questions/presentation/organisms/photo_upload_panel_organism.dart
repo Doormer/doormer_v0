@@ -1,5 +1,4 @@
 import 'package:doormer/src/core/theme/app_theme_context.dart';
-import 'package:doormer/src/features/questions/presentation/molecules/ads_notice_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/photo_action_row_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/photo_preview_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
@@ -19,7 +18,6 @@ class PhotoUploadPanelOrganism extends StatelessWidget {
     final hasPhoto = params.imageBytes != null;
     final isPreparing = params.isPreparing;
     final name = params.fileName;
-    final onWhyAds = params.onWhyAds;
 
     return SurfaceCardAtom(
       child: Column(
@@ -62,10 +60,6 @@ class PhotoUploadPanelOrganism extends StatelessWidget {
                 ? params.onSubmit
                 : null,
           ),
-          if (onWhyAds != null) ...[
-            SizedBox(height: 12.h),
-            AdsNoticeMolecule(onWhyAds: onWhyAds),
-          ],
         ],
       ),
     );

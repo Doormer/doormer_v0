@@ -44,7 +44,7 @@ class AskByPhotoPage extends StatefulWidget {
   final bool showPhotoSourceOptionsOnOpen;
 
   /// The ad shown while a photo is being solved, or null when ads are off.
-  /// Ads also bring the notice under Submit that says why they show.
+  /// Ads also bring the "Why ads?" link on the solving view.
   /// Defaults to the build's AdSense settings.
   final DisplayAdUnit? Function() solvingAdUnit;
 
@@ -322,7 +322,11 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
   }
 
   /// What the screen shows while [state]'s photo is being solved.
+  ///
+  /// With ads on, the What's happening card links to why there are ads. The
+  /// link shows only while solving, when an ad may be on screen.
   SolvingViewParams _solvingViewFor(
+    BuildContext context,
     AskByPhotoLoading state, {
     required DisplayAdUnit? adUnit,
   }) {
@@ -335,19 +339,45 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
         body: content.body,
       ),
       adUnit: adUnit,
+      onWhyAds: adUnit == null ? null : () => _showWhyAds(context),
     );
   }
 
   /// Explains, for students and the parents helping them, why ads show while
   /// a photo is being solved.
-  Future<void> _showWhyAds(BuildContext context) {
-    return showModalBottomSheet<void>(
+  ///
+  /// The panel closes itself when the solve ends, however it ends, so it
+  /// never covers the solution or the way to try again.
+  Future<void> _showWhyAds(BuildContext context) async {
+    final photoBloc = context.read<AskByPhotoBloc>();
+    // A tap can land just after the solve ends, before the link leaves the
+    // screen. The listener below only hears later changes, so nothing would
+    // close a panel opened then.
+    if (photoBloc.state is! AskByPhotoLoading) return;
+    await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      builder: (sheetContext) => WhyAdsSheetOrganism(
-        onClose: () => Navigator.of(sheetContext).pop(),
+      builder: (sheetContext) => BlocListener<AskByPhotoBloc, AskByPhotoState>(
+        bloc: photoBloc,
+        listenWhen: (_, state) => state is! AskByPhotoLoading,
+        listener: (_, __) => _closeSheet(sheetContext),
+        child: WhyAdsSheetOrganism(
+          onClose: () => Navigator.of(sheetContext).pop(),
+        ),
       ),
     );
+  }
+
+  /// Closes the sheet built in [sheetContext], and only that sheet.
+  void _closeSheet(BuildContext sheetContext) {
+    final route = ModalRoute.of(sheetContext);
+    if (route == null || !route.isActive) return;
+    final navigator = Navigator.of(sheetContext);
+    if (route.isCurrent) {
+      navigator.pop();
+    } else {
+      navigator.removeRoute(route);
+    }
   }
 
   @override
@@ -433,7 +463,6 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
               onEditPhoto: editablePhoto == null
                   ? null
                   : () => _editPhoto(context, editablePhoto),
-              onWhyAds: adUnit == null ? null : () => _showWhyAds(context),
             ),
             statusParams: SolveStatusPanelParams(
               content: solveStatusContentFor(state),
@@ -445,7 +474,7 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
             ),
             solving: loading == null
                 ? null
-                : _solvingViewFor(loading, adUnit: adUnit),
+                : _solvingViewFor(context, loading, adUnit: adUnit),
             navigationBarParams: NavigationBarParams(
               current: AppDestination.solve,
               onSaved: () => _openSaved(context, isSolving: isLoading),

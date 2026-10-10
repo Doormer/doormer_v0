@@ -125,7 +125,7 @@ class AskByPhotoTemplate extends StatelessWidget {
         children: [
           SolvingProgressOrganism(params: solving.progress),
           SizedBox(height: 16.h),
-          const SolvingExplanationMolecule(),
+          SolvingExplanationMolecule(onWhyAds: solving.onWhyAds),
           if (adUnit != null) ...[
             SizedBox(height: 24.h),
             ShowAfterDelayAtom(

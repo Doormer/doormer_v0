@@ -27,6 +27,7 @@ import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usec
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/photo_preview_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/molecules/solving_explanation_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solving_progress_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/why_ads_sheet_organism.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
@@ -981,41 +982,146 @@ void main() {
       slotId: '1234567890',
     )!;
 
-    testWidgets('with ads off, the photo panel has no ads notice',
+    // The solving view's spinner and timer never settle, so these tests pump
+    // set durations instead of pumpAndSettle.
+    Future<void> submitAndWait(WidgetTester tester) async {
+      await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+      await tester.pump();
+      await tester.pump();
+    }
+
+    Future<void> openSolution(
+      WidgetTester tester,
+      Completer<PhotoQuestionSolveOutcome> pending,
+    ) async {
+      pending.complete(_outcome(PhotoQuestionSolveStatus.solved));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+    }
+
+    testWidgets('with ads off, the solving view has no "Why ads?" link',
         (tester) async {
-      repository = _FakeQuestionsRepository(
-        outcome: _outcome(PhotoQuestionSolveStatus.solved),
-      );
+      final pending = Completer<PhotoQuestionSolveOutcome>();
+      repository = _FakeQuestionsRepository(pending: pending);
       registerBloc();
       await pumpPage(tester, solvingAdUnit: () => null);
       await selectPhoto(tester);
+      await submitAndWait(tester);
 
-      expect(
-        find.widgetWithText(FilledButton, 'Submit to solver'),
-        findsOneWidget,
-      );
+      expect(find.byType(SolvingProgressOrganism), findsOneWidget);
       expect(find.text('Why ads?'), findsNothing);
+
+      await openSolution(tester, pending);
     });
 
     testWidgets(
-        'with ads on, "Why ads?" opens the explanation and "Got it" closes '
-        'it', (tester) async {
-      repository = _FakeQuestionsRepository(
-        outcome: _outcome(PhotoQuestionSolveStatus.solved),
-      );
+        'with ads on, "Why ads?" in the solving view opens the explanation '
+        'and "Got it" closes it', (tester) async {
+      final pending = Completer<PhotoQuestionSolveOutcome>();
+      repository = _FakeQuestionsRepository(pending: pending);
       registerBloc();
       await pumpPage(tester, solvingAdUnit: () => adUnit);
       await selectPhoto(tester);
+      await submitAndWait(tester);
 
       await tester.tap(find.text('Why ads?'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
       expect(find.byType(WhyAdsSheetOrganism), findsOneWidget);
 
       await tester.ensureVisible(find.text('Got it'));
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(find.text('Got it'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
       expect(find.byType(WhyAdsSheetOrganism), findsNothing);
+      expect(find.byType(SolvingProgressOrganism), findsOneWidget);
+
+      await openSolution(tester, pending);
+    });
+
+    testWidgets(
+        'a solve that finishes while the explanation is open still opens '
+        'the solution', (tester) async {
+      final pending = Completer<PhotoQuestionSolveOutcome>();
+      repository = _FakeQuestionsRepository(pending: pending);
+      registerBloc();
+      await pumpPage(tester, solvingAdUnit: () => adUnit);
+      await selectPhoto(tester);
+      await submitAndWait(tester);
+
+      await tester.tap(find.text('Why ads?'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(WhyAdsSheetOrganism), findsOneWidget);
+
+      await openSolution(tester, pending);
+
+      expect(find.byType(QuestionSolutionPage), findsOneWidget);
+      expect(
+        find.byType(WhyAdsSheetOrganism),
+        findsNothing,
+        reason: 'the explanation must never stand between a student and '
+            'their answer',
+      );
+    });
+
+    testWidgets(
+        'a solve that fails while the explanation is open closes it, so Try '
+        'again is in reach', (tester) async {
+      final pending = Completer<PhotoQuestionSolveOutcome>();
+      repository = _FakeQuestionsRepository(pending: pending);
+      registerBloc();
+      await pumpPage(tester, solvingAdUnit: () => adUnit);
+      await selectPhoto(tester);
+      await submitAndWait(tester);
+
+      await tester.tap(find.text('Why ads?'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(WhyAdsSheetOrganism), findsOneWidget);
+
+      pending.completeError(NetworkFailure('No connection.'));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.byType(WhyAdsSheetOrganism), findsNothing);
+      expect(find.widgetWithText(AppButtonAtom, 'Try again'), findsOneWidget);
+      await drainToasts(tester);
+    });
+
+    testWidgets(
+        'a "Why ads?" tap that lands after the solve has ended opens nothing',
+        (tester) async {
+      final pending = Completer<PhotoQuestionSolveOutcome>();
+      repository = _FakeQuestionsRepository(pending: pending);
+      registerBloc();
+      await pumpPage(tester, solvingAdUnit: () => adUnit);
+      await selectPhoto(tester);
+      await submitAndWait(tester);
+      // What a tap arriving just after the solve ends still calls: the link
+      // stays on screen until the next frame.
+      final lateTap = tester
+          .widget<SolvingExplanationMolecule>(
+            find.byType(SolvingExplanationMolecule),
+          )
+          .onWhyAds!;
+
+      pending.completeError(NetworkFailure('No connection.'));
+      await tester.pump();
+      await tester.pump();
+      lateTap();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(
+        find.byType(WhyAdsSheetOrganism),
+        findsNothing,
+        reason: 'nothing would ever close a panel opened after the solve',
+      );
+      await drainToasts(tester);
     });
 
     testWidgets('with ads on, the solving view shows the ad card after 3 s',
