@@ -72,6 +72,24 @@ class _RecordingHttpClient implements HttpClient {
 }
 
 void main() {
+  // Render on the 360x690 design phone. The default 800x600 test view scales
+  // `.w` and `.h` by different amounts, which the app shell never does, and
+  // stretches the card taller than the screen.
+  setUp(() {
+    final view = TestWidgetsFlutterBinding.ensureInitialized()
+        .platformDispatcher
+        .implicitView!;
+    view.physicalSize = const Size(360, 690);
+    view.devicePixelRatio = 1;
+  });
+  tearDown(() {
+    final view = TestWidgetsFlutterBinding.ensureInitialized()
+        .platformDispatcher
+        .implicitView!;
+    view.resetPhysicalSize();
+    view.resetDevicePixelRatio();
+  });
+
   testWidgets('fetches the art while the card back is still showing',
       (tester) async {
     final client = _RecordingHttpClient();

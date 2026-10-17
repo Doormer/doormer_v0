@@ -61,7 +61,7 @@ class CardRevealOrganism extends StatefulWidget {
 
 class CardRevealState extends State<CardRevealOrganism>
     with TickerProviderStateMixin {
-  static const double _cardDesignWidth = 126;
+  static const double _cardDesignWidth = 160;
 
   late final AnimationController _controller;
 
@@ -517,7 +517,7 @@ class CardRevealState extends State<CardRevealOrganism>
 
     final front = CollectibleCardAtom(
       card: outcome.card,
-      width: 126,
+      width: _cardDesignWidth,
       copies: outcome.copiesAfter,
       // The printing just drawn, not the whole holding: an upgrade has to look
       // special at the moment it is announced, which is the only time the word
@@ -536,7 +536,7 @@ class CardRevealState extends State<CardRevealOrganism>
               opacity: 0.45,
               child: CollectibleCardAtom(
                 card: outcome.card,
-                width: 126,
+                width: _cardDesignWidth,
                 showScale: false,
                 copies: 1,
               ),
