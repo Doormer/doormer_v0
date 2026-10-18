@@ -1,11 +1,11 @@
 {
-    "name": "doormer",
-    "short_name": "doormer",
+    "name": "Doormer",
+    "short_name": "Doormer",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#08060F",
     "theme_color": "#08060F",
-    "description": "A new Flutter project.",
+    "description": "Snap a homework question and Doormer turns it into a step-by-step quest with diagrams, a checked answer and rewards.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

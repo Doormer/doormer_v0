@@ -130,6 +130,19 @@ night tile.
 - `web/index.html`: point the iPhone home-screen icon (`apple-touch-icon`) at
   `site/img/apple-touch-icon.png`. It currently uses `Icon-192.png`, whose
   transparent corners iPhones would fill with black.
+- `web/index.html` and `web/manifest.json`: call the app "Doormer" (it was
+  "doormer") and replace Flutter's "A new Flutter project." description with
+  "Snap a homework question and Doormer turns it into a step-by-step quest
+  with diagrams, a checked answer and rewards." The website's version ends
+  with "Free, in your browser.", which reads oddly once the app is installed.
+- **Loading screen:** while the app downloads, the page was blank white for a
+  few seconds on a phone network before the dark app appeared. `web/index.html`
+  now shows the icon's artwork without its tile
+  (`web/icons/doormer-icon-artwork.svg`, 220 × 220 px) in the middle of a CSS
+  copy of the app's background (`QuestBackdrop`: the violet glow, the 15 px
+  dot grid and the pink top light), so when the app appears only the door
+  changes. Flutter draws over it and the page removes it on
+  `flutter-first-frame`, so the app still shows if that event never comes.
 
 ### Native apps
 
@@ -153,11 +166,30 @@ night tile.
   `linux/runner/resources/app_icon.png` (256 × 256 px, rounded tile), install
   it into the bundle's `data` folder, and set it as the window icon when the
   window opens.
+- **App name:** Android's label, the Windows window title and version
+  details, and the Linux window title say "Doormer" (they said "doormer");
+  the iPhone already did. `MaterialApp.title` is "Doormer", which names the
+  app in Android's recent apps. Package names, bundle IDs and executable names
+  stay as they are.
+- **Launch screens:** the app's background colour, `#0F0A26`
+  (`QuestPalette.glowBottom`, which fills most of a phone's first screen),
+  instead of white: `ios/Runner/Base.lproj/LaunchScreen.storyboard`, and on
+  Android `drawable/launch_background.xml`,
+  `drawable-v21/launch_background.xml` and the `NormalTheme` window
+  background, plus `values-v31/` and `values-night-v31/` styles for Android 12
+  and later, which add the app icon in the middle themselves. The iPhone gets
+  no logo: Apple's guidelines say "The launch screen isn't a branding
+  opportunity".
 
 ### Not included
 
-- Launch and splash screens.
-- The Flutter app's own screens; none of them show a logo today.
+- A logo on the app's own screens, such as sign-up and log-in. In mock-ups it
+  cluttered the form, and of 11 apps teenagers use, most keep their logo
+  small or leave it out of these forms; several name the app in the heading
+  instead.
+- The Mac app's name. Its menu bar still says "doormer" because the name
+  comes from the Xcode product name, which also names the `doormer.app`
+  bundle that the Mac tests load (`TEST_HOST`).
 - A version with the symbol next to the plain word, because nothing uses it.
 
 ## Making the files
@@ -168,7 +200,8 @@ night tile.
 - Add `tool/generate_brand_icons.dart`, which regenerates every exported icon
   from the master SVGs with headless Chrome, so a future change to the logo
   takes one command (`dart run tool/generate_brand_icons.dart`). Run it by
-  hand; it is not part of the build.
+  hand; it is not part of the build. It also writes the loading screen's
+  `web/icons/doormer-icon-artwork.svg`, the master icon without its tile.
 - Make the wordmark SVGs and the favicon once by converting the Fredoka Bold
   letters to outlines, then commit them. They need no script.
 
@@ -182,7 +215,11 @@ night tile.
     its browser-tab icon is `doormer-favicon.svg`, and no page still contains
     the old door mark;
   - the wordmark SVGs and the favicon contain no `<text>` elements;
-  - `web/manifest.json` uses `#08060F`.
+  - `web/manifest.json` uses `#08060F`;
+  - the web app is called "Doormer" and describes itself the same way in
+    `index.html` and the manifest;
+  - the loading screen's door is the master icon without its tile, and its
+    background uses the app's `QuestPalette` colours.
 - Check every exported icon's pixel size, that the iPhone icons have no
   transparency, and that the Windows ICO holds all seven sizes.
 - Look at the home page and one guide page at desktop (1280 px) and phone

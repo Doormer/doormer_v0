@@ -2,7 +2,9 @@
 // web/site/img/brand/, so the website, the web app and the native apps all
 // show the same artwork:
 //
-// - doormer-icon.svg, the full icon, for app icons.
+// - doormer-icon.svg, the full icon, for app icons. Its artwork without the
+//   background tile also goes to web/icons/doormer-icon-artwork.svg, which
+//   the web app shows while it loads.
 // - doormer-favicon.svg, the "d" from the wordmark, for browser tabs and the
 //   Windows title bar and taskbar. They show icons at 32 px or smaller, where
 //   the full icon's path, levels and door blur together.
@@ -17,6 +19,7 @@ import 'dart:typed_data';
 
 const masterIconPath = 'web/site/img/brand/doormer-icon.svg';
 const faviconPath = 'web/site/img/brand/doormer-favicon.svg';
+const loadingArtworkPath = 'web/icons/doormer-icon-artwork.svg';
 
 /// The master is 120 × 120. Its artwork (everything except the background)
 /// spans x 16–104 and y 10–112.
@@ -150,6 +153,9 @@ Future<void> main() async {
   File(windowsIconPath)
       .writeAsBytesSync(buildIco(windowsIconSizes, windowsImages));
   stdout.writeln('$windowsIconPath (${windowsIconSizes.join(', ')} px)');
+
+  File(loadingArtworkPath).writeAsStringSync(withoutBackground(fullIcon));
+  stdout.writeln(loadingArtworkPath);
 }
 
 bool hasTransparency(IconShape shape) => switch (shape) {

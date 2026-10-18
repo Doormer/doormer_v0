@@ -18,7 +18,7 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Snap a homework question and Doormer turns it into a step-by-step quest with diagrams, a checked answer and rewards.">
   <!-- Without this, mobile browsers lay the page out in a ~980px virtual
        viewport and then zoom out to fit, so MediaQuery reports a tablet width
        on a phone and every breakpoint reads wrong. viewport-fit=cover lets
@@ -28,16 +28,42 @@
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="doormer">
+  <meta name="apple-mobile-web-app-title" content="Doormer">
   <link rel="apple-touch-icon" href="site/img/apple-touch-icon.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>doormer</title>
+  <title>Doormer</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- The loading screen: the door from the app icon on a copy of the app's
+       background (QuestBackdrop), so only the door changes when the app
+       appears. Flutter draws over it, and it is removed after the first
+       frame. -->
+  <style>
+    html, body { margin: 0; height: 100%; background: #0F0A26; }
+    #loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle 125px at 50% 5px, rgba(255, 171, 243, .3), rgba(255, 171, 243, 0) 68%),
+        radial-gradient(circle at 7.5px 7.5px, rgba(255, 255, 255, .13) .5px, transparent 1.1px) 0 0 / 15px 15px,
+        radial-gradient(circle calc(1.2 * min(100vw, 100vh)) at 50% -12%, #3A2170, #150F2E 52%, #0F0A26);
+    }
+  </style>
 </head>
 <body>
+  <div id="loading"><img src="icons/doormer-icon-artwork.svg" alt="Doormer" width="220" height="220"></div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var loading = document.getElementById('loading');
+      if (loading) loading.remove();
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

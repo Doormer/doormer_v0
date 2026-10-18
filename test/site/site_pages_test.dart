@@ -393,6 +393,64 @@ void main() {
     });
   });
 
+  group('the Flutter web app', () {
+    final indexHtml = File('web/index.html').readAsStringSync();
+    final index = html_parser.parse(indexHtml);
+    final manifest = jsonDecode(File('web/manifest.json').readAsStringSync())
+        as Map<String, dynamic>;
+
+    test('is called Doormer', () {
+      expect(index.querySelector('title')?.text, 'Doormer');
+      expect(
+          index
+              .querySelector('meta[name="apple-mobile-web-app-title"]')
+              ?.attributes['content'],
+          'Doormer');
+      expect(manifest['name'], 'Doormer');
+      expect(manifest['short_name'], 'Doormer');
+    });
+
+    test('describes Doormer, and says the same when installed', () {
+      final description = index
+          .querySelector('meta[name="description"]')
+          ?.attributes['content'];
+      expect(description, contains('Doormer'));
+      expect(description, isNot(contains('Flutter')));
+      expect(manifest['description'], description);
+    });
+
+    test('shows the door from the app icon while it loads', () {
+      final door = index.querySelector('#loading img');
+      expect(door?.attributes['src'], 'icons/doormer-icon-artwork.svg');
+      expect(door?.attributes['alt'], 'Doormer');
+      final icon =
+          File('web/site/img/brand/doormer-icon.svg').readAsStringSync();
+      expect(
+        File('web/icons/doormer-icon-artwork.svg').readAsStringSync(),
+        icon.replaceFirst(RegExp(r'<rect id="background"[^>]*/>'), ''),
+        reason: 'Run dart run tool/generate_brand_icons.dart after changing '
+            'the master icon.',
+      );
+    });
+
+    test('loads on the same background colours as the app', () {
+      final palette =
+          File('lib/src/core/theme/quest_palette.dart').readAsStringSync();
+      for (final name in ['glowTop', 'ink', 'glowBottom']) {
+        final hex = RegExp('Color $name = Color\\(0xFF([0-9A-Fa-f]{6})\\)')
+            .firstMatch(palette)
+            ?.group(1);
+        expect(hex, isNotNull, reason: name);
+        expect(indexHtml.toUpperCase(), contains('#${hex!.toUpperCase()}'),
+            reason: name);
+      }
+    });
+
+    test('removes the loading screen once Flutter draws its first frame', () {
+      expect(indexHtml, contains("addEventListener('flutter-first-frame'"));
+    });
+  });
+
   test('the sitemap lists every page and nothing else', () {
     final sitemap = File('web/sitemap.xml').readAsStringSync();
     final listed = RegExp(r'<loc>__SITE_ORIGIN__([^<]*)</loc>')

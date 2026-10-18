@@ -52,6 +52,7 @@ class MyApp extends StatelessWidget {
           }
         },
         child: MaterialApp.router(
+          title: 'Doormer',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
