@@ -253,4 +253,127 @@ void main() {
       verify: (_) => expect(repository.cursors, ['2']),
     );
   });
+
+  // Saved stays alive while the student is on another page, and they may have
+  // solved a question there.
+  group('coming back', () {
+    final newest = _question('4');
+
+    blocTest<SavedQuestionsBloc, SavedQuestionsState>(
+      'puts newly solved questions on top, keeping the rows below',
+      setUp: () => repository = _ScriptedRepository({
+        null: SolvedQuestionsPage(
+          questions: [newest, _question('3')],
+          nextCursor: '3',
+        ),
+      }),
+      build: newBloc,
+      seed: () => SavedQuestionsReady(
+        questions: [..._firstPage.questions, ..._lastPage.questions],
+      ),
+      act: (bloc) => bloc.add(const SavedQuestionsRefreshRequested()),
+      expect: () => [
+        SavedQuestionsReady(
+          questions: [newest, ..._firstPage.questions, ..._lastPage.questions],
+        ),
+      ],
+      verify: (_) => expect(repository.cursors, [null]),
+    );
+
+    blocTest<SavedQuestionsBloc, SavedQuestionsState>(
+      'keeps where the next page starts',
+      setUp: () => repository = _ScriptedRepository({
+        null: SolvedQuestionsPage(questions: [newest, _question('3')]),
+      }),
+      build: newBloc,
+      seed: () =>
+          SavedQuestionsReady(questions: _firstPage.questions, nextCursor: '2'),
+      act: (bloc) => bloc.add(const SavedQuestionsRefreshRequested()),
+      expect: () => [
+        SavedQuestionsReady(
+          questions: [newest, ..._firstPage.questions],
+          nextCursor: '2',
+        ),
+      ],
+    );
+
+    blocTest<SavedQuestionsBloc, SavedQuestionsState>(
+      'changes nothing when nothing new was solved',
+      setUp: () => repository = _ScriptedRepository({null: _firstPage}),
+      build: newBloc,
+      seed: () =>
+          SavedQuestionsReady(questions: _firstPage.questions, nextCursor: '2'),
+      act: (bloc) => bloc.add(const SavedQuestionsRefreshRequested()),
+      expect: () => const <SavedQuestionsState>[],
+    );
+
+    blocTest<SavedQuestionsBloc, SavedQuestionsState>(
+      'replaces the empty state with the first solved question',
+      setUp: () => repository = _ScriptedRepository({
+        null: SolvedQuestionsPage(questions: [newest]),
+      }),
+      build: newBloc,
+      seed: () => const SavedQuestionsEmpty(),
+      act: (bloc) => bloc.add(const SavedQuestionsRefreshRequested()),
+      expect: () => [
+        SavedQuestionsReady(questions: [newest]),
+      ],
+    );
+
+    blocTest<SavedQuestionsBloc, SavedQuestionsState>(
+      'keeps the rows on screen, with no spinner, when the refresh fails',
+      setUp: () => repository = _ScriptedRepository({
+        null: NetworkFailure('offline'),
+      }),
+      build: newBloc,
+      seed: () =>
+          SavedQuestionsReady(questions: _firstPage.questions, nextCursor: '2'),
+      act: (bloc) => bloc.add(const SavedQuestionsRefreshRequested()),
+      expect: () => const <SavedQuestionsState>[],
+    );
+
+    blocTest<SavedQuestionsBloc, SavedQuestionsState>(
+      'drops the answer if the next page arrived meanwhile',
+      setUp: () {
+        repository = _ScriptedRepository({
+          null: SolvedQuestionsPage(questions: [newest, _question('3')]),
+          '2': _lastPage,
+        });
+      },
+      build: newBloc,
+      seed: () =>
+          SavedQuestionsReady(questions: _firstPage.questions, nextCursor: '2'),
+      act: (bloc) async {
+        final refreshAnswer = Completer<void>();
+        repository.held = refreshAnswer;
+        bloc.add(const SavedQuestionsRefreshRequested());
+        await Future<void>.delayed(Duration.zero);
+        repository.held = null;
+        bloc.add(const SavedQuestionsMoreRequested());
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        refreshAnswer.complete();
+      },
+      wait: const Duration(milliseconds: 10),
+      expect: () => [
+        SavedQuestionsReady(
+          questions: _firstPage.questions,
+          nextCursor: '2',
+          isLoadingMore: true,
+        ),
+        SavedQuestionsReady(
+          questions: [..._firstPage.questions, ..._lastPage.questions],
+        ),
+      ],
+    );
+
+    blocTest<SavedQuestionsBloc, SavedQuestionsState>(
+      'leaves a first load in progress alone',
+      setUp: () => repository = _ScriptedRepository({null: _firstPage}),
+      build: newBloc,
+      act: (bloc) => bloc.add(const SavedQuestionsRefreshRequested()),
+      expect: () => const <SavedQuestionsState>[],
+      verify: (_) => expect(repository.cursors, isEmpty),
+    );
+  });
 }

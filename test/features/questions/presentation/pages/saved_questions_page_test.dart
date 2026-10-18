@@ -10,7 +10,6 @@ import 'package:doormer/src/features/questions/presentation/bloc/saved_questions
 import 'package:doormer/src/features/questions/presentation/organisms/photo_enlarge_organism.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
 import 'package:doormer/src/features/questions/presentation/pages/saved_questions_page.dart';
-import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -111,7 +110,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('shows the solved questions, with Saved lit', (tester) async {
+  testWidgets('shows the solved questions', (tester) async {
     repository = _ScriptedRepository({
       null: [
         SolvedQuestionsPage(questions: [_question(42)])
@@ -124,10 +123,6 @@ void main() {
     expect(find.text('Geometry · Area'), findsOneWidget);
     expect(find.text('Question 42 text'), findsOneWidget);
     expect(find.text('Today'), findsOneWidget);
-    expect(
-      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
-      AppDestination.saved.index,
-    );
   });
 
   testWidgets('tapping a row opens its solution at its own address',

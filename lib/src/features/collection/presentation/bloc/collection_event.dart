@@ -12,6 +12,12 @@ class CollectionStarted extends CollectionEvent {
   const CollectionStarted();
 }
 
+/// The student came back to the collection from another page, where they
+/// may have earned quarks.
+class CollectionRefreshRequested extends CollectionEvent {
+  const CollectionRefreshRequested();
+}
+
 class DeckSelected extends CollectionEvent {
   final String deckId;
   const DeckSelected(this.deckId);

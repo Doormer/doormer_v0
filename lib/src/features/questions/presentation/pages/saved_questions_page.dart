@@ -1,4 +1,5 @@
 import 'package:doormer/src/core/di/service_locator.dart';
+import 'package:doormer/src/core/routes/shown_destination.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_question_summary.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/saved_questions_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/saved_question_row_presenter.dart';
@@ -9,7 +10,6 @@ import 'package:doormer/src/features/questions/presentation/params/saved_questio
 import 'package:doormer/src/features/questions/presentation/params/saved_questions_body_params.dart';
 import 'package:doormer/src/features/questions/presentation/templates/saved_questions_template.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
-import 'package:doormer/src/shared/widget/coming_soon_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -27,17 +27,17 @@ class SavedQuestionsPage extends StatelessWidget {
     return BlocProvider<SavedQuestionsBloc>(
       create: (_) => serviceLocator<SavedQuestionsBloc>()
         ..add(const SavedQuestionsStarted()),
-      child: BlocBuilder<SavedQuestionsBloc, SavedQuestionsState>(
-        builder: (context, state) => SavedQuestionsTemplate(
-          body: _bodyFor(context, state),
-          navigationBarParams: NavigationBarParams(
-            current: AppDestination.saved,
-            // Already here.
-            onSaved: () {},
-            onAiTutor: () => showComingSoon(context),
-            onSolve: () => context.go('/questions/photo'),
-            onCards: () => context.go('/collection'),
-            onProfile: () => context.go('/profile'),
+      child: Builder(
+        // The page stays alive while the student is on other pages, where
+        // they may solve a question, so it checks for new ones on return.
+        builder: (context) => DestinationListener(
+          destination: AppDestination.saved,
+          onReturnedTo: () => context
+              .read<SavedQuestionsBloc>()
+              .add(const SavedQuestionsRefreshRequested()),
+          child: BlocBuilder<SavedQuestionsBloc, SavedQuestionsState>(
+            builder: (context, state) =>
+                SavedQuestionsTemplate(body: _bodyFor(context, state)),
           ),
         ),
       ),
@@ -54,7 +54,7 @@ class SavedQuestionsPage extends StatelessWidget {
       SavedQuestionsEmpty() => SavedQuestionsEmptyParams(
           onSolve: () => context.go(
             '/questions/photo',
-            extra: const ShowPhotoSourceOptionsOnOpen(),
+            extra: ShowPhotoSourceOptionsOnOpen(),
           ),
         ),
       SavedQuestionsError(:final message) => SavedQuestionsErrorParams(
@@ -93,7 +93,8 @@ class SavedQuestionsPage extends StatelessWidget {
   }
 
   void _openPhoto(BuildContext context, String? photoUrl) {
-    Navigator.of(context).push<void>(
+    // Over the nav bar, which belongs to the shell.
+    Navigator.of(context, rootNavigator: true).push<void>(
       PageRouteBuilder<void>(
         // The sheet paints its own opaque backdrop as it fades in, so the
         // list must stay painted underneath it.

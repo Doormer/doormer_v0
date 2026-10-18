@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:doormer/src/core/errors/failure.dart';
+import 'package:doormer/src/core/routes/destination_shell.dart';
 import 'package:doormer/src/features/collection/di/collection_module.dart';
 import 'package:doormer/src/features/collection/domain/entity/card_rarity.dart';
 import 'package:doormer/src/features/collection/domain/entity/collectible_card.dart';
@@ -23,8 +24,6 @@ import 'package:doormer/src/features/collection/presentation/organisms/deck_list
 import 'package:doormer/src/features/collection/presentation/organisms/empty_deck_organism.dart';
 import 'package:doormer/src/features/collection/presentation/pages/collection_page.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
-import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
-import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -702,101 +701,108 @@ void main() {
     expect(drawButton().isLoading, isFalse);
   });
 
-  group('the bar', () {
-    AppDestination lit(WidgetTester tester) => AppDestination.values[
-        tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex];
+  // In the app the page is one of the nav bar's pages, inside the shell that
+  // holds the bar. The other pages are stand-ins here.
+  group('inside the nav bar shell', () {
+    Future<void> pumpInShell(WidgetTester tester) async {
+      final router = GoRouter(
+        initialLocation: '/collection',
+        routes: [
+          StatefulShellRoute.indexedStack(
+            builder: (_, __, navigationShell) =>
+                DestinationShell(navigationShell: navigationShell),
+            branches: [
+              for (final (path, page) in const [
+                ('/saved', Text('Saved page')),
+                ('/questions/photo', Text('Solve page')),
+                ('/collection', CollectionPage()),
+                ('/profile', Text('Profile page')),
+              ])
+                StatefulShellBranch(routes: [
+                  GoRoute(
+                    path: path,
+                    builder: (_, __) =>
+                        page is Text ? Scaffold(body: page) : page,
+                  ),
+                ]),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await _pumpPhone(
+        tester,
+        app: ScreenUtilInit(
+          designSize: const Size(360, 690),
+          builder: (_, __) => MaterialApp.router(routerConfig: router),
+        ),
+      );
+    }
 
-    testWidgets('shows while the decks load', (tester) async {
-      tester.view.physicalSize = const Size(360, 690);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      await tester.pumpWidget(_app());
-
-      expect(find.byType(CircularProgressIndicator), findsOneWidget,
-          reason: 'the decks are still loading');
-      expect(find.byType(NavigationBarOrganism), findsOneWidget);
-      expect(lit(tester), AppDestination.cards);
-
-      // Let the load finish, so the spinner stops asking for frames.
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pumpAndSettle();
-    });
-
-    testWidgets('shows when the decks cannot load, as the way home',
+    testWidgets('a reveal covers the nav bar, so it is dismissed first',
         (tester) async {
-      server.failNextLoadWith = _noConnection;
-      await _pumpPhone(tester);
+      await pumpInShell(tester);
+      await _openDeck(tester, 'Meridian');
+      await tester.tap(find.textContaining('Draw a card'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1700));
+      expect(find.byType(CardRevealOrganism), findsOneWidget);
 
-      expect(find.text(_noConnection.message), findsOneWidget);
-      expect(find.byType(NavigationBarOrganism), findsOneWidget);
-      expect(lit(tester), AppDestination.cards);
+      await tester.tap(find.byIcon(Icons.bookmark_outline),
+          warnIfMissed: false);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('Saved page'), findsNothing,
+          reason: 'the tap lands on the reveal, not the bar under it');
+      expect(find.byType(CardRevealOrganism), findsNothing);
+      expect(find.byType(CardGridOrganism), findsOneWidget);
     });
 
-    testWidgets('shows with the decks, with Cards lit', (tester) async {
-      await _pumpPhone(tester);
+    // A screen reader, or a browser with semantics on, reaches the bar through
+    // the semantics tree rather than by hit testing.
+    testWidgets('a reveal hides the nav bar from screen readers too',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      // What a screen reader can move through, in order.
+      Iterable<String> heard() => tester.semantics
+          .simulatedAccessibilityTraversal()
+          .map((node) => node.label);
+      await pumpInShell(tester);
+      await _openDeck(tester, 'Meridian');
+      expect(heard(), contains(startsWith('Saved')));
 
-      expect(find.byType(DeckListOrganism), findsOneWidget);
-      expect(find.byType(NavigationBarOrganism), findsOneWidget);
-      expect(lit(tester), AppDestination.cards);
+      await tester.tap(find.textContaining('Draw a card'));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1700));
+      expect(find.byType(CardRevealOrganism), findsOneWidget);
+
+      expect(heard(), contains(contains('The Orrery')));
+      expect(heard(), isNot(contains(startsWith('Saved'))));
+      semantics.dispose();
     });
 
-    testWidgets('Solve goes home', (tester) async {
-      final router = GoRouter(
-        initialLocation: '/collection',
-        routes: [
-          GoRoute(
-            path: '/collection',
-            builder: (_, __) => const CollectionPage(),
-          ),
-          GoRoute(
-            path: '/questions/photo',
-            builder: (_, __) => const Scaffold(body: Text('Home page')),
-          ),
-        ],
-      );
-      await _pumpPhone(
-        tester,
-        app: ScreenUtilInit(
-          designSize: const Size(360, 690),
-          builder: (_, __) => MaterialApp.router(routerConfig: router),
-        ),
-      );
-
-      await tester.tap(find.byIcon(Icons.document_scanner_outlined));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Home page'), findsOneWidget);
-      expect(find.byType(CollectionPage), findsNothing);
-    });
-
-    testWidgets('Saved opens the saved questions', (tester) async {
-      final router = GoRouter(
-        initialLocation: '/collection',
-        routes: [
-          GoRoute(
-            path: '/collection',
-            builder: (_, __) => const CollectionPage(),
-          ),
-          GoRoute(
-            path: '/saved',
-            builder: (_, __) => const Scaffold(body: Text('Saved page')),
-          ),
-        ],
-      );
-      await _pumpPhone(
-        tester,
-        app: ScreenUtilInit(
-          designSize: const Size(360, 690),
-          builder: (_, __) => MaterialApp.router(routerConfig: router),
-        ),
-      );
+    // Solving a question elsewhere earns quarks while the page is kept.
+    testWidgets('coming back shows the latest balance, with no spinner',
+        (tester) async {
+      await pumpInShell(tester);
+      expect(find.textContaining('600 quarks'), findsOneWidget);
+      // Each deck row draws its progress as a ring.
+      final rings = find.byType(CircularProgressIndicator).evaluate().length;
 
       await tester.tap(find.byIcon(Icons.bookmark_outline));
       await tester.pumpAndSettle();
+      server._quarkBalance = 650;
+      await tester.tap(find.byIcon(Icons.style_outlined));
+      await tester.pump();
 
-      expect(find.text('Saved page'), findsOneWidget);
-      expect(find.byType(CollectionPage), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNWidgets(rings),
+          reason: 'no loading spinner on top of the rings');
+      expect(find.byType(DeckListOrganism), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      expect(find.textContaining('650 quarks'), findsOneWidget);
     });
   });
 

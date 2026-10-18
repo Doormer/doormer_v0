@@ -51,10 +51,6 @@ void main() {
           builder: (context, state) => const ProfilePage(),
         ),
         GoRoute(
-          path: '/saved',
-          builder: (context, state) => const Text('saved'),
-        ),
-        GoRoute(
           path: '/auth/login',
           builder: (context, state) => const Text('login'),
         ),
@@ -98,14 +94,5 @@ void main() {
 
     expect(session.logouts, 1);
     expect(find.text('login'), findsOneWidget);
-  });
-
-  testWidgets('Saved opens the saved questions', (tester) async {
-    await pumpProfile(tester);
-
-    await tester.tap(find.byIcon(Icons.bookmark_outline));
-    await tester.pumpAndSettle();
-
-    expect(find.text('saved'), findsOneWidget);
   });
 }

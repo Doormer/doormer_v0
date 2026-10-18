@@ -12,8 +12,6 @@ import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/display_ad_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/reveal_on_change_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/show_after_delay_atom.dart';
-import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
-import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 
 class AskByPhotoTemplate extends StatelessWidget {
   /// How long a solve runs before the ad card appears. Shorter solves show
@@ -22,7 +20,6 @@ class AskByPhotoTemplate extends StatelessWidget {
 
   final PhotoUploadPanelParams uploadParams;
   final SolveStatusPanelParams statusParams;
-  final NavigationBarParams navigationBarParams;
 
   /// Set while a photo is being solved. The solving view then replaces the
   /// heading and the photo panels.
@@ -32,7 +29,6 @@ class AskByPhotoTemplate extends StatelessWidget {
     super.key,
     required this.uploadParams,
     required this.statusParams,
-    required this.navigationBarParams,
     this.solving,
   });
 
@@ -67,12 +63,6 @@ class AskByPhotoTemplate extends StatelessWidget {
               )
             else
               _buildHero(),
-            Positioned(
-              left: 20.w,
-              right: 20.w,
-              bottom: 20.h,
-              child: NavigationBarOrganism(params: navigationBarParams),
-            ),
           ],
         ),
       ),
@@ -82,7 +72,7 @@ class AskByPhotoTemplate extends StatelessWidget {
   Widget _buildHero() {
     return Center(
       child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 120.h),
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -115,8 +105,7 @@ class AskByPhotoTemplate extends StatelessWidget {
     final adUnit = solving.adUnit;
 
     return SingleChildScrollView(
-      // Bottom padding clears the pinned navigation bar.
-      padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 120.h),
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
       // Top-aligned, with the ad card last: it appears and disappears without
       // moving anything above it, and an ad below the main content doesn't
       // count toward the Better Ads 30% ad-density limit.
@@ -140,8 +129,7 @@ class AskByPhotoTemplate extends StatelessWidget {
 
   Widget _buildSolvePanels(bool showUploadPanel, bool showStatusPanel) {
     return SingleChildScrollView(
-      // Bottom padding clears the pinned navigation bar.
-      padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 120.h),
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
       child: Column(
         children: [
           const AskByPhotoHeaderMolecule(),

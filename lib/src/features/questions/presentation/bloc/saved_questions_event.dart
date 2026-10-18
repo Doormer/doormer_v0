@@ -21,3 +21,9 @@ class SavedQuestionsMoreRequested extends SavedQuestionsEvent {
 class SavedQuestionsRetried extends SavedQuestionsEvent {
   const SavedQuestionsRetried();
 }
+
+/// The student came back to Saved from another page, where they may have
+/// solved a question.
+class SavedQuestionsRefreshRequested extends SavedQuestionsEvent {
+  const SavedQuestionsRefreshRequested();
+}

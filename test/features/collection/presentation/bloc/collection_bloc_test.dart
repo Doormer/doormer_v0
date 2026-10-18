@@ -726,4 +726,78 @@ void main() {
       ],
     );
   });
+
+  // The page stays alive while the student is on other pages, where solving
+  // a question earns quarks. Here the server's balance has gone from 80 to
+  // 120 since.
+  group('coming back', () {
+    CollectionReady meridianOpenWith80() =>
+        meridianOpen().copyWith(quarkBalance: 80);
+
+    blocTest<CollectionBloc, CollectionState>(
+      'reads the balance and deck list afresh, keeping the open deck',
+      build: build,
+      seed: meridianOpenWith80,
+      act: (bloc) => bloc.add(const CollectionRefreshRequested()),
+      expect: () => [meridianOpen()],
+    );
+
+    blocTest<CollectionBloc, CollectionState>(
+      'a failed read keeps the page as it was, with no error',
+      build: () {
+        repository.decksError = NetworkFailure('offline');
+        return build();
+      },
+      seed: meridianOpenWith80,
+      act: (bloc) => bloc.add(const CollectionRefreshRequested()),
+      expect: () => const <CollectionState>[],
+    );
+
+    blocTest<CollectionBloc, CollectionState>(
+      'leaves a draw in progress alone',
+      build: build,
+      seed: () => meridianOpen(isDrawing: true),
+      act: (bloc) => bloc.add(const CollectionRefreshRequested()),
+      expect: () => const <CollectionState>[],
+      verify: (_) => expect(repository.decksCalls, 0),
+    );
+
+    blocTest<CollectionBloc, CollectionState>(
+      'leaves a shatter in progress alone',
+      build: build,
+      seed: () => meridianOpen(isShattering: true),
+      act: (bloc) => bloc.add(const CollectionRefreshRequested()),
+      expect: () => const <CollectionState>[],
+      verify: (_) => expect(repository.decksCalls, 0),
+    );
+
+    blocTest<CollectionBloc, CollectionState>(
+      'leaves a first load in progress alone',
+      build: build,
+      act: (bloc) => bloc.add(const CollectionRefreshRequested()),
+      expect: () => const <CollectionState>[],
+      verify: (_) => expect(repository.decksCalls, 0),
+    );
+
+    blocTest<CollectionBloc, CollectionState>(
+      'an answer that lands after the deck was closed is dropped',
+      build: () {
+        repository.heldDecks = Completer<void>();
+        return build();
+      },
+      seed: meridianOpenWith80,
+      act: (bloc) async {
+        final freshRead = repository.heldDecks!;
+        bloc.add(const CollectionRefreshRequested());
+        await _answersArrive();
+        bloc.add(const DeckClosed());
+        await _answersArrive();
+        freshRead.complete();
+        await _answersArrive();
+      },
+      expect: () => [
+        CollectionReady(quarkBalance: 80, decks: repository.deckList),
+      ],
+    );
+  });
 }

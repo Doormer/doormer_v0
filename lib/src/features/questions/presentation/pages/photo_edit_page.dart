@@ -13,12 +13,13 @@ typedef PhotoEditorOpener = Future<PhotoEdit?> Function(
   EditablePhoto photo,
 );
 
-/// The [PhotoEditorOpener] the app uses: the screen as a full-screen dialog.
+/// The [PhotoEditorOpener] the app uses: the screen as a full-screen dialog,
+/// over the nav bar too.
 Future<PhotoEdit?> openPhotoEditPage(
   BuildContext context,
   EditablePhoto photo,
 ) {
-  return Navigator.of(context).push<PhotoEdit>(
+  return Navigator.of(context, rootNavigator: true).push<PhotoEdit>(
     MaterialPageRoute<PhotoEdit>(
       fullscreenDialog: true,
       builder: (_) => PhotoEditPage(photo: photo),

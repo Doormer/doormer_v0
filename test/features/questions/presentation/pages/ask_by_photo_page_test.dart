@@ -12,6 +12,7 @@ import 'dart:typed_data';
 
 import 'package:doormer/src/core/ads/display_ad_unit.dart';
 import 'package:doormer/src/core/di/service_locator.dart';
+import 'package:doormer/src/core/routes/destination_shell.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
@@ -36,7 +37,6 @@ import 'package:doormer/src/features/questions/presentation/pages/photo_edit_pag
 import 'package:doormer/src/features/questions/utils/photo/editable_photo.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/display_ad_atom.dart';
-import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
 import 'package:doormer/src/features/questions/presentation/templates/solution_reader_template.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_edit.dart';
@@ -249,24 +249,47 @@ void main() {
     DisplayAdUnit? Function()? solvingAdUnit,
     PhotoEditorOpener? openPhotoEditor,
   }) {
+    // Made once: the page recognises a new request by its identity.
+    final photoSourceOptionsRequest =
+        showPhotoSourceOptionsOnOpen ? ShowPhotoSourceOptionsOnOpen() : null;
+    // The app's own shell around Solve, so the nav bar and switching behave
+    // as they do in the app. The other pages are stand-ins.
     return GoRouter(
       initialLocation: '/questions/photo',
       routes: [
-        GoRoute(
-          path: '/questions/photo',
-          builder: (_, __) => AskByPhotoPage(
-            showPhotoSourceOptionsOnOpen: showPhotoSourceOptionsOnOpen,
-            solvingAdUnit: solvingAdUnit ?? DisplayAdUnit.solvingScreen,
-            openPhotoEditor: openPhotoEditor ?? fakeOpenPhotoEditor,
-          ),
-        ),
-        GoRoute(
-          path: '/collection',
-          builder: (_, __) => const Scaffold(body: Text('Cards page')),
-        ),
-        GoRoute(
-          path: '/saved',
-          builder: (_, __) => const Scaffold(body: Text('Saved page')),
+        StatefulShellRoute.indexedStack(
+          builder: (_, __, navigationShell) =>
+              DestinationShell(navigationShell: navigationShell),
+          branches: [
+            StatefulShellBranch(routes: [
+              GoRoute(
+                path: '/saved',
+                builder: (_, __) => const Scaffold(body: Text('Saved page')),
+              ),
+            ]),
+            StatefulShellBranch(routes: [
+              GoRoute(
+                path: '/questions/photo',
+                builder: (_, __) => AskByPhotoPage(
+                  photoSourceOptionsRequest: photoSourceOptionsRequest,
+                  solvingAdUnit: solvingAdUnit ?? DisplayAdUnit.solvingScreen,
+                  openPhotoEditor: openPhotoEditor ?? fakeOpenPhotoEditor,
+                ),
+              ),
+            ]),
+            StatefulShellBranch(routes: [
+              GoRoute(
+                path: '/collection',
+                builder: (_, __) => const Scaffold(body: Text('Cards page')),
+              ),
+            ]),
+            StatefulShellBranch(routes: [
+              GoRoute(
+                path: '/profile',
+                builder: (_, __) => const Scaffold(body: Text('Profile page')),
+              ),
+            ]),
+          ],
         ),
         GoRoute(
           path: '/questions/:questionId/solution',
@@ -439,11 +462,18 @@ void main() {
     registerBloc();
     await pumpPage(tester);
 
-    expect(find.byType(Scaffold), findsOneWidget);
+    final pageScaffold = find.descendant(
+      of: find.byType(AskByPhotoPage),
+      matching: find.byType(Scaffold),
+    );
+    expect(pageScaffold, findsOneWidget);
+    // The shell around the page, which holds the nav bar, lets it through too.
+    for (final scaffold in tester.widgetList<Scaffold>(find.byType(Scaffold))) {
+      expect(scaffold.backgroundColor, isNull);
+    }
 
-    final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
-    final colorScheme =
-        Theme.of(tester.element(find.byType(Scaffold))).colorScheme;
+    final scaffold = tester.widget<Scaffold>(pageScaffold);
+    final colorScheme = Theme.of(tester.element(pageScaffold)).colorScheme;
     // The page used to paint itself primary. That colour is bounded by the
     // content column, so on a wide window it showed as a violet slab with the
     // app backdrop still visible either side of it.
@@ -550,8 +580,10 @@ void main() {
     expect(submitButton(tester).onPressed, isNull);
 
     await tester.tap(find.byIcon(Icons.document_scanner_outlined));
+    // The toast is inserted after a frame and grows from zero height.
     await tester.pump();
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
     await tester.pump(const Duration(milliseconds: 700));
     expect(
         find.text('Still preparing your photo. One moment.'), findsOneWidget);
@@ -879,10 +911,11 @@ void main() {
     expect(find.byType(AskByPhotoPage), findsNothing);
   });
 
-  testWidgets('the Cards action stays on home mid-solve, and says why',
-      (tester) async {
-    // Leaving would lose the answer, and photographing the same question again
-    // would then count as a repeat and pay nothing.
+  // Solving takes a while, and the student may look at their cards or saved
+  // questions meanwhile. Solve stays alive, so the solve isn't lost.
+  testWidgets(
+      'switching to Cards mid-solve keeps the solve, and its solution waits '
+      'for the return to Solve', (tester) async {
     final pending = Completer<PhotoQuestionSolveOutcome>();
     repository = _FakeQuestionsRepository(pending: pending);
     registerBloc();
@@ -897,27 +930,26 @@ void main() {
     await tester.pump();
 
     await tester.tap(find.byIcon(Icons.style_outlined));
-    // Not pumpAndSettle: the solving view's spinner animates for as long as
-    // the solve runs. Toastification 3.x inserts the toast after a frame and
-    // then animates it from zero height, so finders skip it until it has some.
     await tester.pump();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 700));
-    await tester.pump(const Duration(milliseconds: 700));
-
-    expect(find.text('Cards page'), findsNothing);
-    expect(find.byType(AskByPhotoPage), findsOneWidget);
-    expect(find.text('Still solving your last photo. One moment.'),
-        findsOneWidget);
-    expect(
-      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
-      AppDestination.solve.index,
-      reason: 'a refused tap must not leave Cards lit',
-    );
+    expect(find.text('Cards page'), findsOneWidget);
 
     pending.complete(_outcome(PhotoQuestionSolveStatus.solved));
     await tester.pump();
     await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('Cards page'), findsOneWidget,
+        reason: 'the solution must not pull the student off Cards');
+    expect(find.byType(QuestionSolutionPage), findsNothing);
+
+    await tester.tap(find.byIcon(Icons.document_scanner_outlined));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
+
+    expect(find.byType(QuestionSolutionPage), findsOneWidget);
+    expect(repository.callCount, 1, reason: 'solved once, not again');
     await drainToasts(tester);
   });
 
@@ -935,10 +967,8 @@ void main() {
     expect(find.byType(AskByPhotoPage), findsNothing);
   });
 
-  testWidgets('the Saved action stays on home mid-solve, and says why',
+  testWidgets('back on Solve before the solve ends, it is still solving',
       (tester) async {
-    // Leaving would lose the answer, and photographing the same question again
-    // would then count as a repeat and pay nothing.
     final pending = Completer<PhotoQuestionSolveOutcome>();
     repository = _FakeQuestionsRepository(pending: pending);
     registerBloc();
@@ -953,26 +983,23 @@ void main() {
     await tester.pump();
 
     await tester.tap(find.byIcon(Icons.bookmark_outline));
-    // Not pumpAndSettle: the submit button's spinner animates for as long as
-    // the solve runs. The toast is inserted after a frame and grows from zero.
     await tester.pump();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 700));
-    await tester.pump(const Duration(milliseconds: 700));
+    expect(find.text('Saved page'), findsOneWidget);
 
-    expect(find.text('Saved page'), findsNothing);
-    expect(find.byType(AskByPhotoPage), findsOneWidget);
-    expect(find.text('Still solving your last photo. One moment.'),
-        findsOneWidget);
-    expect(
-      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
-      AppDestination.solve.index,
-      reason: 'a refused tap must not leave Saved lit',
-    );
+    await tester.tap(find.byIcon(Icons.document_scanner_outlined));
+    await tester.pump();
+
+    expect(find.byType(SolvingProgressOrganism), findsOneWidget);
+    expect(find.text('Open camera'), findsNothing,
+        reason: 'coming back is not a tap on Solve while on it');
 
     pending.complete(_outcome(PhotoQuestionSolveStatus.solved));
     await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
     await tester.pump();
+
+    expect(find.byType(QuestionSolutionPage), findsOneWidget);
+    expect(repository.callCount, 1);
     await drainToasts(tester);
   });
 

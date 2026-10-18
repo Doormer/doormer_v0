@@ -4,6 +4,7 @@ import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:equatable/equatable.dart';
 
 import '../../domain/entity/solved_question_summary.dart';
+import '../../domain/entity/solved_questions_page.dart';
 import '../../domain/usecase/load_solved_questions_usecase.dart';
 
 part 'saved_questions_event.dart';
@@ -25,6 +26,7 @@ class SavedQuestionsBloc
     on<SavedQuestionsStarted>(_onStarted);
     on<SavedQuestionsMoreRequested>(_onMoreRequested);
     on<SavedQuestionsRetried>(_onRetried);
+    on<SavedQuestionsRefreshRequested>(_onRefreshRequested);
   }
 
   Future<void> _onStarted(
@@ -59,6 +61,55 @@ class SavedQuestionsBloc
         !current.isLoadingMore) {
       await _loadNextPage(current, emit);
     }
+  }
+
+  /// Reads the first page again behind the rows on screen, and puts any
+  /// question solved since on top. The rows below and where the next page
+  /// starts stay as they are, so nothing on screen moves but the new rows.
+  ///
+  /// Quiet: no spinner, and a failure leaves the page as it was. The answer is
+  /// dropped if anything changed while it was on its way.
+  Future<void> _onRefreshRequested(
+    SavedQuestionsRefreshRequested event,
+    Emitter<SavedQuestionsState> emit,
+  ) async {
+    final opened = state;
+    if (opened is SavedQuestionsLoading || opened is SavedQuestionsError) {
+      return;
+    }
+    if (opened is SavedQuestionsReady && opened.isLoadingMore) return;
+
+    final SolvedQuestionsPage page;
+    try {
+      page = await loadSolvedQuestions();
+    } catch (e) {
+      AppLogger.info('Saved questions not refreshed: $e');
+      return;
+    }
+    if (state != opened) return;
+
+    if (opened is! SavedQuestionsReady) {
+      if (page.questions.isNotEmpty) {
+        emit(SavedQuestionsReady(
+          questions: page.questions,
+          nextCursor: page.nextCursor,
+        ));
+      }
+      return;
+    }
+    final shown = {
+      for (final question in opened.questions) question.questionId
+    };
+    final solvedSince = [
+      for (final question in page.questions)
+        if (!shown.contains(question.questionId)) question,
+    ];
+    if (solvedSince.isEmpty) return;
+    emit(SavedQuestionsReady(
+      questions: [...solvedSince, ...opened.questions],
+      nextCursor: opened.nextCursor,
+      loadMoreFailed: opened.loadMoreFailed,
+    ));
   }
 
   Future<void> _loadFirstPage(Emitter<SavedQuestionsState> emit) async {

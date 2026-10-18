@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:doormer/src/core/ads/display_ad_unit.dart';
-import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/photo_upload_presenter.dart';
@@ -18,15 +17,13 @@ import 'package:doormer/src/features/questions/presentation/templates/ask_by_pho
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/display_ad_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/show_after_delay_atom.dart';
-import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
-import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('keeps the nav bar and upload CTA on the idle hero screen',
+  testWidgets('keeps the upload CTA on the idle hero screen',
       (tester) async {
     var pickCount = 0;
     var submitCount = 0;
@@ -57,13 +54,10 @@ void main() {
               ),
               onRetake: _noop,
             ),
-            navigationBarParams: _navigationBarParams,
           ),
         ),
       ),
     );
-
-    expect(find.byType(NavigationBarOrganism), findsOneWidget);
 
     await tester.tap(find.text('UPLOAD & SOLVE'));
     expect(pickCount, 1);
@@ -99,7 +93,6 @@ void main() {
               ),
               onRetake: _noop,
             ),
-            navigationBarParams: _navigationBarParams,
           ),
         ),
       ),
@@ -166,7 +159,6 @@ void main() {
               ),
               onRetake: _noop,
             ),
-            navigationBarParams: _navigationBarParams,
           ),
         ),
       ),
@@ -202,7 +194,6 @@ void main() {
       expect(find.text('Upload a photo'), findsNothing);
       expect(find.byType(PhotoUploadPanelOrganism), findsNothing);
       expect(find.byType(SolveStatusPanelOrganism), findsNothing);
-      expect(find.byType(NavigationBarOrganism), findsOneWidget);
     });
 
     testWidgets('the view sits at the top of the screen', (tester) async {
@@ -262,87 +253,6 @@ void main() {
         reason: 'a link right beside the ad invites accidental taps on it, '
             'and Google could read the wording as part of the ad',
       );
-    });
-  });
-
-  group('the dock on a wide window', () {
-    // Mounted the way the app mounts it: inside the shell, which caps and
-    // centres the column, and inside the page's own side margins. Handing the
-    // dock a raw window width instead measures a size it is never given.
-    Future<void> pumpMounted(WidgetTester tester, Size window) async {
-      tester.view.physicalSize = window;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.light,
-          builder: (context, child) =>
-              ResponsiveAppShell(child: child ?? const SizedBox.shrink()),
-          home: AskByPhotoTemplate(
-            uploadParams: PhotoUploadPanelParams(
-              isLoading: false,
-              copy: photoUploadCopyFor(hasPhoto: false, isRetry: false),
-              onPickPhoto: () {},
-              onSubmit: () {},
-              onClear: () {},
-            ),
-            statusParams: const SolveStatusPanelParams(
-              content: SolveStatusContent(
-                title: '',
-                body: '',
-                showActions: false,
-              ),
-              onRetake: _noop,
-            ),
-            navigationBarParams: _navigationBarParams,
-          ),
-        ),
-      );
-      await tester.pump();
-    }
-
-    NavigationBar dock(WidgetTester tester) =>
-        tester.widget<NavigationBar>(find.byType(NavigationBar));
-
-    for (final window in const <String, Size>{
-      'laptop': Size(1440, 900),
-      'desktop': Size(1920, 1080),
-      'tablet portrait': Size(820, 1180),
-      'tablet landscape': Size(1180, 820),
-    }.entries) {
-      testWidgets('names its destinations on a ${window.key}', (tester) async {
-        await pumpMounted(tester, window.value);
-
-        expect(
-          dock(tester).labelBehavior,
-          NavigationDestinationLabelBehavior.alwaysShow,
-          reason: 'five unlabelled icons is a guessing game when there is '
-              'room to just say what they are',
-        );
-        for (final name in const [
-          'Saved',
-          'AI Tutor',
-          'Solve',
-          'Cards',
-          'Profile',
-        ]) {
-          expect(find.text(name), findsOneWidget);
-        }
-      });
-    }
-
-    testWidgets('names its destinations on a phone', (tester) async {
-      await pumpMounted(tester, const Size(390, 844));
-
-      expect(
-        dock(tester).labelBehavior,
-        NavigationDestinationLabelBehavior.alwaysShow,
-        reason: 'the phone dock keeps each nav destination named',
-      );
-      expect(find.text('AI Tutor'), findsOneWidget);
-      expect(tester.takeException(), isNull);
     });
   });
 
@@ -441,7 +351,6 @@ Future<void> _pumpTemplate(
             ),
             onRetake: _noop,
           ),
-          navigationBarParams: _navigationBarParams,
         ),
       ),
     ),
@@ -491,21 +400,11 @@ Future<void> _pumpSolving(
             adUnit: adUnit,
             onWhyAds: onWhyAds,
           ),
-          navigationBarParams: _navigationBarParams,
         ),
       ),
     ),
   );
 }
-
-const _navigationBarParams = NavigationBarParams(
-  current: AppDestination.solve,
-  onSaved: _noop,
-  onAiTutor: _noop,
-  onSolve: _noop,
-  onCards: _noop,
-  onProfile: _noop,
-);
 
 final _transparentPngBytes = Uint8List.fromList(const [
   0x89,

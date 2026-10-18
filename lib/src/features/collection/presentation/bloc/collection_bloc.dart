@@ -36,6 +36,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     required this.shatterCopy,
   }) : super(_openingState(loadDecks.lastDeckList)) {
     on<CollectionStarted>(_onStarted);
+    on<CollectionRefreshRequested>(_onRefreshRequested);
     on<DeckSelected>(_onDeckSelected);
     on<DeckClosed>(_onDeckClosed);
     on<DrawRequested>(_onDrawRequested);
@@ -84,6 +85,25 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
       emit(CollectionReady(quarkBalance: list.quarkBalance, decks: list.decks));
     } catch (e, stackTrace) {
       emit(CollectionError(_messageFor(e, stackTrace)));
+    }
+  }
+
+  /// Reads the balance and deck list afresh behind what is on screen, keeping
+  /// the open deck. Quiet: a failure leaves the page as it was, and the answer
+  /// is dropped if the student changed anything while it was on its way.
+  Future<void> _onRefreshRequested(
+    CollectionRefreshRequested event,
+    Emitter<CollectionState> emit,
+  ) async {
+    final opened = state;
+    if (opened is! CollectionReady) return;
+    if (opened.isDrawing || opened.isShattering) return;
+    try {
+      final list = await loadDecks();
+      if (state != opened) return;
+      emit(opened.copyWith(quarkBalance: list.quarkBalance, decks: list.decks));
+    } catch (e, stackTrace) {
+      AppLogger.info('Deck list not refreshed: ${_messageFor(e, stackTrace)}');
     }
   }
 

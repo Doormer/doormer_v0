@@ -4,23 +4,19 @@ import 'package:doormer/src/features/questions/presentation/molecules/saved_ques
 import 'package:doormer/src/features/questions/presentation/organisms/saved_question_list_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/saved_questions_body_params.dart';
 import 'package:doormer/src/shared/design/atomic/molecules/error_with_retry_molecule.dart';
-import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
-import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// The Saved page: its heading, then whatever [body] holds, with the nav bar
-/// at the foot. The Scaffold lays the body out above the bar, so the last row
-/// is never hidden under it.
+/// The Saved page: its heading, then whatever [body] holds. The destination
+/// shell lays the page out above the nav bar, so the last row is never hidden
+/// under it.
 class SavedQuestionsTemplate extends StatelessWidget {
   final SavedQuestionsBodyParams body;
-  final NavigationBarParams navigationBarParams;
   final PhotoImageProviderBuilder imageProviderBuilder;
 
   const SavedQuestionsTemplate({
     super.key,
     required this.body,
-    required this.navigationBarParams,
     this.imageProviderBuilder = networkPhotoImageProvider,
   });
 
@@ -49,13 +45,6 @@ class SavedQuestionsTemplate extends StatelessWidget {
             ),
             Expanded(child: _content()),
           ],
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 20.h),
-          child: NavigationBarOrganism(params: navigationBarParams),
         ),
       ),
     );
