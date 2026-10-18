@@ -13,6 +13,8 @@ import 'dart:typed_data';
 import 'package:doormer/src/core/ads/display_ad_unit.dart';
 import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/routes/destination_shell.dart';
+import 'package:doormer/src/core/routes/question_solution_routes.dart';
+import 'package:doormer/src/core/routes/root_navigator_key.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
@@ -202,6 +204,7 @@ void main() {
 
   late _FakeQuestionsRepository repository;
   late AskByPhotoBloc bloc;
+  late GoRouter router;
   late _FakePhotoFileInput fileInput;
   late _FakePhotoPreparer preparer;
 
@@ -253,8 +256,10 @@ void main() {
     final photoSourceOptionsRequest =
         showPhotoSourceOptionsOnOpen ? ShowPhotoSourceOptionsOnOpen() : null;
     // The app's own shell around Solve, so the nav bar and switching behave
-    // as they do in the app. The other pages are stand-ins.
+    // as they do in the app, and the app's own route for Solve's solution.
+    // The other pages are stand-ins.
     return GoRouter(
+      navigatorKey: rootNavigatorKey,
       initialLocation: '/questions/photo',
       routes: [
         DestinationShell.route(
@@ -273,6 +278,12 @@ void main() {
                   solvingAdUnit: solvingAdUnit ?? DisplayAdUnit.solvingScreen,
                   openPhotoEditor: openPhotoEditor ?? fakeOpenPhotoEditor,
                 ),
+                routes: [
+                  solutionRoute(
+                    tabLocation: '/questions/photo',
+                    tabName: 'Solve',
+                  ),
+                ],
               ),
             ]),
             StatefulShellBranch(routes: [
@@ -288,16 +299,6 @@ void main() {
               ),
             ]),
           ],
-        ),
-        GoRoute(
-          path: '/questions/:questionId/solution',
-          builder: (context, state) {
-            final extra = state.extra;
-            return QuestionSolutionPage(
-              questionId: state.pathParameters['questionId'] ?? '',
-              solvedState: extra is AskByPhotoSolved ? extra : null,
-            );
-          },
         ),
       ],
     );
@@ -322,17 +323,19 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
+    router = buildRouter(
+      showPhotoSourceOptionsOnOpen: showPhotoSourceOptionsOnOpen,
+      solvingAdUnit: solvingAdUnit,
+      openPhotoEditor: openPhotoEditor,
+    );
+    addTearDown(router.dispose);
     await tester.pumpWidget(
       ScreenUtilInit(
         designSize: const Size(360, 690),
         builder: (_, __) => MaterialApp.router(
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
-          routerConfig: buildRouter(
-            showPhotoSourceOptionsOnOpen: showPhotoSourceOptionsOnOpen,
-            solvingAdUnit: solvingAdUnit,
-            openPhotoEditor: openPhotoEditor,
-          ),
+          routerConfig: router,
         ),
       ),
     );
@@ -722,6 +725,104 @@ void main() {
 
     expect(find.byType(QuestionSolutionPage), findsOneWidget);
     expect(find.byType(SolutionReaderTemplate), findsOneWidget);
+    expect(router.routerDelegate.currentConfiguration.uri.path,
+        '/questions/photo/q_solved/solution',
+        reason: 'opened over Solve, which stays alive under it');
+  });
+
+  // Solve stays alive under its solution. Holding on to the finished solve
+  // would open the same solution again on every return to Solve.
+  testWidgets('a solution handed over does not open again on a later return',
+      (tester) async {
+    repository = _FakeQuestionsRepository(
+      outcome: _outcome(PhotoQuestionSolveStatus.solved),
+    );
+    registerBloc();
+    await pumpPage(tester);
+    await selectPhoto(tester);
+    await tester.ensureVisible(
+      find.widgetWithText(FilledButton, 'Submit to solver'),
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(QuestionSolutionPage), findsOneWidget);
+
+    // Closed with the browser's Back button.
+    await router.routeInformationProvider.didPushRouteInformation(
+      RouteInformation(uri: Uri.parse('/questions/photo')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(QuestionSolutionPage), findsNothing);
+
+    await tester.tap(find.byIcon(Icons.bookmark_outline));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.document_scanner_outlined));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(QuestionSolutionPage), findsNothing);
+    expect(router.routerDelegate.currentConfiguration.uri.path,
+        '/questions/photo');
+    expect(repository.callCount, 1);
+  });
+
+  // go_router names a page after its route's pattern, so two solutions under
+  // Solve share one page. A solve that finished while the student had gone
+  // back to an earlier solution showed that earlier one at its own address.
+  testWidgets('a solve that finishes under a solution opens its own solution',
+      (tester) async {
+    final first = _outcome(PhotoQuestionSolveStatus.solved);
+    repository = _FakeQuestionsRepository(outcome: first);
+    registerBloc();
+    await pumpPage(tester);
+    await selectPhoto(tester);
+    await tester.ensureVisible(
+      find.widgetWithText(FilledButton, 'Submit to solver'),
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(router.routerDelegate.currentConfiguration.uri.path,
+        '/questions/photo/q_solved/solution');
+
+    // What "Ask another question" does, then a second photo.
+    router.go('/questions/photo');
+    await tester.pumpAndSettle();
+    final second = Completer<PhotoQuestionSolveOutcome>();
+    repository.pending = second;
+    await selectPhoto(tester);
+    await tester.ensureVisible(
+      find.widgetWithText(FilledButton, 'Submit to solver'),
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+    await tester.pump();
+    await tester.pump();
+
+    // Back to the first solution with the browser's Back button, while the
+    // second photo is still solving.
+    await router.routeInformationProvider.didPushRouteInformation(
+      RouteInformation(uri: Uri.parse('/questions/photo/q_solved/solution')),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(QuestionSolutionPage), findsOneWidget);
+
+    second.complete(PhotoQuestionSolveOutcome(
+      status: PhotoQuestionSolveStatus.solved,
+      questionId: 'q_second',
+      solution: first.solution,
+      method: 'Method of the second photo',
+    ));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(router.routerDelegate.currentConfiguration.uri.path,
+        '/questions/photo/q_second/solution');
+    expect(find.text('Method of the second photo'), findsOneWidget);
+    expect(repository.callCount, 2);
   });
 
   testWidgets('an unreadable outcome renders the recovery panel in place',

@@ -146,6 +146,10 @@ try {
 
 - Routes: `core/routes/app_router.dart` + `web_router.dart` (`AppRouter` delegates to `WebRouter.router`). `PathUrlStrategy` (no hash) is set in `main.dart` via `setUrlStrategy()`, not in the router files.
 - Session expiry → redirect to `/auth` via `BlocListener<GlobalSessionBloc>` in `main.dart`.
+- **The nav bar's pages are tabs of one `StatefulShellRoute`** (`destination_routes.dart`), and each stays alive while another is shown.
+  - A page that covers the nav bar, such as a solution, is a child route of its tab with `parentNavigatorKey: rootNavigatorKey`, so the tabs stay alive under it. See `solutionRoute` in `question_solution_routes.dart`.
+  - Never make such a page a top-level route: going there throws the tabs away.
+  - Every router that loads `destinationRoutes`, test routers included, is built with `navigatorKey: rootNavigatorKey`.
 
 ## Atomic Design (presentation layer)
 

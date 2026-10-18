@@ -35,16 +35,17 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
-  testWidgets('shows Back to Solve only when a message and callback exist',
+  testWidgets('shows its Back button only when a message and callback exist',
       (tester) async {
     var taps = 0;
     await tester.pumpWidget(_pump(SolutionReaderPlaceholderTemplate(
       message: 'We could not open this solution.',
       onBack: () => taps++,
+      backLabel: 'Back to Saved',
     )));
     await tester.pump();
 
-    expect(find.text('Back to Solve'), findsOneWidget);
+    expect(find.text('Back to Saved'), findsOneWidget);
     expect(find.byKey(const Key('solution_back')), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('solution_back')));
@@ -57,15 +58,16 @@ void main() {
     )));
     await tester.pump();
 
-    expect(find.text('Back to Solve'), findsNothing);
+    expect(find.byKey(const Key('solution_back')), findsNothing);
 
     await tester.pumpWidget(_pump(SolutionReaderPlaceholderTemplate(
       onBack: () => taps++,
+      backLabel: 'Back to Saved',
     )));
     await tester.pump();
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.text('Back to Solve'), findsNothing);
+    expect(find.byKey(const Key('solution_back')), findsNothing);
   });
 
   testWidgets('owns one Scaffold and paints no colour of its own',

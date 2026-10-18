@@ -61,8 +61,13 @@ class _DestinationShellState extends State<DestinationShell> {
       setState(() => _reselections++);
       return;
     }
-    widget.navigationShell
-        .goBranch(DestinationShell.destinations.indexOf(destination));
+    // The tab's own address, not the one it was left at: under a solution
+    // that is the solution's, which would come back with the tab. The page
+    // is kept either way.
+    widget.navigationShell.goBranch(
+      DestinationShell.destinations.indexOf(destination),
+      initialLocation: true,
+    );
   }
 
   @override

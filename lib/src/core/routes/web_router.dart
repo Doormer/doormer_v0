@@ -1,6 +1,7 @@
 import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/routes/question_solution_routes.dart';
 import 'package:doormer/src/core/routes/popup_route_tracker.dart';
+import 'package:doormer/src/core/routes/root_navigator_key.dart';
 import 'package:doormer/src/core/routes/route_guard.dart';
 import 'package:doormer/src/core/utils/token_storage/token_storage.dart';
 import 'package:doormer/src/features/auth/presentation/pages/login_page.dart';
@@ -23,6 +24,7 @@ class WebRouter {
   static final PopupRouteTracker popupRoutes = PopupRouteTracker();
 
   static final GoRouter router = GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/auth',
     redirect: (context, state) async {
       final tokens = serviceLocator<TokenStorage>();

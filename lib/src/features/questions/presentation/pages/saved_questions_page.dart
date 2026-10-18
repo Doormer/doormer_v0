@@ -84,10 +84,11 @@ class SavedQuestionsPage extends StatelessWidget {
       detail: content.detail,
       askedLabel: content.askedLabel,
       thumbnailUrl: question.thumbnailUrl,
-      // `go`, as Solve does, so the address is the solution's own: back
-      // returns here and a refresh keeps the solution.
+      // `go` to the solution's own address, under Saved: it opens over the
+      // nav bar with this page kept under it, so back shows the list as it
+      // was left, and a refresh keeps the solution.
       onOpen: () => context.go(
-          '/questions/${Uri.encodeComponent(question.questionId)}/solution'),
+          '/saved/${Uri.encodeComponent(question.questionId)}/solution'),
       onEnlargePhoto: () => _openPhoto(context, question.photoUrl),
     );
   }

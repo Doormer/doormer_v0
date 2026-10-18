@@ -1,9 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/routes/destination_routes.dart';
+import 'package:doormer/src/core/routes/root_navigator_key.dart';
 import 'package:doormer/src/core/services/sessions/session_service.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
@@ -17,15 +21,22 @@ import 'package:doormer/src/features/collection/presentation/bloc/collection_blo
 import 'package:doormer/src/features/collection/presentation/pages/collection_page.dart';
 import 'package:doormer/src/features/profile/domain/usecase/sign_out_usecase.dart';
 import 'package:doormer/src/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_question_summary.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_questions_page.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_question_usecase.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_solved_questions_usecase.dart';
+import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/saved_questions_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
+import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
 import 'package:doormer/src/features/questions/presentation/pages/saved_questions_page.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/cross_fade_indexed_stack_atom.dart';
 import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
@@ -147,6 +158,58 @@ SolvedQuestionSummary _solved(String id) => SolvedQuestionSummary(
       askedAt: DateTime.utc(2026, 10, 6),
     );
 
+/// Plays the API for solutions and for Solve: every question loads as the
+/// bundled sample, and a photo stays solving until the test completes
+/// [solve]. Records what it was asked.
+class _SolutionsRepository implements QuestionsRepository {
+  final List<String> loadedIds = [];
+  int photosSent = 0;
+
+  /// The solve of the last photo sent. Made as the photo is sent, inside the
+  /// test's fake time, so its answer arrives there: one made in `setUp`
+  /// answers on the real event loop, which a pump never reaches.
+  Completer<PhotoQuestionSolveOutcome>? solve;
+
+  @override
+  Future<PhotoQuestionSolveOutcome> loadQuestion(String questionId) async {
+    loadedIds.add(questionId);
+    return _bundledSolution(questionId);
+  }
+
+  @override
+  Future<int> loadQuarkBalance() async => 128;
+
+  @override
+  Future<PhotoQuestionSolveOutcome> submitPhotoQuestion({
+    required Uint8List imageBytes,
+    required String contentType,
+  }) {
+    photosSent++;
+    return (solve = Completer()).future;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('${invocation.memberName}');
+}
+
+/// A real, decodable 1x1 transparent PNG, for Solve's photo preview.
+final Uint8List _png = base64Decode(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk'
+  'YPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+);
+
+/// The bundled sample solution, as the API sends it for [questionId].
+PhotoQuestionSolveOutcome _bundledSolution(String questionId) {
+  final json = jsonDecode(
+    File('assets/mock/mock_question_response.json').readAsStringSync(),
+  ) as Map<String, dynamic>;
+  return PhotoQuestionResponseModel.fromJson({
+    ...json,
+    'question_id': questionId,
+  }).toEntity();
+}
+
 class _FakeSessionService implements SessionService {
   @override
   Future<void> logout() async {}
@@ -203,6 +266,7 @@ void main() {
     addTearDown(tester.view.reset);
 
     final router = GoRouter(
+      navigatorKey: rootNavigatorKey,
       initialLocation: initialLocation,
       routes: destinationRoutes,
     );
@@ -227,6 +291,14 @@ void main() {
   /// its duration, which is when the page left goes out of sight.
   Future<void> waitOutTheFade(WidgetTester tester) => tester.pump(
       CrossFadeIndexedStackAtom.duration + const Duration(milliseconds: 16));
+
+  /// Goes back to [location] as the browser's Back button does, which is how
+  /// a student closes a solution.
+  Future<void> browserBackTo(GoRouter router, String location) async {
+    await router.routeInformationProvider.didPushRouteInformation(
+      RouteInformation(uri: Uri.parse(location)),
+    );
+  }
 
   // Cutting from one page to the next in a single frame reads as a jump.
   testWidgets('switching tabs cross-fades the pages', (tester) async {
@@ -482,6 +554,181 @@ void main() {
     });
   });
 
+  // Opening a solution used to replace the whole tabbed screen, so every tab
+  // was built afresh on the way back: Saved reloaded at the top of its list,
+  // and a photo still solving was lost.
+  group('a solution', () {
+    late _CountingSavedQuestionsRepository saved;
+    late _SolutionsRepository solutions;
+    late AskByPhotoBloc solveBloc;
+
+    setUp(() {
+      saved = _CountingSavedQuestionsRepository();
+      serviceLocator.unregister<SavedQuestionsBloc>();
+      serviceLocator.registerFactory<SavedQuestionsBloc>(
+        () => SavedQuestionsBloc(
+          loadSolvedQuestions: LoadSolvedQuestionsUseCase(saved),
+        ),
+      );
+      solutions = _SolutionsRepository();
+      serviceLocator.registerFactory<SolutionReaderBloc>(
+        () => SolutionReaderBloc(
+          loadSampleSolutionUseCase: LoadSampleSolutionUseCase(solutions),
+          loadQuestionUseCase: LoadQuestionUseCase(solutions),
+          loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(solutions),
+          revealAnswerUseCase: RevealAnswerUseCase(solutions),
+        ),
+      );
+      // Made when Solve is first built, inside the test's fake time, so the
+      // solve's answer arrives there. The test drives this one instance.
+      serviceLocator.unregister<AskByPhotoBloc>();
+      serviceLocator.registerFactory<AskByPhotoBloc>(
+        () => solveBloc = AskByPhotoBloc(
+          submitPhotoQuestionUseCase: SubmitPhotoQuestionUseCase(solutions),
+        ),
+      );
+    });
+
+    testWidgets('a saved question opens its solution over the nav bar',
+        (tester) async {
+      final router = await pumpDestinations(tester, initialLocation: '/saved');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Question 1'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(QuestionSolutionPage), findsOneWidget);
+      expect(find.byType(NavigationBarOrganism), findsNothing);
+      expect(router.routerDelegate.currentConfiguration.uri.path,
+          '/saved/1/solution');
+      expect(solutions.loadedIds, ['1']);
+    });
+
+    testWidgets('closing it shows Saved as it was left, with no reload',
+        (tester) async {
+      saved.questions = [for (var id = 1; id <= 20; id++) _solved('$id')];
+      final router = await pumpDestinations(tester, initialLocation: '/saved');
+      await tester.pumpAndSettle();
+      final unscrolledTop = tester.getTopLeft(find.text('Question 4')).dy;
+      await tester.drag(find.text('Question 2'), const Offset(0, -200));
+      await tester.pumpAndSettle();
+      final page = tester.element(find.byType(SavedQuestionsPage));
+      final cards =
+          tester.element(find.byType(CollectionPage, skipOffstage: false));
+      final rowTop = tester.getTopLeft(find.text('Question 4')).dy;
+      expect(rowTop, lessThan(unscrolledTop), reason: 'the list scrolled');
+
+      await tester.tap(find.text('Question 4'));
+      await tester.pumpAndSettle();
+      expect(find.byType(QuestionSolutionPage), findsOneWidget);
+      await browserBackTo(router, '/saved');
+      await tester.pumpAndSettle();
+
+      expect(find.byType(QuestionSolutionPage), findsNothing);
+      expect(tester.element(find.byType(SavedQuestionsPage)), same(page));
+      expect(
+        tester.element(find.byType(CollectionPage, skipOffstage: false)),
+        same(cards),
+        reason: 'every tab is kept, not only the one under the solution',
+      );
+      expect(tester.getTopLeft(find.text('Question 4')).dy, rowTop,
+          reason: 'scrolled where it was');
+      expect(saved.reads, 1, reason: 'no reload');
+      expect(litDestination(tester), AppDestination.saved.index);
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/saved');
+    });
+
+    testWidgets('starting on its address opens it over a loaded Saved',
+        (tester) async {
+      final router = await pumpDestinations(
+        tester,
+        initialLocation: '/saved/1/solution',
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(QuestionSolutionPage), findsOneWidget);
+      expect(find.byType(NavigationBarOrganism), findsNothing);
+      expect(saved.reads, 1, reason: 'Saved loads under the solution');
+
+      await browserBackTo(router, '/saved');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Question 1'), findsOneWidget);
+      expect(litDestination(tester), AppDestination.saved.index);
+      expect(saved.reads, 1, reason: 'and shows at once, with no reload');
+    });
+
+    testWidgets(
+        'a photo still solving keeps solving while a saved solution is open',
+        (tester) async {
+      final router = await pumpDestinations(tester);
+      solveBloc
+        ..add(AskByPhotoPhotoPicked(
+          imageBytes: _png,
+          fileName: 'question.png',
+          mimeType: 'image/png',
+        ))
+        ..add(const AskByPhotoSubmitted());
+      await tester.pump();
+      await tester.pump();
+      expect(solutions.photosSent, 1);
+
+      // The solving view's clock ticks every second, so nothing settles while
+      // a photo is solving: frames are pumped one at a time.
+      await tester.tap(find.byIcon(Icons.bookmark_outline));
+      await tester.pump();
+      await waitOutTheFade(tester);
+      await tester.tap(find.text('Question 1'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byType(QuestionSolutionPage), findsOneWidget);
+
+      solutions.solve!.complete(_bundledSolution('9'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(router.routerDelegate.currentConfiguration.uri.path,
+          '/saved/1/solution',
+          reason: 'the finished solve waits for the return to Solve');
+
+      await browserBackTo(router, '/saved');
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.tap(find.byIcon(Icons.document_scanner_outlined));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(router.routerDelegate.currentConfiguration.uri.path,
+          '/questions/photo/9/solution');
+      expect(find.byType(QuestionSolutionPage), findsOneWidget);
+      expect(solutions.photosSent, 1, reason: 'solved once, not lost');
+      expect(solutions.loadedIds, ['1'],
+          reason: "the solve's own solution is handed over, not loaded");
+    });
+
+    // go_router remembers each tab's last address. Under a solution, Saved's
+    // is the solution's, so restoring it after the student left the solution
+    // for another tab put that address back in the address bar, where a
+    // refresh would open the solution again.
+    testWidgets('a solution left for another tab does not come back with Saved',
+        (tester) async {
+      final router = await pumpDestinations(tester, initialLocation: '/saved');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Question 1'));
+      await tester.pumpAndSettle();
+
+      // What "Ask another question" does.
+      router.go('/questions/photo');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.bookmark_outline));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(QuestionSolutionPage), findsNothing);
+      expect(find.text('Question 1'), findsOneWidget);
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/saved');
+    });
+  });
+
   testWidgets('tapping Solve while on Solve brings up the photo options',
       (tester) async {
     await pumpDestinations(tester);
@@ -580,6 +827,7 @@ void main() {
       addTearDown(tester.view.reset);
 
       final router = GoRouter(
+        navigatorKey: rootNavigatorKey,
         initialLocation: '/questions/photo',
         routes: destinationRoutes,
       );

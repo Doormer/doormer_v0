@@ -14,16 +14,24 @@ class SolutionReaderPlaceholderTemplate extends StatelessWidget {
   /// Optional recovery action shown only for an error message.
   final VoidCallback? onBack;
 
+  /// The words on that action, naming where it goes, such as "Back to Saved".
+  final String? backLabel;
+
   const SolutionReaderPlaceholderTemplate({
     super.key,
     this.message,
     this.onBack,
-  });
+    this.backLabel,
+  }) : assert(
+          (onBack == null) == (backLabel == null),
+          'onBack and backLabel come together',
+        );
 
   @override
   Widget build(BuildContext context) {
     final message = this.message;
     final onBack = this.onBack;
+    final backLabel = this.backLabel;
 
     return Scaffold(
       body: Center(
@@ -45,10 +53,10 @@ class SolutionReaderPlaceholderTemplate extends StatelessWidget {
                         color: QuestPalette.cream,
                       ),
                     ),
-                    if (onBack != null) ...[
+                    if (onBack != null && backLabel != null) ...[
                       SizedBox(height: 18.h),
                       QuestGhostButtonAtom(
-                        label: 'Back to Solve',
+                        label: backLabel,
                         icon: Icons.chevron_left_rounded,
                         enabled: true,
                         onPressed: onBack,

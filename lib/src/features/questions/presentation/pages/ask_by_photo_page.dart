@@ -116,7 +116,11 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
 
   void _openSolution(BuildContext context, AskByPhotoSolved state) {
     final questionId = Uri.encodeComponent(state.questionId);
-    GoRouter.of(context).go('/questions/$questionId/solution', extra: state);
+    // Solve stays alive under the solution. Once it is handed over, Solve gets
+    // ready for the next photo instead of opening it again on every return.
+    context.read<AskByPhotoBloc>().add(const AskByPhotoClearRequested());
+    GoRouter.of(context)
+        .go('/questions/photo/$questionId/solution', extra: state);
   }
 
   /// Opens the photo library or file chooser, or, with [fromCamera], the

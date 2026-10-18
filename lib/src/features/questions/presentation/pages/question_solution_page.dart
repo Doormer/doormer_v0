@@ -16,10 +16,19 @@ class QuestionSolutionPage extends StatelessWidget {
   final String? questionId;
   final AskByPhotoSolved? solvedState;
 
+  /// The address of the tab this solution opened over. Back on the "couldn't
+  /// load" screen goes there.
+  final String tabLocation;
+
+  /// That tab's name, as the nav bar shows it.
+  final String tabName;
+
   const QuestionSolutionPage({
     super.key,
     this.questionId,
     this.solvedState,
+    this.tabLocation = '/questions/photo',
+    this.tabName = 'Solve',
   });
 
   @override
@@ -60,7 +69,8 @@ class QuestionSolutionPage extends StatelessWidget {
           if (state is SolutionReaderError) {
             return SolutionReaderPlaceholderTemplate(
               message: state.message,
-              onBack: () => context.go('/questions/photo'),
+              onBack: () => context.go(tabLocation),
+              backLabel: 'Back to $tabName',
             );
           }
 

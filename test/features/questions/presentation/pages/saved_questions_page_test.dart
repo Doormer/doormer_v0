@@ -81,6 +81,14 @@ void main() {
         GoRoute(
           path: '/saved',
           builder: (_, __) => SavedQuestionsPage(now: () => _now),
+          routes: [
+            GoRoute(
+              path: ':questionId/solution',
+              builder: (_, state) => Scaffold(
+                body: Text('Reader for ${state.pathParameters['questionId']}'),
+              ),
+            ),
+          ],
         ),
         GoRoute(
           path: '/questions/photo',
@@ -88,12 +96,6 @@ void main() {
             body: Text(state.extra is ShowPhotoSourceOptionsOnOpen
                 ? 'Solve page, photo options up'
                 : 'Solve page'),
-          ),
-        ),
-        GoRoute(
-          path: '/questions/:questionId/solution',
-          builder: (_, state) => Scaffold(
-            body: Text('Reader for ${state.pathParameters['questionId']}'),
           ),
         ),
       ],
@@ -125,7 +127,7 @@ void main() {
     expect(find.text('Today'), findsOneWidget);
   });
 
-  testWidgets('tapping a row opens its solution at its own address',
+  testWidgets('tapping a row opens its solution at its own address, under Saved',
       (tester) async {
     repository = _ScriptedRepository({
       null: [
@@ -140,7 +142,7 @@ void main() {
 
     expect(find.text('Reader for 42'), findsOneWidget);
     expect(router.routerDelegate.currentConfiguration.uri.path,
-        '/questions/42/solution');
+        '/saved/42/solution');
   });
 
   testWidgets('tapping the photo shows it full size, and Close comes back',

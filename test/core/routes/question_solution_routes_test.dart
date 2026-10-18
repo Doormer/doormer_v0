@@ -86,10 +86,29 @@ void main() {
 
   tearDown(() async => serviceLocator.reset());
 
-  Future<void> pumpRoute(WidgetTester tester, String initialLocation) async {
+  Future<GoRouter> pumpRoute(
+    WidgetTester tester,
+    String initialLocation,
+  ) async {
     final router = GoRouter(
       initialLocation: initialLocation,
-      routes: questionSolutionRoutes,
+      routes: [
+        ...questionSolutionRoutes,
+        // Stands in for the Saved tab and the solutions opened from it.
+        GoRoute(
+          path: '/saved',
+          builder: (_, __) => const Scaffold(body: Text('Saved')),
+          routes: [
+            GoRoute(
+              path: ':questionId/solution',
+              builder: (_, state) => Scaffold(
+                body: Text(
+                    'Saved solution ${state.pathParameters['questionId']}'),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
     addTearDown(router.dispose);
     await tester.pumpWidget(
@@ -102,6 +121,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    return router;
   }
 
   testWidgets('sample route opens the sample with no question id',
@@ -113,12 +133,24 @@ void main() {
     expect(find.text('The plan'), findsOneWidget);
   });
 
-  testWidgets('question route opens the address question by id',
+  // Solutions opened at /questions/<id>/solution before they moved under
+  // their tab. Links to that address still open the question.
+  testWidgets('an old solution address opens the solution under Saved',
       (tester) async {
-    await pumpRoute(tester, '/questions/57/solution');
+    final router = await pumpRoute(tester, '/questions/57/solution');
 
-    expect(repository.sampleCalls, 0);
-    expect(repository.loadedIds, ['57']);
-    expect(find.text('The plan'), findsOneWidget);
+    expect(router.routerDelegate.currentConfiguration.uri.path,
+        '/saved/57/solution');
+    expect(find.text('Saved solution 57'), findsOneWidget);
+  });
+
+  testWidgets('an old address keeps an id that needs encoding',
+      (tester) async {
+    // An encoded slash: sent on decoded, it would split the id in two.
+    final router = await pumpRoute(tester, '/questions/a%2Fb/solution');
+
+    expect(router.routerDelegate.currentConfiguration.uri.path,
+        '/saved/a%2Fb/solution');
+    expect(find.text('Saved solution a/b'), findsOneWidget);
   });
 }

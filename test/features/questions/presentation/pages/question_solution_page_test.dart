@@ -161,8 +161,13 @@ void main() {
     expect(find.text('The plan'), findsOneWidget);
   });
 
-  testWidgets('error state shows Back to Solve and returns to Solve',
-      (tester) async {
+  /// Pumps [routes] at [location], with every question failing to load, as one
+  /// that no longer exists does.
+  Future<GoRouter> pumpUnloadableQuestion(
+    WidgetTester tester, {
+    required String location,
+    required List<RouteBase> routes,
+  }) async {
     await serviceLocator.reset();
     final repository = _AssetRepository()
       ..loadQuestionError = ApiFailure(404, 'That question does not exist.');
@@ -174,8 +179,27 @@ void main() {
         revealAnswerUseCase: RevealAnswerUseCase(repository),
       ),
     );
-    final router = GoRouter(
-      initialLocation: '/questions/999999/solution',
+    final router = GoRouter(initialLocation: location, routes: routes);
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(360, 690),
+        builder: (_, __) => MaterialApp.router(
+          theme: AppTheme.dark,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    return router;
+  }
+
+  testWidgets('error state shows Back to Solve and returns to Solve',
+      (tester) async {
+    await pumpUnloadableQuestion(
+      tester,
+      location: '/questions/999999/solution',
       routes: [
         GoRoute(
           path: '/questions/photo',
@@ -189,18 +213,6 @@ void main() {
         ),
       ],
     );
-    addTearDown(router.dispose);
-
-    await tester.pumpWidget(
-      ScreenUtilInit(
-        designSize: const Size(360, 690),
-        builder: (_, __) => MaterialApp.router(
-          theme: AppTheme.dark,
-          routerConfig: router,
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
 
     expect(find.text("We couldn't find this question."), findsOneWidget);
     expect(find.text('Back to Solve'), findsOneWidget);
@@ -209,6 +221,39 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Solve page'), findsOneWidget);
+  });
+
+  testWidgets('opened from Saved, the error state goes Back to Saved',
+      (tester) async {
+    final router = await pumpUnloadableQuestion(
+      tester,
+      location: '/saved/999999/solution',
+      routes: [
+        GoRoute(
+          path: '/saved',
+          builder: (_, __) => const Scaffold(body: Text('Saved page')),
+          routes: [
+            GoRoute(
+              path: ':questionId/solution',
+              builder: (_, state) => QuestionSolutionPage(
+                questionId: state.pathParameters['questionId'],
+                tabLocation: '/saved',
+                tabName: 'Saved',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+
+    expect(find.text("We couldn't find this question."), findsOneWidget);
+    expect(find.text('Back to Saved'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('solution_back')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Saved page'), findsOneWidget);
+    expect(router.routerDelegate.currentConfiguration.uri.path, '/saved');
   });
 
   testWidgets('shows the solver note on the briefing', (tester) async {

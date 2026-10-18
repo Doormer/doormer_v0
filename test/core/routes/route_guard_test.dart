@@ -6,7 +6,9 @@ void main() {
     for (final path in [
       '/questions/photo',
       '/questions/abc/solution',
+      '/questions/photo/abc/solution',
       '/saved',
+      '/saved/abc/solution',
       '/collection',
       '/profile',
     ]) {
@@ -35,7 +37,9 @@ void main() {
 
     for (final path in [
       '/questions/photo',
+      '/questions/photo/abc/solution',
       '/saved',
+      '/saved/abc/solution',
       '/collection',
       '/profile'
     ]) {
