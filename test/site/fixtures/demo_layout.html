@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Demo layout regression test</title>
+<pre id="results">Running</pre>
+<script>
+(async () => {
+  const failures = [];
+  const results = [];
+  const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+  for (const [width, height] of [[1280, 800], [1024, 600], [390, 844], [320, 568], [844, 390]]) {
+    const frame = document.createElement('iframe');
+    frame.style.cssText = `width:${width}px;height:${height}px;border:0`;
+    frame.src = '/site/pages/home.html#demo';
+    await new Promise(resolve => {
+      frame.onload = resolve;
+      document.body.append(frame);
+    });
+    const w = frame.contentWindow;
+    const d = frame.contentDocument;
+    await d.fonts.ready;
+    d.documentElement.style.scrollBehavior = 'auto';
+    const reader = d.querySelector('.reader');
+    const panels = d.querySelector('.reader__panels');
+    const nativeScrollIntoView = w.Element.prototype.scrollIntoView;
+    let scrollRequests = 0;
+    w.Element.prototype.scrollIntoView = function(...args) {
+      scrollRequests++;
+      return nativeScrollIntoView.apply(this, args);
+    };
+    const check = (condition, message) => {
+      if (!condition) failures.push(`${width}x${height}: ${message}`);
+    };
+    const stages = [];
+    for (let i = 0; i < 5; i++) {
+      const panel = d.querySelector('[data-demo-panel]:not([hidden])');
+      const stage = panel.getAttribute('data-demo-panel');
+      const r = reader.getBoundingClientRect();
+      check(w.getComputedStyle(panels).overflowY === 'visible',
+        `${stage} clips content inside a scrolling container`);
+      for (const diagram of panel.querySelectorAll('.reader__visual')) {
+        const bounds = diagram.getBoundingClientRect();
+        check(bounds.top >= r.top - 1 && bounds.bottom <= r.bottom + 1,
+          `${stage} diagram is outside the expanded reader`);
+      }
+      check(scrollRequests === 0, `${stage} requested page scrolling`);
+      check(d.documentElement.scrollWidth <= width, `${stage} overflows horizontally`);
+      const why = panel.querySelector('.why');
+      if (why) {
+        why.open = true;
+        check(reader.getBoundingClientRect().height >= panels.scrollHeight,
+          `${stage} explanation is clipped`);
+      }
+      stages.push({stage, readerHeight: Math.round(r.height)});
+      if (i < 4) {
+        const next = d.querySelector('[data-demo-next]');
+        nativeScrollIntoView.call(next, {block: 'nearest', behavior: 'instant'});
+        next.click();
+        await pause(500);
+      }
+    }
+    d.querySelector('[data-demo-next]').click();
+    await pause(w.matchMedia('(prefers-reduced-motion: reduce)').matches ? 100 : 1600);
+    check(d.querySelector('[data-demo-reveal]').open, 'the answer did not open');
+    if (w.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      check(d.querySelector('[data-demo-quarks]').textContent === '46', 'the reward did not update');
+    }
+    d.querySelector('[data-demo-back]').click();
+    await pause(500);
+    check(scrollRequests === 0, 'Back requested page scrolling');
+    results.push({width, height, stages});
+    frame.remove();
+  }
+  document.querySelector('#results').textContent = JSON.stringify({pass: failures.length === 0, failures, results});
+})().catch(error => {
+  document.querySelector('#results').textContent = JSON.stringify({error: String(error)});
+});
+</script>
