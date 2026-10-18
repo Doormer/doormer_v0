@@ -1350,6 +1350,26 @@ html:not(.js) .site-header {
 }
 
 /* The scene is drawn in em units so it scales as one piece. */
+.hero__preview {
+  min-width: 0;
+  margin: 0;
+}
+
+.preview__caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-size: .78rem;
+}
+
+.preview__caption strong {
+  color: var(--dim);
+  font-weight: 700;
+}
+
 .hero__scene {
   position: relative;
   width: 30em;
@@ -1606,26 +1626,18 @@ html:not(.js) .site-header {
 }
 
 .mini-reader__why {
-  display: flex;
-  justify-content: space-between;
   margin-top: auto;
-  padding: .55em .8em;
-  border-radius: .8em;
-  border: 1px dashed rgba(255, 171, 243, .55);
-  color: var(--pink);
+  padding: .55em 0;
+  color: var(--dim);
   font-size: .7em;
-  font-weight: 700;
 }
 
-.mini-reader__next {
-  padding: .8em;
-  border-radius: var(--radius-pill);
-  background: var(--violet);
-  color: #fff;
-  font-size: .8em;
-  font-weight: 700;
+.mini-reader__progress {
+  padding-top: .8em;
+  border-top: 1px solid var(--outline);
+  color: var(--muted);
+  font-size: .7em;
   text-align: center;
-  box-shadow: 0 .6em 1.6em -.6em rgba(108, 77, 255, .95);
 }
 
 .scene__photo {
@@ -2048,34 +2060,16 @@ html:not(.js) .site-header {
 }
 
 .demo__caption {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  gap: 6px;
   margin-top: 26px;
   color: var(--muted);
   font-size: .95rem;
 }
 
-.demo__reads {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 0 18px;
-  border-radius: var(--radius-pill);
-  border: 1px solid rgba(0, 229, 160, .5);
-  background: rgba(0, 229, 160, .1);
+.demo__photo-label {
   color: var(--mint);
-  font: inherit;
   font-weight: 700;
-  cursor: pointer;
-  transition: background-color .2s ease, color .2s ease;
-}
-
-.demo__reads[aria-pressed="true"] {
-  background: var(--mint);
-  color: var(--on-mint);
 }
 
 .demo__device {
@@ -2595,6 +2589,12 @@ html:not(.js) .site-header {
   font-weight: 700;
 }
 
+.reader__hint {
+  margin-top: 20px;
+  color: var(--body);
+  font-size: .9rem;
+}
+
 .reader__controls {
   display: flex;
   gap: 10px;
@@ -2603,6 +2603,7 @@ html:not(.js) .site-header {
 
 .reader__controls .btn {
   flex: 1;
+  min-height: 48px;
 }
 
 .reader__controls [data-demo-back] {
@@ -2610,13 +2611,13 @@ html:not(.js) .site-header {
 }
 
 .reader__next {
-  background: var(--violet);
-  color: #fff;
-  box-shadow: 0 12px 30px -12px rgba(108, 77, 255, .95);
+  background: var(--mint);
+  color: var(--on-mint);
+  box-shadow: 0 12px 30px -12px rgba(0, 229, 160, .55);
 }
 
 .reader__next:hover {
-  background: #7B5FFF;
+  background: #3CEBB7;
   transform: translateY(-2px);
 }
 
@@ -3150,9 +3151,7 @@ html:not(.js) .site-header {
   font-size: .95rem;
 }
 
-.why-card__toggle {
-  display: flex;
-  justify-content: space-between;
+.why-card__heading {
   color: var(--pink);
   font-weight: 700;
 }

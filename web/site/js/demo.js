@@ -10,7 +10,8 @@
   const stepCount = 3;
   const startingQuarks = 40;
   const earnedQuarks = 6;
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const reduceMotion = motionPreference.matches;
 
   const byStage = (attribute) => new Map(
     [...root.querySelectorAll(`[${attribute}]`)].map((element) => [element.getAttribute(attribute), element]),
@@ -30,8 +31,9 @@
   const vaultStatus = root.querySelector('[data-demo-vault-status]');
   const reveal = root.querySelector('[data-demo-reveal]');
   const answer = root.querySelector('[data-demo-answer]');
-  const readsToggle = root.querySelector('[data-demo-reads]');
   const paper = root.querySelector('[data-demo-paper]');
+  const photoLabel = root.querySelector('[data-demo-photo-label]');
+  const controlsHint = root.querySelector('#demo-controls-hint');
 
   let current = 0;
   let furthest = 0;
@@ -147,16 +149,41 @@
     if (stages[current] === 'vault') crackVault();
   });
 
-  if (readsToggle && paper) {
-    readsToggle.hidden = false;
-    readsToggle.addEventListener('click', () => {
-      const reading = readsToggle.getAttribute('aria-pressed') !== 'true';
-      readsToggle.setAttribute('aria-pressed', String(reading));
+  if (paper && photoLabel) {
+    let photoVisible = false;
+    let photoTimer = null;
+
+    const showReading = (reading) => {
       paper.classList.toggle('is-reading', reading);
-    });
+      photoLabel.textContent = reading ? 'What Doormer reads.' : 'Your photo, scribbles and all.';
+    };
+
+    const updatePhotoPlayback = () => {
+      window.clearInterval(photoTimer);
+      photoTimer = null;
+      if (motionPreference.matches) {
+        showReading(true);
+      } else if (photoVisible && !document.hidden) {
+        photoTimer = window.setInterval(() => {
+          showReading(!paper.classList.contains('is-reading'));
+        }, 1500);
+      }
+    };
+
+    const photoObserver = new IntersectionObserver(([entry]) => {
+      photoVisible = entry.isIntersecting && entry.intersectionRatio >= 0.15;
+      updatePhotoPlayback();
+    }, { threshold: 0.15 });
+    photoObserver.observe(paper);
+    document.addEventListener('visibilitychange', updatePhotoPlayback);
+    motionPreference.addEventListener('change', updatePhotoPlayback);
+    window.addEventListener('pagehide', () => window.clearInterval(photoTimer));
+    window.addEventListener('pageshow', updatePhotoPlayback);
+    updatePhotoPlayback();
   }
 
   root.classList.add('is-enhanced');
   controls.hidden = false;
+  controlsHint.hidden = false;
   render();
 })();

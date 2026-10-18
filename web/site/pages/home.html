@@ -12,7 +12,7 @@
   <link rel="apple-touch-icon" href="/site/img/apple-touch-icon.png">
   <link rel="preload" href="/site/fonts/fredoka-700.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/site/fonts/space-grotesk-400.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/site/css/site.css?h=1b80ef13d9">
+  <link rel="stylesheet" href="/site/css/site.css?h=6f3ee906c6">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Doormer">
   <meta property="og:title" content="Doormer — homework help that ends with an answer you crack">
@@ -21,7 +21,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <script>document.documentElement.classList.add('js');</script>
   <script src="/site/js/site.js?h=4700418a0c" defer></script>
-  <script src="/site/js/demo.js?h=d1eeb5fc33" defer></script>
+  <script src="/site/js/demo.js?h=28c23e089d" defer></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -100,6 +100,8 @@
           </ul>
         </div>
 
+        <figure class="hero__preview">
+          <figcaption class="preview__caption"><strong>App preview</strong><span>Illustration — try the interactive demo below</span></figcaption>
         <div class="hero__scene" role="img" aria-label="A Doormer solution in progress: the student’s photo with their own working set aside, step two of three lit up on the trail, the answer vault waiting at the end, and quarks and a collectible card as rewards.">
           <svg class="scene__trail" viewBox="0 0 560 600" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M70 150 C 140 250, 150 300, 230 330 S 420 360, 470 520" fill="none" stroke="url(#scene-trail-gradient)" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 12"/><defs><linearGradient id="scene-trail-gradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFABF3"/><stop offset=".55" stop-color="#9B82FF"/><stop offset="1" stop-color="#FFD84D"/></linearGradient></defs></svg>
           <span class="scene__star" style="--x: 8%; --y: 6%; --d: 0s"></span>
@@ -142,9 +144,9 @@
                 <p class="mini-reader__text">The lower road edge drops the printed 24 m across the field.</p>
                 <svg class="mini-reader__visual" viewBox="0 0 160 80" aria-hidden="true" focusable="false"><path d="M44 10V64H144Z" fill="#6C4DFF" fill-opacity=".22"/><path d="M44 10L144 64" stroke="#FFABF3" stroke-width="3.5" stroke-linecap="round"/><path d="M44 10V64" stroke="#B9AEE6" stroke-width="3.5" stroke-linecap="round"/><path d="M44 64H144" stroke="#00E5A0" stroke-width="3.5" stroke-linecap="round"/><g font-family="Space Grotesk, sans-serif" font-size="12" font-weight="700"><text x="38" y="42" text-anchor="end" fill="#B9AEE6">24 m</text><text x="94" y="78" text-anchor="middle" fill="#00E5A0">W</text><text x="100" y="30" fill="#FFABF3">3 : 4</text></g></svg>
                 <div class="mini-reader__math"><math><mfrac><mn>24</mn><mi>W</mi></mfrac><mo>=</mo><mfrac><mn>3</mn><mn>4</mn></mfrac><mspace width="0.4em"></mspace><mo>⟹</mo><mspace width="0.4em"></mspace><mi>W</mi><mo>=</mo><mn>32</mn><mspace width="0.2em"></mspace><mi mathvariant="normal">m</mi></math></div>
-                <p class="mini-reader__why">Why this works <span aria-hidden="true">›</span></p>
+                <p class="mini-reader__why">Same slope, different triangle.</p>
               </div>
-              <p class="mini-reader__next">Next step <span aria-hidden="true">→</span></p>
+              <p class="mini-reader__progress">Solution in progress · Step 2 of 3</p>
             </div>
           </div>
 
@@ -160,6 +162,7 @@
           <p class="scene__chip scene__chip--vault"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="10" width="14" height="10" rx="2.5" fill="currentColor"/><path d="M8 10V8a4 4 0 0 1 8 0v2" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>Answer unlocks after step 3</p>
           <p class="scene__chip scene__chip--quarks">+6 quarks</p>
         </div>
+        </figure>
       </div>
     </section>
 
@@ -187,7 +190,7 @@
     <section class="section demo" id="demo" aria-labelledby="demo-title">
       <div class="container">
         <div class="section-head section-head--center">
-          <p class="eyebrow eyebrow--pink">Try it — no sign-up</p>
+          <p class="eyebrow eyebrow--pink">Interactive demo · No sign-up</p>
           <h2 id="demo-title">Walk through a real solution</h2>
           <p>A question Doormer solved, shortened for this page. Step through it the way you would in the app, then crack the vault.</p>
         </div>
@@ -218,8 +221,8 @@
               <p class="chip chip--pink paper__set-aside">Your working — set aside</p>
             </div>
             <figcaption class="demo__caption">
-              <span>The student’s photo, scribbles and all.</span>
-              <button type="button" class="demo__reads" data-demo-reads aria-pressed="false" hidden>Show what Doormer reads</button>
+              <span class="demo__photo-label" data-demo-photo-label>Your photo, scribbles and all.</span>
+              <span>Printed question kept. Your working set aside.</span>
             </figcaption>
           </figure>
 
@@ -374,7 +377,8 @@
                 </article>
               </div>
 
-              <div class="reader__controls" data-demo-controls hidden>
+              <p class="reader__hint" id="demo-controls-hint" hidden>Try it here: select “Start solving”, then follow each step to open the answer.</p>
+              <div class="reader__controls" data-demo-controls aria-describedby="demo-controls-hint" hidden>
                 <button type="button" class="btn btn--ghost btn--small" data-demo-back>Back</button>
                 <button type="button" class="btn btn--small reader__next" data-demo-next>Start solving</button>
                 <a class="btn btn--primary btn--small" href="/auth/signup" data-demo-try hidden>Try it with your own question</a>
@@ -548,7 +552,7 @@
               <p class="why-card__title">Work out the area</p>
               <p class="why-card__math">A = 5 × 32 = 160 m²</p>
               <div class="why-card__open">
-                <p class="why-card__toggle">Why this works <span>⌃</span></p>
+                <p class="why-card__heading">Why this works</p>
                 <p>A parallelogram’s area is base × perpendicular height. Take a 5 m side as the base; the height is the field’s width, 32 m.</p>
               </div>
             </div>
