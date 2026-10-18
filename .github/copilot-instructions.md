@@ -167,6 +167,8 @@ Decompose a feature's screens into a layered widget hierarchy instead of one mon
 - **Do not nest page and template scaffolds.** A page that delegates to a template returns that template directly; it must not wrap the template in another `Scaffold`.
 - **Static chrome copy may be hardcoded** in a molecule/organism (titles, button labels like `Clear`/`Retake`). **State- or data-driven text must flow in** via params / the mapper — never hardcode it below the page.
 - **Naming**: suffix classes `XxxAtom` / `XxxMolecule` / `XxxOrganism` / `XxxTemplate` / `XxxParams`; files `snake_case.dart`. Theming and sizing rules (`AppColors`/`AppTextStyles`, ScreenUtil) apply as everywhere else.
+- **A shell around several pages follows the same layers.** Its `Scaffold` and chrome, such as the nav bar shell's, go in a template, which takes the routed pages as widgets, and the code that wires it to routing stays thin, like a page. A widget with no feature knowledge that a page needs, such as an overlay or an animation, is a shared atom with its own tests, not a private class at the bottom of the page.
+- **`test/architecture/atomic_design_test.dart` checks these rules** on every `flutter test` run: nothing below a page imports a bloc, no layer imports a layer above it, each file below a page carries its layer's suffix and holds the matching class, and only templates and pages build a `Scaffold`. Its lists of older files that break a rule only ever shrink.
 
 ## Conventions
 

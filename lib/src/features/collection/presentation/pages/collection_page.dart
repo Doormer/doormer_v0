@@ -3,6 +3,7 @@ import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/responsive/margin_scrim_scope.dart';
 import 'package:doormer/src/core/routes/app_router.dart';
 import 'package:doormer/src/core/routes/shown_destination.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/root_overlay_atom.dart';
 import 'package:doormer/src/shared/design/atomic/molecules/error_with_retry_molecule.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:flutter/material.dart';
@@ -94,7 +95,7 @@ class _CollectionViewState extends State<_CollectionView> {
         final reveal =
             isShown == AppDestination.cards ? ready.pendingReveal : null;
 
-        return _OnRootOverlay(
+        return RootOverlayAtom(
           // Over the whole screen, nav bar included, which belongs to the
           // shell around this page. Screen readers can't reach the bar
           // either.
@@ -177,70 +178,4 @@ class _CollectionViewState extends State<_CollectionView> {
       },
     );
   }
-}
-
-/// Shows [overlayChild], when there is one, on the app's root overlay, above
-/// everything [child] sits inside.
-/// Shows [overlayChild], when there is one, in an entry of its own on the
-/// root overlay, above the shell's nav bar. Unlike an `OverlayPortal`,
-/// whose semantics stay where the portal sits, an entry's semantics come
-/// after the bar's, so a [BlockSemantics] in it hides the bar too.
-class _OnRootOverlay extends StatefulWidget {
-  final Widget? overlayChild;
-  final Widget child;
-
-  const _OnRootOverlay({required this.overlayChild, required this.child});
-
-  @override
-  State<_OnRootOverlay> createState() => _OnRootOverlayState();
-}
-
-class _OnRootOverlayState extends State<_OnRootOverlay> {
-  OverlayEntry? _entry;
-
-  @override
-  void initState() {
-    super.initState();
-    _syncAfterFrame();
-  }
-
-  @override
-  void didUpdateWidget(_OnRootOverlay oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.overlayChild != oldWidget.overlayChild) _syncAfterFrame();
-  }
-
-  // The overlay can't change while this page builds.
-  void _syncAfterFrame() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final overlayChild = widget.overlayChild;
-      if (overlayChild == null) {
-        _removeEntry();
-      } else if (_entry == null) {
-        _entry = OverlayEntry(
-          builder: (_) => widget.overlayChild ?? const SizedBox.shrink(),
-        );
-        Overlay.of(context, rootOverlay: true).insert(_entry!);
-      } else {
-        _entry!.markNeedsBuild();
-      }
-    });
-  }
-
-  void _removeEntry() {
-    _entry
-      ?..remove()
-      ..dispose();
-    _entry = null;
-  }
-
-  @override
-  void dispose() {
-    _removeEntry();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => widget.child;
 }

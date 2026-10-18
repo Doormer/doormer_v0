@@ -10,17 +10,18 @@ import 'package:go_router/go_router.dart';
 ///
 /// They're tabs of one [DestinationShell]: the bar is built once, and each page
 /// stays alive while another is shown, so switching back shows it as it was
-/// left, with no reload.
+/// left, with no reload. Switching cross-fades the pages. Saved and Cards load
+/// as soon as the shell opens, so even a first visit has no spinner.
 ///
 /// Kept apart from `WebRouter` so a test can load them: the router also holds
 /// the auth pages, which only compile for the browser.
 final List<RouteBase> destinationRoutes = [
-  StatefulShellRoute.indexedStack(
-    builder: (context, state, navigationShell) =>
-        DestinationShell(navigationShell: navigationShell),
-    // In the order of DestinationShell.branches.
+  DestinationShell.route(
+    // In the order of DestinationShell.destinations.
     branches: [
-      StatefulShellBranch(routes: [
+      // Loaded as soon as the shell opens, so the first visit opens on the
+      // questions rather than a spinner.
+      StatefulShellBranch(preload: true, routes: [
         GoRoute(
           path: '/saved',
           builder: (context, state) => const SavedQuestionsPage(),
@@ -38,7 +39,9 @@ final List<RouteBase> destinationRoutes = [
           },
         ),
       ]),
-      StatefulShellBranch(routes: [
+      // Loaded as soon as the shell opens, so the first visit opens on the
+      // deck list rather than a spinner.
+      StatefulShellBranch(preload: true, routes: [
         GoRoute(
           path: '/collection',
           builder: (context, state) => const CollectionPage(),

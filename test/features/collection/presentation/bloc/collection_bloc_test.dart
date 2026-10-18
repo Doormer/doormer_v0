@@ -799,5 +799,31 @@ void main() {
         CollectionReady(quarkBalance: 80, decks: repository.deckList),
       ],
     );
+
+    // Cards loads out of sight as soon as the shell opens, and that load may
+    // have failed.
+    blocTest<CollectionBloc, CollectionState>(
+      'after a failed load, tries again as Retry does',
+      build: build,
+      seed: () => const CollectionError('offline'),
+      act: (bloc) => bloc.add(const CollectionRefreshRequested()),
+      expect: () => [isA<CollectionLoading>(), deckList()],
+    );
+
+    blocTest<CollectionBloc, CollectionState>(
+      'a try that fails again shows the error again',
+      build: () {
+        repository.decksError = NetworkFailure(
+            "We couldn't connect. Check your connection and try again.");
+        return build();
+      },
+      seed: () => const CollectionError('offline'),
+      act: (bloc) => bloc.add(const CollectionRefreshRequested()),
+      expect: () => [
+        isA<CollectionLoading>(),
+        const CollectionError(
+            "We couldn't connect. Check your connection and try again."),
+      ],
+    );
   });
 }

@@ -708,9 +708,7 @@ void main() {
       final router = GoRouter(
         initialLocation: '/collection',
         routes: [
-          StatefulShellRoute.indexedStack(
-            builder: (_, __, navigationShell) =>
-                DestinationShell(navigationShell: navigationShell),
+          DestinationShell.route(
             branches: [
               for (final (path, page) in const [
                 ('/saved', Text('Saved page')),

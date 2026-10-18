@@ -79,6 +79,11 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
       return;
     }
 
+    await _loadDeckList(emit);
+  }
+
+  /// The spinner, then the deck list, or the page error.
+  Future<void> _loadDeckList(Emitter<CollectionState> emit) async {
     emit(const CollectionLoading());
     try {
       final list = await loadDecks();
@@ -91,11 +96,18 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
   /// Reads the balance and deck list afresh behind what is on screen, keeping
   /// the open deck. Quiet: a failure leaves the page as it was, and the answer
   /// is dropped if the student changed anything while it was on its way.
+  ///
+  /// After a failed load, perhaps one made out of sight before the first
+  /// visit, it tries again as Retry does instead.
   Future<void> _onRefreshRequested(
     CollectionRefreshRequested event,
     Emitter<CollectionState> emit,
   ) async {
     final opened = state;
+    if (opened is CollectionError) {
+      await _loadDeckList(emit);
+      return;
+    }
     if (opened is! CollectionReady) return;
     if (opened.isDrawing || opened.isShattering) return;
     try {

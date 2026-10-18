@@ -257,9 +257,7 @@ void main() {
     return GoRouter(
       initialLocation: '/questions/photo',
       routes: [
-        StatefulShellRoute.indexedStack(
-          builder: (_, __, navigationShell) =>
-              DestinationShell(navigationShell: navigationShell),
+        DestinationShell.route(
           branches: [
             StatefulShellBranch(routes: [
               GoRoute(

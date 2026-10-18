@@ -375,5 +375,32 @@ void main() {
       expect: () => const <SavedQuestionsState>[],
       verify: (_) => expect(repository.cursors, isEmpty),
     );
+
+    // Saved loads out of sight as soon as the shell opens, and that load may
+    // have failed.
+    blocTest<SavedQuestionsBloc, SavedQuestionsState>(
+      'after a failed load, tries again as Retry does',
+      setUp: () => repository = _ScriptedRepository({null: _firstPage}),
+      build: newBloc,
+      seed: () => const SavedQuestionsError(SavedQuestionsBloc.couldNotLoad),
+      act: (bloc) => bloc.add(const SavedQuestionsRefreshRequested()),
+      expect: () => [
+        const SavedQuestionsLoading(),
+        SavedQuestionsReady(questions: _firstPage.questions, nextCursor: '2'),
+      ],
+    );
+
+    blocTest<SavedQuestionsBloc, SavedQuestionsState>(
+      'a try that fails again shows the error again',
+      setUp: () =>
+          repository = _ScriptedRepository({null: NetworkFailure('offline')}),
+      build: newBloc,
+      seed: () => const SavedQuestionsError(SavedQuestionsBloc.couldNotLoad),
+      act: (bloc) => bloc.add(const SavedQuestionsRefreshRequested()),
+      expect: () => [
+        const SavedQuestionsLoading(),
+        const SavedQuestionsError(SavedQuestionsBloc.couldNotLoad),
+      ],
+    );
   });
 }

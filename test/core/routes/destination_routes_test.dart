@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:doormer/src/core/di/service_locator.dart';
+import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/routes/destination_routes.dart';
 import 'package:doormer/src/core/services/sessions/session_service.dart';
@@ -26,6 +27,7 @@ import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bl
 import 'package:doormer/src/features/questions/presentation/bloc/saved_questions_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
 import 'package:doormer/src/features/questions/presentation/pages/saved_questions_page.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/cross_fade_indexed_stack_atom.dart';
 import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:flutter/material.dart';
@@ -50,6 +52,25 @@ class _PendingCollectionRepository implements CollectionRepository {
   @override
   Future<({int quarkBalance, List<DeckProgress> decks})> loadDecks() =>
       Completer<({int quarkBalance, List<DeckProgress> decks})>().future;
+
+  // Nothing has been read, so nothing is remembered.
+  @override
+  ({int quarkBalance, List<DeckProgress> decks})? get lastDeckList => null;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('${invocation.memberName}');
+}
+
+/// Answers at once, with no decks and 600 quarks. Counts the reads.
+class _ReadyCollectionRepository implements CollectionRepository {
+  int reads = 0;
+
+  @override
+  Future<({int quarkBalance, List<DeckProgress> decks})> loadDecks() async {
+    reads++;
+    return (quarkBalance: 600, decks: const <DeckProgress>[]);
+  }
 
   // Nothing has been read, so nothing is remembered.
   @override
@@ -94,6 +115,23 @@ class _CountingSavedQuestionsRepository implements QuestionsRepository {
   Future<SolvedQuestionsPage> loadSolvedQuestions({String? cursor}) async {
     reads++;
     return SolvedQuestionsPage(questions: questions);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('${invocation.memberName}');
+}
+
+/// Fails the preload, then answers retry reads with one solved question.
+class _FailsFirstSavedQuestionsRepository implements QuestionsRepository {
+  int reads = 0;
+  final Completer<SolvedQuestionsPage> retry = Completer<SolvedQuestionsPage>();
+
+  @override
+  Future<SolvedQuestionsPage> loadSolvedQuestions({String? cursor}) async {
+    reads++;
+    if (reads == 1) throw NetworkFailure();
+    return retry.future;
   }
 
   @override
@@ -156,7 +194,7 @@ void main() {
     await serviceLocator.reset();
   });
 
-  Future<void> pumpDestinations(
+  Future<GoRouter> pumpDestinations(
     WidgetTester tester, {
     String initialLocation = '/questions/photo',
   }) async {
@@ -179,10 +217,62 @@ void main() {
       ),
     );
     await tester.pump();
+    return router;
   }
 
   int litDestination(WidgetTester tester) =>
       tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex;
+
+  /// Lets a switch's cross-fade finish. A fade ends on the first frame after
+  /// its duration, which is when the page left goes out of sight.
+  Future<void> waitOutTheFade(WidgetTester tester) => tester.pump(
+      CrossFadeIndexedStackAtom.duration + const Duration(milliseconds: 16));
+
+  // Cutting from one page to the next in a single frame reads as a jump.
+  testWidgets('switching tabs cross-fades the pages', (tester) async {
+    await pumpDestinations(tester);
+
+    await tester.tap(find.byIcon(Icons.style_outlined));
+    await tester.pump();
+    await tester.pump(CrossFadeIndexedStackAtom.duration ~/ 2);
+
+    expect(find.byType(AskByPhotoPage), findsOneWidget,
+        reason: 'Solve is still fading out');
+    expect(find.byType(CollectionPage), findsOneWidget);
+    expect(find.byType(NavigationBarOrganism), findsOneWidget);
+    expect(
+      find.ancestor(
+        of: find.byType(NavigationBarOrganism),
+        matching: find.byType(CrossFadeIndexedStackAtom),
+      ),
+      findsNothing,
+      reason: 'only the pages fade; the bar stays still',
+    );
+
+    await waitOutTheFade(tester);
+    expect(find.byType(AskByPhotoPage), findsNothing);
+    expect(find.byType(CollectionPage), findsOneWidget);
+  });
+
+  testWidgets('a route change mid-fade carries on to its tab', (tester) async {
+    final router = await pumpDestinations(tester);
+
+    await tester.tap(find.byIcon(Icons.style_outlined));
+    await tester.pump();
+    await tester.pump(CrossFadeIndexedStackAtom.duration ~/ 2);
+
+    await router.routeInformationProvider.didPushRouteInformation(
+      RouteInformation(uri: Uri.parse('/saved')),
+    );
+    await tester.pump();
+    await waitOutTheFade(tester);
+
+    expect(find.byType(SavedQuestionsPage), findsOneWidget);
+    expect(find.byType(CollectionPage), findsNothing);
+    expect(find.byType(AskByPhotoPage), findsNothing);
+    expect(litDestination(tester), AppDestination.saved.index);
+    expect(find.byType(NavigationBarOrganism), findsOneWidget);
+  });
 
   // The bar is the shell's, so a switch only swaps the page above it. When
   // each page drew its own bar, the old bar was torn down and a new one built
@@ -199,6 +289,7 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.style_outlined));
     await tester.pump();
+    await waitOutTheFade(tester);
 
     expect(find.byType(AskByPhotoPage), findsNothing);
     expect(find.byType(CollectionPage), findsOneWidget);
@@ -208,6 +299,7 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.document_scanner_outlined));
     await tester.pump();
+    await waitOutTheFade(tester);
 
     expect(find.byType(CollectionPage), findsNothing);
     expect(find.byType(AskByPhotoPage), findsOneWidget);
@@ -234,6 +326,7 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.bookmark_outline));
     await tester.pump();
+    await waitOutTheFade(tester);
 
     expect(find.byType(AskByPhotoPage), findsNothing);
     expect(find.byType(SavedQuestionsPage), findsOneWidget);
@@ -292,6 +385,100 @@ void main() {
         tester.getTopLeft(find.textContaining('Question 2')).dy,
         lessThan(tester.getTopLeft(find.textContaining('Question 1')).dy),
       );
+    });
+  });
+
+  // A first visit used to land on a spinner while the page loaded.
+  group('loaded before the first visit', () {
+    late _CountingSavedQuestionsRepository saved;
+    late _ReadyCollectionRepository collection;
+
+    setUp(() {
+      saved = _CountingSavedQuestionsRepository();
+      serviceLocator.unregister<SavedQuestionsBloc>();
+      serviceLocator.registerFactory<SavedQuestionsBloc>(
+        () => SavedQuestionsBloc(
+          loadSolvedQuestions: LoadSolvedQuestionsUseCase(saved),
+        ),
+      );
+      collection = _ReadyCollectionRepository();
+      serviceLocator.unregister<CollectionBloc>();
+      serviceLocator.registerFactory<CollectionBloc>(
+        () => CollectionBloc(
+          loadDecks: LoadDecksUseCase(collection),
+          loadCollection: LoadCollectionUseCase(collection),
+          drawCard: DrawCardUseCase(collection),
+          shatterCopy: ShatterCopyUseCase(collection),
+        ),
+      );
+    });
+
+    testWidgets('Saved and Cards load while Solve is shown', (tester) async {
+      await pumpDestinations(tester);
+      await tester.pumpAndSettle();
+
+      expect(saved.reads, 1);
+      expect(collection.reads, 1);
+      expect(find.byType(SavedQuestionsPage), findsNothing,
+          reason: 'loaded out of sight');
+      expect(find.byType(CollectionPage), findsNothing);
+    });
+
+    testWidgets('the first visit to Saved opens on its questions',
+        (tester) async {
+      await pumpDestinations(tester);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.bookmark_outline));
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.textContaining('Question 1'), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(saved.reads, 2, reason: 'the first visit also refreshes quietly');
+    });
+
+    testWidgets('the first visit to Cards opens on the deck list',
+        (tester) async {
+      await pumpDestinations(tester);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.style_outlined));
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text('0 decks'), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(collection.reads, 2,
+          reason: 'the first visit also refreshes quietly');
+    });
+
+    testWidgets('a load that failed out of sight is tried again on first visit',
+        (tester) async {
+      final saved = _FailsFirstSavedQuestionsRepository();
+      serviceLocator.unregister<SavedQuestionsBloc>();
+      serviceLocator.registerFactory<SavedQuestionsBloc>(
+        () => SavedQuestionsBloc(
+          loadSolvedQuestions: LoadSolvedQuestionsUseCase(saved),
+        ),
+      );
+
+      await pumpDestinations(tester);
+      await tester.pumpAndSettle();
+
+      expect(saved.reads, 1);
+      expect(find.text(SavedQuestionsBloc.couldNotLoad), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.bookmark_outline));
+      await tester.pump();
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      saved.retry.complete(SolvedQuestionsPage(questions: [_solved('1')]));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Question 1'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(saved.reads, 2);
     });
   });
 

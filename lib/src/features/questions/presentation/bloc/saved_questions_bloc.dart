@@ -69,14 +69,19 @@ class SavedQuestionsBloc
   ///
   /// Quiet: no spinner, and a failure leaves the page as it was. The answer is
   /// dropped if anything changed while it was on its way.
+  ///
+  /// After a failed load, perhaps one made out of sight before the first
+  /// visit, it tries again as Retry does instead.
   Future<void> _onRefreshRequested(
     SavedQuestionsRefreshRequested event,
     Emitter<SavedQuestionsState> emit,
   ) async {
     final opened = state;
-    if (opened is SavedQuestionsLoading || opened is SavedQuestionsError) {
+    if (opened is SavedQuestionsError) {
+      await _loadFirstPage(emit);
       return;
     }
+    if (opened is SavedQuestionsLoading) return;
     if (opened is SavedQuestionsReady && opened.isLoadingMore) return;
 
     final SolvedQuestionsPage page;
