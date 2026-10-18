@@ -11,9 +11,15 @@ Widget _app({Widget? overlayChild, bool withAtom = true}) {
         children: [
           const Text('Underneath'),
           if (withAtom)
-            RootOverlayAtom(
-              overlayChild: overlayChild,
-              child: const Text('In place'),
+            // Its own boundary for screen readers, like the page around it in
+            // the app. An OverlayPortal would put the overlay child inside
+            // it, where a BlockSemantics can't hide the text above.
+            Semantics(
+              container: true,
+              child: RootOverlayAtom(
+                overlayChild: overlayChild,
+                child: const Text('In place'),
+              ),
             ),
         ],
       ),
@@ -53,6 +59,30 @@ void main() {
 
     expect(find.text('On top'), findsNothing);
     expect(find.text('In place'), findsOneWidget);
+  });
+
+  // As on the Cards page: only the page rebuilds, with a new overlay child.
+  testWidgets('shows the new overlay child when it changes', (tester) async {
+    final label = ValueNotifier('First');
+    addTearDown(label.dispose);
+    await tester.pumpWidget(MaterialApp(
+      home: ValueListenableBuilder<String>(
+        valueListenable: label,
+        builder: (_, text, __) => RootOverlayAtom(
+          overlayChild: Positioned.fill(child: Center(child: Text(text))),
+          child: const SizedBox.shrink(),
+        ),
+      ),
+    ));
+    await tester.pump();
+    expect(find.text('First'), findsOneWidget);
+
+    label.value = 'Second';
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Second'), findsOneWidget);
+    expect(find.text('First'), findsNothing);
   });
 
   testWidgets('takes the overlay child away when the atom goes',

@@ -825,5 +825,24 @@ void main() {
             "We couldn't connect. Check your connection and try again."),
       ],
     );
+
+    blocTest<CollectionBloc, CollectionState>(
+      'coming back again while it is still loading starts no second load',
+      build: () {
+        repository.heldDecks = Completer<void>();
+        return build();
+      },
+      seed: () => const CollectionError('offline'),
+      act: (bloc) async {
+        final firstLoad = repository.heldDecks!;
+        bloc
+          ..add(const CollectionRefreshRequested())
+          ..add(const CollectionRefreshRequested());
+        await Future<void>.delayed(Duration.zero);
+        firstLoad.complete();
+      },
+      expect: () => [isA<CollectionLoading>(), deckList()],
+      verify: (_) => expect(repository.decksCalls, 1),
+    );
   });
 }

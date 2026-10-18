@@ -402,5 +402,25 @@ void main() {
         const SavedQuestionsError(SavedQuestionsBloc.couldNotLoad),
       ],
     );
+
+    blocTest<SavedQuestionsBloc, SavedQuestionsState>(
+      'coming back again while it is still loading starts no second load',
+      setUp: () => repository = _ScriptedRepository({null: _firstPage})
+        ..held = Completer(),
+      build: newBloc,
+      seed: () => const SavedQuestionsError(SavedQuestionsBloc.couldNotLoad),
+      act: (bloc) async {
+        bloc
+          ..add(const SavedQuestionsRefreshRequested())
+          ..add(const SavedQuestionsRefreshRequested());
+        await Future<void>.delayed(Duration.zero);
+        repository.held!.complete();
+      },
+      expect: () => [
+        const SavedQuestionsLoading(),
+        SavedQuestionsReady(questions: _firstPage.questions, nextCursor: '2'),
+      ],
+      verify: (_) => expect(repository.cursors, [null]),
+    );
   });
 }

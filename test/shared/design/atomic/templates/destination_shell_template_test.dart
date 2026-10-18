@@ -1,5 +1,6 @@
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/cross_fade_indexed_stack_atom.dart';
+import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:doormer/src/shared/design/atomic/templates/destination_shell_template.dart';
 import 'package:flutter/material.dart';
@@ -68,5 +69,17 @@ void main() {
       tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
       AppDestination.solve.index,
     );
+  });
+
+  // A phone whose home indicator takes the bottom 34 pixels.
+  testWidgets("the nav bar keeps clear of the screen's sides and safe area",
+      (tester) async {
+    tester.view.padding = const FakeViewPadding(bottom: 34);
+    await _pump(tester);
+
+    final bar = tester.getRect(find.byType(NavigationBarOrganism));
+    expect(bar.left, moreOrLessEquals(20.w));
+    expect(bar.right, moreOrLessEquals(360 - 20.w));
+    expect(bar.bottom, moreOrLessEquals(690 - 34 - 20.h));
   });
 }
