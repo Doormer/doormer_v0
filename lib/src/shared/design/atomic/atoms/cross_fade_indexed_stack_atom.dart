@@ -38,10 +38,13 @@ class _CrossFadeIndexedStackAtomState extends State<CrossFadeIndexedStackAtom> {
   @override
   void didUpdateWidget(CrossFadeIndexedStackAtom oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.index != oldWidget.index) {
+      _leaving.remove(widget.index);
+      if (MotionPolicy.of(context)) _leaving.add(oldWidget.index);
+    }
+    // After the switch, so a child removed in the same update isn't left
+    // marked as leaving.
     _leaving.removeWhere((i) => i >= widget.children.length);
-    if (widget.index == oldWidget.index) return;
-    _leaving.remove(widget.index);
-    if (MotionPolicy.of(context)) _leaving.add(oldWidget.index);
   }
 
   void _finishLeaving(int index) => setState(() => _leaving.remove(index));

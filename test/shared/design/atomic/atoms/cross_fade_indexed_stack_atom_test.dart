@@ -101,6 +101,22 @@ void main() {
     expect(_ticking(tester, 'Cards'), isFalse);
   });
 
+  // Like closing the open tab: the child on screen goes in the same update
+  // that switches away from it.
+  testWidgets(
+      'a child removed as it is switched away from stays out of sight when '
+      'it comes back', (tester) async {
+    await _show(tester, 2);
+    await _show(tester, 0, names: _names.take(2).toList());
+    await tester.pump(_fade + _frame);
+
+    await _show(tester, 0);
+    await tester.pump(_frame);
+
+    expect(find.text('Cards'), findsNothing);
+    expect(_ticking(tester, 'Cards'), isFalse);
+  });
+
   testWidgets('a switch fades the old child out as the new one fades in',
       (tester) async {
     await _show(tester, 0);

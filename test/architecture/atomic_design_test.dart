@@ -2,8 +2,9 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// The atomic design layers, from the bottom up. A file's layer is the folder
-/// it sits in, so `presentation/organisms/x.dart` is an organism.
+/// The atomic design layers, from the bottom up. A file's layer is the nearest
+/// folder above it named after one, so `presentation/organisms/x.dart` and
+/// `presentation/organisms/cards/x.dart` are both organisms.
 const _layers = ['atoms', 'molecules', 'organisms', 'templates', 'pages'];
 
 /// The ending of every file name in a folder below the pages, before `.dart`.
@@ -39,7 +40,17 @@ final List<String> _files = Directory('lib')
     .toList()
   ..sort();
 
-String _folderOf(String path) => path.split('/').reversed.elementAt(1);
+const _layerFolders = {..._layers, 'params'};
+
+/// The layer [path] belongs to: the nearest folder above it named after a
+/// layer. Null for a file in no layer, such as routing code.
+String? _layerOf(String path) {
+  final folders = path.split('/')..removeLast();
+  for (final folder in folders.reversed) {
+    if (_layerFolders.contains(folder)) return folder;
+  }
+  return null;
+}
 
 String _sourceOf(String path) => File(path).readAsStringSync();
 
@@ -67,15 +78,33 @@ bool _isNamedForItsLayer(String path) {
       .split('_')
       .map((word) => word[0].toUpperCase() + word.substring(1))
       .join();
-  return fileName.endsWith(_suffixes[_folderOf(path)]!) &&
+  return fileName.endsWith(_suffixes[_layerOf(path)]!) &&
       RegExp('\\bclass $className\\b').hasMatch(_sourceOf(path));
 }
 
 void main() {
+  // A layer folder can hold folders of its own, such as organisms/cards/.
+  test('a file in a folder inside a layer folder belongs to that layer', () {
+    expect(
+      _layerOf(
+          'lib/src/features/x/presentation/organisms/cards/y_organism.dart'),
+      'organisms',
+    );
+    expect(
+      _layerOf('lib/src/features/x/presentation/pages/auth/y_page.dart'),
+      'pages',
+    );
+    expect(
+      _layerOf('lib/src/features/x/presentation/params/y_params.dart'),
+      'params',
+    );
+    expect(_layerOf('lib/src/core/routes/destination_shell.dart'), isNull);
+  });
+
   test('nothing below a page uses a bloc', () {
     final offenders = [
       for (final path in _files)
-        if (_suffixes.containsKey(_folderOf(path)))
+        if (_suffixes.containsKey(_layerOf(path)))
           for (final import in _importsOf(path))
             if (import.uri.startsWith('package:flutter_bloc/') ||
                 import.uri.startsWith('package:bloc/') ||
@@ -91,11 +120,11 @@ void main() {
   test('no layer uses a layer above it', () {
     final offenders = [
       for (final path in _files)
-        if (_layers.contains(_folderOf(path)))
+        if (_layers.contains(_layerOf(path)))
           for (final import in _importsOf(path))
             if (import.path != null &&
-                _layers.indexOf(_folderOf(import.path!)) >
-                    _layers.indexOf(_folderOf(path)))
+                _layers.indexOf(_layerOf(import.path!) ?? '') >
+                    _layers.indexOf(_layerOf(path)!))
               '$path imports ${import.uri}',
     ];
 
@@ -108,8 +137,7 @@ void main() {
   test('each file below a page is named for its layer and its class', () {
     final misnamed = {
       for (final path in _files)
-        if (_suffixes.containsKey(_folderOf(path)) &&
-            !_isNamedForItsLayer(path))
+        if (_suffixes.containsKey(_layerOf(path)) && !_isNamedForItsLayer(path))
           path,
     };
 
@@ -122,7 +150,7 @@ void main() {
   test('only templates and pages build a Scaffold', () {
     final offenders = {
       for (final path in _files)
-        if (!const ['templates', 'pages'].contains(_folderOf(path)) &&
+        if (!const ['templates', 'pages'].contains(_layerOf(path)) &&
             RegExp(r'\bScaffold\(').hasMatch(_sourceOf(path)))
           path,
     };
