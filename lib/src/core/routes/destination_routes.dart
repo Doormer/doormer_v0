@@ -20,7 +20,8 @@ final List<RouteBase> destinationRoutes = [
     // In the order of DestinationShell.destinations.
     branches: [
       // Loaded as soon as the shell opens, so the first visit opens on the
-      // questions rather than a spinner.
+      // questions rather than a spinner. That visit still refreshes quietly,
+      // on purpose: it shows any question solved since the shell opened.
       StatefulShellBranch(preload: true, routes: [
         GoRoute(
           path: '/saved',
@@ -40,7 +41,8 @@ final List<RouteBase> destinationRoutes = [
         ),
       ]),
       // Loaded as soon as the shell opens, so the first visit opens on the
-      // deck list rather than a spinner.
+      // deck list rather than a spinner. That visit still refreshes quietly,
+      // on purpose: it shows the quarks earned since the shell opened.
       StatefulShellBranch(preload: true, routes: [
         GoRoute(
           path: '/collection',
