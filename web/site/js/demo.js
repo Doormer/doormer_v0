@@ -18,7 +18,6 @@
   );
   const panels = byStage('data-demo-panel');
   const nodes = byStage('data-demo-node');
-  const reader = root.querySelector('.reader');
   const trail = root.querySelector('.trail');
   const controls = root.querySelector('[data-demo-controls]');
   const back = root.querySelector('[data-demo-back]');
@@ -84,19 +83,11 @@
     vaultStatus.textContent = stage === 'vault' ? 'Tap to crack it open' : `Answer unlocks after step ${stepCount}`;
   }
 
-  function keepReaderInView() {
-    const top = reader.getBoundingClientRect().top;
-    if (top < 0 || top > window.innerHeight * 0.6) {
-      reader.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
-    }
-  }
-
   function goTo(index) {
     current = Math.max(0, Math.min(index, vaultIndex));
     furthest = Math.max(furthest, current);
     render();
     status.textContent = describe(stages[current]);
-    keepReaderInView();
   }
 
   function countUpQuarks() {
