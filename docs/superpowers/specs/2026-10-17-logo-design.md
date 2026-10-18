@@ -9,7 +9,10 @@ appears.
 ## The logo
 
 The logo shows what Doormer does: a question becomes a path through levels,
-and the path leads to a door that opens on the answer.
+and the path leads to a door that opens on the answer. It shows the moment
+just before the answer: two levels are done, the third is in progress, and a
+mystery card still waits behind the door, as in the app ("Answer unlocks after
+step 3").
 
 ### Symbol
 
@@ -19,11 +22,15 @@ and the path leads to a door that opens on the answer.
   (`#FFD84D`) with a dark tick (`#2B2100`) and a night outline (`#150F2E`).
   The third is the current level: mint (`#00E5A0`) with a cream ring, a dark
   centre (`#062B1E`) and a soft mint glow.
-- **Portal door:** the path ends at the top of an arched door with a cream
-  frame. Inside, a glow runs from cream at the centre through mint and violet
-  (`#6C4DFF`) to night at the edges, with two faint cream swirl lines. A gold
-  tick in the doorway is the answer. A soft mint glow sits on the floor under
-  the door.
+- **Door:** the path ends at the top of an arched door with a cream frame.
+  Inside is deep space: a glow from red (`#F0364F`) at the centre through
+  crimson (`#A3122E`) to near-black red (`#2A0615`) at the edges.
+- **Mystery card:** a face-down purple card (`#7A5CFF`) with a gold edge and a
+  gold four-point star stands in the doorway, tilted slightly. A thin gold
+  ring circles it like a planet's ring, passing behind the card and in front
+  of it, with a cream four-point star travelling on the ring. Two tiny cream
+  stars, one bright and one faint, sit in the dark. Nothing inside the door
+  crosses its frame. A soft mint glow sits on the floor under the door.
 - **App icon only:** a rounded-square night background (a gradient from
   `#2E2160` at the top to `#08060F` at the bottom, corner radius 28/120 of the
   width) and three small sparkles in mint, gold and pink (`#FFABF3`).
@@ -55,12 +62,11 @@ the font installed and works when loaded as an image.
 
 ### App icon shapes
 
-The same artwork is used at every size, with no simplified small version. It
-comes in four shapes:
+App icons use the same artwork at every size. It comes in four shapes:
 
 1. **Rounded tile:** the full icon with transparent corners. Used for the
-   website's browser-tab icon, the web app's standard icons, Android's older
-   launcher icon, Windows and Linux.
+   web app's standard icons, Android's older launcher icon, Windows (48 px
+   and up) and Linux.
 2. **Square:** the night gradient fills the square, with no transparency; the
    device rounds the corners itself. Used for iPhone and iPad and the
    website's home-screen icon.
@@ -74,13 +80,22 @@ comes in four shapes:
    at every size (824 × 824 px on the 1024 × 1024 px icon), which is Mac's
    standard icon margin.
 
+### Favicon
+
+Browser tabs show icons at 16 px (32 px on sharp screens), where the full
+icon's path, levels and door blur together. So browser tabs, and the Windows
+title bar and taskbar, use a simpler icon instead: the "d" from the wordmark
+in cream (`#FFF4FF`), 22/32 of the tile's height, centred on the same rounded
+night tile.
+
 ## Where it goes
 
 ### Website (`web/site/`)
 
-- A new folder, `web/site/img/brand/`, holds the three master files:
-  `doormer-icon.svg` (rounded tile), `doormer-wordmark.svg` (for dark
-  backgrounds) and `doormer-wordmark-light.svg` (for light backgrounds).
+- A new folder, `web/site/img/brand/`, holds the four master files:
+  `doormer-icon.svg` (rounded tile), `doormer-favicon.svg` (the "d" for
+  browser tabs), `doormer-wordmark.svg` (for dark backgrounds) and
+  `doormer-wordmark-light.svg` (for light backgrounds).
 - **Header and footer on all nine pages:** replace the inline door SVG
   (`.brand__mark`) and the `doormer` text (`.brand__word`) with
   `<img src="/site/img/brand/doormer-wordmark.svg" alt="">` inside the
@@ -91,8 +106,9 @@ comes in four shapes:
   (`.compare__brand`) shows the old door mark next to the word. Replace both
   with the wordmark image, with `alt="Doormer"` so the column keeps its name,
   and letters at 1.3 rem.
-- **Browser-tab icon:** every page's `<link rel="icon">` points to
-  `/site/img/brand/doormer-icon.svg`. Delete `web/site/img/favicon.svg`.
+- **Browser-tab icon:** every page's `<link rel="icon">` points to the
+  favicon, `/site/img/brand/doormer-favicon.svg`. Delete
+  `web/site/img/favicon.svg`.
 - **`web/site/img/apple-touch-icon.png`:** 180 × 180 px, square shape.
 - **`web/site/img/og-image.jpg`** (the image shown when the site is shared):
   1200 × 630 px. Replace the old logo in the top-left corner with the new
@@ -103,33 +119,40 @@ comes in four shapes:
 
 ### Flutter web app (`web/`)
 
-- `web/favicon.png`: 32 × 32 px rounded tile (currently a 16 × 16 px Flutter
-  logo).
+- `web/favicon.png`: the favicon at 32 × 32 px (currently a 16 × 16 px
+  Flutter logo).
 - `web/icons/Icon-192.png` and `web/icons/Icon-512.png`: rounded tile.
 - `web/icons/Icon-maskable-192.png` and `web/icons/Icon-maskable-512.png`:
   safe-zone version.
 - `web/manifest.json`: change `background_color` and `theme_color` from
   Flutter blue (`#0175C2`) to `#08060F`, the colour the site pages already use
   for `theme-color`.
+- `web/index.html`: point the iPhone home-screen icon (`apple-touch-icon`) at
+  `site/img/apple-touch-icon.png`. It currently uses `Icon-192.png`, whose
+  transparent corners iPhones would fill with black.
 
 ### Native apps
 
 - **Android:** replace `ic_launcher.png` in
   `android/app/src/main/res/mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/` (48, 72,
   96, 144 and 192 px, rounded tile). Add an adaptive icon
-  (`mipmap-anydpi-v26/ic_launcher.xml`) with the night gradient as the
-  background layer and the safe-zone artwork as the foreground layer. Without
-  it, Android 8 and later shrink the icon inside a white shape.
+  (`mipmap-anydpi-v26/ic_launcher.xml`) whose background layer is the night
+  gradient (`drawable/ic_launcher_background.xml`) and whose foreground layer
+  is the safe-zone artwork (`ic_launcher_foreground.png` in each `mipmap-*`
+  folder). Without it, Android 8 and later shrink the icon inside a white
+  shape.
 - **iPhone and iPad:** replace the 15 PNGs in
   `ios/Runner/Assets.xcassets/AppIcon.appiconset/`, square shape, with no
   transparency (an App Store requirement).
 - **Mac:** replace the 7 PNGs (16 to 1024 px) in
   `macos/Runner/Assets.xcassets/AppIcon.appiconset/`, Mac shape.
 - **Windows:** replace `windows/runner/resources/app_icon.ico` with one that
-  holds 16, 24, 32, 48, 64, 128 and 256 px rounded-tile images.
-- **Linux:** the app has no icon today. Add a 256 × 256 px rounded-tile PNG to
-  the Linux runner, install it with the app bundle and set it as the window
-  icon when the window opens.
+  holds the favicon at 16, 24 and 32 px, for the title bar and taskbar, and
+  the rounded tile at 48, 64, 128 and 256 px.
+- **Linux:** the app has no icon today. Add
+  `linux/runner/resources/app_icon.png` (256 × 256 px, rounded tile), install
+  it into the bundle's `data` folder, and set it as the window icon when the
+  window opens.
 
 ### Not included
 
@@ -139,14 +162,15 @@ comes in four shapes:
 
 ## Making the files
 
-- The three SVGs in `web/site/img/brand/` are the source of truth. Export
-  every PNG and ICO from `doormer-icon.svg` at its exact pixel size, rather
-  than scaling down another PNG.
-- Add a script in `tool/` that regenerates every exported icon from the master
-  SVG, so a future change to the logo takes one command. Run it by hand; it is
-  not part of the build.
-- Make the wordmark SVGs once by converting the Fredoka Bold letters to
-  outlines, then commit them. They need no script.
+- The four SVGs in `web/site/img/brand/` are the source of truth. Export
+  every PNG and ICO from `doormer-icon.svg`, or from `doormer-favicon.svg` for
+  the favicon, at its exact pixel size, rather than scaling down another PNG.
+- Add `tool/generate_brand_icons.dart`, which regenerates every exported icon
+  from the master SVGs with headless Chrome, so a future change to the logo
+  takes one command (`dart run tool/generate_brand_icons.dart`). Run it by
+  hand; it is not part of the build.
+- Make the wordmark SVGs and the favicon once by converting the Fredoka Bold
+  letters to outlines, then commit them. They need no script.
 
 ## Verification
 
@@ -155,8 +179,9 @@ comes in four shapes:
   wordmark loads as a separate file, so pages get smaller rather than larger.
 - Add tests that check:
   - every page's header and footer brand link shows `doormer-wordmark.svg`,
-    and no page still contains the old door mark;
-  - the wordmark SVGs contain no `<text>` elements;
+    its browser-tab icon is `doormer-favicon.svg`, and no page still contains
+    the old door mark;
+  - the wordmark SVGs and the favicon contain no `<text>` elements;
   - `web/manifest.json` uses `#08060F`.
 - Check every exported icon's pixel size, that the iPhone icons have no
   transparency, and that the Windows ICO holds all seven sizes.
@@ -181,18 +206,14 @@ a transparent layer for Android's adaptive foreground.
   <defs>
     <linearGradient id="night" x1="0" y1="0" x2="0" y2="120" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#2E2160"/><stop offset="1" stop-color="#08060F"/></linearGradient>
     <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="4"/></filter>
-    <radialGradient id="portal" cx="60" cy="84" r="23" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFF4FF"/><stop offset=".25" stop-color="#00E5A0"/><stop offset=".62" stop-color="#6C4DFF"/><stop offset="1" stop-color="#150F2E"/></radialGradient>
+    <radialGradient id="portal" cx="60" cy="84" r="23" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#F0364F"/><stop offset=".5" stop-color="#A3122E"/><stop offset="1" stop-color="#2A0615"/></radialGradient>
+    <clipPath id="icondoorway"><path d="M-17.8 21 V-13 A17.8 17.8 0 0 1 17.8 -13 V21 Z"/></clipPath>
   </defs>
   <rect width="120" height="120" rx="28" fill="url(#night)"/>
   <ellipse cx="60" cy="106" rx="26" ry="3.5" fill="#00E5A0" filter="url(#glow)" opacity=".7"/>
   <path d="M40 106 V72 A20 20 0 0 1 80 72 V106 Z" fill="url(#portal)"/>
-  <g fill="none" stroke="#FFF4FF" stroke-opacity=".4" stroke-width="1.5" stroke-linecap="round">
-    <ellipse cx="60" cy="84" rx="14.5" ry="18" stroke-dasharray="17 11" transform="rotate(18 60 84)"/>
-    <ellipse cx="60" cy="84" rx="9.3" ry="11.3" stroke-dasharray="11 7" transform="rotate(-30 60 84)"/>
-  </g>
   <path d="M40 106 V72 A20 20 0 0 1 80 72 V106" fill="none" stroke="#FFF4FF" stroke-width="4" stroke-linejoin="round"/>
-  <circle cx="60" cy="88" r="6.5" fill="#FFD84D" stroke="#150F2E" stroke-width="2"/>
-  <path d="M-3.4 0 l2.5 2.5 l4.6 -4.8" transform="translate(60 88) scale(.9)" fill="none" stroke="#2B2100" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+  <g transform="translate(60 84)"><g clip-path="url(#icondoorway)"><g transform="translate(0 2) rotate(-18)"><path d="M-15 0 A15 4.6 0 0 1 15 0" fill="none" stroke="#FFD84D" stroke-opacity=".5" stroke-width="1.2"/></g><circle cx="-12" cy="-16" r=".9" fill="#FFF4FF" opacity=".45"/><circle cx="13" cy="-12" r="1.1" fill="#FFF4FF"/></g><g transform="rotate(-8)"><rect x="-8.5" y="-12" width="17" height="24" rx="2.6" fill="#7A5CFF" stroke="#FFD84D" stroke-width="1.8"/><path d="M0 -5.4 Q0 0 5.4 0 Q0 0 0 5.4 Q0 0 -5.4 0 Q0 0 0 -5.4Z" fill="#FFD84D"/></g><g clip-path="url(#icondoorway)"><g transform="translate(0 2) rotate(-18)"><path d="M15 0 A15 4.6 0 0 1 -15 0" fill="none" stroke="#FFD84D" stroke-width="1.3" stroke-linecap="round"/><path d="M0 -6 Q0 0 6 0 Q0 0 0 6 Q0 0 -6 0 Q0 0 0 -6Z" transform="translate(7.5 3.98) rotate(18) scale(.62)" fill="#FFF4FF"/></g></g></g>
   <g transform="translate(60 52) scale(.75) translate(-60 -73)">
     <path d="M41 46 A19 19 0 1 1 67 63.5 Q60 67 60 73" fill="none" stroke="#8E74FF" stroke-width="9" stroke-linecap="round"/>
     <path d="M41 46 A19 19 0 1 1 67 63.5 Q60 67 60 73" fill="none" stroke="#FFF4FF" stroke-width="2.5" stroke-dasharray="4 5" stroke-linecap="round"/>
@@ -214,24 +235,20 @@ a transparent layer for Android's adaptive foreground.
 
 Units are hundredths of an em, and the baseline is at y = 0. For the
 light-background version, change only the door frame's stroke from `#FFF4FF`
-to `#150F2E`. The swirl lines, the path's dashed line and the current level's
-ring stay cream.
+to `#150F2E`. The tiny stars, the star on the ring, the path's dashed line and
+the current level's ring stay cream.
 
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-24 -86 48 89">
   <defs>
     <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="4"/></filter>
-    <radialGradient id="portal" cx="0" cy="-23" r="22" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFF4FF"/><stop offset=".25" stop-color="#00E5A0"/><stop offset=".62" stop-color="#6C4DFF"/><stop offset="1" stop-color="#150F2E"/></radialGradient>
+    <radialGradient id="portal" cx="0" cy="-23" r="22" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#F0364F"/><stop offset=".5" stop-color="#A3122E"/><stop offset="1" stop-color="#2A0615"/></radialGradient>
+    <clipPath id="letterdoorway"><path d="M-18.71 22.58 V-10.75 A18.71 18.71 0 0 1 18.71 -10.75 V22.58 Z"/></clipPath>
   </defs>
   <ellipse cx="0" cy="0" rx="22" ry="2.6" fill="#00E5A0" filter="url(#glow)" opacity=".7"/>
   <path d="M-19.2 0 V-31 A19.2 19.2 0 0 1 19.2 -31 V0 Z" fill="url(#portal)"/>
-  <g fill="none" stroke="#FFF4FF" stroke-opacity=".4" stroke-width="1.3" stroke-linecap="round">
-    <ellipse cx="0" cy="-23" rx="14" ry="17" stroke-dasharray="16 10" transform="rotate(18 0 -23)"/>
-    <ellipse cx="0" cy="-23" rx="9" ry="11" stroke-dasharray="10 6" transform="rotate(-30 0 -23)"/>
-  </g>
   <path d="M-19.2 0 V-31 A19.2 19.2 0 0 1 19.2 -31 V0" fill="none" stroke="#FFF4FF" stroke-width="3.6" stroke-linejoin="round"/>
-  <circle cx="0" cy="-17" r="6.6" fill="#FFD84D" stroke="#150F2E" stroke-width="1.8"/>
-  <path d="M-3.4 0 l2.5 2.5 l4.6 -4.8" transform="translate(0 -17) scale(.95)" fill="none" stroke="#2B2100" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+  <g transform="translate(0 -21) scale(.93)"><g clip-path="url(#letterdoorway)"><g transform="translate(0 2) rotate(-18)"><path d="M-15 0 A15 4.6 0 0 1 15 0" fill="none" stroke="#FFD84D" stroke-opacity=".5" stroke-width="1.2"/></g><circle cx="-12" cy="-16" r=".9" fill="#FFF4FF" opacity=".45"/><circle cx="13" cy="-12" r="1.1" fill="#FFF4FF"/></g><g transform="rotate(-8)"><rect x="-8.5" y="-12" width="17" height="24" rx="2.6" fill="#7A5CFF" stroke="#FFD84D" stroke-width="1.8"/><path d="M0 -5.4 Q0 0 5.4 0 Q0 0 0 5.4 Q0 0 -5.4 0 Q0 0 0 -5.4Z" fill="#FFD84D"/></g><g clip-path="url(#letterdoorway)"><g transform="translate(0 2) rotate(-18)"><path d="M15 0 A15 4.6 0 0 1 -15 0" fill="none" stroke="#FFD84D" stroke-width="1.3" stroke-linecap="round"/><path d="M0 -6 Q0 0 6 0 Q0 0 0 6 Q0 0 -6 0 Q0 0 0 -6Z" transform="translate(7.5 3.98) rotate(18) scale(.62)" fill="#FFF4FF"/></g></g></g>
   <g transform="translate(0 -52) scale(.62) translate(-60 -73)">
     <path d="M41 46 A19 19 0 1 1 67 63.5 Q60 67 60 73" fill="none" stroke="#8E74FF" stroke-width="9" stroke-linecap="round"/>
     <path d="M41 46 A19 19 0 1 1 67 63.5 Q60 67 60 73" fill="none" stroke="#FFF4FF" stroke-width="2.5" stroke-dasharray="4 5" stroke-linecap="round"/>

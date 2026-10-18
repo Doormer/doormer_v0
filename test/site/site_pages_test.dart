@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
@@ -42,6 +43,16 @@ const homeHtmlBudgetBytes = 70 * 1000;
 const cssGzipBudgetBytes = 20 * 1000;
 const javascriptBudgetBytes = 20 * 1000;
 const fontBudgetBytes = 120 * 1000;
+
+/// The Doormer logo files, at the addresses pages load them from. Browser tabs
+/// show the favicon, the "d" from the wordmark, because the full icon is too
+/// detailed to read at tab size.
+const brandFavicon = '/site/img/brand/doormer-favicon.svg';
+const brandWordmark = '/site/img/brand/doormer-wordmark.svg';
+const brandWordmarkLight = '/site/img/brand/doormer-wordmark-light.svg';
+
+/// The site's night colour, also used for the installed web app.
+const nightColour = '#08060F';
 
 String fileForRoute(String route) =>
     route == '/' ? '$pagesDir/home.html' : '$pagesDir$route.html';
@@ -226,6 +237,18 @@ void main() {
         expect(missing, isEmpty);
       });
 
+      test('shows the Doormer logo in its header, footer and browser tab', () {
+        for (final area in ['header.site-header', 'footer.site-footer']) {
+          final wordmark =
+              page.querySelector('$area a.brand img.brand__wordmark');
+          expect(wordmark?.attributes['src'], brandWordmark, reason: area);
+        }
+        expect(page.querySelector('link[rel="icon"]')?.attributes['href'],
+            brandFavicon);
+        expect(page.querySelector('.brand__mark'), isNull,
+            reason: 'the old door mark is still on the page');
+      });
+
       test('has no unfinished text', () {
         final text = page.body!.text.toLowerCase();
         for (final marker in ['todo', 'lorem', 'tbd', 'placeholder']) {
@@ -336,8 +359,8 @@ void main() {
 
   test('every card on the home page shows real card art, not a drawing', () {
     final home = parsePage(File(fileForRoute('/')));
-    final cardArt = home.querySelectorAll(
-        '.collectible-card__art, .scene__card-art');
+    final cardArt =
+        home.querySelectorAll('.collectible-card__art, .scene__card-art');
     expect(cardArt, isNotEmpty);
     for (final art in cardArt) {
       final image = art.querySelector('img');
@@ -345,6 +368,29 @@ void main() {
           reason: art.outerHtml);
       expect(art.querySelector('svg'), isNull, reason: art.outerHtml);
     }
+  });
+
+  test('the home page comparison names Doormer with its wordmark', () {
+    final home = parsePage(File(fileForRoute('/')));
+    final wordmark = home.querySelector('.compare__brand img');
+    expect(wordmark?.attributes['src'], brandWordmark);
+    expect(wordmark?.attributes['alt'], 'Doormer');
+  });
+
+  group('the Doormer logo', () {
+    test('draws its letters as outlines, not live text', () {
+      for (final address in [brandWordmark, brandWordmarkLight, brandFavicon]) {
+        final svg = File('web$address').readAsStringSync();
+        expect(svg, isNot(contains('<text')), reason: address);
+      }
+    });
+
+    test('colours the installed web app in the site\'s night colour', () {
+      final manifest = jsonDecode(File('web/manifest.json').readAsStringSync())
+          as Map<String, dynamic>;
+      expect(manifest['background_color'], nightColour);
+      expect(manifest['theme_color'], nightColour);
+    });
   });
 
   test('the sitemap lists every page and nothing else', () {
@@ -370,8 +416,9 @@ void main() {
     // Site files keep the same names when they change. If a browser reused a
     // cached stylesheet with a newer page, the page would show unstyled.
     test('makes browsers check for a newer copy of every site file', () {
-      final siteFilesRule =
-          RegExp(r'location \^~ /site/ \{([^}]*)\}').firstMatch(config)?.group(1);
+      final siteFilesRule = RegExp(r'location \^~ /site/ \{([^}]*)\}')
+          .firstMatch(config)
+          ?.group(1);
       expect(siteFilesRule, isNotNull);
       expect(siteFilesRule, contains('add_header Cache-Control "no-cache";'));
       expect(siteFilesRule, isNot(contains('expires')));
