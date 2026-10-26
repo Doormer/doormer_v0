@@ -127,6 +127,9 @@ night tile.
 - `web/manifest.json`: change `background_color` and `theme_color` from
   Flutter blue (`#0175C2`) to `#08060F`, the colour the site pages already use
   for `theme-color`.
+- `web/index.html`: set `theme-color` to `#08060F` as well. Without it, the
+  browser's address bar went back to its default colour, usually white, on
+  the way from the website to sign-up.
 - `web/index.html`: point the iPhone home-screen icon (`apple-touch-icon`) at
   `site/img/apple-touch-icon.png`. It currently uses `Icon-192.png`, whose
   transparent corners iPhones would fill with black.
@@ -218,6 +221,7 @@ night tile.
   - `web/manifest.json` uses `#08060F`;
   - the web app is called "Doormer" and describes itself the same way in
     `index.html` and the manifest;
+  - the web app's `theme-color` matches the website's and the manifest's;
   - the loading screen's door is the master icon without its tile, and its
     background uses the app's `QuestPalette` colours.
 - Check every exported icon's pixel size, that the iPhone icons have no

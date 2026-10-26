@@ -419,6 +419,16 @@ void main() {
       expect(manifest['description'], description);
     });
 
+    test('colours the browser\'s address bar like the website', () {
+      String? addressBarColour(Document page) => page
+          .querySelector('meta[name="theme-color"]')
+          ?.attributes['content'];
+      final website = addressBarColour(parsePage(File(fileForRoute('/'))));
+      expect(website, isNotNull);
+      expect(addressBarColour(index), website);
+      expect(manifest['theme_color'], website);
+    });
+
     test('shows the door from the app icon while it loads', () {
       final door = index.querySelector('#loading img');
       expect(door?.attributes['src'], 'icons/doormer-icon-artwork.svg');
