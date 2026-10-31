@@ -19,12 +19,14 @@ import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_questions_page.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_daily_limit_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_question_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/bloc/daily_limit_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_reader_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
@@ -119,6 +121,11 @@ void main() {
       submitPhotoQuestionUseCase: SubmitPhotoQuestionUseCase(repository),
     );
     serviceLocator.registerFactory<AskByPhotoBloc>(() => bloc);
+    serviceLocator.registerFactory<DailyLimitBloc>(
+      () => DailyLimitBloc(
+        loadDailyLimitUseCase: LoadDailyLimitUseCase(repository),
+      ),
+    );
     serviceLocator.registerFactory<SolutionReaderBloc>(
       () => SolutionReaderBloc(
         loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),

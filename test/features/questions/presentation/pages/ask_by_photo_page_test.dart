@@ -22,16 +22,21 @@ import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart'
 import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_questions_page.dart';
+import 'package:doormer/src/features/questions/domain/failure/photo_question_failures.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_daily_limit_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_question_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/bloc/daily_limit_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/photo_preview_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/molecules/questions_left_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/solving_explanation_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/organisms/photo_source_sheet_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solving_progress_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/why_ads_sheet_organism.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
@@ -61,6 +66,13 @@ class _FakeQuestionsRepository implements QuestionsRepository {
   Uint8List? lastBytes;
   String? lastContentType;
 
+  /// The count Solve reads. Tests about the limit set their own.
+  DailyLimit dailyLimit =
+      DailyLimit(questionsLeft: 5, resetsAt: DateTime(2026, 10, 19));
+  Failure? dailyLimitFailure;
+  int dailyLimitReads = 0;
+  final List<String> idempotencyKeys = [];
+
   @override
   Future<PhotoQuestionSolveOutcome> submitPhotoQuestion({
     required Uint8List imageBytes,
@@ -70,6 +82,7 @@ class _FakeQuestionsRepository implements QuestionsRepository {
     callCount++;
     lastBytes = imageBytes;
     lastContentType = contentType;
+    idempotencyKeys.add(idempotencyKey);
     if (failure != null) {
       throw failure!;
     }
@@ -80,7 +93,12 @@ class _FakeQuestionsRepository implements QuestionsRepository {
   }
 
   @override
-  Future<DailyLimit> loadDailyLimit() => throw UnimplementedError();
+  Future<DailyLimit> loadDailyLimit() async {
+    dailyLimitReads++;
+    final failure = dailyLimitFailure;
+    if (failure != null) throw failure;
+    return dailyLimit;
+  }
 
   @override
   Future<PhotoQuestionSolveOutcome> loadSampleSolution() {
@@ -232,6 +250,14 @@ void main() {
       submitPhotoQuestionUseCase: SubmitPhotoQuestionUseCase(repository),
     );
     serviceLocator.registerFactory<AskByPhotoBloc>(() => bloc);
+    serviceLocator.registerFactory<DailyLimitBloc>(
+      () => DailyLimitBloc(
+        loadDailyLimitUseCase: LoadDailyLimitUseCase(repository),
+        // The evening before the fixtures' counts reset. On the real clock
+        // that reset has passed, so a failed read would forget the count.
+        now: () => DateTime(2026, 10, 18, 21),
+      ),
+    );
     serviceLocator.registerFactory<SolutionReaderBloc>(
       () => SolutionReaderBloc(
         loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
@@ -377,6 +403,38 @@ void main() {
     return tester.widget<FilledButton>(
       find.widgetWithText(FilledButton, 'Submit to solver'),
     );
+  }
+
+  AppButtonAtom uploadAndSolveButton(WidgetTester tester) {
+    return tester.widget<AppButtonAtom>(
+      find.widgetWithText(AppButtonAtom, 'UPLOAD & SOLVE'),
+    );
+  }
+
+  // Sends the photo on screen and lets the screen settle, as it has by the
+  // student's next tap. The fake answers at once, so the answer, and the
+  // count it carries, are on screen when this returns.
+  Future<void> submitPhoto(WidgetTester tester) async {
+    final submit = find.widgetWithText(FilledButton, 'Submit to solver');
+    await tester.ensureVisible(submit);
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> tapTryAgain(WidgetTester tester) async {
+    final tryAgain = find.widgetWithText(AppButtonAtom, 'Try again');
+    await tester.ensureVisible(tryAgain);
+    await tester.tap(tryAgain);
+    await tester.pumpAndSettle();
+  }
+
+  // The app losing the front, then coming back to it, as when the student
+  // switches to another tab or app and back.
+  Future<void> resumeApp(WidgetTester tester) async {
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    await tester.pump();
   }
 
   testWidgets('renders the idle hero state with no solver panels',
@@ -1448,6 +1506,305 @@ void main() {
 
       expect(preparer.edits, [PhotoEdit.none, turned]);
       expect(find.text('IMG_1.jpg'), findsOneWidget);
+    });
+  });
+
+  group("today's questions", () {
+    final noneLeft =
+        DailyLimit(questionsLeft: 0, resetsAt: DateTime(2026, 10, 19));
+    const noneLeftText =
+        "You've used today's questions. They reset at midnight.";
+
+    testWidgets('Solve says how many questions are left today when it opens',
+        (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.solved),
+      );
+      registerBloc();
+      await pumpPage(tester);
+
+      expect(find.text('5 questions left today'), findsOneWidget);
+      expect(repository.dailyLimitReads, 1);
+    });
+
+    testWidgets(
+        'with none left, Solve says when they come back and nothing can be '
+        'picked', (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.solved),
+      )..dailyLimit = noneLeft;
+      registerBloc();
+      await pumpPage(tester);
+
+      expect(find.text(noneLeftText), findsOneWidget);
+      expect(uploadAndSolveButton(tester).onPressed, isNull);
+
+      await tester.tap(find.byIcon(Icons.document_scanner_outlined));
+      await tester.pumpAndSettle();
+
+      expect(find.text(noneLeftText), findsNWidgets(2),
+          reason: 'the line, and the same sentence as a toast');
+      expect(find.byType(PhotoSourceSheetOrganism), findsNothing);
+      await drainToasts(tester);
+      expect(find.text(noneLeftText), findsOneWidget,
+          reason: 'the toast has gone and the line stays');
+    });
+
+    // The options open just after the first frame, before the count arrives,
+    // so a photo can still be picked. The count then turns Submit off.
+    testWidgets(
+        'opened to solve straight away with none left, a picked photo cannot '
+        'be sent', (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.solved),
+      )..dailyLimit = noneLeft;
+      registerBloc();
+      fileInput.file = _pickedHeic;
+      preparer.result = _preparedJpeg;
+      await pumpPage(tester, showPhotoSourceOptionsOnOpen: true);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Choose from gallery'));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('IMG_1.jpg'), findsOneWidget);
+      expect(submitButton(tester).onPressed, isNull);
+      expect(find.text(noneLeftText), findsOneWidget);
+    });
+
+    testWidgets("an answer's count is shown without reading again",
+        (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: PhotoQuestionSolveOutcome(
+          status: PhotoQuestionSolveStatus.unreadable,
+          questionId: 'q_unreadable',
+          solution: null,
+          dailyLimit:
+              DailyLimit(questionsLeft: 4, resetsAt: DateTime(2026, 10, 19)),
+        ),
+      );
+      registerBloc();
+      await pumpPage(tester);
+
+      await selectPhoto(tester);
+      await submitPhoto(tester);
+
+      expect(find.text('4 questions left today'), findsOneWidget);
+      expect(repository.dailyLimitReads, 1);
+    });
+
+    testWidgets(
+        'turned away with none left, the photo stays and nothing offers to '
+        'send it', (tester) async {
+      repository =
+          _FakeQuestionsRepository(failure: DailyLimitReachedFailure(noneLeft));
+      registerBloc();
+      await pumpPage(tester);
+
+      await selectPhoto(tester);
+      await submitPhoto(tester);
+
+      expect(find.text("You've used today's questions"), findsOneWidget);
+      expect(
+        find.text(
+          'Your photo is still here. Send it after they reset at midnight.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(QuestionsLeftMolecule),
+          matching: find.text(noneLeftText),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(PhotoPreviewMolecule), findsOneWidget);
+      expect(submitButton(tester).onPressed, isNull);
+      expect(find.text('Try again'), findsNothing);
+    });
+
+    testWidgets(
+        'turned away with none left, Change photo says when they come back '
+        'instead of opening the options', (tester) async {
+      repository =
+          _FakeQuestionsRepository(failure: DailyLimitReachedFailure(noneLeft));
+      registerBloc();
+      await pumpPage(tester);
+      await selectPhoto(tester);
+      await submitPhoto(tester);
+
+      final changePhoto = find.widgetWithText(AppButtonAtom, 'Change photo');
+      await tester.ensureVisible(changePhoto);
+      await tester.tap(changePhoto);
+      await tester.pumpAndSettle();
+
+      expect(find.text(noneLeftText), findsNWidgets(2),
+          reason: 'the line, and the same sentence as a toast');
+      expect(find.byType(PhotoSourceSheetOrganism), findsNothing);
+      await drainToasts(tester);
+    });
+
+    testWidgets(
+        'with none left after a dropped connection, nothing offers '
+        'Try again', (tester) async {
+      repository =
+          _FakeQuestionsRepository(failure: NetworkFailure('No connection.'));
+      registerBloc();
+      await pumpPage(tester);
+      await selectPhoto(tester);
+      await submitPhoto(tester);
+      expect(find.widgetWithText(AppButtonAtom, 'Try again'), findsOneWidget);
+
+      // The last question went while the student was away.
+      repository.dailyLimit = noneLeft;
+      await resumeApp(tester);
+
+      expect(find.text('Try again'), findsNothing);
+      expect(submitButton(tester).onPressed, isNull);
+      await drainToasts(tester);
+    });
+
+    testWidgets('coming back to Solve reads the count again', (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.solved),
+      );
+      registerBloc();
+      await pumpPage(tester);
+
+      await tester.tap(find.byIcon(Icons.bookmark_outline));
+      await tester.pumpAndSettle();
+      // Asked from another device meanwhile.
+      repository.dailyLimit =
+          DailyLimit(questionsLeft: 3, resetsAt: DateTime(2026, 10, 19));
+      await tester.tap(find.byIcon(Icons.document_scanner_outlined));
+      await tester.pumpAndSettle();
+
+      expect(repository.dailyLimitReads, 2);
+      expect(find.text('3 questions left today'), findsOneWidget);
+    });
+
+    testWidgets('the app coming back to the front reads the count again',
+        (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.solved),
+      );
+      registerBloc();
+      await pumpPage(tester);
+
+      // Asked from another device meanwhile.
+      repository.dailyLimit =
+          DailyLimit(questionsLeft: 3, resetsAt: DateTime(2026, 10, 19));
+      await resumeApp(tester);
+
+      expect(repository.dailyLimitReads, 2);
+      expect(find.text('3 questions left today'), findsOneWidget);
+    });
+
+    testWidgets(
+        'when the count cannot be read, Solve says nothing and the photo can '
+        'still be sent', (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.solved),
+      )..dailyLimitFailure = NetworkFailure('No connection.');
+      registerBloc();
+      await pumpPage(tester);
+
+      expect(repository.dailyLimitReads, 1);
+      expect(find.textContaining('left today'), findsNothing);
+      expect(find.byType(QuestionsLeftMolecule), findsNothing);
+
+      await selectPhoto(tester);
+
+      expect(submitButton(tester).onPressed, isNotNull);
+    });
+
+    testWidgets(
+        'once the day resets, the turned-away photo is sent under its key',
+        (tester) async {
+      repository =
+          _FakeQuestionsRepository(failure: DailyLimitReachedFailure(noneLeft));
+      registerBloc();
+      await pumpPage(tester);
+      await selectPhoto(tester);
+      await submitPhoto(tester);
+      expect(submitButton(tester).onPressed, isNull);
+
+      repository
+        ..dailyLimit =
+            DailyLimit(questionsLeft: 5, resetsAt: DateTime(2026, 10, 20))
+        ..failure = null
+        ..outcome = _outcome(PhotoQuestionSolveStatus.unreadable);
+      await resumeApp(tester);
+
+      expect(submitButton(tester).onPressed, isNotNull);
+
+      await submitPhoto(tester);
+
+      expect(repository.idempotencyKeys, hasLength(2));
+      expect(repository.idempotencyKeys.last, repository.idempotencyKeys.first);
+    });
+  });
+
+  group('each photo is sent under one key', () {
+    testWidgets(
+        'turned away while another photo is solved, Try again sends the same '
+        'photo under the same key', (tester) async {
+      repository = _FakeQuestionsRepository(failure: PhotoBeingSolvedFailure());
+      registerBloc();
+      await pumpPage(tester);
+      await selectPhoto(tester);
+      await submitPhoto(tester);
+
+      expect(
+          find.text('Your last photo is still being solved'), findsOneWidget);
+
+      repository
+        ..failure = null
+        ..outcome = _outcome(PhotoQuestionSolveStatus.unreadable);
+      await tapTryAgain(tester);
+
+      expect(repository.idempotencyKeys, hasLength(2));
+      expect(repository.idempotencyKeys.last, repository.idempotencyKeys.first);
+    });
+
+    testWidgets('a retry after a dropped connection sends the same key',
+        (tester) async {
+      repository =
+          _FakeQuestionsRepository(failure: NetworkFailure('No connection.'));
+      registerBloc();
+      await pumpPage(tester);
+      await selectPhoto(tester);
+      await submitPhoto(tester);
+
+      repository
+        ..failure = null
+        ..outcome = _outcome(PhotoQuestionSolveStatus.unreadable);
+      await tapTryAgain(tester);
+
+      expect(repository.idempotencyKeys, hasLength(2));
+      expect(repository.idempotencyKeys.last, repository.idempotencyKeys.first);
+      await drainToasts(tester);
+    });
+
+    testWidgets('a new photo gets a new key', (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.unreadable),
+      );
+      registerBloc();
+      await pumpPage(tester);
+      await selectPhoto(tester);
+      await submitPhoto(tester);
+
+      await selectPhoto(tester, fileName: 'geometry.png');
+      await submitPhoto(tester);
+
+      expect(repository.idempotencyKeys, hasLength(2));
+      expect(
+        repository.idempotencyKeys.last,
+        isNot(repository.idempotencyKeys.first),
+      );
     });
   });
 }
