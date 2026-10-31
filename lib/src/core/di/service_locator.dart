@@ -11,6 +11,7 @@ import 'package:doormer/src/features/collection/di/collection_module.dart';
 import 'package:doormer/src/features/profile/di/profile_module.dart';
 import 'package:doormer/src/features/questions/di/questions_module.dart';
 import 'package:doormer/src/features/registration/di/registration_module.dart';
+import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
 import 'package:doormer/src/shared/sessions/bloc/global_session_bloc.dart';
 
 import 'package:get_it/get_it.dart';
@@ -38,6 +39,12 @@ Future<void> initDependencies() async {
     GlobalSessionBloc(
       sessionService: serviceLocator<SessionService>(),
     ),
+  );
+
+  // The count behind the dot on the nav bar's Profile item. Profile's
+  // friends bloc keeps it up to date.
+  serviceLocator.registerSingleton<WaitingFriendRequestsBloc>(
+    WaitingFriendRequestsBloc(),
   );
 
   // Register Dio

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:doormer/src/core/services/sessions/session_service.dart';
+import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
 import 'package:get_it/get_it.dart';
 
 import '../data/datasource/friends_remote_datasource.dart';
@@ -21,6 +22,7 @@ import '../domain/usecase/save_friend_profile_usecase.dart';
 import '../domain/usecase/send_friend_request_usecase.dart';
 import '../domain/usecase/sign_out_usecase.dart';
 import '../domain/usecase/unblock_student_usecase.dart';
+import '../presentation/bloc/friends_bloc.dart';
 import '../presentation/bloc/profile_bloc.dart';
 
 final serviceLocator = GetIt.instance;
@@ -89,5 +91,18 @@ void initProfileModule() {
 
   serviceLocator.registerFactory(
     () => ProfileBloc(signOut: serviceLocator<SignOutUseCase>()),
+  );
+  serviceLocator.registerFactory(
+    () => FriendsBloc(
+      loadProfile: serviceLocator<LoadFriendProfileUseCase>(),
+      loadRequests: serviceLocator<LoadFriendRequestsUseCase>(),
+      loadFriends: serviceLocator<LoadFriendsUseCase>(),
+      acceptRequest: serviceLocator<AcceptFriendRequestUseCase>(),
+      declineRequest: serviceLocator<DeclineFriendRequestUseCase>(),
+      removeFriend: serviceLocator<RemoveFriendUseCase>(),
+      blockStudent: serviceLocator<BlockStudentUseCase>(),
+      reportStudent: serviceLocator<ReportStudentUseCase>(),
+      waitingRequests: serviceLocator<WaitingFriendRequestsBloc>(),
+    ),
   );
 }
