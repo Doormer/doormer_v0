@@ -9,8 +9,8 @@ final _invitePath = RegExp(r'^/add/([^/]+)$');
 
 /// Where a navigation to [path] should go instead, or null to let it through.
 ///
-/// [savedInviteCode] is the code of an invite link the student opened, kept
-/// until its check has been shown.
+/// [savedInviteCode] is the code of an invite link the student opened while
+/// signed out, kept until its check has been shown.
 ///
 /// Kept free of GoRouter so every rule can be unit tested.
 String? redirectFor(
@@ -47,25 +47,31 @@ String? inviteCodeIn(String path) => _invitePath.firstMatch(path)?.group(1);
 /// The check of an invite's code, inside the Profile tab.
 String _checkOf(String code) => '/profile/add/$code';
 
-/// What the router does with a navigation to [path]: it keeps the code of an
-/// invite link being opened, for 7 days, then applies [redirectFor] to the
-/// stored session and kept code.
+/// What the router does with a navigation to [path]: while the student is
+/// signed out, it keeps the code of an invite link being opened, for 7 days.
+/// Then it applies [redirectFor] to the stored session and kept code.
 ///
 /// Sign-in ends on the older registration pages, so the code waits for the
-/// first app page the student reaches.
+/// first app page the student reaches. A signed-in student goes straight to
+/// the check, which takes the code from its path, so nothing is kept. Back to
+/// the link would otherwise keep the code again, and the check already
+/// showing wouldn't forget it.
 Future<String?> guardNavigation(
   String path, {
   required TokenStorage tokens,
   required InviteCodeStorage inviteCodes,
 }) async {
+  final isSignedIn = hasSignedInSession(
+    accessToken: await tokens.getAccessToken(),
+    refreshToken: await tokens.getRefreshToken(),
+  );
   final openedInvite = inviteCodeIn(path);
-  if (openedInvite != null) await inviteCodes.keep(openedInvite);
+  if (openedInvite != null && !isSignedIn) {
+    await inviteCodes.keep(openedInvite);
+  }
   return redirectFor(
     path,
-    isSignedIn: hasSignedInSession(
-      accessToken: await tokens.getAccessToken(),
-      refreshToken: await tokens.getRefreshToken(),
-    ),
+    isSignedIn: isSignedIn,
     savedInviteCode: await inviteCodes.read(),
   );
 }

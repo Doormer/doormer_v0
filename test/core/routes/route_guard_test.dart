@@ -189,13 +189,13 @@ void main() {
       expect(await guard('/questions/photo'), '/profile/add/K7QM2XPA');
     });
 
-    test('signed in, keeps the code of an invite link and opens its check',
+    test('signed in, opens the check of an invite link and keeps no code',
         () async {
       tokens.accessToken = 'access';
 
       expect(await guard('/add/K7QM2XPA'), '/profile/add/K7QM2XPA');
-      expect(await inviteCodes.read(), 'K7QM2XPA',
-          reason: 'until the check has shown');
+      expect(await inviteCodes.read(), isNull,
+          reason: 'the check takes the code from its path');
     });
 
     test('a code kept more than 7 days ago no longer opens the check',

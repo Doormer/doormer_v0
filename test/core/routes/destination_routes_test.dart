@@ -1199,6 +1199,27 @@ void main() {
       expect(pathOf(router), '/profile/add/$ruaCode');
       expect(find.text('Rua'), findsOneWidget);
     });
+
+    // Back lands on the check that is already showing, which doesn't start
+    // again, so it can't forget a code kept on the way. A kept code sent
+    // every tab to the check until a reload.
+    testWidgets(
+        'signed in, Back from the check to its invite link leaves the tabs '
+        'opening as usual', (tester) async {
+      tokens.accessToken = 'access';
+      final router = await pumpApp(tester, '/add/$ruaCode');
+
+      await browserBackTo(router, '/add/$ruaCode');
+      await tester.pumpAndSettle();
+      expect(pathOf(router), '/profile/add/$ruaCode');
+
+      // Saved's list never loads here, so its spinner never settles.
+      router.go('/saved');
+      await tester.pump();
+      await tester.pump();
+
+      expect(pathOf(router), '/saved');
+    });
   });
 
   testWidgets('tapping Solve while on Solve brings up the photo options',
