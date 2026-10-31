@@ -24,6 +24,15 @@ class ApiFailure extends Failure {
       : super("Error $statusCode: $message");
 }
 
+/// A request the API refused with a 4xx status the app words itself, such as
+/// a 404 for a friend who is no longer a friend. Unlike [ApiFailure], its
+/// [message] is shown as it is.
+class RefusedFailure extends Failure {
+  final int statusCode;
+
+  RefusedFailure(this.statusCode, super.message);
+}
+
 /// Authentication failures (401, invalid credentials)
 class AuthFailure extends Failure {
   AuthFailure([super.message = "Authentication failed"]);

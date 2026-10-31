@@ -119,7 +119,7 @@ lib/src/
 
 ### Error Handling
 
-Typed `Failure` hierarchy in `core/errors/failure.dart` (pure Dart): `NetworkFailure`, `ServerFailure`, `ApiFailure(statusCode, message)`, `AuthFailure`, `ValidationFailure`, `DatabaseFailure`, `UnknownFailure`. `Failure.toString()` returns its `message`.
+Typed `Failure` hierarchy in `core/errors/failure.dart` (pure Dart): `NetworkFailure`, `ServerFailure`, `ApiFailure(statusCode, message)`, `RefusedFailure(statusCode, message)`, `AuthFailure`, `ValidationFailure`, `DatabaseFailure`, `UnknownFailure`. `Failure.toString()` returns its `message`. A data source that words a 4xx itself, as the friends data sources do for each status the API refuses with, throws `RefusedFailure`: unlike `ApiFailure`, its message is shown as it is, and a bloc can tell the statuses apart.
 
 Rules:
 
