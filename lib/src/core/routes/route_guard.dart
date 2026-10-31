@@ -7,7 +7,8 @@ String? redirectFor(String path, {required bool isSignedIn}) {
       path == '/saved' ||
       path.startsWith('/saved/') ||
       path == '/collection' ||
-      path == '/profile';
+      path == '/profile' ||
+      path.startsWith('/profile/');
 
   if (isSignedIn) {
     if (path == '/' || authEntry.contains(path)) return '/questions/photo';

@@ -24,6 +24,7 @@ import 'package:doormer/src/features/collection/presentation/organisms/deck_list
 import 'package:doormer/src/features/collection/presentation/organisms/empty_deck_organism.dart';
 import 'package:doormer/src/features/collection/presentation/pages/collection_page.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -705,6 +706,8 @@ void main() {
   // holds the bar. The other pages are stand-ins here.
   group('inside the nav bar shell', () {
     Future<void> pumpInShell(WidgetTester tester) async {
+      // The shell reads Profile's dot from it.
+      GetIt.instance.registerLazySingleton(WaitingFriendRequestsBloc.new);
       final router = GoRouter(
         initialLocation: '/collection',
         routes: [

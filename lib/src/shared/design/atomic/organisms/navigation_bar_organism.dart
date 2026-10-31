@@ -55,6 +55,25 @@ class NavigationBarOrganism extends StatelessWidget {
     _actionFor(tapped)();
   }
 
+  /// [hasDot] puts a dot on the icon, lit or not.
+  NavigationDestination _navigationDestination(
+    _Destination destination, {
+    required double iconSize,
+    required bool hasDot,
+  }) {
+    Widget withDot(Widget icon) =>
+        hasDot ? Badge(key: const Key('profile_dot'), child: icon) : icon;
+    final selectedIcon = destination.selectedIcon;
+    return NavigationDestination(
+      icon: withDot(Icon(destination.icon, size: iconSize)),
+      selectedIcon: selectedIcon == null
+          ? null
+          : withDot(Icon(selectedIcon, size: iconSize)),
+      label: destination.label,
+      tooltip: '',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
@@ -86,15 +105,12 @@ class NavigationBarOrganism extends StatelessWidget {
                 labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
                 onDestinationSelected: _onDestinationSelected,
                 destinations: [
-                  for (final destination
-                      in AppDestination.values.map(_destinationOf))
-                    NavigationDestination(
-                      icon: Icon(destination.icon, size: iconSize),
-                      selectedIcon: destination.selectedIcon == null
-                          ? null
-                          : Icon(destination.selectedIcon, size: iconSize),
-                      label: destination.label,
-                      tooltip: '',
+                  for (final place in AppDestination.values)
+                    _navigationDestination(
+                      _destinationOf(place),
+                      iconSize: iconSize,
+                      hasDot: place == AppDestination.profile &&
+                          params.profileHasDot,
                     ),
                 ],
               ),

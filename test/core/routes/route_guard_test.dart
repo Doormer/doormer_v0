@@ -11,6 +11,8 @@ void main() {
       '/saved/abc/solution',
       '/collection',
       '/profile',
+      '/profile/add',
+      '/profile/friends/42/cards',
     ]) {
       test('$path goes to /auth/login', () {
         expect(redirectFor(path, isSignedIn: false), '/auth/login');
@@ -41,7 +43,9 @@ void main() {
       '/saved',
       '/saved/abc/solution',
       '/collection',
-      '/profile'
+      '/profile',
+      '/profile/add',
+      '/profile/friends/42/cards',
     ]) {
       test('$path stays', () {
         expect(redirectFor(path, isSignedIn: true), isNull);

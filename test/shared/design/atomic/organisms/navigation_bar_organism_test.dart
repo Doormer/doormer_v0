@@ -12,6 +12,7 @@ void main() {
     required Size size,
     required List<String> tapped,
     AppDestination current = AppDestination.saved,
+    bool profileHasDot = false,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -34,6 +35,7 @@ void main() {
                   onSolve: () => tapped.add('solve'),
                   onCards: () => tapped.add('cards'),
                   onProfile: () => tapped.add('profile'),
+                  profileHasDot: profileHasDot,
                 ),
               ),
             ),
@@ -301,5 +303,54 @@ void main() {
       tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
       4,
     );
+  });
+
+  group("Profile's dot", () {
+    testWidgets('shows on Profile while friend requests are waiting',
+        (tester) async {
+      await pumpNavigation(
+        tester,
+        size: const Size(390, 844),
+        tapped: <String>[],
+        profileHasDot: true,
+      );
+
+      expect(find.byKey(const Key('profile_dot')), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.byIcon(Icons.person_outline),
+          matching: find.byKey(const Key('profile_dot')),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('stays on Profile when it is lit', (tester) async {
+      await pumpNavigation(
+        tester,
+        size: const Size(390, 844),
+        tapped: <String>[],
+        current: AppDestination.profile,
+        profileHasDot: true,
+      );
+
+      expect(
+        find.ancestor(
+          of: find.byIcon(Icons.person),
+          matching: find.byKey(const Key('profile_dot')),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('is gone with nothing waiting', (tester) async {
+      await pumpNavigation(
+        tester,
+        size: const Size(390, 844),
+        tapped: <String>[],
+      );
+
+      expect(find.byKey(const Key('profile_dot')), findsNothing);
+    });
   });
 }

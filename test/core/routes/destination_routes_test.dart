@@ -11,25 +11,48 @@ import 'package:doormer/src/core/routes/root_navigator_key.dart';
 import 'package:doormer/src/core/services/sessions/session_service.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
+import 'package:doormer/src/core/utils/invite_code_storage/in_memory_invite_code_storage.dart';
+import 'package:doormer/src/features/collection/domain/entity/collection.dart';
 import 'package:doormer/src/features/collection/domain/entity/deck_progress.dart';
 import 'package:doormer/src/features/collection/domain/repository/collection_repository.dart';
+import 'package:doormer/src/features/collection/domain/repository/friend_collection_repository.dart';
 import 'package:doormer/src/features/collection/domain/usecase/draw_card_usecase.dart';
 import 'package:doormer/src/features/collection/domain/usecase/load_collection_usecase.dart';
 import 'package:doormer/src/features/collection/domain/usecase/load_decks_usecase.dart';
+import 'package:doormer/src/features/collection/domain/usecase/load_friend_collection_usecase.dart';
+import 'package:doormer/src/features/collection/domain/usecase/load_friend_decks_usecase.dart';
 import 'package:doormer/src/features/collection/domain/usecase/shatter_copy_usecase.dart';
 import 'package:doormer/src/features/collection/presentation/bloc/collection_bloc.dart';
+import 'package:doormer/src/features/collection/presentation/bloc/friend_collection_bloc.dart';
 import 'package:doormer/src/features/collection/presentation/pages/collection_page.dart';
+import 'package:doormer/src/features/collection/presentation/pages/friend_collection_page.dart';
+import 'package:doormer/src/features/profile/domain/entity/friend_profile.dart';
 import 'package:doormer/src/features/profile/domain/usecase/accept_friend_request_usecase.dart';
 import 'package:doormer/src/features/profile/domain/usecase/block_student_usecase.dart';
 import 'package:doormer/src/features/profile/domain/usecase/decline_friend_request_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/find_student_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/forget_invite_code_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/load_blocked_students_usecase.dart';
 import 'package:doormer/src/features/profile/domain/usecase/load_friend_profile_usecase.dart';
 import 'package:doormer/src/features/profile/domain/usecase/load_friend_requests_usecase.dart';
 import 'package:doormer/src/features/profile/domain/usecase/load_friends_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/load_picture_choices_usecase.dart';
 import 'package:doormer/src/features/profile/domain/usecase/remove_friend_usecase.dart';
 import 'package:doormer/src/features/profile/domain/usecase/report_student_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/reset_friend_code_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/save_friend_profile_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/send_friend_request_usecase.dart';
 import 'package:doormer/src/features/profile/domain/usecase/sign_out_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/unblock_student_usecase.dart';
+import 'package:doormer/src/features/profile/presentation/bloc/add_friend_bloc.dart';
+import 'package:doormer/src/features/profile/presentation/bloc/blocked_students_bloc.dart';
+import 'package:doormer/src/features/profile/presentation/bloc/friend_setup_bloc.dart';
 import 'package:doormer/src/features/profile/presentation/bloc/friends_bloc.dart';
 import 'package:doormer/src/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:doormer/src/features/profile/presentation/molecules/friend_row_molecule.dart';
+import 'package:doormer/src/features/profile/presentation/pages/add_friend_page.dart';
+import 'package:doormer/src/features/profile/presentation/pages/blocked_students_page.dart';
+import 'package:doormer/src/features/profile/presentation/pages/friend_setup_page.dart';
 import 'package:doormer/src/features/profile/presentation/pages/profile_page.dart';
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
@@ -53,6 +76,7 @@ import 'package:doormer/src/shared/design/atomic/molecules/page_heading_molecule
 import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
+import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -104,6 +128,19 @@ class _ReadyCollectionRepository implements CollectionRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw UnimplementedError('${invocation.memberName}');
+}
+
+/// Never answers, so a friend's collection stays on its loading screen.
+class _PendingFriendCollectionRepository implements FriendCollectionRepository {
+  @override
+  Future<({FriendSummary friend, List<DeckProgress> decks})> loadDecks(
+          String friendId) =>
+      Completer<({FriendSummary friend, List<DeckProgress> decks})>().future;
+
+  @override
+  Future<({FriendSummary friend, Collection collection})> loadCollection(
+          String friendId, String deckId) =>
+      Completer<({FriendSummary friend, Collection collection})>().future;
 }
 
 /// Never answers, so Saved stays on its loading screen - the screen a switch
@@ -268,6 +305,9 @@ void main() {
       ),
     );
     friends = FakeFriendsRepository();
+    // Made when first asked for, inside the test's fake time, so the dot
+    // hears its count there: one made here would tell it on the real event
+    // loop, which a pump never reaches.
     serviceLocator.registerLazySingleton(WaitingFriendRequestsBloc.new);
     serviceLocator.registerFactory<FriendsBloc>(
       () => FriendsBloc(
@@ -758,6 +798,267 @@ void main() {
       expect(find.byType(QuestionSolutionPage), findsNothing);
       expect(find.text('Question 1'), findsOneWidget);
       expect(router.routerDelegate.currentConfiguration.uri.path, '/saved');
+    });
+  });
+
+  group('Profile and the pages of friends', () {
+    setUp(() {
+      serviceLocator.registerFactory<BlockedStudentsBloc>(
+        () => BlockedStudentsBloc(
+          loadBlockedStudents: LoadBlockedStudentsUseCase(friends),
+          unblockStudent: UnblockStudentUseCase(friends),
+        ),
+      );
+      final collections = _PendingFriendCollectionRepository();
+      serviceLocator.registerFactory<FriendCollectionBloc>(
+        () => FriendCollectionBloc(
+          loadDecks: LoadFriendDecksUseCase(collections),
+          loadCollection: LoadFriendCollectionUseCase(collections),
+        ),
+      );
+      serviceLocator.registerFactory<FriendSetupBloc>(
+        () => FriendSetupBloc(
+          loadProfile: LoadFriendProfileUseCase(friends),
+          loadPictureChoices: LoadPictureChoicesUseCase(friends),
+          saveProfile: SaveFriendProfileUseCase(friends),
+        ),
+      );
+      serviceLocator.registerFactory<AddFriendBloc>(
+        () => AddFriendBloc(
+          loadProfile: LoadFriendProfileUseCase(friends),
+          findStudent: FindStudentUseCase(friends),
+          sendRequest: SendFriendRequestUseCase(friends),
+          unblockStudent: UnblockStudentUseCase(friends),
+          resetCode: ResetFriendCodeUseCase(friends),
+          forgetInviteCode:
+              ForgetInviteCodeUseCase(InMemoryInviteCodeStorage()),
+        ),
+      );
+    });
+
+    int profileReads() =>
+        friends.calls.where((call) => call == 'loadProfile').length;
+
+    Finder friendRow(String nickname) =>
+        find.widgetWithText(FriendRowMolecule, nickname);
+
+    testWidgets('Profile loads as soon as the shell opens, so its dot shows',
+        (tester) async {
+      await pumpDestinations(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ProfilePage), findsNothing,
+          reason: 'loaded out of sight');
+      expect(profileReads(), 1);
+      expect(find.byKey(const Key('profile_dot')), findsOneWidget);
+    });
+
+    testWidgets('with no request waiting, there is no dot', (tester) async {
+      friends.requests = [];
+
+      await pumpDestinations(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('profile_dot')), findsNothing);
+    });
+
+    testWidgets('showing Profile again reads friends quietly', (tester) async {
+      await pumpDestinations(tester, initialLocation: '/profile');
+      await tester.pumpAndSettle();
+      final reads = profileReads();
+
+      await tester.tap(find.byIcon(Icons.document_scanner_outlined));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.person_outline));
+      await tester.pumpAndSettle();
+
+      expect(profileReads(), reads + 1);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('a page of friends opens inside the Profile tab, under the bar',
+        (tester) async {
+      final router =
+          await pumpDestinations(tester, initialLocation: '/profile/blocked');
+      await tester.pumpAndSettle();
+
+      expect(find.byType(BlockedStudentsPage), findsOneWidget);
+      expect(find.byType(NavigationBarOrganism), findsOneWidget);
+      expect(litDestination(tester), AppDestination.profile.index);
+
+      await tester.tap(find.byKey(const Key('page_back')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(BlockedStudentsPage), findsNothing);
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/profile');
+    });
+
+    testWidgets(
+        "Profile's nav item leads back to Profile from a page of friends",
+        (tester) async {
+      final router =
+          await pumpDestinations(tester, initialLocation: '/profile/blocked');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.person));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(BlockedStudentsPage), findsNothing);
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/profile');
+    });
+
+    testWidgets("a friend's row opens their collection inside the Profile tab",
+        (tester) async {
+      final router =
+          await pumpDestinations(tester, initialLocation: '/profile');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Sam'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(router.routerDelegate.currentConfiguration.uri.path,
+          '/profile/friends/42/cards');
+      expect(find.byType(FriendCollectionPage), findsOneWidget);
+      expect(find.text("Sam's cards"), findsOneWidget,
+          reason:
+              'the friend comes from the row, so the heading needs no load');
+      expect(find.byType(NavigationBarOrganism), findsOneWidget);
+    });
+
+    testWidgets(
+        "a friend's collection opened by its address says Your friend's "
+        'cards until it loads', (tester) async {
+      await pumpDestinations(tester,
+          initialLocation: '/profile/friends/42/cards');
+      await tester.pump();
+
+      final page = tester
+          .widget<FriendCollectionPage>(find.byType(FriendCollectionPage));
+      expect(page.friendId, '42');
+      expect(page.friend, isNull, reason: 'no row handed the friend over');
+      expect(find.text("Your friend's cards"), findsOneWidget);
+      expect(find.byType(NavigationBarOrganism), findsOneWidget);
+    });
+
+    // Profile before setup offers only Set up friends. Done on setup goes
+    // back to Profile, which reads the new profile behind what it shows.
+    testWidgets('back from setup, Profile shows the set-up student quietly',
+        (tester) async {
+      friends
+        ..profile = const FriendProfile(
+          hasProfile: false,
+          nickname: '',
+          friendCode: '',
+          friendsTurnedOff: false,
+          waitingRequests: 0,
+        )
+        ..requests = []
+        ..friends = [];
+      final router =
+          await pumpDestinations(tester, initialLocation: '/profile');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Set up friends'));
+      await tester.pumpAndSettle();
+      expect(find.byType(FriendSetupPage), findsOneWidget);
+      expect(find.byType(NavigationBarOrganism), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('nickname_field')), 'Kai');
+
+      final saving = friends.hold = Completer<void>();
+      await tester.tap(find.text('Done'));
+      await tester.pump();
+      // Profile's read waits, so what Profile shows meanwhile can be seen.
+      final reading = friends.hold = Completer<void>();
+      saving.complete();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/profile');
+      expect(friends.calls.last, 'loadProfile');
+      expect(find.text('Set up friends'), findsOneWidget,
+          reason: 'what Profile showed, until the read lands');
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      reading.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Set up friends'), findsNothing);
+      expect(find.text('K7QM-2XPA'), findsOneWidget);
+      expect(find.text('No friends yet. Add one with their friend code.'),
+          findsOneWidget);
+    });
+
+    testWidgets(
+        'Add a friend opens inside the Profile tab, and a request accepted '
+        'there shows on Profile after', (tester) async {
+      final router =
+          await pumpDestinations(tester, initialLocation: '/profile');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add a friend'));
+      await tester.pumpAndSettle();
+
+      expect(
+          router.routerDelegate.currentConfiguration.uri.path, '/profile/add');
+      final page = tester.widget<AddFriendPage>(find.byType(AddFriendPage));
+      expect(page.inviteCode, isNull);
+      expect(page.appAddress, isNull, reason: "invite links use the browser's");
+      expect(find.byType(NavigationBarOrganism), findsOneWidget);
+
+      await tester.enterText(
+          find.byKey(const Key('friend_code_field')), ruaCode);
+      await tester.tap(find.text('Find'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Accept'));
+      await tester.pumpAndSettle();
+      expect(find.text("You're friends"), findsOneWidget);
+      await tester.tap(find.byKey(const Key('page_back')));
+      await tester.pumpAndSettle();
+
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/profile');
+      expect(find.text('Requests'), findsNothing);
+      expect(friendRow('Rua'), findsOneWidget);
+      expect(find.byKey(const Key('profile_dot')), findsNothing);
+    });
+
+    testWidgets(
+        "an invite link's check opens inside the Profile tab, and a request "
+        'accepted there shows on Profile after', (tester) async {
+      final router = await pumpDestinations(tester,
+          initialLocation: '/profile/add/$ruaCode');
+      await tester.pumpAndSettle();
+
+      final page = tester.widget<AddFriendPage>(find.byType(AddFriendPage));
+      expect(page.inviteCode, ruaCode);
+      expect(page.appAddress, isNull, reason: "invite links use the browser's");
+      expect(find.byType(NavigationBarOrganism), findsOneWidget);
+      expect(litDestination(tester), AppDestination.profile.index);
+      expect(find.byKey(const Key('profile_dot')), findsOneWidget,
+          reason: "Rua's request waits");
+
+      await tester.tap(find.text('Accept'));
+      await tester.pumpAndSettle();
+      expect(find.text("You're friends"), findsOneWidget);
+      await tester.tap(find.byKey(const Key('page_back')));
+      await tester.pumpAndSettle();
+
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/profile');
+      expect(find.text('Requests'), findsNothing);
+      expect(friendRow('Rua'), findsOneWidget);
+      expect(find.byKey(const Key('profile_dot')), findsNothing);
+    });
+
+    testWidgets('a second invite opened over the first checks its own code',
+        (tester) async {
+      final router = await pumpDestinations(tester,
+          initialLocation: '/profile/add/$ruaCode');
+      await tester.pumpAndSettle();
+      expect(find.text('Rua'), findsOneWidget);
+
+      router.go('/profile/add/$niaCode');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Nia'), findsOneWidget);
+      expect(find.text('Rua'), findsNothing);
     });
   });
 

@@ -12,6 +12,9 @@ class NavigationBarParams {
   final VoidCallback onCards;
   final VoidCallback onProfile;
 
+  /// Friend requests are waiting: Profile's item shows a dot.
+  final bool profileHasDot;
+
   const NavigationBarParams({
     required this.current,
     required this.onSaved,
@@ -19,5 +22,6 @@ class NavigationBarParams {
     required this.onSolve,
     required this.onCards,
     required this.onProfile,
+    this.profileHasDot = false,
   });
 }

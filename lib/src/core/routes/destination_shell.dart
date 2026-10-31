@@ -1,8 +1,11 @@
+import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/routes/shown_destination.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:doormer/src/shared/design/atomic/templates/destination_shell_template.dart';
+import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
 import 'package:doormer/src/shared/widget/coming_soon_toast.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 /// The frame around the nav bar's pages: one nav bar, and the page of the
@@ -11,7 +14,8 @@ import 'package:go_router/go_router.dart';
 /// Every page stays alive once opened, so switching back to one shows it as
 /// it was left, with no reload and no spinner. [DestinationShellTemplate]
 /// lays the pages out with the bar and cross-fades them; this connects it to
-/// go_router, as a page connects its template to a bloc.
+/// go_router, as a page connects its template to a bloc, and Profile's dot to
+/// [WaitingFriendRequestsBloc].
 class DestinationShell extends StatefulWidget {
   /// The destinations with a page, in the order of the shell route's branches.
   /// AI Tutor has no page yet.
@@ -72,20 +76,24 @@ class _DestinationShellState extends State<DestinationShell> {
 
   @override
   Widget build(BuildContext context) {
-    return ShownDestination(
-      destination: _current,
-      reselections: _reselections,
-      child: DestinationShellTemplate(
-        navigationBar: NavigationBarParams(
-          current: _current,
-          onSaved: () => _open(AppDestination.saved),
-          onAiTutor: () => showComingSoon(context),
-          onSolve: () => _open(AppDestination.solve),
-          onCards: () => _open(AppDestination.cards),
-          onProfile: () => _open(AppDestination.profile),
+    return BlocBuilder<WaitingFriendRequestsBloc, WaitingFriendRequestsState>(
+      bloc: serviceLocator<WaitingFriendRequestsBloc>(),
+      builder: (context, waitingRequests) => ShownDestination(
+        destination: _current,
+        reselections: _reselections,
+        child: DestinationShellTemplate(
+          navigationBar: NavigationBarParams(
+            current: _current,
+            onSaved: () => _open(AppDestination.saved),
+            onAiTutor: () => showComingSoon(context),
+            onSolve: () => _open(AppDestination.solve),
+            onCards: () => _open(AppDestination.cards),
+            onProfile: () => _open(AppDestination.profile),
+            profileHasDot: waitingRequests.hasWaiting,
+          ),
+          pages: widget.pages,
+          shownPageIndex: widget.navigationShell.currentIndex,
         ),
-        pages: widget.pages,
-        shownPageIndex: widget.navigationShell.currentIndex,
       ),
     );
   }
