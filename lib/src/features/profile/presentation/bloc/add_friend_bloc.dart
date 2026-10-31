@@ -23,8 +23,6 @@ part 'add_friend_state.dart';
 /// Opened from an invite link, it forgets the kept code and checks it at
 /// once, or asks for setup first when the student has no friend profile.
 class AddFriendBloc extends Bloc<AddFriendEvent, AddFriendState> {
-  static const _somethingWentWrong = 'Something went wrong. Try again.';
-
   final LoadFriendProfileUseCase loadProfile;
   final FindStudentUseCase findStudent;
   final SendFriendRequestUseCase sendRequest;
@@ -133,7 +131,7 @@ class AddFriendBloc extends Bloc<AddFriendEvent, AddFriendState> {
     } catch (e, stackTrace) {
       AppLogger.error('Finding a friend code failed unexpectedly',
           error: e, stackTrace: stackTrace);
-      _emitNoOneFound(emit, _somethingWentWrong);
+      _emitNoOneFound(emit, FriendsMessages.somethingWentWrong);
     }
   }
 
@@ -204,7 +202,7 @@ class AddFriendBloc extends Bloc<AddFriendEvent, AddFriendState> {
     } catch (e, stackTrace) {
       AppLogger.error('$what failed unexpectedly',
           error: e, stackTrace: stackTrace);
-      errorMessage = _somethingWentWrong;
+      errorMessage = FriendsMessages.somethingWentWrong;
     }
 
     final latest = state;
@@ -240,7 +238,7 @@ class AddFriendBloc extends Bloc<AddFriendEvent, AddFriendState> {
     } catch (e, stackTrace) {
       AppLogger.error('Resetting the friend code failed unexpectedly',
           error: e, stackTrace: stackTrace);
-      errorMessage = _somethingWentWrong;
+      errorMessage = FriendsMessages.somethingWentWrong;
     }
 
     final latest = state;

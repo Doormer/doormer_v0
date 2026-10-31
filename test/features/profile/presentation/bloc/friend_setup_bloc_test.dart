@@ -130,6 +130,23 @@ void main() {
   );
 
   blocTest<FriendSetupBloc, FriendSetupState>(
+    'picking a picture keeps the problem, since the nickname is unchanged',
+    build: build,
+    seed: () =>
+        firstTime(nickname: 'Al', nicknameProblem: 'Use 3 to 16 characters.'),
+    act: (bloc) => bloc.add(const PictureChosen(vernier)),
+    expect: () => [
+      FriendSetupReady(
+        isFirstTime: true,
+        nickname: 'Al',
+        picture: vernier,
+        choices: repository.pictureChoices,
+        nicknameProblem: 'Use 3 to 16 characters.',
+      ),
+    ],
+  );
+
+  blocTest<FriendSetupBloc, FriendSetupState>(
     'Done saves the tidied nickname and the picture',
     build: build,
     seed: () => FriendSetupReady(

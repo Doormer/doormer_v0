@@ -54,12 +54,6 @@ abstract class FriendsRemoteDataSource {
 }
 
 class FriendsRemoteDataSourceImpl implements FriendsRemoteDataSource {
-  /// The words for the statuses any friends call can answer with.
-  static const _anyCallRefusals = {
-    403: FriendsMessages.turnedOff,
-    429: FriendsMessages.doneTooOftenToday,
-  };
-
   final Dio dio;
 
   const FriendsRemoteDataSourceImpl({required this.dio});
@@ -134,7 +128,7 @@ class FriendsRemoteDataSourceImpl implements FriendsRemoteDataSource {
         SendFriendRequestResponseModel.fromJson,
         callMessage: FriendsMessages.couldNotSendRequest,
         refusals: const {
-          // The student reset their code after it was found.
+          // Its owner reset the code after it was found.
           404: FriendsMessages.codeNotFound,
           // The app never offers Send to a friend or a blocked student, so a
           // 409 means 100 friends. When the send is an Accept, either student
@@ -261,7 +255,7 @@ class FriendsRemoteDataSourceImpl implements FriendsRemoteDataSource {
       AppLogger.error('$path failed', error: e, stackTrace: stackTrace);
       final status = e.response?.statusCode;
       final words = e.type == DioExceptionType.badResponse
-          ? {..._anyCallRefusals, ...refusals}[status]
+          ? {...FriendsMessages.anyCallRefusals, ...refusals}[status]
           : null;
       if (status != null && words != null) throw RefusedFailure(status, words);
       throw dioExceptionToFailure(e, userFacingMessage: callMessage);

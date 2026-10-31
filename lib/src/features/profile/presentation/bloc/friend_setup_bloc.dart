@@ -18,8 +18,6 @@ part 'friend_setup_state.dart';
 /// later: the nickname, the picture, and saving them. Saving the first time
 /// is the student's agreement to be seen by the friends they accept.
 class FriendSetupBloc extends Bloc<FriendSetupEvent, FriendSetupState> {
-  static const _somethingWentWrong = 'Something went wrong. Try again.';
-
   final LoadFriendProfileUseCase loadProfile;
   final LoadPictureChoicesUseCase loadPictureChoices;
   final SaveFriendProfileUseCase saveProfile;
@@ -88,10 +86,15 @@ class FriendSetupBloc extends Bloc<FriendSetupEvent, FriendSetupState> {
     emit(ready.copyWith(nickname: event.nickname));
   }
 
+  /// Keeps the nickname's problem: the nickname hasn't changed.
   void _onPictureChosen(PictureChosen event, Emitter<FriendSetupState> emit) {
     final ready = state;
     if (ready is! FriendSetupReady) return;
-    emit(ready.copyWith(picture: event.picture, clearPicture: true));
+    emit(ready.copyWith(
+      picture: event.picture,
+      clearPicture: true,
+      nicknameProblem: ready.nicknameProblem,
+    ));
   }
 
   /// Checks the nickname by the API's rules first, so the only refusal the
@@ -129,7 +132,7 @@ class FriendSetupBloc extends Bloc<FriendSetupEvent, FriendSetupState> {
     } catch (e, stackTrace) {
       AppLogger.error('Saving the friend profile failed unexpectedly',
           error: e, stackTrace: stackTrace);
-      _emitNotSaved(emit, errorMessage: _somethingWentWrong);
+      _emitNotSaved(emit, errorMessage: FriendsMessages.somethingWentWrong);
     }
   }
 

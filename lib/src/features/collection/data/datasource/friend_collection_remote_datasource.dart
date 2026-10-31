@@ -22,9 +22,8 @@ class FriendCollectionRemoteDataSourceImpl
     implements FriendCollectionRemoteDataSource {
   /// The words for each status the API refuses with.
   static const _refusals = {
-    403: FriendsMessages.turnedOff,
+    ...FriendsMessages.anyCallRefusals,
     404: FriendsMessages.friendNotFound,
-    429: FriendsMessages.doneTooOftenToday,
   };
 
   final Dio dio;

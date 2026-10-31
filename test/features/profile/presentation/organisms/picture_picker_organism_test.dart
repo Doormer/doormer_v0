@@ -51,14 +51,29 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('marks the one picked', (tester) async {
+  testWidgets('marks the one picked as a checked radio button', (tester) async {
     final semantics = tester.ensureSemantics();
     await _pump(tester, chosen: 'Gnomon');
 
-    expect(tester.getSemantics(find.bySemanticsLabel('Gnomon')),
-        containsSemantics(isButton: true, isSelected: true));
-    expect(tester.getSemantics(find.bySemanticsLabel('First letter')),
-        containsSemantics(isButton: true, isSelected: false));
+    // The web reads `checked`, as aria-checked, but not `selected`.
+    expect(
+      tester.getSemantics(find.bySemanticsLabel('Gnomon')),
+      containsSemantics(
+        hasCheckedState: true,
+        isChecked: true,
+        isInMutuallyExclusiveGroup: true,
+        hasTapAction: true,
+      ),
+    );
+    expect(
+      tester.getSemantics(find.bySemanticsLabel('First letter')),
+      containsSemantics(
+        hasCheckedState: true,
+        isChecked: false,
+        isInMutuallyExclusiveGroup: true,
+        hasTapAction: true,
+      ),
+    );
     semantics.dispose();
   });
 

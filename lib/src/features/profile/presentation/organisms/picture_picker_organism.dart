@@ -67,7 +67,9 @@ class PicturePickerOrganism extends StatelessWidget {
   }
 }
 
-/// A tile to pick, ringed when it is the one picked.
+/// A tile to pick, ringed when it is the one picked. Screen readers hear a
+/// radio button, checked when picked: the web reads `checked`, but has no
+/// mapping for `selected`.
 class _Choice extends StatelessWidget {
   final String label;
   final bool isChosen;
@@ -84,8 +86,8 @@ class _Choice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      button: true,
-      selected: isChosen,
+      checked: isChosen,
+      inMutuallyExclusiveGroup: true,
       label: label,
       child: InkWell(
         onTap: onTap,

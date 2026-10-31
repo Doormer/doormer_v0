@@ -8,6 +8,12 @@ abstract final class FriendsMessages {
   static const doneTooOftenToday =
       "You've done that a lot today. Try again tomorrow.";
 
+  /// The words for each status any friends call can answer with.
+  static const anyCallRefusals = {
+    403: turnedOff,
+    429: doneTooOftenToday,
+  };
+
   // A status one call answers with.
   static const pickDifferentNickname = 'Please pick a different nickname.';
   static const codeNotFound =
@@ -49,6 +55,9 @@ abstract final class FriendsMessages {
   static String couldNotLoadCardsOf(String? nickname) => nickname == null
       ? couldNotLoadFriendCards
       : "We couldn't load $nickname's cards.";
+
+  // An error that isn't a Failure, which the app didn't expect.
+  static const somethingWentWrong = 'Something went wrong. Try again.';
 
   // When the browser refuses to copy.
   static const couldNotCopy =

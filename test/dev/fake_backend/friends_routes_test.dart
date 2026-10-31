@@ -220,6 +220,16 @@ void main() {
         _refused(404, "We couldn't find that student."));
   });
 
+  test('counts a report note in code points, as the API does', () async {
+    // 👍 is one code point, but two UTF-16 code units.
+    await friends.report('201', ReportReason.other, '👍' * 300);
+
+    await expectLater(
+      friends.report('201', ReportReason.other, '👍' * 501),
+      throwsA(isA<ApiFailure>().having((f) => f.statusCode, 'statusCode', 400)),
+    );
+  });
+
   test("shows Sam's decks and cards, with nothing to shatter", () async {
     final decks = await collections.decks('201');
     final cinder = (await collections.cards('201', 'cinder-01')).toEntity();

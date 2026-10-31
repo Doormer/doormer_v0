@@ -272,7 +272,10 @@ class FriendsRoutes {
     final fields = request.fields;
     final reason = fields['reason'];
     final note = fields['note'] ?? '';
-    if (!_reasons.contains(reason) || note is! String || note.length > 500) {
+    // As the API counts it: code points, once trimmed.
+    if (!_reasons.contains(reason) ||
+        note is! String ||
+        note.trim().runes.length > 500) {
       return _badRequest;
     }
     final student = _reachable(fields['friend_id']);

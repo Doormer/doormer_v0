@@ -32,15 +32,13 @@ typedef _FriendsRead = ({
 /// waiting for them, and their friends; and the answers, removals, blocks and
 /// reports made there.
 ///
-/// After every load, and after every action, it reads all three afresh, so
-/// the page always shows what the API holds, and tells
+/// After every load, and after every answer, removal and block, it reads all
+/// three afresh, so the page always shows what the API holds, and tells
 /// [WaitingFriendRequestsBloc] how many requests are waiting.
 ///
 /// Handlers run concurrently, so each applies its answer to the state as it
 /// stands after the await, never to the one before it.
 class FriendsBloc extends Bloc<FriendsEvent, FriendsState> {
-  static const _somethingWentWrong = 'Something went wrong. Try again.';
-
   final LoadFriendProfileUseCase loadProfile;
   final LoadFriendRequestsUseCase loadRequests;
   final LoadFriendsUseCase loadFriends;
@@ -262,7 +260,7 @@ class FriendsBloc extends Bloc<FriendsEvent, FriendsState> {
     } catch (e, stackTrace) {
       AppLogger.error('$what failed unexpectedly',
           error: e, stackTrace: stackTrace);
-      return _somethingWentWrong;
+      return FriendsMessages.somethingWentWrong;
     }
   }
 

@@ -14,8 +14,6 @@ part 'blocked_students_state.dart';
 /// The students the student has blocked, and unblocking them.
 class BlockedStudentsBloc
     extends Bloc<BlockedStudentsEvent, BlockedStudentsState> {
-  static const _somethingWentWrong = 'Something went wrong. Try again.';
-
   final LoadBlockedStudentsUseCase loadBlockedStudents;
   final UnblockStudentUseCase unblockStudent;
 
@@ -79,7 +77,7 @@ class BlockedStudentsBloc
     } catch (e, stackTrace) {
       AppLogger.error('Unblocking a student failed unexpectedly',
           error: e, stackTrace: stackTrace);
-      errorMessage = _somethingWentWrong;
+      errorMessage = FriendsMessages.somethingWentWrong;
     }
 
     final latest = state;
