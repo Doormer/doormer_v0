@@ -55,14 +55,19 @@ class NavigationBarOrganism extends StatelessWidget {
     _actionFor(tapped)();
   }
 
-  /// [hasDot] puts a dot on the icon, lit or not.
+  /// [hasDot] puts a dot on the icon, lit or not. Screen readers hear it as
+  /// part of the item's label.
   NavigationDestination _navigationDestination(
     _Destination destination, {
     required double iconSize,
     required bool hasDot,
   }) {
-    Widget withDot(Widget icon) =>
-        hasDot ? Badge(key: const Key('profile_dot'), child: icon) : icon;
+    Widget withDot(Widget icon) => hasDot
+        ? Semantics(
+            label: 'Friend requests waiting',
+            child: Badge(key: const Key('profile_dot'), child: icon),
+          )
+        : icon;
     final selectedIcon = destination.selectedIcon;
     return NavigationDestination(
       icon: withDot(Icon(destination.icon, size: iconSize)),

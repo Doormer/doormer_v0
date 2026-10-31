@@ -352,5 +352,44 @@ void main() {
 
       expect(find.byKey(const Key('profile_dot')), findsNothing);
     });
+
+    /// What a screen reader says for Profile's item.
+    String profileItemLabel(WidgetTester tester) =>
+        tester.getSemantics(find.bySemanticsLabel(RegExp('Profile'))).label;
+
+    testWidgets("is read out to screen readers with Profile's item, lit or not",
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      for (final current in [AppDestination.saved, AppDestination.profile]) {
+        await pumpNavigation(
+          tester,
+          size: const Size(390, 844),
+          tapped: <String>[],
+          current: current,
+          profileHasDot: true,
+        );
+
+        expect(find.bySemanticsLabel(RegExp('Friend requests waiting')),
+            findsOneWidget);
+        expect(profileItemLabel(tester), contains('Friend requests waiting'),
+            reason: 'one item, not a node of its own');
+      }
+      semantics.dispose();
+    });
+
+    testWidgets('says nothing to screen readers with nothing waiting',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpNavigation(
+        tester,
+        size: const Size(390, 844),
+        tapped: <String>[],
+      );
+
+      expect(find.bySemanticsLabel(RegExp('Friend requests waiting')),
+          findsNothing);
+      expect(profileItemLabel(tester), contains('Profile'));
+      semantics.dispose();
+    });
   });
 }
