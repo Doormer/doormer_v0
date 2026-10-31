@@ -19,8 +19,18 @@ import 'package:doormer/src/features/collection/domain/usecase/load_decks_usecas
 import 'package:doormer/src/features/collection/domain/usecase/shatter_copy_usecase.dart';
 import 'package:doormer/src/features/collection/presentation/bloc/collection_bloc.dart';
 import 'package:doormer/src/features/collection/presentation/pages/collection_page.dart';
+import 'package:doormer/src/features/profile/domain/usecase/accept_friend_request_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/block_student_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/decline_friend_request_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/load_friend_profile_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/load_friend_requests_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/load_friends_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/remove_friend_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/report_student_usecase.dart';
 import 'package:doormer/src/features/profile/domain/usecase/sign_out_usecase.dart';
+import 'package:doormer/src/features/profile/presentation/bloc/friends_bloc.dart';
 import 'package:doormer/src/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:doormer/src/features/profile/presentation/pages/profile_page.dart';
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_question_summary.dart';
@@ -39,12 +49,16 @@ import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_p
 import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
 import 'package:doormer/src/features/questions/presentation/pages/saved_questions_page.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/cross_fade_indexed_stack_atom.dart';
+import 'package:doormer/src/shared/design/atomic/molecules/page_heading_molecule.dart';
 import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
+import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../features/profile/fake_friends_repository.dart';
 
 /// Never asked anything: the Solve page only opens here.
 class _UnusedQuestionsRepository implements QuestionsRepository {
@@ -221,6 +235,8 @@ class _FakeSessionService implements SessionService {
 void main() {
   setUpAll(AppLogger.disable);
 
+  late FakeFriendsRepository friends;
+
   setUp(() {
     serviceLocator.registerFactory<AskByPhotoBloc>(
       () => AskByPhotoBloc(
@@ -249,6 +265,21 @@ void main() {
     serviceLocator.registerFactory<ProfileBloc>(
       () => ProfileBloc(
         signOut: SignOutUseCase(serviceLocator<SessionService>()),
+      ),
+    );
+    friends = FakeFriendsRepository();
+    serviceLocator.registerLazySingleton(WaitingFriendRequestsBloc.new);
+    serviceLocator.registerFactory<FriendsBloc>(
+      () => FriendsBloc(
+        loadProfile: LoadFriendProfileUseCase(friends),
+        loadRequests: LoadFriendRequestsUseCase(friends),
+        loadFriends: LoadFriendsUseCase(friends),
+        acceptRequest: AcceptFriendRequestUseCase(friends),
+        declineRequest: DeclineFriendRequestUseCase(friends),
+        removeFriend: RemoveFriendUseCase(friends),
+        blockStudent: BlockStudentUseCase(friends),
+        reportStudent: ReportStudentUseCase(friends),
+        waitingRequests: serviceLocator<WaitingFriendRequestsBloc>(),
       ),
     );
   });
@@ -387,7 +418,8 @@ void main() {
     await tester.tap(find.byIcon(Icons.person_outline));
     await tester.pump();
 
-    expect(find.text('More profile options are coming soon.'), findsOneWidget);
+    expect(find.byType(ProfilePage), findsOneWidget);
+    expect(find.widgetWithText(PageHeadingMolecule, 'Profile'), findsOneWidget);
     expect(litDestination(tester), AppDestination.profile.index);
     expect(tester.getRect(find.byType(NavigationBarOrganism)), bar);
   });

@@ -1,14 +1,32 @@
 import 'package:doormer/src/core/di/service_locator.dart';
+import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/services/sessions/session_service.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
+import 'package:doormer/src/features/profile/domain/entity/friend_profile.dart';
+import 'package:doormer/src/features/profile/domain/entity/friend_request.dart';
+import 'package:doormer/src/features/profile/domain/usecase/accept_friend_request_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/block_student_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/decline_friend_request_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/load_friend_profile_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/load_friend_requests_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/load_friends_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/remove_friend_usecase.dart';
+import 'package:doormer/src/features/profile/domain/usecase/report_student_usecase.dart';
 import 'package:doormer/src/features/profile/domain/usecase/sign_out_usecase.dart';
+import 'package:doormer/src/features/profile/presentation/bloc/friends_bloc.dart';
 import 'package:doormer/src/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:doormer/src/features/profile/presentation/molecules/friend_request_row_molecule.dart';
+import 'package:doormer/src/features/profile/presentation/molecules/friend_row_molecule.dart';
 import 'package:doormer/src/features/profile/presentation/pages/profile_page.dart';
+import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
+import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../fake_friends_repository.dart';
 
 class _FakeSessionService implements SessionService {
   int logouts = 0;
@@ -25,12 +43,29 @@ class _FakeSessionService implements SessionService {
 void main() {
   setUpAll(AppLogger.disable);
 
+  late FakeFriendsRepository friends;
   late _FakeSessionService session;
+  late WaitingFriendRequestsBloc waiting;
 
   setUp(() {
+    friends = FakeFriendsRepository();
     session = _FakeSessionService();
+    waiting = WaitingFriendRequestsBloc();
     serviceLocator.registerFactory<ProfileBloc>(
       () => ProfileBloc(signOut: SignOutUseCase(session)),
+    );
+    serviceLocator.registerFactory<FriendsBloc>(
+      () => FriendsBloc(
+        loadProfile: LoadFriendProfileUseCase(friends),
+        loadRequests: LoadFriendRequestsUseCase(friends),
+        loadFriends: LoadFriendsUseCase(friends),
+        acceptRequest: AcceptFriendRequestUseCase(friends),
+        declineRequest: DeclineFriendRequestUseCase(friends),
+        removeFriend: RemoveFriendUseCase(friends),
+        blockStudent: BlockStudentUseCase(friends),
+        reportStudent: ReportStudentUseCase(friends),
+        waitingRequests: waiting,
+      ),
     );
   });
 
@@ -38,8 +73,9 @@ void main() {
     await serviceLocator.reset();
   });
 
-  Future<void> pumpProfile(WidgetTester tester) async {
-    tester.view.physicalSize = const Size(360, 690);
+  /// Profile, with stand-ins for the pages it opens.
+  Future<GoRouter> pumpProfile(WidgetTester tester) async {
+    tester.view.physicalSize = const Size(360, 1400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
@@ -48,11 +84,26 @@ void main() {
       routes: [
         GoRoute(
           path: '/profile',
-          builder: (context, state) => const ProfilePage(),
+          builder: (_, state) =>
+              ProfilePage(isCovered: state.uri.path != '/profile'),
+          routes: [
+            for (final page in ['setup', 'add', 'blocked'])
+              GoRoute(
+                path: page,
+                builder: (_, __) => Scaffold(body: Text('$page page')),
+              ),
+            GoRoute(
+              path: 'friends/:friendId/cards',
+              builder: (_, state) => Scaffold(
+                body: Text('cards of ${state.pathParameters['friendId']}, '
+                    '${(state.extra as FriendSummary?)?.nickname}'),
+              ),
+            ),
+          ],
         ),
         GoRoute(
           path: '/auth/login',
-          builder: (context, state) => const Text('login'),
+          builder: (_, __) => const Text('login'),
         ),
       ],
     );
@@ -62,28 +113,275 @@ void main() {
       ScreenUtilInit(
         designSize: const Size(360, 690),
         builder: (_, __) => MaterialApp.router(
-          theme: AppTheme.light,
+          theme: AppTheme.dark,
           routerConfig: router,
         ),
       ),
     );
-    await tester.pump();
+    await tester.pumpAndSettle();
+    return router;
   }
 
-  testWidgets('shows profile content', (tester) async {
+  Future<void> chooseFromMenu(
+    WidgetTester tester, {
+    required Finder row,
+    required String action,
+  }) async {
+    await tester
+        .tap(find.descendant(of: row, matching: find.byIcon(Icons.more_vert)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(action));
+    await tester.pumpAndSettle();
+  }
+
+  Finder friendRow(String nickname) =>
+      find.widgetWithText(FriendRowMolecule, nickname);
+  Finder requestRow(String nickname) =>
+      find.widgetWithText(FriendRequestRowMolecule, nickname);
+
+  /// Lets an error toast run its course.
+  Future<void> waitOutToast(WidgetTester tester) async {
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets(
+      'shows the student, Add a friend, the requests and the friends, then '
+      'Blocked students and Sign out', (tester) async {
+    await pumpProfile(tester);
+
+    expect(find.text('Profile'), findsOneWidget);
+    expect(find.text('Kai'), findsOneWidget);
+    expect(find.text('K7QM-2XPA'), findsOneWidget);
+    expect(find.text('Edit'), findsOneWidget);
+    expect(find.text('Add a friend'), findsOneWidget);
+    expect(find.text('Requests'), findsOneWidget);
+    expect(requestRow('Rua'), findsOneWidget);
+    expect(find.text('Friends'), findsOneWidget);
+    expect(friendRow('Alex'), findsOneWidget);
+    expect(friendRow('Sam'), findsOneWidget);
+    expect(find.text('Blocked students'), findsOneWidget);
+    expect(find.text('Sign out'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Requests')).dy,
+      lessThan(tester.getTopLeft(find.text('Friends')).dy),
+    );
+    expect(waiting.state.count, 1, reason: 'the dot on the nav bar');
+  });
+
+  testWidgets('with no request waiting, there is no Requests section',
+      (tester) async {
+    friends.requests = [];
+    // The dot still shows 3 from an earlier count.
+    waiting.add(const WaitingFriendRequestsCounted(3));
+    await tester.pump();
+    expect(waiting.state.count, 3);
+
+    await pumpProfile(tester);
+
+    expect(find.text('Requests'), findsNothing);
+    expect(waiting.state.count, 0);
+  });
+
+  testWidgets('with no friends yet, says how to add one', (tester) async {
+    friends.friends = [];
+
+    await pumpProfile(tester);
+
+    expect(find.text('No friends yet. Add one with their friend code.'),
+        findsOneWidget);
+  });
+
+  testWidgets('before setup, shows only Set up friends and Sign out',
+      (tester) async {
+    friends.profile = const FriendProfile(
+      hasProfile: false,
+      nickname: '',
+      friendCode: '',
+      friendsTurnedOff: false,
+      waitingRequests: 0,
+    );
+
+    await pumpProfile(tester);
+
+    expect(find.text('Set up friends'), findsOneWidget);
+    expect(find.text('Sign out'), findsOneWidget);
+    expect(find.text('Add a friend'), findsNothing);
+    expect(find.text('Friends'), findsNothing);
+
+    await tester.tap(find.text('Set up friends'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('setup page'), findsOneWidget);
+  });
+
+  testWidgets('with friends turned off, says so, and Sign out still works',
+      (tester) async {
+    friends.profile = const FriendProfile(
+      hasProfile: true,
+      nickname: 'Kai',
+      friendCode: kaiCode,
+      friendsTurnedOff: true,
+      waitingRequests: 0,
+    );
+
     await pumpProfile(tester);
 
     expect(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is Text &&
-            widget.data == 'Profile' &&
-            (widget.style?.debugLabel?.contains('headlineMedium') ?? false),
-      ),
-      findsOneWidget,
-    );
-    expect(find.text('More profile options are coming soon.'), findsOneWidget);
+        find.text('Friends is turned off for your account.'), findsOneWidget);
+    expect(find.text('Add a friend'), findsNothing);
+    await tester.tap(find.text('Sign out'));
+    await tester.pumpAndSettle();
+    expect(session.logouts, 1);
+  });
+
+  testWidgets(
+      "when friends can't load, says so with Try again, and Sign out stays",
+      (tester) async {
+    friends.failNext['loadFriends'] =
+        NetworkFailure("We couldn't load your friends.");
+
+    await pumpProfile(tester);
+
+    expect(find.text("We couldn't load your friends."), findsOneWidget);
     expect(find.text('Sign out'), findsOneWidget);
+
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+
+    expect(friendRow('Sam'), findsOneWidget);
+  });
+
+  testWidgets('Accept makes the sender a friend, and the dot goes',
+      (tester) async {
+    await pumpProfile(tester);
+
+    await tester.tap(find.text('Accept'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Requests'), findsNothing);
+    expect(friendRow('Rua'), findsOneWidget);
+    expect(waiting.state.count, 0);
+  });
+
+  testWidgets('Decline takes the request away', (tester) async {
+    await pumpProfile(tester);
+
+    await tester.tap(find.text('Decline'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Rua'), findsNothing);
+    expect(friends.calls, contains('declineRequest 9'));
+  });
+
+  testWidgets("a friend's row opens their collection", (tester) async {
+    final router = await pumpProfile(tester);
+
+    await tester.tap(find.text('Sam'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('cards of 42, Sam'), findsOneWidget);
+    expect(router.routerDelegate.currentConfiguration.uri.path,
+        '/profile/friends/42/cards');
+  });
+
+  testWidgets('Remove takes the friend away', (tester) async {
+    await pumpProfile(tester);
+
+    await chooseFromMenu(tester, row: friendRow('Sam'), action: 'Remove');
+
+    expect(find.text('Sam'), findsNothing);
+    expect(friends.calls, contains('removeFriend 42'));
+  });
+
+  testWidgets("Block on a request takes it away, and the sender isn't added",
+      (tester) async {
+    await pumpProfile(tester);
+
+    await chooseFromMenu(tester, row: requestRow('Rua'), action: 'Block');
+
+    expect(find.text('Rua'), findsNothing);
+    expect(friends.calls, contains('blockStudent 55'));
+  });
+
+  testWidgets('Report opens the sheet, and sending says thanks',
+      (tester) async {
+    await pumpProfile(tester);
+
+    await chooseFromMenu(tester, row: friendRow('Sam'), action: 'Report');
+    expect(find.text('Report Sam'), findsOneWidget);
+    await tester.tap(find.text('Rude or hurtful nickname'));
+    await tester.pump();
+    await tester.tap(find.text('Send report'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Thanks. The Doormer team will look at this.'),
+        findsOneWidget);
+    expect(friends.calls, contains('reportStudent 42 rudeNickname'));
+    expect(friendRow('Sam'), findsOneWidget,
+        reason: 'a report on its own removes no one');
+  });
+
+  testWidgets('Block in the report sheet closes it and blocks the student',
+      (tester) async {
+    await pumpProfile(tester);
+
+    await chooseFromMenu(tester, row: requestRow('Rua'), action: 'Report');
+    await tester.tap(find.text('Block'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Report Rua'), findsNothing);
+    expect(find.text('Rua'), findsNothing);
+    expect(friends.calls, contains('blockStudent 55'));
+  });
+
+  for (final (button, page) in [
+    ('Edit', 'setup page'),
+    ('Add a friend', 'add page'),
+    ('Blocked students', 'blocked page'),
+  ]) {
+    testWidgets('$button opens its page', (tester) async {
+      await pumpProfile(tester);
+
+      await tester.tap(find.text(button));
+      await tester.pumpAndSettle();
+
+      expect(find.text(page), findsOneWidget);
+    });
+  }
+
+  testWidgets('an action that fails says why', (tester) async {
+    friends.failNext['removeFriend'] =
+        NetworkFailure("We couldn't remove that friend. Try again.");
+    await pumpProfile(tester);
+
+    await chooseFromMenu(tester, row: friendRow('Sam'), action: 'Remove');
+
+    expect(find.text("We couldn't remove that friend. Try again."),
+        findsOneWidget);
+    expect(friendRow('Sam'), findsOneWidget);
+    await waitOutToast(tester);
+  });
+
+  testWidgets('coming back from a page under Profile reads friends again',
+      (tester) async {
+    final router = await pumpProfile(tester);
+
+    router.go('/profile/add');
+    await tester.pumpAndSettle();
+    friends.requests = [
+      ...friends.requests,
+      FriendRequest(
+        requestId: '10',
+        from: nia,
+        sentAt: DateTime.utc(2026, 10, 26, 10),
+      ),
+    ];
+    router.go('/profile');
+    await tester.pumpAndSettle();
+
+    expect(requestRow('Nia'), findsOneWidget);
+    expect(waiting.state.count, 2);
   });
 
   testWidgets('signs out and opens login', (tester) async {
