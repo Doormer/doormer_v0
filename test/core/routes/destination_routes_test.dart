@@ -7,11 +7,14 @@ import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/routes/destination_routes.dart';
+import 'package:doormer/src/core/routes/invite_routes.dart';
 import 'package:doormer/src/core/routes/root_navigator_key.dart';
+import 'package:doormer/src/core/routes/route_guard.dart';
 import 'package:doormer/src/core/services/sessions/session_service.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/core/utils/invite_code_storage/in_memory_invite_code_storage.dart';
+import 'package:doormer/src/core/utils/token_storage/token_storage.dart';
 import 'package:doormer/src/features/collection/domain/entity/collection.dart';
 import 'package:doormer/src/features/collection/domain/entity/deck_progress.dart';
 import 'package:doormer/src/features/collection/domain/repository/collection_repository.dart';
@@ -259,6 +262,19 @@ PhotoQuestionSolveOutcome _bundledSolution(String questionId) {
     ...json,
     'question_id': questionId,
   }).toEntity();
+}
+
+class _FakeTokenStorage implements TokenStorage {
+  String? accessToken;
+
+  @override
+  Future<String?> getAccessToken() async => accessToken;
+
+  @override
+  Future<String?> getRefreshToken() async => null;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeSessionService implements SessionService {
@@ -1059,6 +1075,118 @@ void main() {
 
       expect(find.text('Nia'), findsOneWidget);
       expect(find.text('Rua'), findsNothing);
+    });
+  });
+
+  group('an invite link', () {
+    late _FakeTokenStorage tokens;
+    late InMemoryInviteCodeStorage inviteCodes;
+
+    setUp(() {
+      tokens = _FakeTokenStorage();
+      inviteCodes = InMemoryInviteCodeStorage();
+      serviceLocator.registerFactory<AddFriendBloc>(
+        () => AddFriendBloc(
+          loadProfile: LoadFriendProfileUseCase(friends),
+          findStudent: FindStudentUseCase(friends),
+          sendRequest: SendFriendRequestUseCase(friends),
+          unblockStudent: UnblockStudentUseCase(friends),
+          resetCode: ResetFriendCodeUseCase(friends),
+          forgetInviteCode: ForgetInviteCodeUseCase(inviteCodes),
+        ),
+      );
+    });
+
+    /// The app's router as WebRouter builds it, with stand-ins for the
+    /// sign-in pages, which only compile for the browser.
+    Future<GoRouter> pumpApp(WidgetTester tester, String location) async {
+      tester.view.physicalSize = const Size(360, 690);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final router = GoRouter(
+        navigatorKey: rootNavigatorKey,
+        initialLocation: location,
+        redirect: (_, state) => guardNavigation(
+          state.uri.path,
+          tokens: tokens,
+          inviteCodes: inviteCodes,
+        ),
+        routes: [
+          GoRoute(
+            path: '/auth',
+            builder: (_, __) => const Scaffold(body: Text('sign-up page')),
+            routes: [
+              for (final page in ['login', 'registration-complete'])
+                GoRoute(
+                  path: page,
+                  builder: (_, __) => Scaffold(body: Text('$page page')),
+                ),
+            ],
+          ),
+          ...destinationRoutes,
+          ...inviteRoutes,
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ScreenUtilInit(
+          designSize: const Size(360, 690),
+          builder: (_, __) => MaterialApp.router(
+            theme: AppTheme.light,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return router;
+    }
+
+    String pathOf(GoRouter router) =>
+        router.routerDelegate.currentConfiguration.uri.path;
+
+    testWidgets(
+        'signed out, asks the student to sign in, then opens the check on '
+        'the first app page they reach', (tester) async {
+      final router = await pumpApp(tester, '/add/$ruaCode');
+
+      expect(find.text('A friend invited you to Doormer'), findsOneWidget);
+      expect(find.text('Rua'), findsNothing, reason: 'it names no one');
+
+      await tester.tap(find.text('Log in'));
+      await tester.pumpAndSettle();
+      expect(find.text('login page'), findsOneWidget);
+
+      // Signing in ends on the older registration pages.
+      tokens.accessToken = 'access';
+      router.go('/auth/registration-complete');
+      await tester.pumpAndSettle();
+      expect(find.text('registration-complete page'), findsOneWidget);
+
+      // The student opens the app.
+      router.go('/');
+      await tester.pumpAndSettle();
+
+      expect(pathOf(router), '/profile/add/$ruaCode');
+      expect(find.text('Rua'), findsOneWidget);
+      expect(find.text('Accept'), findsOneWidget);
+      expect(find.byType(NavigationBarOrganism), findsOneWidget);
+      expect(await inviteCodes.read(), isNull,
+          reason: 'the check forgets the code once shown');
+
+      // Saved's list never loads here, so its spinner never settles.
+      router.go('/saved');
+      await tester.pump();
+      await tester.pump();
+      expect(pathOf(router), '/saved', reason: 'and the app opens as usual');
+    });
+
+    testWidgets('signed in, opens the check at once', (tester) async {
+      tokens.accessToken = 'access';
+
+      final router = await pumpApp(tester, '/add/$ruaCode');
+
+      expect(pathOf(router), '/profile/add/$ruaCode');
+      expect(find.text('Rua'), findsOneWidget);
     });
   });
 

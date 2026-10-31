@@ -1,8 +1,10 @@
 import 'package:doormer/src/core/di/service_locator.dart';
+import 'package:doormer/src/core/routes/invite_routes.dart';
 import 'package:doormer/src/core/routes/question_solution_routes.dart';
 import 'package:doormer/src/core/routes/popup_route_tracker.dart';
 import 'package:doormer/src/core/routes/root_navigator_key.dart';
 import 'package:doormer/src/core/routes/route_guard.dart';
+import 'package:doormer/src/core/utils/invite_code_storage/invite_code_storage.dart';
 import 'package:doormer/src/core/utils/token_storage/token_storage.dart';
 import 'package:doormer/src/features/auth/presentation/pages/login_page.dart';
 import 'package:doormer/src/features/auth/presentation/pages/signup_page.dart';
@@ -26,16 +28,11 @@ class WebRouter {
   static final GoRouter router = GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/auth',
-    redirect: (context, state) async {
-      final tokens = serviceLocator<TokenStorage>();
-      return redirectFor(
-        state.uri.path,
-        isSignedIn: hasSignedInSession(
-          accessToken: await tokens.getAccessToken(),
-          refreshToken: await tokens.getRefreshToken(),
-        ),
-      );
-    },
+    redirect: (context, state) => guardNavigation(
+      state.uri.path,
+      tokens: serviceLocator<TokenStorage>(),
+      inviteCodes: serviceLocator<InviteCodeStorage>(),
+    ),
     observers: [popupRoutes],
     routes: [
       // Authentication Routes (Only for users NOT logged in)
@@ -61,6 +58,7 @@ class WebRouter {
       ),
       ...destinationRoutes,
       ...questionSolutionRoutes,
+      ...inviteRoutes,
     ],
     errorBuilder: (context, state) {
       AppLogger.warn('Page not found: ${state.uri.path}');
