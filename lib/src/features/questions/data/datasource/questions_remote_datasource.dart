@@ -184,7 +184,10 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
         try {
           return DailyLimitReachedFailure(
               DailyLimitModel.fromJson(dailyLimit).toEntity());
-        } on FormatException {
+        } on FormatException catch (formatException) {
+          AppLogger.warn("A 429's daily_limit could not be read, so it is "
+              'reported like any other failed send: '
+              '${formatException.message}');
           return null;
         }
       default:

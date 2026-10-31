@@ -139,26 +139,30 @@ void main() {
     expect(remoteDataSource.idempotencyKey, 'photo-key-1');
   });
 
-  test('passes a refusal through as it came', () async {
-    final remoteDataSource = _FakeQuestionsRemoteDataSource();
-    final failure = DailyLimitReachedFailure(
+  for (final refusal in [
+    DailyLimitReachedFailure(
       DailyLimit(questionsLeft: 0, resetsAt: DateTime.utc(2026, 10, 18, 11)),
-    );
-    remoteDataSource.submitFailure = failure;
-    final repository = QuestionsRepositoryImpl(
-      remoteDataSource: remoteDataSource,
-      localDataSource: _FakeQuestionsLocalDataSource(),
-    );
+    ),
+    PhotoBeingSolvedFailure(),
+  ]) {
+    test('passes a ${refusal.runtimeType} through as it came', () async {
+      final remoteDataSource = _FakeQuestionsRemoteDataSource();
+      remoteDataSource.submitFailure = refusal;
+      final repository = QuestionsRepositoryImpl(
+        remoteDataSource: remoteDataSource,
+        localDataSource: _FakeQuestionsLocalDataSource(),
+      );
 
-    await expectLater(
-      repository.submitPhotoQuestion(
-        imageBytes: Uint8List.fromList([9, 8, 7]),
-        contentType: 'image/png',
-        idempotencyKey: 'photo-key-1',
-      ),
-      throwsA(same(failure)),
-    );
-  });
+      await expectLater(
+        repository.submitPhotoQuestion(
+          imageBytes: Uint8List.fromList([9, 8, 7]),
+          contentType: 'image/png',
+          idempotencyKey: 'photo-key-1',
+        ),
+        throwsA(same(refusal)),
+      );
+    });
+  }
 
   test('loadSampleSolution delegates to the local datasource', () async {
     final local = _FakeQuestionsLocalDataSource();

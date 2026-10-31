@@ -1,3 +1,4 @@
+import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/data/model/daily_limit_model.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 
@@ -61,7 +62,10 @@ class PhotoQuestionResponseModel {
     if (json is! Map<String, dynamic>) return null;
     try {
       return DailyLimitModel.fromJson(json);
-    } on FormatException {
+    } on FormatException catch (e) {
+      // Only the reason, never the body: the answer may carry a solution.
+      AppLogger.warn("The answer's daily_limit could not be read, so it was "
+          'dropped: ${e.message}');
       return null;
     }
   }

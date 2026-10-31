@@ -11,7 +11,9 @@ class DailyLimitModel {
   /// Throws a [FormatException] when either field is missing or unreadable.
   factory DailyLimitModel.fromJson(Map<String, dynamic> json) {
     final questionsLeft = json['questions_left'];
-    final resetsAt = DateTime.tryParse(json['resets_at']?.toString() ?? '');
+    final resetsAtJson = json['resets_at'];
+    final resetsAt =
+        resetsAtJson is String ? DateTime.tryParse(resetsAtJson) : null;
     if (questionsLeft is! num || resetsAt == null) {
       throw const FormatException(
           'daily_limit needs questions_left and resets_at');

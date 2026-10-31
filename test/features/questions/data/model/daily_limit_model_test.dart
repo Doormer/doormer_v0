@@ -36,6 +36,11 @@ void main() {
     );
     expect(
       () => DailyLimitModel.fromJson(
+          {'questions_left': 3, 'resets_at': 1760785200}),
+      throwsFormatException,
+    );
+    expect(
+      () => DailyLimitModel.fromJson(
           {'questions_left': '3', 'resets_at': '2026-10-19T00:00:00+13:00'}),
       throwsFormatException,
     );

@@ -117,10 +117,7 @@ void main() {
     });
 
     test('another photo still being solved is its own failure', () async {
-      final adapter = _FakeAdapter(
-        status: 409,
-        body: 'Your last photo is still being solved. Try again in a moment.',
-      );
+      final adapter = _FakeAdapter(status: 409, body: 'Conflict');
 
       await expectLater(
         _sendPhoto(adapter),
@@ -158,6 +155,22 @@ void main() {
     test('a 429 it cannot read is reported like any other failed send',
         () async {
       final adapter = _FakeAdapter(status: 429, body: 'Too Many Requests');
+
+      await expectLater(
+        _sendPhoto(adapter),
+        throwsA(
+            isA<ApiFailure>().having((f) => f.statusCode, 'statusCode', 429)),
+      );
+    });
+
+    test(
+        'a 429 whose daily limit cannot be read is reported like any other '
+        'failed send', () async {
+      final adapter = _FakeAdapter(status: 429, body: {
+        'reason': 'daily_question_limit',
+        'daily_limit': {'questions_left': 0},
+        'next_steps': [],
+      });
 
       await expectLater(
         _sendPhoto(adapter),

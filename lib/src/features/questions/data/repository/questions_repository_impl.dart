@@ -8,6 +8,7 @@ import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart'
 import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_questions_page.dart';
+import 'package:doormer/src/features/questions/domain/failure/photo_question_failures.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 
 class QuestionsRepositoryImpl implements QuestionsRepository {
@@ -32,6 +33,15 @@ class QuestionsRepositoryImpl implements QuestionsRepository {
         idempotencyKey: idempotencyKey,
       );
       return response.toEntity();
+    } on DailyLimitReachedFailure catch (f) {
+      // A refusal is the API working as meant, not a failure.
+      AppLogger.info('Photo question repository passed on a refusal: '
+          '${f.message}');
+      rethrow;
+    } on PhotoBeingSolvedFailure catch (f) {
+      AppLogger.info('Photo question repository passed on a refusal: '
+          '${f.message}');
+      rethrow;
     } on Failure catch (f, stackTrace) {
       AppLogger.error('Photo question repository failed',
           error: f, stackTrace: stackTrace);

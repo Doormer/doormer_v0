@@ -105,11 +105,6 @@ class _PendingSavedQuestionsRepository implements QuestionsRepository {
   Future<SolvedQuestionsPage> loadSolvedQuestions({String? cursor}) =>
       Completer<SolvedQuestionsPage>().future;
 
-  // Solve asks for the count when it opens. These tests are not about it, so
-  // it never arrives and Solve shows none.
-  @override
-  Future<DailyLimit> loadDailyLimit() => Completer<DailyLimit>().future;
-
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw UnimplementedError('${invocation.memberName}');
@@ -121,11 +116,6 @@ class _EmptySavedQuestionsRepository implements QuestionsRepository {
   @override
   Future<SolvedQuestionsPage> loadSolvedQuestions({String? cursor}) async =>
       const SolvedQuestionsPage(questions: []);
-
-  // Solve asks for the count when it opens. These tests are not about it, so
-  // it never arrives and Solve shows none.
-  @override
-  Future<DailyLimit> loadDailyLimit() => Completer<DailyLimit>().future;
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>
@@ -144,11 +134,6 @@ class _CountingSavedQuestionsRepository implements QuestionsRepository {
     return SolvedQuestionsPage(questions: questions);
   }
 
-  // Solve asks for the count when it opens. These tests are not about it, so
-  // it never arrives and Solve shows none.
-  @override
-  Future<DailyLimit> loadDailyLimit() => Completer<DailyLimit>().future;
-
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw UnimplementedError('${invocation.memberName}');
@@ -165,11 +150,6 @@ class _FailsFirstSavedQuestionsRepository implements QuestionsRepository {
     if (reads == 1) throw NetworkFailure();
     return retry.future;
   }
-
-  // Solve asks for the count when it opens. These tests are not about it, so
-  // it never arrives and Solve shows none.
-  @override
-  Future<DailyLimit> loadDailyLimit() => Completer<DailyLimit>().future;
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>
