@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:doormer/src/core/services/sessions/session_service.dart';
+import 'package:doormer/src/core/utils/invite_code_storage/in_memory_invite_code_storage.dart';
+import 'package:doormer/src/core/utils/invite_code_storage/invite_code_storage.dart';
 import 'package:doormer/src/features/profile/di/profile_module.dart';
 import 'package:doormer/src/features/profile/domain/usecase/accept_friend_request_usecase.dart';
 import 'package:doormer/src/features/profile/domain/usecase/block_student_usecase.dart';
@@ -16,6 +18,7 @@ import 'package:doormer/src/features/profile/domain/usecase/reset_friend_code_us
 import 'package:doormer/src/features/profile/domain/usecase/save_friend_profile_usecase.dart';
 import 'package:doormer/src/features/profile/domain/usecase/send_friend_request_usecase.dart';
 import 'package:doormer/src/features/profile/domain/usecase/unblock_student_usecase.dart';
+import 'package:doormer/src/features/profile/presentation/bloc/add_friend_bloc.dart';
 import 'package:doormer/src/features/profile/presentation/bloc/blocked_students_bloc.dart';
 import 'package:doormer/src/features/profile/presentation/bloc/friend_setup_bloc.dart';
 import 'package:doormer/src/features/profile/presentation/bloc/friends_bloc.dart';
@@ -35,6 +38,7 @@ void main() {
     locator.registerSingleton<Dio>(Dio());
     locator.registerSingleton<SessionService>(_FakeSessionService());
     locator.registerSingleton(WaitingFriendRequestsBloc());
+    locator.registerSingleton<InviteCodeStorage>(InMemoryInviteCodeStorage());
     initProfileModule();
   });
 
@@ -62,5 +66,6 @@ void main() {
     expect(locator<FriendsBloc>(), isA<FriendsBloc>());
     expect(locator<BlockedStudentsBloc>(), isA<BlockedStudentsBloc>());
     expect(locator<FriendSetupBloc>(), isA<FriendSetupBloc>());
+    expect(locator<AddFriendBloc>(), isA<AddFriendBloc>());
   });
 }

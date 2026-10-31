@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:doormer/src/core/services/sessions/session_service.dart';
+import 'package:doormer/src/core/utils/invite_code_storage/invite_code_storage.dart';
 import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
 import 'package:get_it/get_it.dart';
 
@@ -10,6 +11,7 @@ import '../domain/usecase/accept_friend_request_usecase.dart';
 import '../domain/usecase/block_student_usecase.dart';
 import '../domain/usecase/decline_friend_request_usecase.dart';
 import '../domain/usecase/find_student_usecase.dart';
+import '../domain/usecase/forget_invite_code_usecase.dart';
 import '../domain/usecase/load_blocked_students_usecase.dart';
 import '../domain/usecase/load_friend_profile_usecase.dart';
 import '../domain/usecase/load_friend_requests_usecase.dart';
@@ -22,6 +24,7 @@ import '../domain/usecase/save_friend_profile_usecase.dart';
 import '../domain/usecase/send_friend_request_usecase.dart';
 import '../domain/usecase/sign_out_usecase.dart';
 import '../domain/usecase/unblock_student_usecase.dart';
+import '../presentation/bloc/add_friend_bloc.dart';
 import '../presentation/bloc/blocked_students_bloc.dart';
 import '../presentation/bloc/friend_setup_bloc.dart';
 import '../presentation/bloc/friends_bloc.dart';
@@ -90,6 +93,9 @@ void initProfileModule() {
   serviceLocator.registerLazySingleton(
     () => ReportStudentUseCase(serviceLocator<FriendsRepository>()),
   );
+  serviceLocator.registerLazySingleton(
+    () => ForgetInviteCodeUseCase(serviceLocator<InviteCodeStorage>()),
+  );
 
   serviceLocator.registerFactory(
     () => ProfileBloc(signOut: serviceLocator<SignOutUseCase>()),
@@ -112,6 +118,16 @@ void initProfileModule() {
       loadProfile: serviceLocator<LoadFriendProfileUseCase>(),
       loadPictureChoices: serviceLocator<LoadPictureChoicesUseCase>(),
       saveProfile: serviceLocator<SaveFriendProfileUseCase>(),
+    ),
+  );
+  serviceLocator.registerFactory(
+    () => AddFriendBloc(
+      loadProfile: serviceLocator<LoadFriendProfileUseCase>(),
+      findStudent: serviceLocator<FindStudentUseCase>(),
+      sendRequest: serviceLocator<SendFriendRequestUseCase>(),
+      unblockStudent: serviceLocator<UnblockStudentUseCase>(),
+      resetCode: serviceLocator<ResetFriendCodeUseCase>(),
+      forgetInviteCode: serviceLocator<ForgetInviteCodeUseCase>(),
     ),
   );
   serviceLocator.registerFactory(
