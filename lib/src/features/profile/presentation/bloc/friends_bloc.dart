@@ -152,9 +152,15 @@ class FriendsBloc extends Bloc<FriendsEvent, FriendsState> {
   void _onReportOpened(ReportOpened event, Emitter<FriendsState> emit) {
     final ready = state;
     if (ready is! FriendsReady) return;
-    emit(ready.copyWith(reportStatus: ReportStatus.unsent));
+    emit(ready.copyWith(
+      reportedFriendId: event.friendId,
+      reportStatus: ReportStatus.unsent,
+    ));
   }
 
+  /// Sends a report on a student. Its answer changes the report status only
+  /// while the status is still about that student, so a sheet opened for
+  /// someone else meanwhile never says thanks for a report it didn't send.
   Future<void> _onStudentReported(
     StudentReported event,
     Emitter<FriendsState> emit,
@@ -163,7 +169,10 @@ class FriendsBloc extends Bloc<FriendsEvent, FriendsState> {
     if (ready is! FriendsReady || ready.reportStatus == ReportStatus.sending) {
       return;
     }
-    emit(ready.copyWith(reportStatus: ReportStatus.sending));
+    emit(ready.copyWith(
+      reportedFriendId: event.friendId,
+      reportStatus: ReportStatus.sending,
+    ));
     final errorMessage = await _attempt(
       () => reportStudent(
         event.friendId,
@@ -174,6 +183,13 @@ class FriendsBloc extends Bloc<FriendsEvent, FriendsState> {
     );
     final latest = state;
     if (latest is! FriendsReady) return;
+    if (latest.reportedFriendId != event.friendId) {
+      // A failure still shows, so the student knows the report didn't go.
+      if (errorMessage != null) {
+        emit(latest.copyWith(errorMessage: errorMessage));
+      }
+      return;
+    }
     emit(latest.copyWith(
       reportStatus:
           errorMessage == null ? ReportStatus.sent : ReportStatus.unsent,
@@ -327,6 +343,7 @@ class FriendsBloc extends Bloc<FriendsEvent, FriendsState> {
         friends: read.friends,
         answeringRequestIds: keeping?.answeringRequestIds ?? const {},
         changingFriendIds: keeping?.changingFriendIds ?? const {},
+        reportedFriendId: keeping?.reportedFriendId,
         reportStatus: keeping?.reportStatus ?? ReportStatus.unsent,
         errorMessage: errorMessage,
       );

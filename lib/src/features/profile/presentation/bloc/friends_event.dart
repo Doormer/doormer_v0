@@ -63,9 +63,14 @@ class StudentBlocked extends FriendsEvent {
   List<Object?> get props => [friendId];
 }
 
-/// The report sheet opened, so it starts unsent.
+/// The report sheet opened for a student, so their report starts unsent.
 class ReportOpened extends FriendsEvent {
-  const ReportOpened();
+  final String friendId;
+
+  const ReportOpened(this.friendId);
+
+  @override
+  List<Object?> get props => [friendId];
 }
 
 /// The student sent a report from the report sheet.

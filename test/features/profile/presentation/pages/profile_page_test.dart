@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/services/sessions/session_service.dart';
@@ -333,6 +335,30 @@ void main() {
     expect(find.text('Report Rua'), findsNothing);
     expect(find.text('Rua'), findsNothing);
     expect(friends.calls, contains('blockStudent 55'));
+  });
+
+  testWidgets(
+      "a report that lands while another student's sheet is open shows no "
+      'thanks on it', (tester) async {
+    await pumpProfile(tester);
+    await chooseFromMenu(tester, row: friendRow('Sam'), action: 'Report');
+    await tester.tap(find.text('Rude or hurtful nickname'));
+    await tester.pump();
+    friends.hold = Completer<void>();
+    await tester.tap(find.text('Send report'));
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pumpAndSettle();
+    await chooseFromMenu(tester, row: requestRow('Rua'), action: 'Report');
+    friends.hold!.complete();
+    await tester.pumpAndSettle();
+
+    expect(friends.calls, contains('reportStudent 42 rudeNickname'));
+    expect(find.text('Report Rua'), findsOneWidget);
+    expect(
+        find.text('Thanks. The Doormer team will look at this.'), findsNothing);
+    expect(find.text('Send report'), findsOneWidget);
   });
 
   for (final (button, page) in [

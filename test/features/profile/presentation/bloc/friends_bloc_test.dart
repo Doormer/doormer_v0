@@ -55,6 +55,7 @@ void main() {
     List<FriendSummary> friends = const [alex, sam],
     Set<String> answeringRequestIds = const {},
     Set<String> changingFriendIds = const {},
+    String? reportedFriendId,
     ReportStatus reportStatus = ReportStatus.unsent,
     String? errorMessage,
   }) =>
@@ -64,6 +65,7 @@ void main() {
         friends: friends,
         answeringRequestIds: answeringRequestIds,
         changingFriendIds: changingFriendIds,
+        reportedFriendId: reportedFriendId,
         reportStatus: reportStatus,
         errorMessage: errorMessage,
       );
@@ -286,18 +288,19 @@ void main() {
     blocTest<FriendsBloc, FriendsState>(
       'sends the reason and the note, then says it was sent',
       build: build,
-      seed: () => ready(reportStatus: ReportStatus.sent),
+      seed: () =>
+          ready(reportedFriendId: '42', reportStatus: ReportStatus.sent),
       act: (bloc) => bloc
-        ..add(const ReportOpened())
+        ..add(const ReportOpened('42'))
         ..add(const StudentReported(
           friendId: '42',
           reason: ReportReason.bullying,
           note: 'Mean in class.',
         )),
       expect: () => [
-        ready(),
-        ready(reportStatus: ReportStatus.sending),
-        ready(reportStatus: ReportStatus.sent),
+        ready(reportedFriendId: '42'),
+        ready(reportedFriendId: '42', reportStatus: ReportStatus.sending),
+        ready(reportedFriendId: '42', reportStatus: ReportStatus.sent),
       ],
       verify: (_) => expect(
           repository.calls, ['reportStudent 42 bullying Mean in class.']),
@@ -315,9 +318,58 @@ void main() {
         note: '',
       )),
       expect: () => [
-        ready(reportStatus: ReportStatus.sending),
+        ready(reportedFriendId: '42', reportStatus: ReportStatus.sending),
         ready(
+          reportedFriendId: '42',
           errorMessage: "You've done that a lot today. Try again tomorrow.",
+        ),
+      ],
+    );
+
+    /// Sends a report on Sam, then opens Rua's sheet before it lands.
+    Future<void> reportSamThenOpenRuas(FriendsBloc bloc) async {
+      repository.hold = Completer<void>();
+      bloc
+        ..add(const ReportOpened('42'))
+        ..add(const StudentReported(
+          friendId: '42',
+          reason: ReportReason.bullying,
+          note: '',
+        ))
+        ..add(const ReportOpened('55'));
+      await Future<void>.delayed(Duration.zero);
+      repository.hold!.complete();
+    }
+
+    blocTest<FriendsBloc, FriendsState>(
+      "a report that lands once another student's sheet opened leaves "
+      'theirs unsent',
+      build: build,
+      seed: ready,
+      act: reportSamThenOpenRuas,
+      expect: () => [
+        ready(reportedFriendId: '42'),
+        ready(reportedFriendId: '42', reportStatus: ReportStatus.sending),
+        ready(reportedFriendId: '55'),
+      ],
+      verify: (_) => expect(repository.calls, ['reportStudent 42 bullying']),
+    );
+
+    blocTest<FriendsBloc, FriendsState>(
+      "a report that fails once another student's sheet opened still says "
+      'why',
+      build: build,
+      seed: ready,
+      setUp: () => repository.failNext['reportStudent'] =
+          NetworkFailure("We couldn't send the report. Try again."),
+      act: reportSamThenOpenRuas,
+      expect: () => [
+        ready(reportedFriendId: '42'),
+        ready(reportedFriendId: '42', reportStatus: ReportStatus.sending),
+        ready(reportedFriendId: '55'),
+        ready(
+          reportedFriendId: '55',
+          errorMessage: "We couldn't send the report. Try again.",
         ),
       ],
     );

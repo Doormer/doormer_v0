@@ -51,6 +51,10 @@ class FriendsReady extends FriendsState {
   /// Students with a Remove or Block on its way.
   final Set<String> changingFriendIds;
 
+  /// The student whose report [reportStatus] is about: the one the report
+  /// sheet was last opened for. Null before it first opens.
+  final String? reportedFriendId;
+
   final ReportStatus reportStatus;
 
   /// Set once when an action fails, so the page can say why. Cleared by the
@@ -63,13 +67,20 @@ class FriendsReady extends FriendsState {
     required this.friends,
     this.answeringRequestIds = const {},
     this.changingFriendIds = const {},
+    this.reportedFriendId,
     this.reportStatus = ReportStatus.unsent,
     this.errorMessage,
   });
 
+  /// How the report on [friendId] is going, for their report sheet. Unsent
+  /// unless [reportStatus] is about them.
+  ReportStatus reportStatusOf(String friendId) =>
+      friendId == reportedFriendId ? reportStatus : ReportStatus.unsent;
+
   FriendsReady copyWith({
     Set<String>? answeringRequestIds,
     Set<String>? changingFriendIds,
+    String? reportedFriendId,
     ReportStatus? reportStatus,
     String? errorMessage,
   }) {
@@ -79,6 +90,7 @@ class FriendsReady extends FriendsState {
       friends: friends,
       answeringRequestIds: answeringRequestIds ?? this.answeringRequestIds,
       changingFriendIds: changingFriendIds ?? this.changingFriendIds,
+      reportedFriendId: reportedFriendId ?? this.reportedFriendId,
       reportStatus: reportStatus ?? this.reportStatus,
       errorMessage: errorMessage,
     );
@@ -91,6 +103,7 @@ class FriendsReady extends FriendsState {
         friends,
         answeringRequestIds,
         changingFriendIds,
+        reportedFriendId,
         reportStatus,
         errorMessage,
       ];

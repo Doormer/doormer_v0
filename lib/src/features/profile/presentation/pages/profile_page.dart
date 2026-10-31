@@ -175,7 +175,8 @@ class _ProfileViewState extends State<_ProfileView> {
   /// included. It sits on the root navigator, outside this page's
   /// providers, so the bloc is handed in.
   void _openReport(BuildContext context, FriendSummary student) {
-    final bloc = context.read<FriendsBloc>()..add(const ReportOpened());
+    final bloc = context.read<FriendsBloc>()
+      ..add(ReportOpened(student.friendId));
     showModalBottomSheet<void>(
       context: context,
       useRootNavigator: true,
@@ -185,12 +186,14 @@ class _ProfileViewState extends State<_ProfileView> {
         bloc: bloc,
         buildWhen: (_, current) => current is FriendsReady,
         builder: (_, state) {
-          final ready = state is FriendsReady ? state : null;
+          final status = state is FriendsReady
+              ? state.reportStatusOf(student.friendId)
+              : ReportStatus.unsent;
           return ReportSheetOrganism(
             params: ReportSheetParams(
               title: 'Report ${student.nickname}',
-              isSending: ready?.reportStatus == ReportStatus.sending,
-              isSent: ready?.reportStatus == ReportStatus.sent,
+              isSending: status == ReportStatus.sending,
+              isSent: status == ReportStatus.sent,
               onSend: (reason, note) => bloc.add(StudentReported(
                 friendId: student.friendId,
                 reason: reason,
