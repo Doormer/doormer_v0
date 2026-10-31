@@ -22,6 +22,7 @@ import '../domain/usecase/save_friend_profile_usecase.dart';
 import '../domain/usecase/send_friend_request_usecase.dart';
 import '../domain/usecase/sign_out_usecase.dart';
 import '../domain/usecase/unblock_student_usecase.dart';
+import '../presentation/bloc/blocked_students_bloc.dart';
 import '../presentation/bloc/friends_bloc.dart';
 import '../presentation/bloc/profile_bloc.dart';
 
@@ -103,6 +104,12 @@ void initProfileModule() {
       blockStudent: serviceLocator<BlockStudentUseCase>(),
       reportStudent: serviceLocator<ReportStudentUseCase>(),
       waitingRequests: serviceLocator<WaitingFriendRequestsBloc>(),
+    ),
+  );
+  serviceLocator.registerFactory(
+    () => BlockedStudentsBloc(
+      loadBlockedStudents: serviceLocator<LoadBlockedStudentsUseCase>(),
+      unblockStudent: serviceLocator<UnblockStudentUseCase>(),
     ),
   );
 }

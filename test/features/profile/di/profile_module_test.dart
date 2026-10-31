@@ -16,6 +16,7 @@ import 'package:doormer/src/features/profile/domain/usecase/reset_friend_code_us
 import 'package:doormer/src/features/profile/domain/usecase/save_friend_profile_usecase.dart';
 import 'package:doormer/src/features/profile/domain/usecase/send_friend_request_usecase.dart';
 import 'package:doormer/src/features/profile/domain/usecase/unblock_student_usecase.dart';
+import 'package:doormer/src/features/profile/presentation/bloc/blocked_students_bloc.dart';
 import 'package:doormer/src/features/profile/presentation/bloc/friends_bloc.dart';
 import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -56,7 +57,8 @@ void main() {
     expect(locator<ReportStudentUseCase>(), isNotNull);
   });
 
-  test("Profile's friends bloc resolves", () {
+  test('every friends bloc resolves', () {
     expect(locator<FriendsBloc>(), isA<FriendsBloc>());
+    expect(locator<BlockedStudentsBloc>(), isA<BlockedStudentsBloc>());
   });
 }
