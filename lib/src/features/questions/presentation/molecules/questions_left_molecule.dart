@@ -6,7 +6,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// One line about today's questions: how many are left or, with none left,
 /// when they come back. It sits under UPLOAD & SOLVE on the empty screen, and
 /// under Solve's heading above the photo panels. It changes only when the
-/// count is read again, never on a timer.
+/// count is read again, never on a timer. Screen readers announce the line
+/// when it changes.
 class QuestionsLeftMolecule extends StatelessWidget {
   final String text;
 
@@ -22,15 +23,18 @@ class QuestionsLeftMolecule extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        fontFamily: kBodyFont,
-        color: context.colorScheme.onSurface,
-        fontSize: 15.sp,
-        fontWeight: isReached ? FontWeight.w700 : FontWeight.w500,
-        height: 1.3,
+    return Semantics(
+      liveRegion: true,
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontFamily: kBodyFont,
+          color: context.colorScheme.onSurface,
+          fontSize: 15.sp,
+          fontWeight: isReached ? FontWeight.w700 : FontWeight.w500,
+          height: 1.3,
+        ),
       ),
     );
   }

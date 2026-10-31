@@ -7,12 +7,12 @@ import 'package:doormer/src/features/questions/presentation/params/daily_limit_p
 ///
 /// Null while the count is unknown: Solve then says nothing and lets the
 /// student ask, because the API enforces the limit either way.
-DailyLimitParams? dailyLimitParamsFor(DailyLimitState state) {
+DailyLimitParams? dailyLimitParamsFor(DailyLimitState state, {DateTime? now}) {
   if (state is! DailyLimitKnown) return null;
   final dailyLimit = state.dailyLimit;
   if (dailyLimit.isReached) {
     return DailyLimitParams(
-      text: dailyLimitReachedText(dailyLimit),
+      text: dailyLimitReachedText(dailyLimit, now: now),
       isReached: true,
     );
   }
@@ -25,9 +25,21 @@ DailyLimitParams? dailyLimitParamsFor(DailyLimitState state) {
 
 /// What Solve says once today's questions are used: when they come back, as
 /// a clock time in the student's own zone. A fixed time, never a countdown.
-String dailyLimitReachedText(DailyLimit dailyLimit) =>
+String dailyLimitReachedText(DailyLimit dailyLimit, {DateTime? now}) =>
     "You've used today's questions. "
-    'They reset at ${resetTimeLabel(dailyLimit.resetsAt.toLocal())}.';
+    'They reset ${resetMomentLabel(dailyLimit.resetsAt, now: now)}.';
+
+/// When the questions come back, as a student would say it at [now]:
+/// "at midnight", "at 10pm", or "tomorrow at 10pm" when the reset falls on a
+/// later day in the student's zone. Midnight needs no day.
+String resetMomentLabel(DateTime resetsAt, {DateTime? now}) {
+  final reset = resetsAt.toLocal();
+  final today = (now ?? DateTime.now()).toLocal();
+  final time = resetTimeLabel(reset);
+  final isLaterDay = DateTime(reset.year, reset.month, reset.day)
+      .isAfter(DateTime(today.year, today.month, today.day));
+  return isLaterDay && time != 'midnight' ? 'tomorrow at $time' : 'at $time';
+}
 
 /// A clock time as a student would say it: "midnight", "noon", "10pm" or
 /// "9:30am". [time] is already in the zone to show.

@@ -42,4 +42,15 @@ void main() {
     await _pump(tester, text: _noneLeft, isReached: true);
     expect(_weightOf(tester, _noneLeft), FontWeight.w700);
   });
+
+  testWidgets('the line is announced when it changes', (tester) async {
+    final handle = tester.ensureSemantics();
+    await _pump(tester, text: '3 questions left today', isReached: false);
+
+    expect(
+      tester.getSemantics(find.text('3 questions left today')),
+      matchesSemantics(label: '3 questions left today', isLiveRegion: true),
+    );
+    handle.dispose();
+  });
 }

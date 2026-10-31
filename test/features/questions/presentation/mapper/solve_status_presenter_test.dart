@@ -58,6 +58,21 @@ void main() {
     expect(content.showRetake, isFalse);
   });
 
+  test('no questions left says the reset is tomorrow when it is', () {
+    final content = solveStatusContentFor(
+      AskByPhotoLimitReached(
+        dailyLimit:
+            DailyLimit(questionsLeft: 0, resetsAt: DateTime(2026, 10, 19, 22)),
+        imageBytes: bytes,
+        idempotencyKey: 'photo-key-1',
+      ),
+      now: DateTime(2026, 10, 18, 23),
+    );
+
+    expect(content.body,
+        'Your photo is still here. Send it after they reset tomorrow at 10pm.');
+  });
+
   group('canRetry', () {
     // Retry is only worth offering where resubmitting the identical bytes
     // could plausibly land differently.

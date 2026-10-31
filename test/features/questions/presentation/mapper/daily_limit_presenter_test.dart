@@ -40,6 +40,40 @@ void main() {
         "You've used today's questions. They reset at 10pm.");
   });
 
+  test('with none left, says the reset is tomorrow when it is', () {
+    final params = dailyLimitParamsFor(
+      DailyLimitKnown(
+          DailyLimit(questionsLeft: 0, resetsAt: DateTime(2026, 10, 19, 22))),
+      now: DateTime(2026, 10, 18, 23),
+    )!;
+
+    expect(params.text,
+        "You've used today's questions. They reset tomorrow at 10pm.");
+  });
+
+  group('resetMomentLabel', () {
+    test('a reset later today needs no day', () {
+      expect(
+          resetMomentLabel(DateTime(2026, 10, 18, 22),
+              now: DateTime(2026, 10, 18, 15)),
+          'at 10pm');
+    });
+
+    test('a reset on the next day says tomorrow', () {
+      expect(
+          resetMomentLabel(DateTime(2026, 10, 19, 22),
+              now: DateTime(2026, 10, 18, 23)),
+          'tomorrow at 10pm');
+    });
+
+    test('midnight is midnight, without a day', () {
+      expect(
+          resetMomentLabel(DateTime(2026, 10, 19),
+              now: DateTime(2026, 10, 18, 23)),
+          'at midnight');
+    });
+  });
+
   group('resetTimeLabel', () {
     test('says a time as a student would', () {
       expect(resetTimeLabel(DateTime(2026, 10, 19)), 'midnight');

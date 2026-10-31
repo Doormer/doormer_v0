@@ -82,7 +82,7 @@ lib/src/
 - Use `part` directives to split event/state files from the BLoC file.
 - Handler naming: `on<EventName>(_onEventName)` — private async methods.
 - State flow: emit `Loading` → `Success` or an **error state**.
-- **Error states use the `XxxError` suffix** (e.g., `AuthError`), NOT `XxxFailure`. `XxxFailure` names are reserved for the domain `Failure` types in `core/errors/failure.dart` — using them as state names creates a collision.
+- **Error states use the `XxxError` suffix** (e.g., `AuthError`), NOT `XxxFailure`. `XxxFailure` names are reserved for the domain `Failure` types, in `core/errors/failure.dart` and a feature's `domain/failure/` — using them as state names creates a collision.
 - BLoC error handling: catch typed `Failure` first, then a generic fallback. Always log in both branches:
   ```dart
   } on Failure catch (f, stackTrace) {

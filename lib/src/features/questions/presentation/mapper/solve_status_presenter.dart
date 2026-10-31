@@ -32,7 +32,8 @@ class SolveStatusContent {
 
 /// Pure function mapping a bloc state to the status-panel display copy.
 /// Page-invoked only — no presentational widget imports this.
-SolveStatusContent solveStatusContentFor(AskByPhotoState state) {
+SolveStatusContent solveStatusContentFor(AskByPhotoState state,
+    {DateTime? now}) {
   // A retry needs both a reason to expect a different answer and a photo left
   // to send. `AskByPhotoValidationError` has neither, which is why it is not
   // an `AskByPhotoSolveFailed`.
@@ -82,10 +83,10 @@ SolveStatusContent solveStatusContentFor(AskByPhotoState state) {
     );
   }
   if (state is AskByPhotoLimitReached) {
-    final resetsAt = resetTimeLabel(state.dailyLimit.resetsAt.toLocal());
+    final resetsAt = resetMomentLabel(state.dailyLimit.resetsAt, now: now);
     return SolveStatusContent(
       title: "You've used today's questions",
-      body: 'Your photo is still here. Send it after they reset at $resetsAt.',
+      body: 'Your photo is still here. Send it after they reset $resetsAt.',
       showActions: true,
       photoOnScreen: photoOnScreen,
     );
