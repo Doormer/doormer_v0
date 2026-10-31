@@ -11,6 +11,7 @@ import 'package:doormer/src/features/questions/domain/usecase/load_solved_questi
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/bloc/daily_limit_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/saved_questions_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_file_input.dart';
@@ -65,6 +66,12 @@ void initQuestionsModule() {
   serviceLocator.registerFactory<AskByPhotoBloc>(
     () => AskByPhotoBloc(
       submitPhotoQuestionUseCase: serviceLocator<SubmitPhotoQuestionUseCase>(),
+    ),
+  );
+
+  serviceLocator.registerFactory<DailyLimitBloc>(
+    () => DailyLimitBloc(
+      loadDailyLimitUseCase: serviceLocator<LoadDailyLimitUseCase>(),
     ),
   );
 
