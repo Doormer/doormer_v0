@@ -9,6 +9,7 @@ import 'package:doormer/src/features/questions/presentation/molecules/solving_ex
 import 'package:doormer/src/features/questions/presentation/organisms/photo_upload_panel_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solve_status_panel_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solving_progress_organism.dart';
+import 'package:doormer/src/features/questions/presentation/params/daily_limit_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solving_progress_params.dart';
@@ -303,6 +304,67 @@ void main() {
             .contains(kBodyFont);
     expect(usesBodyFont, isTrue);
   });
+
+  group("today's questions", () {
+    const phone = Size(390, 844);
+    const threeLeft =
+        DailyLimitParams(text: '3 questions left today', isReached: false);
+    const noneLeft = DailyLimitParams(
+      text: "You've used today's questions. They reset at midnight.",
+      isReached: true,
+    );
+
+    AppButtonAtom uploadAndSolve(WidgetTester tester) =>
+        tester.widget<AppButtonAtom>(find.byWidgetPredicate(
+          (w) => w is AppButtonAtom && w.label == 'UPLOAD & SOLVE',
+        ));
+
+    testWidgets('the hero shows the questions left today', (tester) async {
+      await _pumpTemplate(tester, window: phone, dailyLimit: threeLeft);
+
+      expect(find.text('3 questions left today'), findsOneWidget);
+      expect(uploadAndSolve(tester).onPressed, isNotNull);
+    });
+
+    testWidgets(
+        'with none left, the hero says when they come back and '
+        'UPLOAD & SOLVE is off', (tester) async {
+      await _pumpTemplate(tester, window: phone, dailyLimit: noneLeft);
+
+      expect(
+        find.text("You've used today's questions. They reset at midnight."),
+        findsOneWidget,
+      );
+      expect(uploadAndSolve(tester).onPressed, isNull);
+    });
+
+    testWidgets('the panels show the count under the heading', (tester) async {
+      await _pumpTemplate(
+        tester,
+        window: phone,
+        imageBytes: _transparentPngBytes,
+        dailyLimit: threeLeft,
+      );
+
+      final count = find.text('3 questions left today');
+      expect(count, findsOneWidget);
+      expect(
+        tester.getTopLeft(count).dy,
+        greaterThan(tester.getTopLeft(find.text('Upload a photo')).dy),
+      );
+      expect(
+        tester.getTopLeft(count).dy,
+        lessThan(tester.getTopLeft(find.byType(PhotoUploadPanelOrganism)).dy),
+        reason: 'the count sits with the heading, above the photo',
+      );
+    });
+
+    testWidgets('without a count, nothing is said about it', (tester) async {
+      await _pumpTemplate(tester, window: phone);
+
+      expect(find.textContaining('left today'), findsNothing);
+    });
+  });
 }
 
 void _noop() {}
@@ -320,6 +382,7 @@ Future<void> _pumpTemplate(
   WidgetTester tester, {
   required Size window,
   Uint8List? imageBytes,
+  DailyLimitParams? dailyLimit,
 }) async {
   tester.view.physicalSize = window;
   tester.view.devicePixelRatio = 1;
@@ -351,6 +414,7 @@ Future<void> _pumpTemplate(
             ),
             onRetake: _noop,
           ),
+          dailyLimit: dailyLimit,
         ),
       ),
     ),

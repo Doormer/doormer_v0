@@ -56,7 +56,10 @@ class PhotoUploadPanelOrganism extends StatelessWidget {
             variant: AppButtonVariant.accent,
             expand: true,
             isLoading: params.isLoading,
-            onPressed: hasPhoto && !params.isLoading && !isPreparing
+            onPressed: hasPhoto &&
+                    !params.isLoading &&
+                    !isPreparing &&
+                    !params.isLimitReached
                 ? params.onSubmit
                 : null,
           ),

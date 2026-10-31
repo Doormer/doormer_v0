@@ -1,4 +1,5 @@
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/mapper/daily_limit_presenter.dart';
 
 class SolveStatusContent {
   final String title;
@@ -65,6 +66,27 @@ SolveStatusContent solveStatusContentFor(AskByPhotoState state) {
           : 'The solver took too long on this photo. Retake a sharper image and try again.',
       showActions: true,
       canRetry: canRetry,
+      photoOnScreen: photoOnScreen,
+    );
+  }
+  if (state is AskByPhotoStillSolving) {
+    return SolveStatusContent(
+      title: 'Your last photo is still being solved',
+      body: canRetry
+          ? 'Try again in a moment. Your photo is still here, so you can '
+              'send it again.'
+          : 'Try again in a moment.',
+      showActions: true,
+      canRetry: canRetry,
+      photoOnScreen: photoOnScreen,
+    );
+  }
+  if (state is AskByPhotoLimitReached) {
+    final resetsAt = resetTimeLabel(state.dailyLimit.resetsAt.toLocal());
+    return SolveStatusContent(
+      title: "You've used today's questions",
+      body: 'Your photo is still here. Send it after they reset at $resetsAt.',
+      showActions: true,
       photoOnScreen: photoOnScreen,
     );
   }
