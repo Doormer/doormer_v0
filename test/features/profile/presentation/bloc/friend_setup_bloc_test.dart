@@ -69,7 +69,8 @@ void main() {
   );
 
   blocTest<FriendSetupBloc, FriendSetupState>(
-    'a load that fails says why, and Try again loads with the spinner',
+    'a load that fails says why, and Try again loads with the spinner, '
+    'both still knowing it is Edit',
     build: build,
     setUp: () => repository.failNext['loadPictureChoices'] =
         NetworkFailure("We couldn't load your cards."),
@@ -79,8 +80,9 @@ void main() {
       bloc.add(const FriendSetupRetried());
     },
     expect: () => [
-      const FriendSetupError("We couldn't load your cards."),
-      const FriendSetupLoading(),
+      const FriendSetupError("We couldn't load your cards.",
+          isFirstTime: false),
+      const FriendSetupLoading(isFirstTime: false),
       isA<FriendSetupReady>(),
     ],
   );
@@ -145,7 +147,7 @@ void main() {
         choices: repository.pictureChoices,
         isSaving: true,
       ),
-      const FriendSetupSaved(),
+      const FriendSetupSaved(isFirstTime: true),
     ],
     verify: (_) => expect(repository.calls, ['saveProfile Rangi Kai vernier']),
   );

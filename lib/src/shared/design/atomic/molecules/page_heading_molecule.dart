@@ -5,7 +5,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// A page's heading: a back arrow first when the page has somewhere to go
 /// back to, then [leading], such as a picture, then the title.
 class PageHeadingMolecule extends StatelessWidget {
-  final String title;
+  /// Null while the page can't yet say what it is, such as before what it
+  /// shows has loaded. The back arrow still shows.
+  final String? title;
 
   /// Null on a page with nowhere to go back to.
   final VoidCallback? onBack;
@@ -21,6 +23,7 @@ class PageHeadingMolecule extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final title = this.title;
     final onBack = this.onBack;
     final leading = this.leading;
     return Padding(
@@ -37,22 +40,23 @@ class PageHeadingMolecule extends StatelessWidget {
               tooltip: 'Back',
             ),
           if (leading != null) ...[leading, SizedBox(width: 10.w)],
-          Expanded(
-            child: Semantics(
-              header: true,
-              child: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: kDisplayFont,
-                  fontSize: 22.sp,
-                  fontWeight: FontWeight.w600,
-                  color: QuestPalette.cream,
+          if (title != null)
+            Expanded(
+              child: Semantics(
+                header: true,
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: kDisplayFont,
+                    fontSize: 22.sp,
+                    fontWeight: FontWeight.w600,
+                    color: QuestPalette.cream,
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );

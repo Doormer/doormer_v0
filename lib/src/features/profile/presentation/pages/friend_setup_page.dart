@@ -29,6 +29,8 @@ class FriendSetupPage extends StatelessWidget {
         listenWhen: (_, current) =>
             current is FriendSetupSaved ||
             (current is FriendSetupReady && current.errorMessage != null),
+        // The form stays, with Done spinning, while the page closes.
+        buildWhen: (_, current) => current is! FriendSetupSaved,
         listener: (context, state) {
           if (state is FriendSetupSaved) {
             final code = inviteCode;
@@ -44,9 +46,11 @@ class FriendSetupPage extends StatelessWidget {
           }
         },
         builder: (context, state) => FriendSetupTemplate(
-          title: state is FriendSetupReady && !state.isFirstTime
-              ? 'Edit nickname and picture'
-              : 'Set up friends',
+          title: switch (state.isFirstTime) {
+            null => null,
+            true => 'Set up friends',
+            false => 'Edit nickname and picture',
+          },
           body: _bodyFor(context, state),
           onBack: () => context.go('/profile'),
         ),
@@ -57,6 +61,7 @@ class FriendSetupPage extends StatelessWidget {
   FriendSetupBodyParams _bodyFor(BuildContext context, FriendSetupState state) {
     final bloc = context.read<FriendSetupBloc>();
     return switch (state) {
+      // Saved is never built: see buildWhen.
       FriendSetupLoading() ||
       FriendSetupSaved() =>
         const FriendSetupLoadingParams(),

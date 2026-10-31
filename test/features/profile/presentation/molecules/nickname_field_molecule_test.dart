@@ -12,7 +12,6 @@ Future<List<String>> _pump(WidgetTester tester, {String? problem}) async {
         initialNickname: 'Kai',
         problem: problem,
         onChanged: changes.add,
-        onSubmitted: () => changes.add('submitted'),
       ),
     ),
   ));
@@ -35,12 +34,16 @@ void main() {
     expect(find.text("Don't use your full name."), findsNothing);
   });
 
-  testWidgets('reports what is typed, and Enter', (tester) async {
+  testWidgets('reports what is typed, and Enter only closes the keyboard',
+      (tester) async {
     final changes = await _pump(tester);
 
     await tester.enterText(find.byType(TextFormField), 'Kaia');
+    expect(tester.testTextInput.isVisible, isTrue);
     await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
 
-    expect(changes, ['Kaia', 'submitted']);
+    expect(changes, ['Kaia']);
+    expect(tester.testTextInput.isVisible, isFalse);
   });
 }

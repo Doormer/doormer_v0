@@ -13,7 +13,9 @@ import '../params/friend_setup_body_params.dart';
 /// the picture, and above Done, what friends will see. It sits inside the
 /// Profile tab, above the nav bar.
 class FriendSetupTemplate extends StatelessWidget {
-  final String title;
+  /// Null until the page knows whether the student is set up, so the heading
+  /// never says the wrong one.
+  final String? title;
   final FriendSetupBodyParams body;
   final VoidCallback onBack;
 
@@ -59,7 +61,6 @@ class FriendSetupTemplate extends StatelessWidget {
               initialNickname: form.initialNickname,
               problem: form.nicknameProblem,
               onChanged: form.onNicknameChanged,
-              onSubmitted: form.onDone,
             ),
             SizedBox(height: 20.h),
             PicturePickerOrganism(params: form.picturePicker),

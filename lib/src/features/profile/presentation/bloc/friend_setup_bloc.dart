@@ -50,9 +50,14 @@ class FriendSetupBloc extends Bloc<FriendSetupEvent, FriendSetupState> {
 
   /// The profile, to start from what is saved, and the cards to pick from.
   Future<void> _load(Emitter<FriendSetupState> emit) async {
-    if (state is! FriendSetupLoading) emit(const FriendSetupLoading());
+    // Kept from a load before, so Try again goes on telling setup from Edit.
+    var isFirstTime = state.isFirstTime;
+    if (state is! FriendSetupLoading) {
+      emit(FriendSetupLoading(isFirstTime: isFirstTime));
+    }
     try {
       final profile = await loadProfile();
+      isFirstTime = !profile.hasProfile;
       final choices = await loadPictureChoices();
       emit(FriendSetupReady(
         isFirstTime: !profile.hasProfile,
@@ -63,11 +68,14 @@ class FriendSetupBloc extends Bloc<FriendSetupEvent, FriendSetupState> {
     } on Failure catch (f, stackTrace) {
       AppLogger.error('Friend setup failed to load',
           error: f, stackTrace: stackTrace);
-      emit(FriendSetupError(f.message));
+      emit(FriendSetupError(f.message, isFirstTime: isFirstTime));
     } catch (e, stackTrace) {
       AppLogger.error('Friend setup failed to load unexpectedly',
           error: e, stackTrace: stackTrace);
-      emit(const FriendSetupError(FriendsMessages.couldNotLoadPictures));
+      emit(FriendSetupError(
+        FriendsMessages.couldNotLoadPictures,
+        isFirstTime: isFirstTime,
+      ));
     }
   }
 
@@ -106,7 +114,7 @@ class FriendSetupBloc extends Bloc<FriendSetupEvent, FriendSetupState> {
         nickname: NicknameRules.tidy(ready.nickname),
         picture: ready.picture,
       );
-      emit(const FriendSetupSaved());
+      emit(FriendSetupSaved(isFirstTime: ready.isFirstTime));
     } on Failure catch (f, stackTrace) {
       AppLogger.error('Saving the friend profile failed',
           error: f, stackTrace: stackTrace);

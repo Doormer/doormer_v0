@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:doormer/src/core/di/service_locator.dart';
+import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/profile/domain/entity/friend_profile.dart';
@@ -7,6 +10,7 @@ import 'package:doormer/src/features/profile/domain/usecase/load_picture_choices
 import 'package:doormer/src/features/profile/domain/usecase/save_friend_profile_usecase.dart';
 import 'package:doormer/src/features/profile/presentation/bloc/friend_setup_bloc.dart';
 import 'package:doormer/src/features/profile/presentation/pages/friend_setup_page.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -39,9 +43,12 @@ void main() {
 
   tearDown(() => serviceLocator.reset());
 
+  /// Opens setup at [location]. With [settle] false it shows the first frame
+  /// only, so a load the repository holds can be seen.
   Future<GoRouter> pumpSetup(
     WidgetTester tester, {
     String location = '/profile/setup',
+    bool settle = true,
   }) async {
     tester.view.physicalSize = const Size(360, 1200);
     tester.view.devicePixelRatio = 1;
@@ -77,7 +84,7 @@ void main() {
         routerConfig: router,
       ),
     ));
-    await tester.pumpAndSettle();
+    if (settle) await tester.pumpAndSettle();
     return router;
   }
 
@@ -113,6 +120,25 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets(
+      'Enter in the nickname box sends nothing: only Done, under what friends '
+      'will see, saves', (tester) async {
+    final router = await pumpSetup(tester);
+
+    await tester.enterText(find.byKey(const Key('nickname_field')), 'Rangi');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(repository.calls, isNot(contains(startsWith('saveProfile'))));
+    expect(
+        router.routerDelegate.currentConfiguration.uri.path, '/profile/setup');
+
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+
+    expect(repository.calls, contains('saveProfile Rangi null'));
+  });
+
   testWidgets('a nickname that breaks a rule says which, under the box',
       (tester) async {
     await pumpSetup(tester);
@@ -146,6 +172,65 @@ void main() {
 
     expect(find.text('Edit nickname and picture'), findsOneWidget);
     expect(find.text('Kai'), findsOneWidget);
+  });
+
+  testWidgets(
+      'says neither heading until it knows whether the student is set up',
+      (tester) async {
+    repository
+      ..profile = kaiProfile
+      ..hold = Completer<void>()
+      ..failNext['loadProfile'] =
+          NetworkFailure("We couldn't load your friends.");
+
+    await pumpSetup(tester, settle: false);
+
+    expect(find.byKey(const Key('page_back')), findsOneWidget);
+    expect(find.text('Set up friends'), findsNothing);
+    expect(find.text('Edit nickname and picture'), findsNothing);
+
+    repository.hold!.complete();
+    await tester.pumpAndSettle();
+
+    expect(find.text("We couldn't load your friends."), findsOneWidget);
+    expect(find.text('Set up friends'), findsNothing);
+    expect(find.text('Edit nickname and picture'), findsNothing);
+
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit nickname and picture'), findsOneWidget);
+  });
+
+  testWidgets('in Edit, cards that fail to load keep the Edit heading',
+      (tester) async {
+    repository
+      ..profile = kaiProfile
+      ..failNext['loadPictureChoices'] =
+          NetworkFailure("We couldn't load your cards.");
+
+    await pumpSetup(tester);
+
+    expect(find.text("We couldn't load your cards."), findsOneWidget);
+    expect(find.text('Edit nickname and picture'), findsOneWidget);
+  });
+
+  testWidgets(
+      'in Edit, the heading and the form stay, with Done spinning, while the '
+      'page closes', (tester) async {
+    repository.profile = kaiProfile;
+    final router = await pumpSetup(tester);
+
+    await tester.tap(find.text('Done'));
+    await tester.pump();
+
+    expect(router.routerDelegate.currentConfiguration.uri.path, '/profile');
+    expect(find.text('Edit nickname and picture'), findsOneWidget);
+    expect(find.byKey(const Key('nickname_field')), findsOneWidget);
+    expect(
+      tester.widget<AppButtonAtom>(find.byType(AppButtonAtom)).isLoading,
+      isTrue,
+    );
   });
 
   testWidgets('from an invite link, Done opens the check', (tester) async {

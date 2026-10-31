@@ -3,26 +3,42 @@ part of 'friend_setup_bloc.dart';
 sealed class FriendSetupState extends Equatable {
   const FriendSetupState();
 
+  /// The student has no friend profile yet. Null until their profile has
+  /// loaded, since until then setup can't be told from Edit. Once known, it
+  /// stays on every state after.
+  bool? get isFirstTime;
+
   @override
   List<Object?> get props => const [];
 }
 
 class FriendSetupLoading extends FriendSetupState {
-  const FriendSetupLoading();
+  /// Known when Try again loads again after the profile has loaded.
+  @override
+  final bool? isFirstTime;
+
+  const FriendSetupLoading({this.isFirstTime});
+
+  @override
+  List<Object?> get props => [isFirstTime];
 }
 
 /// The profile or the cards could not load.
 class FriendSetupError extends FriendSetupState {
   final String message;
 
-  const FriendSetupError(this.message);
+  /// Known when the profile has loaded before, as when only the cards failed.
+  @override
+  final bool? isFirstTime;
+
+  const FriendSetupError(this.message, {this.isFirstTime});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, isFirstTime];
 }
 
 class FriendSetupReady extends FriendSetupState {
-  /// The student has no friend profile yet.
+  @override
   final bool isFirstTime;
 
   /// As typed.
@@ -89,5 +105,11 @@ class FriendSetupReady extends FriendSetupState {
 
 /// Saved. The page moves on.
 class FriendSetupSaved extends FriendSetupState {
-  const FriendSetupSaved();
+  @override
+  final bool isFirstTime;
+
+  const FriendSetupSaved({required this.isFirstTime});
+
+  @override
+  List<Object?> get props => [isFirstTime];
 }
