@@ -116,7 +116,7 @@ void main() {
       expect(adapter.request!.headers['Idempotency-Key'], 'key-1');
     });
 
-    test('another photo still being solved is its own failure', () async {
+    test('a photo still being solved is its own failure', () async {
       final adapter = _FakeAdapter(status: 409, body: 'Conflict');
 
       await expectLater(

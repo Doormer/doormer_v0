@@ -65,6 +65,10 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
       );
 
       final data = response.data;
+      // An answer this app can't read stays a failure Try again retries under
+      // the same key. The API gives back the answer it saved under that key,
+      // so a response garbled on the way then reads fine, and one this app
+      // can't parse fails the same way again without using a question.
       if (data is! Map<String, dynamic>) {
         AppLogger.error('Photo question response had an unexpected shape');
         throw ServerFailure(

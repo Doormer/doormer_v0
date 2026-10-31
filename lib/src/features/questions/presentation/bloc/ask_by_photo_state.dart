@@ -40,14 +40,15 @@ class AskByPhotoPhotoSelected extends AskByPhotoState {
 
 /// A chosen photo is being turned upright, scaled down and saved as JPEG.
 class AskByPhotoPreparingPhoto extends AskByPhotoState {
-  /// The photo on screen before this one was chosen, brought back if the new
-  /// one cannot be prepared.
-  final AskByPhotoPhotoSelected? previousSelection;
+  /// What was on screen before this photo was chosen, brought back if it
+  /// cannot be prepared: a photo, or a failed send that may have an answer
+  /// (see [AskByPhotoSolveFailed.mayHaveAnswer]). Null when there was none.
+  final AskByPhotoState? previous;
 
-  const AskByPhotoPreparingPhoto({this.previousSelection});
+  const AskByPhotoPreparingPhoto({this.previous});
 
   @override
-  List<Object?> get props => [previousSelection];
+  List<Object?> get props => [previous];
 }
 
 class AskByPhotoLoading extends AskByPhotoState {

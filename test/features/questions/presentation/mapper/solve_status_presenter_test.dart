@@ -30,7 +30,7 @@ void main() {
     );
   });
 
-  test('another photo still being solved offers to try again', () {
+  test('a photo still being solved offers to try again', () {
     final content = solveStatusContentFor(
       AskByPhotoStillSolving(imageBytes: bytes, idempotencyKey: 'photo-key-1'),
     );

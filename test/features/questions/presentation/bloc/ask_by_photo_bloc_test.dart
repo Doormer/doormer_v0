@@ -554,13 +554,13 @@ void main() {
       build: () => _blocFor(_FakeQuestionsRepository()),
       seed: () => selected,
       act: (bloc) => bloc.add(const AskByPhotoPreparationStarted()),
-      expect: () => [AskByPhotoPreparingPhoto(previousSelection: selected)],
+      expect: () => [AskByPhotoPreparingPhoto(previous: selected)],
     );
 
     blocTest<AskByPhotoBloc, AskByPhotoState>(
       'shows the prepared photo when it is ready',
       build: () => _blocFor(_FakeQuestionsRepository()),
-      seed: () => AskByPhotoPreparingPhoto(previousSelection: selected),
+      seed: () => AskByPhotoPreparingPhoto(previous: selected),
       act: (bloc) => bloc.add(AskByPhotoPhotoPicked(
         imageBytes: validBytes,
         fileName: 'IMG_1.jpg',
@@ -579,7 +579,7 @@ void main() {
     blocTest<AskByPhotoBloc, AskByPhotoState>(
       'a failed preparation brings the earlier photo back',
       build: () => _blocFor(_FakeQuestionsRepository()),
-      seed: () => AskByPhotoPreparingPhoto(previousSelection: selected),
+      seed: () => AskByPhotoPreparingPhoto(previous: selected),
       act: (bloc) =>
           bloc.add(const AskByPhotoPickUnavailable('Could not prepare it.')),
       expect: () => [
@@ -600,13 +600,13 @@ void main() {
     blocTest<AskByPhotoBloc, AskByPhotoState>(
       'a second preparation still remembers the first earlier photo',
       build: () => _blocFor(_FakeQuestionsRepository()),
-      seed: () => AskByPhotoPreparingPhoto(previousSelection: selected),
+      seed: () => AskByPhotoPreparingPhoto(previous: selected),
       act: (bloc) => bloc.add(const AskByPhotoPreparationStarted()),
       // Equal to the seed, so bloc_test sees no new state.
       expect: () => const <AskByPhotoState>[],
       verify: (bloc) => expect(
         bloc.state,
-        AskByPhotoPreparingPhoto(previousSelection: selected),
+        AskByPhotoPreparingPhoto(previous: selected),
       ),
     );
 
@@ -615,7 +615,7 @@ void main() {
       build: () => _blocFor(_FakeQuestionsRepository(
         outcome: _outcome(PhotoQuestionSolveStatus.solved),
       )),
-      seed: () => AskByPhotoPreparingPhoto(previousSelection: selected),
+      seed: () => AskByPhotoPreparingPhoto(previous: selected),
       act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
       expect: () => const <AskByPhotoState>[],
       verify: (bloc) {
@@ -892,7 +892,7 @@ void main() {
         ..add(const AskByPhotoPreparationStarted())
         ..add(const AskByPhotoPickUnavailable('Could not prepare it.')),
       expect: () => [
-        AskByPhotoPreparingPhoto(previousSelection: selectedWithEditable()),
+        AskByPhotoPreparingPhoto(previous: selectedWithEditable()),
         const AskByPhotoNotice('Could not prepare it.'),
         selectedWithEditable(),
       ],
@@ -965,14 +965,37 @@ void main() {
       await bloc.close();
     });
 
-    blocTest<AskByPhotoBloc, AskByPhotoState>(
-      'a cancelled pick keeps the photo on screen under its key',
-      build: () => _blocFor(_FakeQuestionsRepository()),
-      seed: () => AskByPhotoNetworkError('No connection.',
+    for (final failedSend in <AskByPhotoSolveFailed>[
+      AskByPhotoNetworkError('No connection.',
           imageBytes: validBytes,
           fileName: 'a.jpg',
           mimeType: 'image/jpeg',
-          idempotencyKey: 'photo-key-1'),
+          idempotencyKey: 'kept-key'),
+      AskByPhotoStillSolving(
+          imageBytes: validBytes,
+          fileName: 'a.jpg',
+          mimeType: 'image/jpeg',
+          idempotencyKey: 'kept-key'),
+    ]) {
+      blocTest<AskByPhotoBloc, AskByPhotoState>(
+        'a cancelled pick keeps ${failedSend.runtimeType} as it was, under its key',
+        build: () => _blocFor(_FakeQuestionsRepository()),
+        seed: () => failedSend,
+        act: (bloc) => bloc.add(const AskByPhotoPickCancelled()),
+        expect: () =>
+            [const AskByPhotoNotice('No photo selected.'), failedSend],
+      );
+    }
+
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'a cancelled pick turns any other failed send back into its photo, under its key',
+      build: () => _blocFor(_FakeQuestionsRepository()),
+      seed: () => AskByPhotoTimeout(
+          questionId: 'q_timeout',
+          imageBytes: validBytes,
+          fileName: 'a.jpg',
+          mimeType: 'image/jpeg',
+          idempotencyKey: 'kept-key'),
       act: (bloc) => bloc.add(const AskByPhotoPickCancelled()),
       expect: () => [
         const AskByPhotoNotice('No photo selected.'),
@@ -980,7 +1003,35 @@ void main() {
             imageBytes: validBytes,
             fileName: 'a.jpg',
             mimeType: 'image/jpeg',
-            idempotencyKey: 'photo-key-1'),
+            idempotencyKey: 'kept-key'),
+      ],
+    );
+
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'a photo that cannot be prepared brings back a failed send that may have an answer',
+      build: () => _blocFor(_FakeQuestionsRepository()),
+      seed: () => AskByPhotoNetworkError('No connection.',
+          imageBytes: validBytes,
+          fileName: 'a.jpg',
+          mimeType: 'image/jpeg',
+          idempotencyKey: 'kept-key'),
+      act: (bloc) => bloc
+        ..add(const AskByPhotoPreparationStarted())
+        ..add(const AskByPhotoPickUnavailable('Could not prepare it.')),
+      expect: () => [
+        AskByPhotoPreparingPhoto(
+          previous: AskByPhotoNetworkError('No connection.',
+              imageBytes: validBytes,
+              fileName: 'a.jpg',
+              mimeType: 'image/jpeg',
+              idempotencyKey: 'kept-key'),
+        ),
+        const AskByPhotoNotice('Could not prepare it.'),
+        AskByPhotoNetworkError('No connection.',
+            imageBytes: validBytes,
+            fileName: 'a.jpg',
+            mimeType: 'image/jpeg',
+            idempotencyKey: 'kept-key'),
       ],
     );
 
@@ -993,7 +1044,7 @@ void main() {
       bloc.add(const AskByPhotoSubmitted());
       await bloc.stream.firstWhere((s) => s is AskByPhotoSolveFailed);
       bloc.add(const AskByPhotoPickCancelled());
-      await bloc.stream.firstWhere((s) => s is AskByPhotoPhotoSelected);
+      await bloc.stream.firstWhere((s) => s is AskByPhotoNetworkError);
       repository
         ..failure = null
         ..outcome = _outcome(PhotoQuestionSolveStatus.solved);
@@ -1008,7 +1059,7 @@ void main() {
 
   group('refusals', () {
     blocTest<AskByPhotoBloc, AskByPhotoState>(
-      'another photo still being solved keeps this one, ready to try again',
+      'a photo still being solved keeps this one, ready to try again',
       build: () => _blocFor(
           _FakeQuestionsRepository(failure: PhotoBeingSolvedFailure())),
       seed: () => AskByPhotoPhotoSelected(

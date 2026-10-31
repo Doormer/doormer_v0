@@ -1661,7 +1661,8 @@ void main() {
       await pumpPage(tester);
       await selectPhoto(tester);
 
-      // The photo being solved, perhaps this one, used a question.
+      // The photo being solved, perhaps this one, finished meanwhile: the API
+      // counts a question only when its solve ends.
       repository.dailyLimit =
           DailyLimit(questionsLeft: 4, resetsAt: DateTime(2026, 10, 19));
       await submitPhoto(tester);
@@ -1864,10 +1865,9 @@ void main() {
       expect(repository.idempotencyKeys.last, repository.idempotencyKeys.first);
     });
 
-    // Had the photo options opened, a pick cancelled there would turn this
-    // photo back into a new one, which 0 blocks. On the web, the cancel also
-    // reads the count, so that 0 would arrive at the same moment. Reading
-    // the count straight after the send keeps the options shut instead.
+    // Reading the count straight after the send keeps the photo options
+    // shut. Had they opened, a pick cancelled there would keep this failure
+    // as it was, and Try again with it.
     testWidgets(
         'when a lost answer used the last question, Try again stays and the '
         'photo options stay shut', (tester) async {
@@ -1897,6 +1897,89 @@ void main() {
       expect(find.text(noneLeftText), findsNWidgets(2),
           reason: 'the line, and the same sentence as a toast');
       expect(tryAgainButton(tester).onPressed, isNotNull);
+      await drainToasts(tester);
+    });
+
+    // The API counts a question only when its solve ends, so the last one
+    // can go while the chooser is open. On the web, the chooser closing
+    // brings the window back to the front, which reads that 0 at once.
+    testWidgets(
+        'with none left, a pick cancelled after a lost answer keeps Try again',
+        (tester) async {
+      repository =
+          _FakeQuestionsRepository(failure: NetworkFailure('No connection.'))
+            ..dailyLimit =
+                DailyLimit(questionsLeft: 1, resetsAt: DateTime(2026, 10, 19));
+      registerBloc();
+      await pumpPage(tester);
+      await selectPhoto(tester);
+      await submitPhoto(tester);
+      // The read after the send still says 1: this photo's answer, if any,
+      // is not counted yet.
+      expect(find.text('1 question left today'), findsOneWidget);
+      expect(find.widgetWithText(AppButtonAtom, 'Try again'), findsOneWidget);
+
+      final changePhoto = find.widgetWithText(AppButtonAtom, 'Change photo');
+      await tester.ensureVisible(changePhoto);
+      await tester.tap(changePhoto);
+      await tester.pumpAndSettle();
+      expect(find.byType(PhotoSourceSheetOrganism), findsOneWidget);
+
+      // Its solve ends while the chooser is open, using the last question.
+      repository.dailyLimit = noneLeft;
+      // The student closes the chooser without picking.
+      fileInput.file = null;
+      await tester.tap(find.text('Choose from gallery'));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+      await resumeApp(tester);
+
+      expect(find.text(noneLeftText), findsOneWidget);
+      expect(find.widgetWithText(AppButtonAtom, 'Try again'), findsOneWidget);
+      expect(tryAgainButton(tester).onPressed, isNotNull);
+
+      repository
+        ..failure = null
+        ..outcome = _outcome(PhotoQuestionSolveStatus.unreadable);
+      await tapTryAgain(tester);
+
+      expect(repository.idempotencyKeys, hasLength(2));
+      expect(repository.idempotencyKeys.last, repository.idempotencyKeys.first);
+      await drainToasts(tester);
+    });
+
+    // Only the end of a send reports its failure and reads the count. A
+    // failure a cancelled pick brings back ends no send.
+    testWidgets(
+        'a failed send brought back after a cancelled pick raises no second '
+        'error toast and reads nothing', (tester) async {
+      repository =
+          _FakeQuestionsRepository(failure: NetworkFailure('No connection.'));
+      registerBloc();
+      await pumpPage(tester);
+      await selectPhoto(tester);
+      await submitPhoto(tester);
+      await drainToasts(tester);
+      final readsBeforeCancel = repository.dailyLimitReads;
+      expect(find.textContaining('No connection.'), findsOneWidget,
+          reason: 'the status panel says it; its toast has gone');
+
+      final changePhoto = find.widgetWithText(AppButtonAtom, 'Change photo');
+      await tester.ensureVisible(changePhoto);
+      await tester.tap(changePhoto);
+      await tester.pumpAndSettle();
+      // The student closes the chooser without picking.
+      fileInput.file = null;
+      await tester.tap(find.text('Choose from gallery'));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+
+      expect(find.text('No photo selected.'), findsOneWidget);
+      expect(find.textContaining('No connection.'), findsOneWidget,
+          reason: 'still in the status panel, and not again as a toast');
+      expect(repository.dailyLimitReads, readsBeforeCancel);
       await drainToasts(tester);
     });
 
@@ -2052,7 +2135,7 @@ void main() {
 
   group('each photo is sent under one key', () {
     testWidgets(
-        'turned away while another photo is solved, Try again sends the same '
+        'turned away while a photo is solved, Try again sends the same '
         'photo under the same key', (tester) async {
       repository = _FakeQuestionsRepository(failure: PhotoBeingSolvedFailure());
       registerBloc();

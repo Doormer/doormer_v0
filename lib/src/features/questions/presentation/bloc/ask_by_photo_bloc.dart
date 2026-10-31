@@ -232,24 +232,23 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
     AskByPhotoPreparationStarted event,
     Emitter<AskByPhotoState> emit,
   ) {
-    emit(AskByPhotoPreparingPhoto(previousSelection: _currentSelection()));
+    emit(AskByPhotoPreparingPhoto(previous: _stateToRestore()));
   }
 
-  /// The photo on screen now, or the one a preparation in progress replaced.
+  /// What a cancelled pick, or a photo that can't be prepared, brings back:
+  /// the photo on screen, or what a preparation in progress replaced.
   ///
-  /// A failed solve's photo counts: editing it prepares it again, and if that
-  /// fails the photo must come back rather than vanish.
-  AskByPhotoPhotoSelected? _currentSelection() {
+  /// A failed send that may have an answer comes back as it was. It keeps
+  /// offering Try again under its key, even with no questions left today,
+  /// because the API gives back the answer it saved under that key. Any
+  /// other failed send comes back as a plain photo under its key, so the
+  /// photo doesn't vanish.
+  AskByPhotoState? _stateToRestore() {
     final current = state;
     if (current is AskByPhotoPhotoSelected) return current;
-    if (current is AskByPhotoPreparingPhoto) return current.previousSelection;
+    if (current is AskByPhotoPreparingPhoto) return current.previous;
     if (current is AskByPhotoSolveFailed) {
-      // A narrow race remains here. If the photo options opened before the
-      // count reached 0, a cancelled pick or a failed preparation turns a
-      // failure that may have an answer into a plain selection under the same
-      // key. At 0 that photo is then blocked as new, though the API may hold
-      // its answer. The page reads the count straight after every send, which
-      // keeps this window small.
+      if (current.mayHaveAnswer && current.hasPhoto) return current;
       final bytes = current.imageBytes;
       if (bytes != null) {
         return AskByPhotoPhotoSelected(
@@ -282,26 +281,20 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
     AskByPhotoPickCancelled event,
     Emitter<AskByPhotoState> emit,
   ) {
-    _emitNoticePreservingSelection('No photo selected.', emit);
+    _emitNoticeAndRestore('No photo selected.', emit);
   }
 
   void _onPickUnavailable(
     AskByPhotoPickUnavailable event,
     Emitter<AskByPhotoState> emit,
   ) {
-    _emitNoticePreservingSelection(event.message, emit);
+    _emitNoticeAndRestore(event.message, emit);
   }
 
-  void _emitNoticePreservingSelection(
-    String message,
-    Emitter<AskByPhotoState> emit,
-  ) {
-    final selection = _currentSelection();
+  void _emitNoticeAndRestore(String message, Emitter<AskByPhotoState> emit) {
+    final restored = _stateToRestore();
     emit(AskByPhotoNotice(message));
-
-    if (selection != null) {
-      emit(selection);
-    }
+    if (restored != null) emit(restored);
   }
 }
 

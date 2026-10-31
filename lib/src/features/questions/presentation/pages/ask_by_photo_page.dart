@@ -106,8 +106,9 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
   /// Brings the count up to date when [state] ends a send. An answer or a
   /// refusal that came back with the count shows it without asking again.
   /// A send that ended without one, such as a dropped connection, may still
-  /// have used a question, so the count is read again at once. If that was
-  /// the last question, asking turns off and the photo options stay shut.
+  /// have used a question, so the count is read again at once. The API counts
+  /// a question only when its solve finishes, so after a 409 the read can
+  /// still show the old count.
   void _updateDailyLimitAfterSend(
     BuildContext context,
     AskByPhotoState state,
@@ -492,6 +493,10 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
   Widget _buildScreen(DisplayAdUnit? adUnit) {
     return BlocConsumer<AskByPhotoBloc, AskByPhotoState>(
       key: _screenKey,
+      // A failed send is heard only as it ends a send. Brought back after a
+      // cancelled pick, it raises no toast and reads no count again.
+      listenWhen: (previous, current) =>
+          current is! AskByPhotoSolveFailed || previous is AskByPhotoLoading,
       listener: (context, state) {
         _updateDailyLimitAfterSend(context, state);
         if (state is AskByPhotoNotice) {
