@@ -68,4 +68,27 @@ void main() {
     expect(await storage.read(), isNull);
     expect(html.window.localStorage['friend_invite_code'], isNull);
   });
+
+  group('in the browser, with local storage turned off', () {
+    late InviteCodeStorage storage;
+
+    setUp(() {
+      storage = InviteCodeStorageWeb(
+        now: () => DateTime.utc(2026, 10, 26, 9),
+        localStorage: () => throw StateError('local storage is off'),
+      );
+    });
+
+    test('keeping a code does not throw', () async {
+      await expectLater(storage.keep('K7QM2XPA'), completes);
+    });
+
+    test('reads no code', () async {
+      expect(await storage.read(), isNull);
+    });
+
+    test('forgetting does not throw', () async {
+      await expectLater(storage.forget(), completes);
+    });
+  });
 }

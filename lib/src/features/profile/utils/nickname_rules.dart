@@ -16,9 +16,8 @@ abstract final class NicknameRules {
   // a–z and A–Z, and the letters in U+00C0–U+024F (Latin-1 Supplement from À,
   // Latin Extended-A and Latin Extended-B) and U+1E00–U+1EFF (Latin Extended
   // Additional): the letters students type, accents and macrons included.
-  // Other forms, such as fullwidth or small capital letters, are refused, as
-  // the API refuses them. The API's blocked word list, not this check, deals
-  // with letters written to hide a word.
+  // Lookalike forms, such as fullwidth or small capital letters, are refused,
+  // as the API refuses them, so a blocked word can't hide in them.
   static final _latinLetter =
       RegExp(r'^[A-Za-z\u00C0-\u024F\u1E00-\u1EFF]$', unicode: true);
   static final _letter = RegExp(r'^\p{L}$', unicode: true);

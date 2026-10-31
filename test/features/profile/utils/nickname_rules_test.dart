@@ -47,6 +47,10 @@ void main() {
       'Сэм',
       'Sam 😀',
       'K+K',
+      // Symbols inside the Latin-1 range, refused only by the is-it-a-letter
+      // check, as the API refuses them:
+      'Sam×Lee', // the multiplication sign
+      'a÷bc', // the division sign
       // Lookalike letters, refused so a blocked word can't hide in them:
       'ｓａｍ', // fullwidth
       'S\u1D00m', // a small capital A
