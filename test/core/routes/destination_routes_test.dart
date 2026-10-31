@@ -882,14 +882,25 @@ void main() {
       await pumpDestinations(tester, initialLocation: '/profile');
       await tester.pumpAndSettle();
       final reads = profileReads();
-
       await tester.tap(find.byIcon(Icons.document_scanner_outlined));
       await tester.pumpAndSettle();
+
+      // The read waits, so what Profile shows meanwhile can be seen. A
+      // spinner animates for as long as it shows, so it would still be there.
+      final reading = friends.hold = Completer<void>();
       await tester.tap(find.byIcon(Icons.person_outline));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       expect(profileReads(), reads + 1);
       expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(friendRow('Sam'), findsOneWidget,
+          reason: 'the page as it was left, until the read lands');
+
+      reading.complete();
+      await tester.pumpAndSettle();
+
+      expect(friendRow('Sam'), findsOneWidget);
     });
 
     testWidgets('a page of friends opens inside the Profile tab, under the bar',
