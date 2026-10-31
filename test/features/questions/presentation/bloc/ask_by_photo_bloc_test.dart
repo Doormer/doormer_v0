@@ -8,6 +8,7 @@ import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart'
 import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_questions_page.dart';
+import 'package:doormer/src/features/questions/domain/failure/photo_question_failures.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
@@ -26,6 +27,7 @@ class _FakeQuestionsRepository implements QuestionsRepository {
   int callCount = 0;
   Uint8List? lastBytes;
   String? lastContentType;
+  final List<String> idempotencyKeys = [];
 
   @override
   Future<PhotoQuestionSolveOutcome> submitPhotoQuestion({
@@ -33,6 +35,7 @@ class _FakeQuestionsRepository implements QuestionsRepository {
     required String contentType,
     required String idempotencyKey,
   }) async {
+    idempotencyKeys.add(idempotencyKey);
     callCount++;
     lastBytes = imageBytes;
     lastContentType = contentType;
@@ -79,6 +82,7 @@ PhotoQuestionSolveOutcome _outcome(
   String note = '',
   String topic = '',
   String method = '',
+  DailyLimit? dailyLimit,
 }) {
   return PhotoQuestionSolveOutcome(
     status: status,
@@ -86,6 +90,7 @@ PhotoQuestionSolveOutcome _outcome(
     note: note,
     topic: topic,
     method: method,
+    dailyLimit: dailyLimit,
     solution: status == PhotoQuestionSolveStatus.solved
         ? const SolutionDocument(
             schemaVersion: '1.0',
@@ -103,11 +108,22 @@ PhotoQuestionSolveOutcome _outcome(
   );
 }
 
+/// Hands out photo-key-1, photo-key-2, … in order, so a test knows which key
+/// each photo gets.
+String Function() _countingKeys() {
+  var made = 0;
+  return () => 'photo-key-${++made}';
+}
+
 AskByPhotoBloc _blocFor(_FakeQuestionsRepository repository) {
   return AskByPhotoBloc(
     submitPhotoQuestionUseCase: SubmitPhotoQuestionUseCase(repository),
+    newIdempotencyKey: _countingKeys(),
   );
 }
+
+final _midnight =
+    DailyLimit(questionsLeft: 0, resetsAt: DateTime(2026, 10, 19));
 
 void main() {
   setUpAll(AppLogger.disable);
@@ -126,10 +142,14 @@ void main() {
       imageBytes: validBytes,
       fileName: 'problem.jpg',
       mimeType: 'image/jpeg',
+      idempotencyKey: 'photo-key-1',
     ),
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
-      AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.jpg'),
+      AskByPhotoLoading(
+          imageBytes: validBytes,
+          fileName: 'problem.jpg',
+          idempotencyKey: 'photo-key-1'),
       isA<AskByPhotoSolved>().having(
         (state) => state.note,
         'note',
@@ -151,10 +171,14 @@ void main() {
       imageBytes: validBytes,
       fileName: 'problem.jpg',
       mimeType: 'image/jpeg',
+      idempotencyKey: 'photo-key-1',
     ),
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
-      AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.jpg'),
+      AskByPhotoLoading(
+          imageBytes: validBytes,
+          fileName: 'problem.jpg',
+          idempotencyKey: 'photo-key-1'),
       isA<AskByPhotoSolved>()
           .having((state) => state.topic, 'topic', 'Algebra - Linear equations')
           .having((state) => state.method, 'method', 'Inverse operations'),
@@ -170,10 +194,14 @@ void main() {
       imageBytes: validBytes,
       fileName: 'problem.jpg',
       mimeType: 'image/jpeg',
+      idempotencyKey: 'photo-key-1',
     ),
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
-      AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.jpg'),
+      AskByPhotoLoading(
+          imageBytes: validBytes,
+          fileName: 'problem.jpg',
+          idempotencyKey: 'photo-key-1'),
       isA<AskByPhotoSolved>()
           .having((state) => state.questionId, 'questionId', 'q_solved')
           .having(
@@ -190,15 +218,20 @@ void main() {
       imageBytes: validBytes,
       fileName: 'problem.png',
       mimeType: 'image/png',
+      idempotencyKey: 'photo-key-1',
     ),
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
-      AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.png'),
+      AskByPhotoLoading(
+          imageBytes: validBytes,
+          fileName: 'problem.png',
+          idempotencyKey: 'photo-key-1'),
       AskByPhotoUnreadable(
         questionId: 'q_unreadable',
         imageBytes: validBytes,
         fileName: 'problem.png',
         mimeType: 'image/png',
+        idempotencyKey: 'photo-key-1',
       ),
     ],
   );
@@ -212,15 +245,20 @@ void main() {
       imageBytes: validBytes,
       fileName: 'problem.png',
       mimeType: 'image/png',
+      idempotencyKey: 'photo-key-1',
     ),
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
-      AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.png'),
+      AskByPhotoLoading(
+          imageBytes: validBytes,
+          fileName: 'problem.png',
+          idempotencyKey: 'photo-key-1'),
       AskByPhotoNotAQuestion(
         questionId: 'q_notAQuestion',
         imageBytes: validBytes,
         fileName: 'problem.png',
         mimeType: 'image/png',
+        idempotencyKey: 'photo-key-1',
       ),
     ],
   );
@@ -234,15 +272,20 @@ void main() {
       imageBytes: validBytes,
       fileName: 'problem.png',
       mimeType: 'image/png',
+      idempotencyKey: 'photo-key-1',
     ),
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
-      AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.png'),
+      AskByPhotoLoading(
+          imageBytes: validBytes,
+          fileName: 'problem.png',
+          idempotencyKey: 'photo-key-1'),
       AskByPhotoTimeout(
         questionId: 'q_timeout',
         imageBytes: validBytes,
         fileName: 'problem.png',
         mimeType: 'image/png',
+        idempotencyKey: 'photo-key-1',
       ),
     ],
   );
@@ -256,10 +299,14 @@ void main() {
       imageBytes: validBytes,
       fileName: 'problem.heic',
       mimeType: 'image/heic',
+      idempotencyKey: 'photo-key-1',
     ),
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
-      AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.heic'),
+      AskByPhotoLoading(
+          imageBytes: validBytes,
+          fileName: 'problem.heic',
+          idempotencyKey: 'photo-key-1'),
       const AskByPhotoValidationError(photoUnreadableMessage),
     ],
     verify: (bloc) {
@@ -278,16 +325,21 @@ void main() {
       imageBytes: validBytes,
       fileName: 'problem.jpg',
       mimeType: 'image/jpeg',
+      idempotencyKey: 'photo-key-1',
     ),
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
-      AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.jpg'),
+      AskByPhotoLoading(
+          imageBytes: validBytes,
+          fileName: 'problem.jpg',
+          idempotencyKey: 'photo-key-1'),
       AskByPhotoNetworkError(
         'We could not reach the solver. Try again.',
         cause: SolveErrorCause.network,
         imageBytes: validBytes,
         fileName: 'problem.jpg',
         mimeType: 'image/jpeg',
+        idempotencyKey: 'photo-key-1',
       ),
     ],
   );
@@ -305,13 +357,16 @@ void main() {
         imageBytes: validBytes,
         fileName: 'problem.jpg',
         mimeType: 'image/jpeg',
+        idempotencyKey: 'photo-key-1',
       ),
       act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
       skip: 1,
       expect: () => [
         isA<AskByPhotoNetworkError>()
             .having((state) => state.cause, 'cause', cause)
-            .having((state) => state.imageBytes, 'imageBytes', validBytes),
+            .having((state) => state.imageBytes, 'imageBytes', validBytes)
+            .having((state) => state.idempotencyKey, 'idempotencyKey',
+                'photo-key-1'),
       ],
     );
   }
@@ -325,6 +380,7 @@ void main() {
       imageBytes: validBytes,
       fileName: 'problem.jpg',
       mimeType: 'image/jpeg',
+      idempotencyKey: 'photo-key-1',
     ),
     act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
     expect: () => [
@@ -368,7 +424,10 @@ void main() {
     expect(
       emittedStates,
       contains(
-        AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.jpg'),
+        AskByPhotoLoading(
+            imageBytes: validBytes,
+            fileName: 'problem.jpg',
+            idempotencyKey: 'photo-key-1'),
       ),
     );
     expect(completer.isCompleted, isFalse);
@@ -404,6 +463,7 @@ void main() {
       imageBytes: validBytes,
       fileName: 'problem.jpg',
       mimeType: 'image/jpeg',
+      idempotencyKey: 'photo-key-1',
     ),
     act: (bloc) => bloc.add(const AskByPhotoPickCancelled()),
     expect: () => [
@@ -412,6 +472,7 @@ void main() {
         imageBytes: validBytes,
         fileName: 'problem.jpg',
         mimeType: 'image/jpeg',
+        idempotencyKey: 'photo-key-1',
       ),
     ],
     verify: (bloc) {
@@ -430,6 +491,7 @@ void main() {
       imageBytes: validBytes,
       fileName: 'problem.jpg',
       mimeType: 'image/jpeg',
+      idempotencyKey: 'photo-key-1',
     ),
     act: (bloc) => bloc.add(
       const AskByPhotoPickUnavailable(
@@ -442,6 +504,7 @@ void main() {
         imageBytes: validBytes,
         fileName: 'problem.jpg',
         mimeType: 'image/jpeg',
+        idempotencyKey: 'photo-key-1',
       ),
     ],
     verify: (bloc) {
@@ -476,6 +539,7 @@ void main() {
       imageBytes: Uint8List.fromList([9, 9, 9]),
       fileName: 'earlier.jpg',
       mimeType: 'image/jpeg',
+      idempotencyKey: 'photo-key-1',
     );
 
     blocTest<AskByPhotoBloc, AskByPhotoState>(
@@ -507,6 +571,7 @@ void main() {
           imageBytes: validBytes,
           fileName: 'IMG_1.jpg',
           mimeType: 'image/jpeg',
+          idempotencyKey: 'photo-key-1',
         ),
       ],
     );
@@ -574,6 +639,7 @@ void main() {
         imageBytes: validBytes,
         fileName: 'problem.jpg',
         mimeType: 'image/jpeg',
+        idempotencyKey: 'photo-key-1',
       ),
       act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
       skip: 1,
@@ -595,6 +661,7 @@ void main() {
         imageBytes: validBytes,
         fileName: 'problem.jpg',
         mimeType: 'image/jpeg',
+        idempotencyKey: 'photo-key-1',
       ),
       act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
       skip: 1,
@@ -617,6 +684,7 @@ void main() {
         imageBytes: validBytes,
         fileName: 'problem.jpg',
         mimeType: 'image/jpeg',
+        idempotencyKey: 'photo-key-1',
       ),
       act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
       skip: 1,
@@ -637,6 +705,7 @@ void main() {
         imageBytes: validBytes,
         fileName: 'problem.jpg',
         mimeType: 'image/jpeg',
+        idempotencyKey: 'photo-key-1',
       ),
       act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
       skip: 1,
@@ -666,7 +735,10 @@ void main() {
       ),
       act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
       expect: () => [
-        AskByPhotoLoading(imageBytes: validBytes, fileName: 'problem.jpg'),
+        AskByPhotoLoading(
+            imageBytes: validBytes,
+            fileName: 'problem.jpg',
+            idempotencyKey: 'photo-key-1'),
         isA<AskByPhotoSolved>()
             .having((s) => s.questionId, 'questionId', 'q_solved'),
       ],
@@ -739,6 +811,7 @@ void main() {
           fileName: 'IMG_9.jpg',
           mimeType: 'image/jpeg',
           editablePhoto: editable,
+          idempotencyKey: 'photo-key-1',
         );
 
     blocTest<AskByPhotoBloc, AskByPhotoState>(
@@ -824,5 +897,216 @@ void main() {
         selectedWithEditable(),
       ],
     );
+  });
+
+  group('one key per photo', () {
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'a picked photo gets a new key, and so does an edited one',
+      build: () => _blocFor(_FakeQuestionsRepository()),
+      act: (bloc) => bloc
+        ..add(AskByPhotoPhotoPicked(
+            imageBytes: validBytes, fileName: 'a.jpg', mimeType: 'image/jpeg'))
+        ..add(AskByPhotoPhotoPicked(
+            imageBytes: validBytes,
+            fileName: 'a-cropped.jpg',
+            mimeType: 'image/jpeg')),
+      expect: () => [
+        AskByPhotoPhotoSelected(
+            imageBytes: validBytes,
+            fileName: 'a.jpg',
+            mimeType: 'image/jpeg',
+            idempotencyKey: 'photo-key-1'),
+        AskByPhotoPhotoSelected(
+            imageBytes: validBytes,
+            fileName: 'a-cropped.jpg',
+            mimeType: 'image/jpeg',
+            idempotencyKey: 'photo-key-2'),
+      ],
+    );
+
+    for (final firstTry in <Object>[
+      NetworkFailure('No connection.'),
+      PhotoBeingSolvedFailure(),
+    ]) {
+      test('Try again after ${firstTry.runtimeType} sends the same key',
+          () async {
+        final repository = _FakeQuestionsRepository(failure: firstTry);
+        final bloc = _blocFor(repository);
+        bloc.add(AskByPhotoPhotoPicked(
+            imageBytes: validBytes, fileName: 'a.jpg', mimeType: 'image/jpeg'));
+        bloc.add(const AskByPhotoSubmitted());
+        await bloc.stream.firstWhere((s) => s is AskByPhotoSolveFailed);
+        repository
+          ..failure = null
+          ..outcome = _outcome(PhotoQuestionSolveStatus.solved);
+
+        bloc.add(const AskByPhotoSubmitted());
+        await bloc.stream.firstWhere((s) => s is AskByPhotoSolved);
+
+        expect(repository.idempotencyKeys, ['photo-key-1', 'photo-key-1']);
+        await bloc.close();
+      });
+    }
+
+    test('Try again after a timeout sends the same key', () async {
+      final repository = _FakeQuestionsRepository(
+          outcome: _outcome(PhotoQuestionSolveStatus.timeout));
+      final bloc = _blocFor(repository);
+      bloc.add(AskByPhotoPhotoPicked(
+          imageBytes: validBytes, fileName: 'a.jpg', mimeType: 'image/jpeg'));
+      bloc.add(const AskByPhotoSubmitted());
+      await bloc.stream.firstWhere((s) => s is AskByPhotoTimeout);
+      repository.outcome = _outcome(PhotoQuestionSolveStatus.solved);
+
+      bloc.add(const AskByPhotoSubmitted());
+      await bloc.stream.firstWhere((s) => s is AskByPhotoSolved);
+
+      expect(repository.idempotencyKeys, ['photo-key-1', 'photo-key-1']);
+      await bloc.close();
+    });
+
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'a cancelled pick keeps the photo on screen under its key',
+      build: () => _blocFor(_FakeQuestionsRepository()),
+      seed: () => AskByPhotoNetworkError('No connection.',
+          imageBytes: validBytes,
+          fileName: 'a.jpg',
+          mimeType: 'image/jpeg',
+          idempotencyKey: 'photo-key-1'),
+      act: (bloc) => bloc.add(const AskByPhotoPickCancelled()),
+      expect: () => [
+        const AskByPhotoNotice('No photo selected.'),
+        AskByPhotoPhotoSelected(
+            imageBytes: validBytes,
+            fileName: 'a.jpg',
+            mimeType: 'image/jpeg',
+            idempotencyKey: 'photo-key-1'),
+      ],
+    );
+
+    test('Try again after a cancelled pick sends the same key', () async {
+      final repository =
+          _FakeQuestionsRepository(failure: NetworkFailure('No connection.'));
+      final bloc = _blocFor(repository);
+      bloc.add(AskByPhotoPhotoPicked(
+          imageBytes: validBytes, fileName: 'a.jpg', mimeType: 'image/jpeg'));
+      bloc.add(const AskByPhotoSubmitted());
+      await bloc.stream.firstWhere((s) => s is AskByPhotoSolveFailed);
+      bloc.add(const AskByPhotoPickCancelled());
+      await bloc.stream.firstWhere((s) => s is AskByPhotoPhotoSelected);
+      repository
+        ..failure = null
+        ..outcome = _outcome(PhotoQuestionSolveStatus.solved);
+
+      bloc.add(const AskByPhotoSubmitted());
+      await bloc.stream.firstWhere((s) => s is AskByPhotoSolved);
+
+      expect(repository.idempotencyKeys, ['photo-key-1', 'photo-key-1']);
+      await bloc.close();
+    });
+  });
+
+  group('refusals', () {
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'another photo still being solved keeps this one, ready to try again',
+      build: () => _blocFor(
+          _FakeQuestionsRepository(failure: PhotoBeingSolvedFailure())),
+      seed: () => AskByPhotoPhotoSelected(
+          imageBytes: validBytes,
+          fileName: 'a.jpg',
+          mimeType: 'image/jpeg',
+          idempotencyKey: 'photo-key-1'),
+      act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+      expect: () => [
+        AskByPhotoLoading(
+            imageBytes: validBytes,
+            fileName: 'a.jpg',
+            idempotencyKey: 'photo-key-1'),
+        AskByPhotoStillSolving(
+            imageBytes: validBytes,
+            fileName: 'a.jpg',
+            mimeType: 'image/jpeg',
+            idempotencyKey: 'photo-key-1'),
+      ],
+      verify: (bloc) =>
+          expect((bloc.state as AskByPhotoSolveFailed).isRetryable, isTrue),
+    );
+
+    blocTest<AskByPhotoBloc, AskByPhotoState>(
+      'no questions left keeps the photo and its key, and offers no retry',
+      build: () => _blocFor(_FakeQuestionsRepository(
+          failure: DailyLimitReachedFailure(_midnight))),
+      seed: () => AskByPhotoPhotoSelected(
+          imageBytes: validBytes,
+          fileName: 'a.jpg',
+          mimeType: 'image/jpeg',
+          idempotencyKey: 'photo-key-1'),
+      act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+      expect: () => [
+        AskByPhotoLoading(
+            imageBytes: validBytes,
+            fileName: 'a.jpg',
+            idempotencyKey: 'photo-key-1'),
+        AskByPhotoLimitReached(
+            dailyLimit: _midnight,
+            imageBytes: validBytes,
+            fileName: 'a.jpg',
+            mimeType: 'image/jpeg',
+            idempotencyKey: 'photo-key-1'),
+      ],
+      verify: (bloc) =>
+          expect((bloc.state as AskByPhotoSolveFailed).isRetryable, isFalse),
+    );
+
+    test(
+        'once the day resets, a submit sends the turned-away photo under its key',
+        () async {
+      final repository = _FakeQuestionsRepository(
+          failure: DailyLimitReachedFailure(_midnight));
+      final bloc = _blocFor(repository);
+      bloc.add(AskByPhotoPhotoPicked(
+          imageBytes: validBytes, fileName: 'a.jpg', mimeType: 'image/jpeg'));
+      bloc.add(const AskByPhotoSubmitted());
+      await bloc.stream.firstWhere((s) => s is AskByPhotoLimitReached);
+      repository
+        ..failure = null
+        ..outcome = _outcome(PhotoQuestionSolveStatus.solved);
+
+      bloc.add(const AskByPhotoSubmitted());
+      await bloc.stream.firstWhere((s) => s is AskByPhotoSolved);
+
+      expect(repository.idempotencyKeys, ['photo-key-1', 'photo-key-1']);
+      await bloc.close();
+    });
+  });
+
+  group('each answer carries the questions left after it', () {
+    final threeLeft =
+        DailyLimit(questionsLeft: 3, resetsAt: DateTime(2026, 10, 19));
+    final reportedBy =
+        <PhotoQuestionSolveStatus, DailyLimit? Function(AskByPhotoState)>{
+      PhotoQuestionSolveStatus.solved: (s) =>
+          (s as AskByPhotoSolved).dailyLimit,
+      PhotoQuestionSolveStatus.unreadable: (s) =>
+          (s as AskByPhotoUnreadable).dailyLimit,
+      PhotoQuestionSolveStatus.notAQuestion: (s) =>
+          (s as AskByPhotoNotAQuestion).dailyLimit,
+      PhotoQuestionSolveStatus.timeout: (s) =>
+          (s as AskByPhotoTimeout).dailyLimit,
+    };
+    for (final answer in reportedBy.entries) {
+      blocTest<AskByPhotoBloc, AskByPhotoState>(
+        '${answer.key.name} carries the count',
+        build: () => _blocFor(_FakeQuestionsRepository(
+            outcome: _outcome(answer.key, dailyLimit: threeLeft))),
+        seed: () => AskByPhotoPhotoSelected(
+            imageBytes: validBytes,
+            fileName: 'a.jpg',
+            mimeType: 'image/jpeg',
+            idempotencyKey: 'photo-key-1'),
+        act: (bloc) => bloc.add(const AskByPhotoSubmitted()),
+        verify: (bloc) => expect(answer.value(bloc.state), threeLeft),
+      );
+    }
   });
 }

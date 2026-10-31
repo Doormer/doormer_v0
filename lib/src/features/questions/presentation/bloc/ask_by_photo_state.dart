@@ -20,15 +20,22 @@ class AskByPhotoPhotoSelected extends AskByPhotoState {
   /// that did not come through the picker.
   final EditablePhoto? editablePhoto;
 
+  /// Names this photo to the API. It is made when the photo is picked or
+  /// edited and sent with every try, so the API answers a retry with the
+  /// first try's result instead of solving and counting the photo again.
+  final String idempotencyKey;
+
   const AskByPhotoPhotoSelected({
     required this.imageBytes,
     required this.fileName,
     this.mimeType,
     this.editablePhoto,
+    required this.idempotencyKey,
   });
 
   @override
-  List<Object?> get props => [imageBytes, fileName, mimeType, editablePhoto];
+  List<Object?> get props =>
+      [imageBytes, fileName, mimeType, editablePhoto, idempotencyKey];
 }
 
 /// A chosen photo is being turned upright, scaled down and saved as JPEG.
@@ -54,10 +61,20 @@ class AskByPhotoLoading extends AskByPhotoState {
   /// solve runs, and so a failure can hand it on.
   final EditablePhoto? editablePhoto;
 
-  const AskByPhotoLoading({this.imageBytes, this.fileName, this.editablePhoto});
+  /// The key the photo is sent under. Null only when a submit is dispatched
+  /// with nothing selected.
+  final String? idempotencyKey;
+
+  const AskByPhotoLoading({
+    this.imageBytes,
+    this.fileName,
+    this.editablePhoto,
+    this.idempotencyKey,
+  });
 
   @override
-  List<Object?> get props => [imageBytes, fileName, editablePhoto];
+  List<Object?> get props =>
+      [imageBytes, fileName, editablePhoto, idempotencyKey];
 }
 
 class AskByPhotoSolved extends AskByPhotoState {
@@ -75,16 +92,21 @@ class AskByPhotoSolved extends AskByPhotoState {
   /// The theory or rule the solution relies on. Empty when unnamed.
   final String method;
 
+  /// The questions left today after this one. Null when the answer had none.
+  final DailyLimit? dailyLimit;
+
   const AskByPhotoSolved({
     required this.questionId,
     required this.solution,
     this.note = '',
     this.topic = '',
     this.method = '',
+    this.dailyLimit,
   });
 
   @override
-  List<Object?> get props => [questionId, solution, note, topic, method];
+  List<Object?> get props =>
+      [questionId, solution, note, topic, method, dailyLimit];
 }
 
 /// A solve that ended without a solution, holding on to the photo that
@@ -100,11 +122,16 @@ abstract class AskByPhotoSolveFailed extends AskByPhotoState {
   /// Lets the student crop out what confused the solver and send it again.
   final EditablePhoto? editablePhoto;
 
+  /// The key the photo was sent under. Trying again sends it again, so the
+  /// API can tell a retry from a new photo.
+  final String? idempotencyKey;
+
   const AskByPhotoSolveFailed({
     this.imageBytes,
     this.fileName,
     this.mimeType,
     this.editablePhoto,
+    this.idempotencyKey,
   });
 
   /// Whether resubmitting these exact bytes could plausibly succeed.
@@ -119,58 +146,94 @@ abstract class AskByPhotoSolveFailed extends AskByPhotoState {
 class AskByPhotoUnreadable extends AskByPhotoSolveFailed {
   final String questionId;
 
+  /// The questions left today after this one. Null when the answer had none.
+  final DailyLimit? dailyLimit;
+
   const AskByPhotoUnreadable({
     required this.questionId,
+    this.dailyLimit,
     super.imageBytes,
     super.fileName,
     super.mimeType,
     super.editablePhoto,
+    super.idempotencyKey,
   });
 
   @override
   bool get isRetryable => false;
 
   @override
-  List<Object?> get props =>
-      [questionId, imageBytes, fileName, mimeType, editablePhoto];
+  List<Object?> get props => [
+        questionId,
+        dailyLimit,
+        imageBytes,
+        fileName,
+        mimeType,
+        editablePhoto,
+        idempotencyKey,
+      ];
 }
 
 class AskByPhotoNotAQuestion extends AskByPhotoSolveFailed {
   final String questionId;
 
+  /// The questions left today after this one. Null when the answer had none.
+  final DailyLimit? dailyLimit;
+
   const AskByPhotoNotAQuestion({
     required this.questionId,
+    this.dailyLimit,
     super.imageBytes,
     super.fileName,
     super.mimeType,
     super.editablePhoto,
+    super.idempotencyKey,
   });
 
   @override
   bool get isRetryable => false;
 
   @override
-  List<Object?> get props =>
-      [questionId, imageBytes, fileName, mimeType, editablePhoto];
+  List<Object?> get props => [
+        questionId,
+        dailyLimit,
+        imageBytes,
+        fileName,
+        mimeType,
+        editablePhoto,
+        idempotencyKey,
+      ];
 }
 
 class AskByPhotoTimeout extends AskByPhotoSolveFailed {
   final String questionId;
 
+  /// The questions left today after this one. Null when the answer had none.
+  final DailyLimit? dailyLimit;
+
   const AskByPhotoTimeout({
     required this.questionId,
+    this.dailyLimit,
     super.imageBytes,
     super.fileName,
     super.mimeType,
     super.editablePhoto,
+    super.idempotencyKey,
   });
 
   @override
   bool get isRetryable => true;
 
   @override
-  List<Object?> get props =>
-      [questionId, imageBytes, fileName, mimeType, editablePhoto];
+  List<Object?> get props => [
+        questionId,
+        dailyLimit,
+        imageBytes,
+        fileName,
+        mimeType,
+        editablePhoto,
+        idempotencyKey,
+      ];
 }
 
 /// Not an [AskByPhotoSolveFailed]: this is raised both when the file itself is
@@ -199,14 +262,22 @@ class AskByPhotoNetworkError extends AskByPhotoSolveFailed {
     super.fileName,
     super.mimeType,
     super.editablePhoto,
+    super.idempotencyKey,
   });
 
   @override
   bool get isRetryable => true;
 
   @override
-  List<Object?> get props =>
-      [message, cause, imageBytes, fileName, mimeType, editablePhoto];
+  List<Object?> get props => [
+        message,
+        cause,
+        imageBytes,
+        fileName,
+        mimeType,
+        editablePhoto,
+        idempotencyKey,
+      ];
 }
 
 class AskByPhotoNotice extends AskByPhotoState {
@@ -220,4 +291,54 @@ class AskByPhotoNotice extends AskByPhotoState {
 
 class AskByPhotoTypeInstead extends AskByPhotoState {
   const AskByPhotoTypeInstead();
+}
+
+/// The API turned the photo away: another of the student's photos is still
+/// being solved. The photo stays, and Try again sends it under the same key.
+class AskByPhotoStillSolving extends AskByPhotoSolveFailed {
+  const AskByPhotoStillSolving({
+    super.imageBytes,
+    super.fileName,
+    super.mimeType,
+    super.editablePhoto,
+    super.idempotencyKey,
+  });
+
+  @override
+  bool get isRetryable => true;
+
+  @override
+  List<Object?> get props =>
+      [imageBytes, fileName, mimeType, editablePhoto, idempotencyKey];
+}
+
+/// The API turned the photo away: the student has no questions left today.
+///
+/// Not retryable, so nothing offers to send it again while the limit holds.
+/// The photo and its key stay, and a submit sends them once the day resets.
+class AskByPhotoLimitReached extends AskByPhotoSolveFailed {
+  /// None left, and when they come back.
+  final DailyLimit dailyLimit;
+
+  const AskByPhotoLimitReached({
+    required this.dailyLimit,
+    super.imageBytes,
+    super.fileName,
+    super.mimeType,
+    super.editablePhoto,
+    super.idempotencyKey,
+  });
+
+  @override
+  bool get isRetryable => false;
+
+  @override
+  List<Object?> get props => [
+        dailyLimit,
+        imageBytes,
+        fileName,
+        mimeType,
+        editablePhoto,
+        idempotencyKey,
+      ];
 }
