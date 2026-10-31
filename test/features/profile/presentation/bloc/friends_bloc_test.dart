@@ -27,9 +27,13 @@ void main() {
   late FakeFriendsRepository repository;
   late WaitingFriendRequestsBloc waiting;
 
-  setUp(() {
+  setUp(() async {
     repository = FakeFriendsRepository();
-    waiting = WaitingFriendRequestsBloc();
+    // The count starts at 3, which no read here gives, so a count check
+    // fails unless the bloc passed its count on, even a fall to 0.
+    waiting = WaitingFriendRequestsBloc()
+      ..add(const WaitingFriendRequestsCounted(3));
+    await waiting.stream.first;
   });
 
   FriendsBloc build() => FriendsBloc(
@@ -317,5 +321,22 @@ void main() {
         ),
       ],
     );
+  });
+
+  group('closing', () {
+    test('a read that lands after Profile closed leaves the count alone',
+        () async {
+      repository.hold = Completer<void>();
+      final bloc = build()..add(const FriendsStarted());
+      await Future<void>.delayed(Duration.zero);
+      expect(repository.calls, ['loadProfile']);
+
+      await bloc.close();
+      repository.hold!.complete();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(repository.calls, ['loadProfile', 'loadRequests', 'loadFriends']);
+      expect(waiting.state.count, 3);
+    });
   });
 }

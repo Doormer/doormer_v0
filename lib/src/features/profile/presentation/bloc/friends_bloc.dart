@@ -99,8 +99,9 @@ class FriendsBloc extends Bloc<FriendsEvent, FriendsState> {
       final read = await _read();
       if (state != opened) return;
       _emitRead(emit, read, keeping: opened is FriendsReady ? opened : null);
-    } catch (e) {
-      AppLogger.info('Friends not refreshed: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('Friends failed to refresh',
+          error: e, stackTrace: stackTrace);
     }
   }
 
@@ -260,8 +261,9 @@ class FriendsBloc extends Bloc<FriendsEvent, FriendsState> {
     _FriendsRead? read;
     try {
       read = await _read();
-    } catch (e) {
-      AppLogger.info('Friends not read again: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('Friends failed to reload after an action',
+          error: e, stackTrace: stackTrace);
     }
     final latest = state;
     if (latest is! FriendsReady) return;
@@ -330,6 +332,9 @@ class FriendsBloc extends Bloc<FriendsEvent, FriendsState> {
       );
     }
     emit(next);
+    // A read that lands after Profile closed, such as after signing out,
+    // leaves the app-wide count alone.
+    if (isClosed) return;
     waitingRequests.add(WaitingFriendRequestsCounted(
       next is FriendsReady ? next.requests.length : 0,
     ));
