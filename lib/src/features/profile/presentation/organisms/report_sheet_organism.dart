@@ -43,10 +43,18 @@ class _ReportSheetOrganismState extends State<ReportSheetOrganism> {
     super.dispose();
   }
 
+  /// Sends the note trimmed, and cut to the cap: a note that lost focus while
+  /// a word was composing can hold more than the cap allows.
   void _send() {
     final reason = _reason;
     if (reason == null) return;
-    widget.params.onSend(reason, _note.text.trim());
+    widget.params.onSend(
+      reason,
+      CodePointLimitFormatter.truncate(
+        _note.text.trim(),
+        ReportSheetOrganism.maxNoteLength,
+      ),
+    );
   }
 
   @override

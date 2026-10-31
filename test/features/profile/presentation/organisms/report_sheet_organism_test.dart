@@ -124,6 +124,35 @@ void main() {
     expect(find.text('500/500'), findsOneWidget);
   });
 
+  testWidgets(
+      'never sends more than 500 code points, even when the note lost focus '
+      'while a word was still composing', (tester) async {
+    final taps = await _pump(tester);
+    await tester.tap(find.text('Something else'));
+    await tester.pump();
+    await tester.showKeyboard(find.byKey(const Key('report_note')));
+    // A keyboard such as Gboard composes the word being typed, and the note
+    // may go past the cap until the composing ends.
+    final typed = '${'a' * 497} hello';
+    tester.testTextInput.updateEditingValue(TextEditingValue(
+      text: typed,
+      selection: TextSelection.collapsed(offset: typed.length),
+      composing: TextRange(start: 498, end: typed.length),
+    ));
+    await tester.pump();
+    // A touch outside the note unfocuses it on a mobile browser. That ends
+    // the composing without the formatter's cut.
+    FocusManager.instance.primaryFocus!.unfocus();
+    await tester.pump();
+    expect(find.text('503/500'), findsOneWidget);
+
+    await tester.tap(find.text('Send report'));
+
+    final (_, note) = taps.sent.single;
+    expect(note.runes.length, lessThanOrEqualTo(500));
+    expect(note, '${'a' * 497} he');
+  });
+
   testWidgets('the button spins while the report is on its way',
       (tester) async {
     await _pump(tester, isSending: true);
