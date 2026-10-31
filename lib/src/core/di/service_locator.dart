@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:doormer/src/core/connection/dio_client.dart';
 import 'package:doormer/src/core/services/sessions/session_service.dart';
 import 'package:doormer/src/core/services/sessions/session_service_impl.dart';
+import 'package:doormer/src/core/utils/invite_code_storage/invite_code_storage.dart';
+import 'package:doormer/src/core/utils/invite_code_storage/invite_code_storage_web.dart';
 import 'package:doormer/src/core/utils/token_storage/token_storage.dart';
 import 'package:doormer/src/core/utils/token_storage/token_storage_web.dart';
 import 'package:doormer/src/features/auth/di/auth_module.dart';
@@ -19,6 +21,9 @@ Future<void> initDependencies() async {
   // Register TokenStorage based on platform
 
   serviceLocator.registerSingleton<TokenStorage>(TokenStorageWeb());
+
+  // The friend code of an invite link, kept until the student reaches the app.
+  serviceLocator.registerSingleton<InviteCodeStorage>(InviteCodeStorageWeb());
 
   // Register Session Service (with token and dio)
   serviceLocator.registerLazySingleton<SessionService>(
