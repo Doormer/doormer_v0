@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../domain/entity/report_reason.dart';
+import '../../utils/code_point_limit_formatter.dart';
 import '../params/report_sheet_params.dart';
 
 /// Reports a student to the Doormer team: a reason, an optional note, then
@@ -13,6 +14,7 @@ class ReportSheetOrganism extends StatefulWidget {
   static final netsafe = Uri.parse('https://netsafe.org.nz');
   static final eSafety = Uri.parse('https://www.esafety.gov.au/report');
 
+  /// The longest note, in Unicode code points, as the API counts it.
   static const maxNoteLength = 500;
 
   /// The reasons, in the order the sheet lists them.
@@ -109,16 +111,30 @@ class _ReportSheetOrganismState extends State<ReportSheetOrganism> {
                     contentPadding: EdgeInsets.zero,
                   ),
                 SizedBox(height: 8.h),
-                TextField(
-                  key: const Key('report_note'),
-                  controller: _note,
-                  enabled: !params.isSending,
-                  maxLength: ReportSheetOrganism.maxNoteLength,
-                  maxLines: 3,
-                  minLines: 1,
-                  decoration: const InputDecoration(
-                    labelText: 'Add a note (optional)',
-                  ),
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _note,
+                  builder: (context, note, _) {
+                    const maxCodePoints = ReportSheetOrganism.maxNoteLength;
+                    final codePoints = note.text.runes.length;
+                    return TextField(
+                      key: const Key('report_note'),
+                      controller: _note,
+                      enabled: !params.isSending,
+                      inputFormatters: const [
+                        CodePointLimitFormatter(maxCodePoints),
+                      ],
+                      maxLines: 3,
+                      minLines: 1,
+                      decoration: InputDecoration(
+                        labelText: 'Add a note (optional)',
+                        counterText: '$codePoints/$maxCodePoints',
+                        semanticCounterText: MaterialLocalizations.of(context)
+                            .remainingTextFieldCharacterCount(
+                                (maxCodePoints - codePoints)
+                                    .clamp(0, maxCodePoints)),
+                      ),
+                    );
+                  },
                 ),
                 SizedBox(height: 8.h),
                 AppButtonAtom(

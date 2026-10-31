@@ -107,6 +107,23 @@ void main() {
     );
   });
 
+  testWidgets('caps the note at 500 code points, as the API counts them',
+      (tester) async {
+    final taps = await _pump(tester);
+
+    await tester.tap(find.text('Something else'));
+    await tester.pump();
+    // 👍🏽 is one character on screen, but two code points.
+    await tester.enterText(find.byKey(const Key('report_note')), '👍🏽' * 300);
+    await tester.pump();
+    await tester.tap(find.text('Send report'));
+
+    final (_, note) = taps.sent.single;
+    expect(note.runes.length, lessThanOrEqualTo(500));
+    expect(note, '👍🏽' * 250, reason: 'Only whole emoji, as many as fit.');
+    expect(find.text('500/500'), findsOneWidget);
+  });
+
   testWidgets('the button spins while the report is on its way',
       (tester) async {
     await _pump(tester, isSending: true);
@@ -137,10 +154,11 @@ void main() {
   testWidgets('offers Block, before and after sending', (tester) async {
     final taps = await _pump(tester);
     await tester.tap(find.text('Block'));
-    await _pump(tester, isSent: true);
+    final sentTaps = await _pump(tester, isSent: true);
     await tester.tap(find.text('Block'));
 
     expect(taps.blocks, 1);
+    expect(sentTaps.blocks, 1);
   });
 
   testWidgets('closes', (tester) async {
