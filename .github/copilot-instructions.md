@@ -61,7 +61,7 @@ lib/src/
 ├── features/<feature>/
 │   ├── di/            # GetIt module for this feature
 │   ├── data/          # datasource/ (Remote + Local), model/ (DTOs), repository/ (impl)
-│   ├── domain/        # entity/, repository/ (abstract), usecase/
+│   ├── domain/        # entity/, failure/ (the feature's own Failure types), repository/ (abstract), usecase/
 │   ├── presentation/  # bloc/, pages/, widget/
 │   └── utils/         # feature-level helpers and validators
 └── shared/     # cross-feature code: user/ (User entity + model), sessions/ (GlobalSessionBloc), widget/
@@ -119,7 +119,7 @@ lib/src/
 
 ### Error Handling
 
-Typed `Failure` hierarchy in `core/errors/failure.dart` (pure Dart): `NetworkFailure`, `ServerFailure`, `ApiFailure(statusCode, message)`, `AuthFailure`, `ValidationFailure`, `DatabaseFailure`, `UnknownFailure`. `Failure.toString()` returns its `message`.
+Typed `Failure` hierarchy in `core/errors/failure.dart` (pure Dart): `NetworkFailure`, `ServerFailure`, `ApiFailure(statusCode, message)`, `AuthFailure`, `ValidationFailure`, `DatabaseFailure`, `UnknownFailure`. `Failure.toString()` returns its `message`. A feature can add its own `Failure` subclasses in `domain/failure/`, such as the questions feature's `DailyLimitReachedFailure` and `PhotoBeingSolvedFailure`, which its bloc catches before the generic `Failure`.
 
 Rules:
 
