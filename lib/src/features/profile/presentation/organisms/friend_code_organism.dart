@@ -6,7 +6,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../params/friend_code_params.dart';
 
 /// The student's own friend code, with Copy, Copy invite link and Reset
-/// code.
+/// code. The code can always be selected, to copy it by hand, and so can the
+/// invite link, which shows under its button once copying it has failed.
 class FriendCodeOrganism extends StatelessWidget {
   final FriendCodeParams params;
 
@@ -62,6 +63,13 @@ class FriendCodeOrganism extends StatelessWidget {
             ),
           ],
         ),
+        if (params.inviteLinkToCopyByHand case final link?) ...[
+          SizedBox(height: 8.h),
+          SelectableText(
+            link,
+            style: TextStyle(fontSize: 13.sp, color: QuestPalette.body),
+          ),
+        ],
         TextButton(
           onPressed: params.isResetting ? null : params.onResetCode,
           child: const Text('Reset code'),

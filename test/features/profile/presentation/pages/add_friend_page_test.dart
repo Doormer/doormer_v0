@@ -23,6 +23,9 @@ import '../../fake_friends_repository.dart';
 
 final _appAddress = Uri.parse('https://app.doormer.test/profile/add');
 
+const _couldNotCopy =
+    "We couldn't copy that. Select the text and copy it yourself.";
+
 /// A student who hasn't set up friends yet.
 const _noProfile = FriendProfile(
   hasProfile: false,
@@ -126,6 +129,22 @@ void main() {
     return copied;
   }
 
+  /// Makes the browser refuse every copy, as it can when the page isn't
+  /// focused.
+  void refuseClipboard(WidgetTester tester) {
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          throw PlatformException(code: 'copy_fail');
+        }
+        return null;
+      },
+    );
+    addTearDown(() => tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null));
+  }
+
   Future<void> findCode(WidgetTester tester, String code) async {
     await tester.enterText(find.byKey(const Key('friend_code_field')), code);
     await tester.tap(find.text('Find'));
@@ -173,7 +192,69 @@ void main() {
 
     expect(copied, ['https://app.doormer.test/add/K7QM2XPA']);
     expect(find.text('Invite link copied.'), findsOneWidget);
+    expect(find.text('https://app.doormer.test/add/K7QM2XPA'), findsNothing,
+        reason: 'the link shows only when it could not be copied');
     await waitOutToast(tester);
+  });
+
+  testWidgets(
+      'when the browser refuses to copy your code, says to copy it yourself',
+      (tester) async {
+    refuseClipboard(tester);
+    await pumpAddFriend(tester);
+
+    await tester.tap(find.text('Copy'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(_couldNotCopy), findsOneWidget);
+    expect(find.text('Code copied.'), findsNothing);
+    expect(find.widgetWithText(SelectableText, 'K7QM-2XPA'), findsOneWidget,
+        reason: 'the code can be selected and copied');
+    await waitOutToast(tester);
+  });
+
+  testWidgets(
+      'when the browser refuses to copy the invite link, shows it under the '
+      'button to copy yourself', (tester) async {
+    const link = 'https://app.doormer.test/add/K7QM2XPA';
+    refuseClipboard(tester);
+    await pumpAddFriend(tester);
+    expect(find.text(link), findsNothing);
+
+    await tester.tap(find.text('Copy invite link'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(_couldNotCopy), findsOneWidget);
+    expect(find.text('Invite link copied.'), findsNothing);
+    final shownLink = find.widgetWithText(SelectableText, link);
+    expect(shownLink, findsOneWidget);
+    expect(
+      tester.getTopLeft(shownLink).dy,
+      greaterThan(tester.getBottomLeft(find.text('Copy invite link')).dy),
+    );
+    await waitOutToast(tester);
+  });
+
+  testWidgets('the invite link shown to copy yourself follows a reset code',
+      (tester) async {
+    refuseClipboard(tester);
+    await pumpAddFriend(tester);
+    await tester.tap(find.text('Copy invite link'));
+    await tester.pumpAndSettle();
+    await waitOutToast(tester);
+
+    await tester.tap(find.text('Reset code'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Reset code').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('https://app.doormer.test/add/K7QM2XPA'), findsNothing,
+        reason: 'the old link stopped working');
+    expect(
+      find.widgetWithText(
+          SelectableText, 'https://app.doormer.test/add/ZQ9X4W2T'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('finding a new code offers Send request, then says Request sent',

@@ -8,6 +8,10 @@ class FriendCodeParams {
   /// A new code is on its way.
   final bool isResetting;
 
+  /// The invite link, once the browser has refused to copy it, to show for
+  /// the student to select and copy themselves. Null until then.
+  final String? inviteLinkToCopyByHand;
+
   final VoidCallback onCopyCode;
   final VoidCallback onCopyInviteLink;
 
@@ -17,6 +21,7 @@ class FriendCodeParams {
   const FriendCodeParams({
     required this.friendCode,
     required this.isResetting,
+    this.inviteLinkToCopyByHand,
     required this.onCopyCode,
     required this.onCopyInviteLink,
     required this.onResetCode,

@@ -1,4 +1,5 @@
 import 'package:doormer/src/core/di/service_locator.dart';
+import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/shared/friends/friends_messages.dart';
 import 'package:doormer/src/shared/widget/custom_toast.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +20,7 @@ import '../templates/add_friend_template.dart';
 /// Add a friend, at `/profile/add`, and the check an invite link opens, at
 /// `/profile/add/:code`. The only widget on this screen that touches
 /// flutter_bloc.
-class AddFriendPage extends StatelessWidget {
+class AddFriendPage extends StatefulWidget {
   /// The friend code of the invite link the page was opened from. Null when
   /// it was opened from Profile.
   final String? inviteCode;
@@ -31,10 +32,19 @@ class AddFriendPage extends StatelessWidget {
   const AddFriendPage({super.key, this.inviteCode, this.appAddress});
 
   @override
+  State<AddFriendPage> createState() => _AddFriendPageState();
+}
+
+class _AddFriendPageState extends State<AddFriendPage> {
+  /// The browser refused to copy the invite link, so the page shows the link
+  /// for the student to copy by hand.
+  bool _showsInviteLink = false;
+
+  @override
   Widget build(BuildContext context) {
     return BlocProvider<AddFriendBloc>(
       create: (_) => serviceLocator<AddFriendBloc>()
-        ..add(AddFriendStarted(inviteCode: inviteCode)),
+        ..add(AddFriendStarted(inviteCode: widget.inviteCode)),
       child: BlocConsumer<AddFriendBloc, AddFriendState>(
         listenWhen: (_, current) =>
             current is AddFriendNeedsSetup ||
@@ -66,6 +76,7 @@ class AddFriendPage extends StatelessWidget {
 
   AddFriendBodyParams _bodyFor(BuildContext context, AddFriendState state) {
     final bloc = context.read<AddFriendBloc>();
+    final inviteCode = widget.inviteCode;
     return switch (state) {
       AddFriendLoading() ||
       AddFriendNeedsSetup() =>
@@ -80,23 +91,18 @@ class AddFriendPage extends StatelessWidget {
           yourCode: FriendCodeParams(
             friendCode: FriendCodes.display(ready.friendCode),
             isResetting: ready.isResettingCode,
+            inviteLinkToCopyByHand:
+                _showsInviteLink ? _inviteLinkOf(ready.friendCode) : null,
             onCopyCode: () => _copy(
-              context,
               FriendCodes.display(ready.friendCode),
               'Code copied.',
             ),
-            onCopyInviteLink: () => _copy(
-              context,
-              FriendCodes.inviteLink(
-                ready.friendCode,
-                appAddress: appAddress ?? Uri.base,
-              ),
-              'Invite link copied.',
-            ),
+            onCopyInviteLink: () =>
+                _copyInviteLink(_inviteLinkOf(ready.friendCode)),
             onResetCode: () => _confirmReset(context),
           ),
           initialCode:
-              inviteCode == null ? '' : FriendCodes.display(inviteCode!),
+              inviteCode == null ? '' : FriendCodes.display(inviteCode),
           isFinding: ready.isFinding,
           onFind: (typed) => bloc.add(FriendCodeSubmitted(typed)),
           findMessage: ready.findMessage,
@@ -137,9 +143,40 @@ class AddFriendPage extends StatelessWidget {
     );
   }
 
-  Future<void> _copy(BuildContext context, String text, String done) async {
-    await Clipboard.setData(ClipboardData(text: text));
-    if (context.mounted) _toast(context, done, ToastificationType.success);
+  String _inviteLinkOf(String friendCode) => FriendCodes.inviteLink(
+        friendCode,
+        appAddress: widget.appAddress ?? Uri.base,
+      );
+
+  /// Copies [link]. When the browser refuses, the page shows the link
+  /// instead, which it never does otherwise.
+  Future<void> _copyInviteLink(String link) async {
+    final copied = await _copy(link, 'Invite link copied.');
+    if (!copied && mounted) setState(() => _showsInviteLink = true);
+  }
+
+  /// Copies [text] and says [done]. The browser can refuse, as when the page
+  /// isn't focused, and then the student is asked to copy it themselves.
+  /// Answers whether it copied.
+  Future<bool> _copy(String text, String done) async {
+    var copied = false;
+    try {
+      await Clipboard.setData(ClipboardData(text: text));
+      copied = true;
+    } on PlatformException catch (e, stackTrace) {
+      AppLogger.error('The browser refused to copy',
+          error: e, stackTrace: stackTrace);
+    } catch (e, stackTrace) {
+      AppLogger.error('Copying failed unexpectedly',
+          error: e, stackTrace: stackTrace);
+    }
+    if (!mounted) return copied;
+    _toast(
+      context,
+      copied ? done : FriendsMessages.couldNotCopy,
+      copied ? ToastificationType.success : ToastificationType.error,
+    );
+    return copied;
   }
 
   void _toast(BuildContext context, String message, ToastificationType type) =>

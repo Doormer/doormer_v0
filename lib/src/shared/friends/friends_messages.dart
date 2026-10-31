@@ -49,4 +49,8 @@ abstract final class FriendsMessages {
   static String couldNotLoadCardsOf(String? nickname) => nickname == null
       ? couldNotLoadFriendCards
       : "We couldn't load $nickname's cards.";
+
+  // When the browser refuses to copy.
+  static const couldNotCopy =
+      "We couldn't copy that. Select the text and copy it yourself.";
 }
