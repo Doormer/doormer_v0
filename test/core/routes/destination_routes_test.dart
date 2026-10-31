@@ -22,6 +22,7 @@ import 'package:doormer/src/features/collection/presentation/pages/collection_pa
 import 'package:doormer/src/features/profile/domain/usecase/sign_out_usecase.dart';
 import 'package:doormer/src/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
+import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_question_summary.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_questions_page.dart';
@@ -51,6 +52,11 @@ class _UnusedQuestionsRepository implements QuestionsRepository {
   @override
   Future<PhotoQuestionSolveOutcome> loadQuestion(String questionId) =>
       throw UnimplementedError();
+
+  // Solve asks for the count when it opens. These tests are not about it, so
+  // it never arrives and Solve shows none.
+  @override
+  Future<DailyLimit> loadDailyLimit() => Completer<DailyLimit>().future;
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>
@@ -99,6 +105,11 @@ class _PendingSavedQuestionsRepository implements QuestionsRepository {
   Future<SolvedQuestionsPage> loadSolvedQuestions({String? cursor}) =>
       Completer<SolvedQuestionsPage>().future;
 
+  // Solve asks for the count when it opens. These tests are not about it, so
+  // it never arrives and Solve shows none.
+  @override
+  Future<DailyLimit> loadDailyLimit() => Completer<DailyLimit>().future;
+
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw UnimplementedError('${invocation.memberName}');
@@ -110,6 +121,11 @@ class _EmptySavedQuestionsRepository implements QuestionsRepository {
   @override
   Future<SolvedQuestionsPage> loadSolvedQuestions({String? cursor}) async =>
       const SolvedQuestionsPage(questions: []);
+
+  // Solve asks for the count when it opens. These tests are not about it, so
+  // it never arrives and Solve shows none.
+  @override
+  Future<DailyLimit> loadDailyLimit() => Completer<DailyLimit>().future;
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>
@@ -128,6 +144,11 @@ class _CountingSavedQuestionsRepository implements QuestionsRepository {
     return SolvedQuestionsPage(questions: questions);
   }
 
+  // Solve asks for the count when it opens. These tests are not about it, so
+  // it never arrives and Solve shows none.
+  @override
+  Future<DailyLimit> loadDailyLimit() => Completer<DailyLimit>().future;
+
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw UnimplementedError('${invocation.memberName}');
@@ -144,6 +165,11 @@ class _FailsFirstSavedQuestionsRepository implements QuestionsRepository {
     if (reads == 1) throw NetworkFailure();
     return retry.future;
   }
+
+  // Solve asks for the count when it opens. These tests are not about it, so
+  // it never arrives and Solve shows none.
+  @override
+  Future<DailyLimit> loadDailyLimit() => Completer<DailyLimit>().future;
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>
@@ -183,10 +209,16 @@ class _SolutionsRepository implements QuestionsRepository {
   Future<PhotoQuestionSolveOutcome> submitPhotoQuestion({
     required Uint8List imageBytes,
     required String contentType,
+    required String idempotencyKey,
   }) {
     photosSent++;
     return (solve = Completer()).future;
   }
+
+  // Solve asks for the count when it opens. These tests are not about it, so
+  // it never arrives and Solve shows none.
+  @override
+  Future<DailyLimit> loadDailyLimit() => Completer<DailyLimit>().future;
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>

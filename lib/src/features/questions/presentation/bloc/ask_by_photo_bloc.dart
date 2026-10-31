@@ -6,6 +6,7 @@ import 'package:doormer/src/features/questions/domain/usecase/submit_photo_quest
 import 'package:doormer/src/features/questions/utils/photo/editable_photo.dart';
 import 'package:doormer/src/features/questions/utils/photo_question_image_validator.dart';
 import 'package:equatable/equatable.dart';
+import 'package:uuid/uuid.dart';
 import 'dart:typed_data';
 
 part 'ask_by_photo_event.dart';
@@ -63,6 +64,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
         imageBytes: selected.imageBytes,
         fileName: selected.fileName,
         mimeType: selected.mimeType,
+        idempotencyKey: const Uuid().v4(),
       );
       _emitOutcome(outcome, selected, emit);
     } on ValidationFailure catch (f, stackTrace) {

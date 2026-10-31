@@ -1,3 +1,4 @@
+import 'package:doormer/src/features/questions/data/model/daily_limit_model.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 
 class PhotoQuestionResponseModel {
@@ -7,6 +8,7 @@ class PhotoQuestionResponseModel {
   final String note;
   final String topic;
   final String method;
+  final DailyLimitModel? dailyLimit;
 
   const PhotoQuestionResponseModel({
     required this.status,
@@ -15,6 +17,7 @@ class PhotoQuestionResponseModel {
     this.note = '',
     this.topic = '',
     this.method = '',
+    this.dailyLimit,
   });
 
   factory PhotoQuestionResponseModel.fromJson(Map<String, dynamic> json) {
@@ -35,6 +38,7 @@ class PhotoQuestionResponseModel {
       note: json['note']?.toString() ?? '',
       topic: json['topic']?.toString() ?? '',
       method: json['method']?.toString() ?? '',
+      dailyLimit: _readDailyLimit(json['daily_limit']),
     );
   }
 
@@ -46,7 +50,20 @@ class PhotoQuestionResponseModel {
       note: note,
       topic: topic,
       method: method,
+      dailyLimit: dailyLimit?.toEntity(),
     );
+  }
+
+  /// The questions left after this ask. Only the ask route sends it. One that
+  /// can't be read is dropped rather than failing the answer with it: Solve
+  /// reads the count again when it next opens.
+  static DailyLimitModel? _readDailyLimit(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    try {
+      return DailyLimitModel.fromJson(json);
+    } on FormatException {
+      return null;
+    }
   }
 
   static PhotoQuestionSolveStatus _parseStatus(String? status) {

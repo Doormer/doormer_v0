@@ -1,4 +1,5 @@
 import 'package:doormer/src/features/questions/di/questions_module.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_daily_limit_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_solved_questions_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/saved_questions_bloc.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_file_input.dart';
@@ -26,5 +27,11 @@ void main() {
     initQuestionsModule();
 
     expect(GetIt.instance.isRegistered<SavedQuestionsBloc>(), isTrue);
+  });
+
+  test('registers the daily limit use case', () {
+    initQuestionsModule();
+
+    expect(GetIt.instance.isRegistered<LoadDailyLimitUseCase>(), isTrue);
   });
 }

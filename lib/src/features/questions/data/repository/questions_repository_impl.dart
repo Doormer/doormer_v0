@@ -5,32 +5,31 @@ import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/data/datasource/questions_local_datasource.dart';
 import 'package:doormer/src/features/questions/data/datasource/questions_remote_datasource.dart';
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
+import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_questions_page.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
-import 'package:uuid/uuid.dart';
 
 class QuestionsRepositoryImpl implements QuestionsRepository {
   final QuestionsRemoteDataSource remoteDataSource;
   final QuestionsLocalDataSource localDataSource;
-  final String Function() idempotencyKeyFactory;
 
   QuestionsRepositoryImpl({
     required this.remoteDataSource,
     required this.localDataSource,
-    String Function()? idempotencyKeyFactory,
-  }) : idempotencyKeyFactory = idempotencyKeyFactory ?? _newIdempotencyKey;
+  });
 
   @override
   Future<PhotoQuestionSolveOutcome> submitPhotoQuestion({
     required Uint8List imageBytes,
     required String contentType,
+    required String idempotencyKey,
   }) async {
     try {
       final response = await remoteDataSource.submitPhotoQuestion(
         imageBytes: imageBytes,
         contentType: contentType,
-        idempotencyKey: idempotencyKeyFactory(),
+        idempotencyKey: idempotencyKey,
       );
       return response.toEntity();
     } on Failure catch (f, stackTrace) {
@@ -57,6 +56,12 @@ class QuestionsRepositoryImpl implements QuestionsRepository {
   }
 
   @override
+  Future<DailyLimit> loadDailyLimit() async {
+    final response = await remoteDataSource.loadDailyLimit();
+    return response.toEntity();
+  }
+
+  @override
   Future<PhotoQuestionSolveOutcome> loadSampleSolution() {
     return localDataSource.loadSampleSolution();
   }
@@ -73,5 +78,3 @@ class QuestionsRepositoryImpl implements QuestionsRepository {
     return response.toEntity();
   }
 }
-
-String _newIdempotencyKey() => const Uuid().v4();

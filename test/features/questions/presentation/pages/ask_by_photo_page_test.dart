@@ -19,6 +19,7 @@ import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
+import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_questions_page.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
@@ -64,6 +65,7 @@ class _FakeQuestionsRepository implements QuestionsRepository {
   Future<PhotoQuestionSolveOutcome> submitPhotoQuestion({
     required Uint8List imageBytes,
     required String contentType,
+    required String idempotencyKey,
   }) async {
     callCount++;
     lastBytes = imageBytes;
@@ -76,6 +78,9 @@ class _FakeQuestionsRepository implements QuestionsRepository {
     }
     return outcome!;
   }
+
+  @override
+  Future<DailyLimit> loadDailyLimit() => throw UnimplementedError();
 
   @override
   Future<PhotoQuestionSolveOutcome> loadSampleSolution() {

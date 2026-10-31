@@ -15,6 +15,7 @@ import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
+import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_questions_page.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
@@ -40,8 +41,14 @@ class _FakeQuestionsRepository implements QuestionsRepository {
   Future<PhotoQuestionSolveOutcome> submitPhotoQuestion({
     required Uint8List imageBytes,
     required String contentType,
+    required String idempotencyKey,
   }) =>
       Completer<PhotoQuestionSolveOutcome>().future;
+
+  // Solve asks for the count when it opens. These tests are not about it, so
+  // it never arrives and Solve shows none.
+  @override
+  Future<DailyLimit> loadDailyLimit() => Completer<DailyLimit>().future;
 
   @override
   Future<PhotoQuestionSolveOutcome> loadSampleSolution() =>

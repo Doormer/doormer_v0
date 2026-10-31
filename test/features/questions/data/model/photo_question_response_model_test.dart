@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
+import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -230,6 +231,40 @@ void main() {
           reason: 'every 3.0 step carries exactly one diagram',
         );
       }
+    });
+
+    test('an answer to a photo carries the questions left after it', () {
+      final model = PhotoQuestionResponseModel.fromJson({
+        'status': 'unreadable',
+        'question_id': 'q1',
+        'daily_limit': {
+          'questions_left': 4,
+          'resets_at': '2026-10-19T00:00:00+13:00',
+        },
+      });
+
+      expect(
+          model.toEntity().dailyLimit,
+          DailyLimit(
+              questionsLeft: 4, resetsAt: DateTime.utc(2026, 10, 18, 11)));
+    });
+
+    test('a saved question opened later carries no count', () {
+      final model = PhotoQuestionResponseModel.fromJson(
+          {'status': 'unreadable', 'question_id': 'q1'});
+
+      expect(model.toEntity().dailyLimit, isNull);
+    });
+
+    test('a count it cannot read is dropped, and the answer still reads', () {
+      final model = PhotoQuestionResponseModel.fromJson({
+        'status': 'unreadable',
+        'question_id': 'q1',
+        'daily_limit': {'questions_left': 4},
+      });
+
+      expect(model.toEntity().status, PhotoQuestionSolveStatus.unreadable);
+      expect(model.toEntity().dailyLimit, isNull);
     });
   });
 }

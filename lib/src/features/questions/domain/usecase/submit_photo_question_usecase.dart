@@ -14,6 +14,7 @@ class SubmitPhotoQuestionUseCase {
     required Uint8List imageBytes,
     required String fileName,
     String? mimeType,
+    required String idempotencyKey,
   }) async {
     final validation = PhotoQuestionImageValidator.validate(
       imageBytes: imageBytes,
@@ -28,6 +29,7 @@ class SubmitPhotoQuestionUseCase {
     return repository.submitPhotoQuestion(
       imageBytes: imageBytes,
       contentType: validation.contentType!,
+      idempotencyKey: idempotencyKey,
     );
   }
 }
