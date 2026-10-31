@@ -9,8 +9,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class QuestionsLeftMolecule extends StatelessWidget {
   final String text;
 
-  /// None left today. The line is then why nothing can be sent, so it stands
-  /// out.
+  /// None left today. The line then says why no new photo can be sent, so it
+  /// stands out.
   final bool isReached;
 
   const QuestionsLeftMolecule({

@@ -59,7 +59,7 @@ class PhotoUploadPanelOrganism extends StatelessWidget {
             onPressed: hasPhoto &&
                     !params.isLoading &&
                     !isPreparing &&
-                    !params.isLimitReached
+                    !params.isBlockedByDailyLimit
                 ? params.onSubmit
                 : null,
           ),

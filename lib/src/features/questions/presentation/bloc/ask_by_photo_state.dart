@@ -140,6 +140,16 @@ abstract class AskByPhotoSolveFailed extends AskByPhotoState {
   /// only wastes a round trip; a dropped connection is worth another go.
   bool get isRetryable;
 
+  /// Whether the API may hold, or still be making, an answer for this photo's
+  /// key: the send failed before any answer came back. With no questions
+  /// left today, only such a photo can still be sent, because the API gives
+  /// back a saved answer before it checks any limit.
+  ///
+  /// Not after a timeout: that answer came back, and the API saves it without
+  /// the key, so it never gives it back. Nor after the daily limit turned the
+  /// photo away: the API looked for a saved answer first and found none.
+  bool get mayHaveAnswer => false;
+
   bool get hasPhoto => imageBytes != null;
 }
 
@@ -268,6 +278,10 @@ class AskByPhotoNetworkError extends AskByPhotoSolveFailed {
   @override
   bool get isRetryable => true;
 
+  /// The API may have saved an answer that never reached the student.
+  @override
+  bool get mayHaveAnswer => true;
+
   @override
   List<Object?> get props => [
         message,
@@ -306,6 +320,10 @@ class AskByPhotoStillSolving extends AskByPhotoSolveFailed {
 
   @override
   bool get isRetryable => true;
+
+  /// The photo still being solved may be this one.
+  @override
+  bool get mayHaveAnswer => true;
 
   @override
   List<Object?> get props =>

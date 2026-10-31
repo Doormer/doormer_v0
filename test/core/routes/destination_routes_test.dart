@@ -198,11 +198,6 @@ class _SolutionsRepository implements QuestionsRepository {
     return (solve = Completer()).future;
   }
 
-  // Solve asks for the count when it opens. These tests are not about it, so
-  // it never arrives and Solve shows none.
-  @override
-  Future<DailyLimit> loadDailyLimit() => Completer<DailyLimit>().future;
-
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw UnimplementedError('${invocation.memberName}');
@@ -606,12 +601,6 @@ void main() {
       serviceLocator.registerFactory<AskByPhotoBloc>(
         () => solveBloc = AskByPhotoBloc(
           submitPhotoQuestionUseCase: SubmitPhotoQuestionUseCase(solutions),
-        ),
-      );
-      serviceLocator.unregister<DailyLimitBloc>();
-      serviceLocator.registerFactory<DailyLimitBloc>(
-        () => DailyLimitBloc(
-          loadDailyLimitUseCase: LoadDailyLimitUseCase(solutions),
         ),
       );
     });

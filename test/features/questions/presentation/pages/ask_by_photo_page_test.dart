@@ -405,6 +405,12 @@ void main() {
     );
   }
 
+  FilledButton tryAgainButton(WidgetTester tester) {
+    return tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Try again'),
+    );
+  }
+
   AppButtonAtom uploadAndSolveButton(WidgetTester tester) {
     return tester.widget<AppButtonAtom>(
       find.widgetWithText(AppButtonAtom, 'UPLOAD & SOLVE'),
@@ -1595,6 +1601,37 @@ void main() {
       expect(repository.dailyLimitReads, 1);
     });
 
+    // Closing the solution is not a return to Solve, so Solve reads nothing
+    // then: the count the answer came back with is the one it shows.
+    testWidgets(
+        "a solved answer's count is shown on Solve once the solution is closed",
+        (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: PhotoQuestionSolveOutcome(
+          status: PhotoQuestionSolveStatus.solved,
+          questionId: 'q_solved',
+          solution: _outcome(PhotoQuestionSolveStatus.solved).solution,
+          dailyLimit:
+              DailyLimit(questionsLeft: 4, resetsAt: DateTime(2026, 10, 19)),
+        ),
+      );
+      registerBloc();
+      await pumpPage(tester);
+      await selectPhoto(tester);
+      await submitPhoto(tester);
+      expect(find.byType(QuestionSolutionPage), findsOneWidget);
+
+      // Closed with the browser's Back button.
+      await router.routeInformationProvider.didPushRouteInformation(
+        RouteInformation(uri: Uri.parse('/questions/photo')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('UPLOAD & SOLVE'), findsOneWidget);
+      expect(find.text('4 questions left today'), findsOneWidget);
+      expect(repository.dailyLimitReads, 1);
+    });
+
     testWidgets(
         'turned away with none left, the photo stays and nothing offers to '
         'send it', (tester) async {
@@ -1646,23 +1683,131 @@ void main() {
       await drainToasts(tester);
     });
 
+    // The API looks a photo's key up before it checks any limit. So with none
+    // left, a photo whose send failed before any answer came back can still
+    // be sent: the API gives back the answer it may hold, or turns it away.
     testWidgets(
-        'with none left after a dropped connection, nothing offers '
-        'Try again', (tester) async {
+        'with none left after a dropped connection, Try again still sends the '
+        'photo under its key', (tester) async {
       repository =
           _FakeQuestionsRepository(failure: NetworkFailure('No connection.'));
       registerBloc();
       await pumpPage(tester);
       await selectPhoto(tester);
       await submitPhoto(tester);
-      expect(find.widgetWithText(AppButtonAtom, 'Try again'), findsOneWidget);
 
-      // The last question went while the student was away.
+      // The last question went while the student was away, perhaps on this
+      // photo, its answer lost with the connection.
+      repository.dailyLimit = noneLeft;
+      await resumeApp(tester);
+      expect(find.text(noneLeftText), findsOneWidget);
+
+      expect(find.widgetWithText(AppButtonAtom, 'Try again'), findsOneWidget);
+      expect(tryAgainButton(tester).onPressed, isNotNull);
+
+      repository
+        ..failure = null
+        ..outcome = _outcome(PhotoQuestionSolveStatus.unreadable);
+      await tapTryAgain(tester);
+
+      expect(repository.idempotencyKeys, hasLength(2));
+      expect(repository.idempotencyKeys.last, repository.idempotencyKeys.first);
+      await drainToasts(tester);
+    });
+
+    testWidgets(
+        'with none left after being turned away while a photo is solved, Try '
+        'again still sends the photo under its key', (tester) async {
+      repository = _FakeQuestionsRepository(failure: PhotoBeingSolvedFailure());
+      registerBloc();
+      await pumpPage(tester);
+      await selectPhoto(tester);
+      await submitPhoto(tester);
+
+      // The photo being solved may be this one, and its answer may have used
+      // the last question.
+      repository.dailyLimit = noneLeft;
+      await resumeApp(tester);
+      expect(find.text(noneLeftText), findsOneWidget);
+
+      expect(find.widgetWithText(AppButtonAtom, 'Try again'), findsOneWidget);
+      expect(tryAgainButton(tester).onPressed, isNotNull);
+
+      repository
+        ..failure = null
+        ..outcome = _outcome(PhotoQuestionSolveStatus.unreadable);
+      await tapTryAgain(tester);
+
+      expect(repository.idempotencyKeys, hasLength(2));
+      expect(repository.idempotencyKeys.last, repository.idempotencyKeys.first);
+    });
+
+    // A timeout is an answer the API saves without the photo's key, so it
+    // never gives it back. Sent again with none left, the photo could only
+    // be turned away.
+    testWidgets(
+        'with none left after a timeout, Submit stays off and nothing offers '
+        'Try again', (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: PhotoQuestionSolveOutcome(
+          status: PhotoQuestionSolveStatus.timeout,
+          questionId: 'q_timeout',
+          solution: null,
+          dailyLimit: noneLeft,
+        ),
+      );
+      registerBloc();
+      await pumpPage(tester);
+      await selectPhoto(tester);
+      await submitPhoto(tester);
+
+      expect(find.text('Solver timed out'), findsOneWidget);
+      expect(find.text(noneLeftText), findsOneWidget);
+      expect(find.text('Try again'), findsNothing);
+      expect(submitButton(tester).onPressed, isNull);
+    });
+
+    testWidgets('with none left after a final answer, Submit stays off',
+        (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: PhotoQuestionSolveOutcome(
+          status: PhotoQuestionSolveStatus.unreadable,
+          questionId: 'q_unreadable',
+          solution: null,
+          dailyLimit: noneLeft,
+        ),
+      );
+      registerBloc();
+      await pumpPage(tester);
+      await selectPhoto(tester);
+      await submitPhoto(tester);
+
+      expect(find.text('We could not read it'), findsOneWidget);
+      expect(find.text(noneLeftText), findsOneWidget);
+      expect(submitButton(tester).onPressed, isNull);
+    });
+
+    // An edit makes a new photo under a new key, which could not be sent, and
+    // the photo it replaced, which may have an answer, could not be sent
+    // again either.
+    testWidgets('with none left, Crop & rotate is not offered', (tester) async {
+      repository =
+          _FakeQuestionsRepository(failure: NetworkFailure('No connection.'));
+      registerBloc();
+      fileInput.file = _pickedHeic;
+      preparer.result = _preparedJpeg;
+      await pumpPage(tester);
+      await chooseFrom(tester, 'Choose from gallery');
+      await tester.pumpAndSettle();
+      await submitPhoto(tester);
+      expect(find.byTooltip('Crop & rotate'), findsOneWidget);
+
       repository.dailyLimit = noneLeft;
       await resumeApp(tester);
 
-      expect(find.text('Try again'), findsNothing);
-      expect(submitButton(tester).onPressed, isNull);
+      expect(find.text(noneLeftText), findsOneWidget);
+      expect(find.byType(PhotoPreviewMolecule), findsOneWidget);
+      expect(find.byTooltip('Crop & rotate'), findsNothing);
       await drainToasts(tester);
     });
 

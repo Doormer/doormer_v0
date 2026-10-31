@@ -511,12 +511,16 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
       builder: (context, state) {
         final dailyLimit =
             dailyLimitParamsFor(context.watch<DailyLimitBloc>().state);
-        final isLimitReached = dailyLimit?.isReached ?? false;
+        final isDailyLimitReached = dailyLimit?.isReached ?? false;
         final selected = state is AskByPhotoPhotoSelected ? state : null;
         final loading = state is AskByPhotoLoading ? state : null;
         // A failure keeps the bytes so the preview does not collapse the
         // moment the solve goes wrong.
         final failed = state is AskByPhotoSolveFailed ? state : null;
+        // With none left today, only a photo that may have an answer can
+        // still be sent.
+        final isBlockedByDailyLimit =
+            isDailyLimitReached && !(failed?.mayHaveAnswer ?? false);
         // Kept through a solve so the button holds its place, disabled,
         // and comes back after a failure.
         final editablePhoto = selected?.editablePhoto ??
@@ -539,11 +543,10 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
             isLoading: isLoading,
             showWhenEmpty: showEmptyUploadPanel,
             isPreparing: isPreparing,
-            isLimitReached: isLimitReached,
+            isBlockedByDailyLimit: isBlockedByDailyLimit,
             copy: photoUploadCopyFor(
               hasPhoto: imageBytes != null,
-              // No Try again while none are left: the API would turn it away.
-              isRetry: isRetry && !isLimitReached,
+              isRetry: isRetry && !isBlockedByDailyLimit,
             ),
             onPickPhoto: () => _showPhotoSourceOptions(context),
             onSubmit: () =>
@@ -551,7 +554,9 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
             onClear: () => context
                 .read<AskByPhotoBloc>()
                 .add(const AskByPhotoClearRequested()),
-            onEditPhoto: editablePhoto == null
+            // With none left, an edit would be a new photo that could not be
+            // sent, and it would replace one that may still have an answer.
+            onEditPhoto: editablePhoto == null || isDailyLimitReached
                 ? null
                 : () => _editPhoto(context, editablePhoto),
           ),
