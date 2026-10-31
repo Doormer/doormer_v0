@@ -35,7 +35,8 @@ void main() {
 
   test("the reset is a clock time in the student's own zone", () {
     expect(
-        dailyLimitParamsFor(_known(0, resetsAt: DateTime(2026, 10, 18, 22)))!
+        dailyLimitParamsFor(_known(0, resetsAt: DateTime(2026, 10, 18, 22)),
+                now: DateTime(2026, 10, 18, 15))!
             .text,
         "You've used today's questions. They reset at 10pm.");
   });

@@ -291,6 +291,8 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
     _emitNoticeAndRestore(event.message, emit);
   }
 
+  /// Emits the Notice right before what is brought back: the page relies on
+  /// that order to tell a failed send brought back from one that just ended.
   void _emitNoticeAndRestore(String message, Emitter<AskByPhotoState> emit) {
     final restored = _stateToRestore();
     emit(AskByPhotoNotice(message));

@@ -1983,6 +1983,42 @@ void main() {
       await drainToasts(tester);
     });
 
+    // Bloc handles events side by side, so a pick can end while a photo is
+    // being sent: a file still being read when Submit was tapped. The send's
+    // failure then follows the newly picked photo, and it still ends a send.
+    testWidgets(
+        'a send that fails after a pick ends mid-send still raises its error '
+        'toast and reads the count again', (tester) async {
+      final pending = Completer<PhotoQuestionSolveOutcome>();
+      repository = _FakeQuestionsRepository(pending: pending);
+      registerBloc();
+      await pumpPage(tester);
+      await selectPhoto(tester);
+      final submit = find.widgetWithText(FilledButton, 'Submit to solver');
+      await tester.ensureVisible(submit);
+      await tester.tap(submit);
+      // Not pumpAndSettle: the solving view's spinner runs until the send
+      // ends.
+      await tester.pump();
+      await tester.pump();
+      expect(find.byType(SolvingProgressOrganism), findsOneWidget);
+      final readsBeforeFailure = repository.dailyLimitReads;
+
+      // The pick ends while the photo is still being sent.
+      await selectPhoto(tester, fileName: 'geometry.png');
+      pending.completeError(NetworkFailure('No connection.'));
+      // The toast is inserted after a frame and grows from zero height.
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pump(const Duration(milliseconds: 700));
+
+      expect(find.text('No connection.'), findsOneWidget,
+          reason: 'the error toast');
+      expect(repository.dailyLimitReads, readsBeforeFailure + 1);
+      await drainToasts(tester);
+    });
+
     // A timeout is an answer the API saves without the photo's key, so it
     // never gives it back. Sent again with none left, the photo could only
     // be turned away.

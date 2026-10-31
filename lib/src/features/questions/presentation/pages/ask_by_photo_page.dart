@@ -493,10 +493,14 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
   Widget _buildScreen(DisplayAdUnit? adUnit) {
     return BlocConsumer<AskByPhotoBloc, AskByPhotoState>(
       key: _screenKey,
-      // A failed send is heard only as it ends a send. Brought back after a
-      // cancelled pick, it raises no toast and reads no count again.
+      // A failed send is heard as it ends a send. Brought back after a
+      // cancelled pick or a photo that can't be prepared, it raises no toast
+      // and reads no count again. A failure that comes back always follows
+      // its own Notice, so only a failure right after a Notice goes unheard:
+      // the end of a send can follow other states, such as a photo whose pick
+      // ended mid-send.
       listenWhen: (previous, current) =>
-          current is! AskByPhotoSolveFailed || previous is AskByPhotoLoading,
+          current is! AskByPhotoSolveFailed || previous is! AskByPhotoNotice,
       listener: (context, state) {
         _updateDailyLimitAfterSend(context, state);
         if (state is AskByPhotoNotice) {

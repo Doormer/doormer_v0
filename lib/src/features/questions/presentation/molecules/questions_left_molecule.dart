@@ -7,7 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// when they come back. It sits under UPLOAD & SOLVE on the empty screen, and
 /// under Solve's heading above the photo panels. It changes only when the
 /// count is read again, never on a timer. Screen readers announce the line
-/// when it changes.
+/// when it appears and when it changes.
 class QuestionsLeftMolecule extends StatelessWidget {
   final String text;
 

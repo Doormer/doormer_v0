@@ -2,8 +2,8 @@ import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/daily_limit_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/params/daily_limit_params.dart';
 
-/// Pure function mapping the daily limit to what Solve says about it.
-/// Page-invoked only.
+/// Pure function mapping the daily limit to what Solve says about it. It
+/// reads the device clock unless [now] is given. Page-invoked only.
 ///
 /// Null while the count is unknown: Solve then says nothing and lets the
 /// student ask, because the API enforces the limit either way.
@@ -31,14 +31,17 @@ String dailyLimitReachedText(DailyLimit dailyLimit, {DateTime? now}) =>
 
 /// When the questions come back, as a student would say it at [now]:
 /// "at midnight", "at 10pm", or "tomorrow at 10pm" when the reset falls on a
-/// later day in the student's zone. Midnight needs no day.
+/// later day in the student's zone. A later day is always tomorrow: the
+/// questions reset every day, so the next reset is never more than a day
+/// away. Midnight needs no day.
 String resetMomentLabel(DateTime resetsAt, {DateTime? now}) {
   final reset = resetsAt.toLocal();
-  final today = (now ?? DateTime.now()).toLocal();
+  final localNow = (now ?? DateTime.now()).toLocal();
   final time = resetTimeLabel(reset);
   final isLaterDay = DateTime(reset.year, reset.month, reset.day)
-      .isAfter(DateTime(today.year, today.month, today.day));
-  return isLaterDay && time != 'midnight' ? 'tomorrow at $time' : 'at $time';
+      .isAfter(DateTime(localNow.year, localNow.month, localNow.day));
+  final isMidnight = reset.hour == 0 && reset.minute == 0;
+  return isLaterDay && !isMidnight ? 'tomorrow at $time' : 'at $time';
 }
 
 /// A clock time as a student would say it: "midnight", "noon", "10pm" or

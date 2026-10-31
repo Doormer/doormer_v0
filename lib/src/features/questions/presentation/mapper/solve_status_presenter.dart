@@ -30,8 +30,9 @@ class SolveStatusContent {
   bool get showRetake => showActions && !photoOnScreen;
 }
 
-/// Pure function mapping a bloc state to the status-panel display copy.
-/// Page-invoked only — no presentational widget imports this.
+/// Pure function mapping a bloc state to the status-panel display copy. It
+/// reads the device clock unless [now] is given. Page-invoked only — no
+/// presentational widget imports this.
 SolveStatusContent solveStatusContentFor(AskByPhotoState state,
     {DateTime? now}) {
   // A retry needs both a reason to expect a different answer and a photo left
