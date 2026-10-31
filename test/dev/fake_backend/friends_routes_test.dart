@@ -17,11 +17,12 @@ Matcher _refused(int status, String message) => throwsA(isA<RefusedFailure>()
 void main() {
   setUpAll(AppLogger.disable);
 
+  late Dio dio;
   late FriendsRemoteDataSource friends;
   late FriendCollectionRemoteDataSource collections;
 
   setUp(() {
-    final dio = Dio(BaseOptions(
+    dio = Dio(BaseOptions(
       baseUrl: 'https://api.test',
       headers: {'Authorization': 'Bearer test-token'},
     ))
@@ -40,6 +41,16 @@ void main() {
   Future<FriendRelation> relationTo(String code) async =>
       (await friends.find(code)).toEntity().relation;
 
+  Future<void> signUp() async {
+    await dio.post('/v1/signup',
+        data: {'email': 'mere@example.test', 'password': 'secret'});
+  }
+
+  Future<void> signIn() async {
+    await dio.post('/v1/login',
+        data: {'email': 'kai@example.test', 'password': 'secret'});
+  }
+
   test('starts set up, with two friends and a request from Rua', () async {
     final profile = (await friends.profile()).toEntity();
     final requests = await friends.requests();
@@ -52,6 +63,36 @@ void main() {
     expect(await friendNames(), ['Alex', 'Sam']);
     expect(requests.single.from.nickname, 'Rua');
     expect(requests.single.sentAt, DateTime.utc(2026, 10, 26, 7));
+  });
+
+  test('a student who signs up has no friend profile until their first save',
+      () async {
+    await signUp();
+
+    final profile = (await friends.profile()).toEntity();
+
+    expect(profile.hasProfile, isFalse);
+    expect(profile.waitingRequests, 0);
+    await expectLater(
+      friends.friends(),
+      throwsA(isA<ApiFailure>()
+          .having((f) => f.statusCode, 'statusCode', 409)
+          .having((f) => f.message, 'message',
+              "Error 409: We couldn't load your friends.")),
+    );
+
+    final saved = (await friends.saveProfile(nickname: 'Mere')).toEntity();
+
+    expect(saved.hasProfile, isTrue);
+    expect(saved.nickname, 'Mere');
+    expect(saved.friendCode, 'K7QM2XPA');
+    expect(await relationTo(saved.friendCode), FriendRelation.you);
+  });
+
+  test("signing in, unlike signing up, keeps Kai's friend profile", () async {
+    await signIn();
+
+    expect((await friends.profile()).toEntity().nickname, 'Kai');
   });
 
   test("offers the student's own cards as pictures, in catalog order",
@@ -115,22 +156,28 @@ void main() {
     );
   });
 
-  test('a request back to Rua makes the two friends at once', () async {
+  test(
+      "a request back to Rua accepts Rua's request, so the two are friends at "
+      'once', () async {
     final sent = await friends.sendRequest('RUAR5555', FriendRequestVia.link);
 
     expect(sent.result, SendFriendRequestResult.nowFriends);
     expect(await friends.requests(), isEmpty);
     expect(await friendNames(), ['Alex', 'Rua', 'Sam']);
+    expect((await friends.acceptRequest('501')).friend.nickname, 'Rua');
   });
 
-  test("accepting Rua's request makes them a friend; declining does not",
-      () async {
+  test(
+      "accepting Rua's request makes them a friend, and accepting it again "
+      'answers with Rua again', () async {
     final accepted = await friends.acceptRequest('501');
 
     expect(accepted.friend.nickname, 'Rua');
     expect(await friendNames(), contains('Rua'));
-    await expectLater(friends.acceptRequest('501'),
-        _refused(404, 'That request has expired.'));
+
+    final acceptedAgain = await friends.acceptRequest('501');
+
+    expect(acceptedAgain.friend.nickname, 'Rua');
   });
 
   test('declining takes the request away', () async {

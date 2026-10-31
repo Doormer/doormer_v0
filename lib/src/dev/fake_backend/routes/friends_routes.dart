@@ -181,26 +181,37 @@ class FriendsRoutes {
         .where((waiting) => waiting.fromId == student.id)
         .firstOrNull;
     if (theirs != null) {
-      _friends.waitingRequests.remove(theirs);
-      _friends.friendIds.add(student.id);
+      _acceptWaiting(theirs);
       return const FakeResponse.ok({'result': 'now_friends'});
     }
     _friends.requestedIds.add(student.id);
     return const FakeResponse.ok({'result': 'sent'});
   }
 
+  /// Accepting a request already accepted answers with its friend again, as
+  /// `taka-api` does.
   FakeResponse _accept(FakeRequest request, FakeFriendProfile profile) {
     final requestId = request.fields['request_id'];
     if (requestId is! String) return _badRequest;
     final waiting = _friends.waitingRequests
         .where((waiting) => waiting.id == requestId)
         .firstOrNull;
-    if (waiting == null) return _notFound;
-    _friends.waitingRequests.remove(waiting);
-    _friends.friendIds.add(waiting.fromId);
+    if (waiting != null) _acceptWaiting(waiting);
+    final accepted = _friends.acceptedRequests
+        .where((accepted) => accepted.id == requestId)
+        .firstOrNull;
+    if (accepted == null) return _notFound;
     return FakeResponse.ok({
-      'friend': _summary(_friends.studentById(waiting.fromId)!),
+      'friend': _summary(_friends.studentById(accepted.fromId)!),
     });
+  }
+
+  /// Makes the sender of [waiting] a friend, and keeps the request as
+  /// accepted.
+  void _acceptWaiting(FakeFriendRequest waiting) {
+    _friends.waitingRequests.remove(waiting);
+    _friends.acceptedRequests.add(waiting);
+    _friends.friendIds.add(waiting.fromId);
   }
 
   FakeResponse _decline(FakeRequest request, FakeFriendProfile profile) {

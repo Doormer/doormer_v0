@@ -19,9 +19,11 @@ class AuthRoutes {
         FakeRoute('POST', '/v1/token/refresh', _renewAccessToken),
       ];
 
-  /// A new student has not registered yet, so the app opens registration.
+  /// A new student has not registered yet, so the app opens registration,
+  /// and has no friend profile, so Profile offers Set up friends.
   FakeResponse _signUp(FakeRequest request) {
     _state.registrationStatus = 0;
+    _state.friends.profile = null;
     return _signedIn();
   }
 

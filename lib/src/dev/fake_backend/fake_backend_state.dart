@@ -95,6 +95,10 @@ class FakeFriends {
   /// Newest first.
   final List<FakeFriendRequest> waitingRequests;
 
+  /// The requests the student accepted, with Accept or by sending a request
+  /// back. Accepting one again answers with its friend again.
+  final List<FakeFriendRequest> acceptedRequests;
+
   /// The students the student has a request waiting with.
   final Set<String> requestedIds;
 
@@ -109,7 +113,8 @@ class FakeFriends {
     required this.students,
     required this.friendIds,
     required this.waitingRequests,
-  })  : requestedIds = {},
+  })  : acceptedRequests = [],
+        requestedIds = {},
         blockedIds = [],
         reports = [];
 
