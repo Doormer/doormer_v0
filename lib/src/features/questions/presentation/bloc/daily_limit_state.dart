@@ -7,8 +7,8 @@ abstract class DailyLimitState extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Nothing read yet, or no read has worked. Solve shows no count and lets the
-/// student ask.
+/// No count to show: no read has worked yet, or the count passed its reset and
+/// could not be read again. Solve shows no count and lets the student ask.
 class DailyLimitUnknown extends DailyLimitState {
   const DailyLimitUnknown();
 }

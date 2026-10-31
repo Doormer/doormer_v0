@@ -1,12 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
 import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  setUpAll(AppLogger.disable);
+
   group('PhotoQuestionResponseModel', () {
     test('parses solved envelope with solution document', () {
       final model = PhotoQuestionResponseModel.fromJson({

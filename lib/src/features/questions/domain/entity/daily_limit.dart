@@ -21,4 +21,8 @@ class DailyLimit {
   @override
   int get hashCode =>
       Object.hash(questionsLeft, resetsAt.microsecondsSinceEpoch);
+
+  @override
+  String toString() =>
+      'DailyLimit($questionsLeft left, resets at ${resetsAt.toIso8601String()})';
 }

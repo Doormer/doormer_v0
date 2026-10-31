@@ -62,13 +62,26 @@ void main() {
   setUpAll(AppLogger.disable);
 
   late _ReadsOnDemand repository;
-  DailyLimitBloc build() =>
-      DailyLimitBloc(loadDailyLimitUseCase: LoadDailyLimitUseCase(repository));
 
-  setUp(() => repository = _ReadsOnDemand());
+  // The time the bloc reads: the evening before _left's questions reset,
+  // unless a test moves it on.
+  late DateTime now;
+
+  DailyLimitBloc build() => DailyLimitBloc(
+        loadDailyLimitUseCase: LoadDailyLimitUseCase(repository),
+        now: () => now,
+      );
+
+  setUp(() {
+    repository = _ReadsOnDemand();
+    now = DateTime(2026, 10, 18, 21);
+  });
 
   test('nothing is known before the first read', () {
-    expect(build().state, const DailyLimitUnknown());
+    final bloc = build();
+    addTearDown(bloc.close);
+
+    expect(bloc.state, const DailyLimitUnknown());
   });
 
   blocTest<DailyLimitBloc, DailyLimitState>(
@@ -115,6 +128,32 @@ void main() {
   );
 
   blocTest<DailyLimitBloc, DailyLimitState>(
+    'a read that fails after the count has reset forgets it',
+    build: build,
+    seed: () => DailyLimitKnown(_left(0)),
+    act: (bloc) async {
+      now = DateTime(2026, 10, 19, 7);
+      bloc.add(const DailyLimitRequested());
+      await _settle();
+      repository.reads.single.completeError(NetworkFailure('No connection.'));
+    },
+    expect: () => [const DailyLimitUnknown()],
+  );
+
+  blocTest<DailyLimitBloc, DailyLimitState>(
+    'a count is out of date from the moment it resets',
+    build: build,
+    seed: () => DailyLimitKnown(_left(0)),
+    act: (bloc) async {
+      now = DateTime(2026, 10, 19);
+      bloc.add(const DailyLimitRequested());
+      await _settle();
+      repository.reads.single.completeError(StateError('unexpected'));
+    },
+    expect: () => [const DailyLimitUnknown()],
+  );
+
+  blocTest<DailyLimitBloc, DailyLimitState>(
     "a read that started before an ask's count does not replace it",
     build: build,
     act: (bloc) async {
@@ -138,6 +177,51 @@ void main() {
       repository.reads[1].complete(_left(3));
       await _settle();
       repository.reads[0].complete(_left(5));
+    },
+    expect: () => [DailyLimitKnown(_left(3))],
+  );
+
+  blocTest<DailyLimitBloc, DailyLimitState>(
+    "an earlier read's answer shows until the later read answers",
+    build: build,
+    act: (bloc) async {
+      bloc
+        ..add(const DailyLimitRequested())
+        ..add(const DailyLimitRequested());
+      await _settle();
+      repository.reads[0].complete(_left(5));
+      await _settle();
+      repository.reads[1].complete(_left(3));
+    },
+    expect: () => [DailyLimitKnown(_left(5)), DailyLimitKnown(_left(3))],
+  );
+
+  blocTest<DailyLimitBloc, DailyLimitState>(
+    "an earlier read's answer stays when the later read fails",
+    build: build,
+    act: (bloc) async {
+      bloc
+        ..add(const DailyLimitRequested())
+        ..add(const DailyLimitRequested());
+      await _settle();
+      repository.reads[0].complete(_left(5));
+      await _settle();
+      repository.reads[1].completeError(NetworkFailure('No connection.'));
+    },
+    expect: () => [DailyLimitKnown(_left(5))],
+  );
+
+  blocTest<DailyLimitBloc, DailyLimitState>(
+    "a later read's answer shows when the earlier read fails",
+    build: build,
+    act: (bloc) async {
+      bloc
+        ..add(const DailyLimitRequested())
+        ..add(const DailyLimitRequested());
+      await _settle();
+      repository.reads[0].completeError(NetworkFailure('No connection.'));
+      await _settle();
+      repository.reads[1].complete(_left(3));
     },
     expect: () => [DailyLimitKnown(_left(3))],
   );
