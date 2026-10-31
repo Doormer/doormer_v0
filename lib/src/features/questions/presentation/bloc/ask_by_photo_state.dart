@@ -134,16 +134,19 @@ abstract class AskByPhotoSolveFailed extends AskByPhotoState {
     this.idempotencyKey,
   });
 
-  /// Whether resubmitting these exact bytes could plausibly succeed.
+  /// Whether to offer "Try again": sending these exact bytes again could end
+  /// differently.
   ///
   /// A blurry photo reads as blurry every time, so offering "Try again" there
-  /// only wastes a round trip; a dropped connection is worth another go.
+  /// only wastes a round trip; a dropped connection is worth another go. A
+  /// photo the daily limit turned away isn't retryable either, though Submit
+  /// sends it again once the day resets.
   bool get isRetryable;
 
   /// Whether the API may hold, or still be making, an answer for this photo's
-  /// key: the send failed before any answer came back. With no questions
-  /// left today, only such a photo can still be sent, because the API gives
-  /// back a saved answer before it checks any limit.
+  /// key: no answer reached the student. With no questions left today, only
+  /// such a photo can still be sent, because the API gives back a saved
+  /// answer before it checks any limit.
   ///
   /// Not after a timeout: that answer came back, and the API saves it without
   /// the key, so it never gives it back. Nor after the daily limit turned the
@@ -307,8 +310,9 @@ class AskByPhotoTypeInstead extends AskByPhotoState {
   const AskByPhotoTypeInstead();
 }
 
-/// The API turned the photo away: another of the student's photos is still
-/// being solved. The photo stays, and Try again sends it under the same key.
+/// The API turned the photo away: a photo the student sent, perhaps this
+/// one, is still being solved. The photo stays, and Try again sends it under
+/// the same key.
 class AskByPhotoStillSolving extends AskByPhotoSolveFailed {
   const AskByPhotoStillSolving({
     super.imageBytes,

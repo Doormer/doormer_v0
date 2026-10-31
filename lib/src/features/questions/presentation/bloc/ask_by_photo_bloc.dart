@@ -101,7 +101,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
         editablePhoto: selected.editablePhoto,
         idempotencyKey: selected.idempotencyKey,
       ));
-      AppLogger.info('Photo question refused: another photo is being solved');
+      AppLogger.info('Photo question refused: a photo is being solved');
     } on Failure catch (f, stackTrace) {
       emit(AskByPhotoNetworkError(
         f.message,
@@ -244,6 +244,12 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
     if (current is AskByPhotoPhotoSelected) return current;
     if (current is AskByPhotoPreparingPhoto) return current.previousSelection;
     if (current is AskByPhotoSolveFailed) {
+      // A narrow race remains here. If the photo options opened before the
+      // count reached 0, a cancelled pick or a failed preparation turns a
+      // failure that may have an answer into a plain selection under the same
+      // key. At 0 that photo is then blocked as new, though the API may hold
+      // its answer. The page reads the count straight after every send, which
+      // keeps this window small.
       final bytes = current.imageBytes;
       if (bytes != null) {
         return AskByPhotoPhotoSelected(

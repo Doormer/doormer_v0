@@ -57,7 +57,7 @@ class PhotoQuestionResponseModel {
 
   /// The questions left after this ask. Only the ask route sends it. One that
   /// can't be read is dropped rather than failing the answer with it: Solve
-  /// reads the count again when it next opens.
+  /// then reads the count itself.
   static DailyLimitModel? _readDailyLimit(Object? json) {
     if (json is! Map<String, dynamic>) return null;
     try {

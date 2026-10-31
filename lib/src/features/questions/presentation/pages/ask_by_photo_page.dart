@@ -94,16 +94,34 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
   }
 
   /// Reads how many questions are left today. Solve does this when it opens,
-  /// when the student comes back to it and when the app resumes, and never
-  /// on a timer.
+  /// when the student comes back to it, when the app resumes, after a send
+  /// that brings no count back and when the limit keeps the photo options
+  /// shut. Never on a timer.
   void _readDailyLimit() {
     _screenKey.currentContext
         ?.read<DailyLimitBloc>()
         .add(const DailyLimitRequested());
   }
 
-  /// The count an answer or a refusal came back with, so Solve shows it
-  /// without asking again.
+  /// Brings the count up to date when [state] ends a send. An answer or a
+  /// refusal that came back with the count shows it without asking again.
+  /// A send that ended without one, such as a dropped connection, may still
+  /// have used a question, so the count is read again at once. If that was
+  /// the last question, asking turns off and the photo options stay shut.
+  void _updateDailyLimitAfterSend(
+    BuildContext context,
+    AskByPhotoState state,
+  ) {
+    if (state is! AskByPhotoSolved && state is! AskByPhotoSolveFailed) return;
+    final reported = _dailyLimitReportedBy(state);
+    context.read<DailyLimitBloc>().add(
+          reported == null
+              ? const DailyLimitRequested()
+              : DailyLimitReported(reported),
+        );
+  }
+
+  /// The count an answer or a refusal came back with. Null when it had none.
   DailyLimit? _dailyLimitReportedBy(AskByPhotoState state) => switch (state) {
         AskByPhotoSolved(:final dailyLimit) => dailyLimit,
         AskByPhotoUnreadable(:final dailyLimit) => dailyLimit,
@@ -277,7 +295,8 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
   /// solution for a photo they had just replaced.
   ///
   /// With no questions left today, it says when they come back instead: a
-  /// photo picked now could not be sent.
+  /// photo picked now could not be sent. It also reads the count again, so a
+  /// 0 that has passed its reset opens asking again by the next tap.
   ///
   /// On the root navigator, so the sheet covers the nav bar.
   Future<void> _showPhotoSourceOptions(
@@ -299,13 +318,15 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
       return;
     }
 
-    final dailyLimit = context.read<DailyLimitBloc>().state;
+    final dailyLimitBloc = context.read<DailyLimitBloc>();
+    final dailyLimit = dailyLimitBloc.state;
     if (dailyLimit is DailyLimitKnown && dailyLimit.dailyLimit.isReached) {
       CustomToast.show(
         context,
         message: dailyLimitReachedText(dailyLimit.dailyLimit),
         type: ToastificationType.info,
       );
+      dailyLimitBloc.add(const DailyLimitRequested());
       return;
     }
 
@@ -472,10 +493,7 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
     return BlocConsumer<AskByPhotoBloc, AskByPhotoState>(
       key: _screenKey,
       listener: (context, state) {
-        final reported = _dailyLimitReportedBy(state);
-        if (reported != null) {
-          context.read<DailyLimitBloc>().add(DailyLimitReported(reported));
-        }
+        _updateDailyLimitAfterSend(context, state);
         if (state is AskByPhotoNotice) {
           CustomToast.show(
             context,

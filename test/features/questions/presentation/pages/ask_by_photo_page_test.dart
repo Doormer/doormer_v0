@@ -1632,6 +1632,97 @@ void main() {
       expect(repository.dailyLimitReads, 1);
     });
 
+    // A send that ends without the count may still have used a question: the
+    // API may hold an answer that never reached the student. So Solve reads
+    // the count again.
+    testWidgets('after a dropped connection, the count is read again',
+        (tester) async {
+      repository =
+          _FakeQuestionsRepository(failure: NetworkFailure('No connection.'));
+      registerBloc();
+      await pumpPage(tester);
+      await selectPhoto(tester);
+
+      // The API saved an answer, and the connection lost it.
+      repository.dailyLimit =
+          DailyLimit(questionsLeft: 4, resetsAt: DateTime(2026, 10, 19));
+      await submitPhoto(tester);
+
+      expect(repository.dailyLimitReads, 2);
+      expect(find.text('4 questions left today'), findsOneWidget);
+      await drainToasts(tester);
+    });
+
+    testWidgets(
+        'after being turned away while a photo is solved, the count is read '
+        'again', (tester) async {
+      repository = _FakeQuestionsRepository(failure: PhotoBeingSolvedFailure());
+      registerBloc();
+      await pumpPage(tester);
+      await selectPhoto(tester);
+
+      // The photo being solved, perhaps this one, used a question.
+      repository.dailyLimit =
+          DailyLimit(questionsLeft: 4, resetsAt: DateTime(2026, 10, 19));
+      await submitPhoto(tester);
+
+      expect(repository.dailyLimitReads, 2);
+      expect(find.text('4 questions left today'), findsOneWidget);
+    });
+
+    testWidgets('after an answer without the count, the count is read again',
+        (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.solved),
+      );
+      registerBloc();
+      await pumpPage(tester);
+      await selectPhoto(tester);
+
+      repository.dailyLimit =
+          DailyLimit(questionsLeft: 4, resetsAt: DateTime(2026, 10, 19));
+      await submitPhoto(tester);
+      expect(find.byType(QuestionSolutionPage), findsOneWidget);
+      expect(repository.dailyLimitReads, 2);
+
+      // Closed with the browser's Back button.
+      await router.routeInformationProvider.didPushRouteInformation(
+        RouteInformation(uri: Uri.parse('/questions/photo')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('4 questions left today'), findsOneWidget);
+    });
+
+    // Only a send can use a question. Picking, preparing or cancelling a
+    // photo can't, nor can a photo refused before it is sent.
+    testWidgets('nothing but the end of a send reads the count again',
+        (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.solved),
+      );
+      registerBloc();
+      fileInput.file = _pickedHeic;
+      preparer.result = _preparedJpeg;
+      await pumpPage(tester);
+
+      await chooseFrom(tester, 'Choose from gallery');
+      expect(find.text('IMG_1.jpg'), findsOneWidget);
+
+      fileInput.file = null;
+      await chooseFrom(tester, 'Choose from gallery');
+      await tester.pumpAndSettle();
+      expect(find.text('No photo selected.'), findsOneWidget);
+
+      await selectPhoto(tester, fileName: 'notes.gif', mimeType: 'image/gif');
+      await submitPhoto(tester);
+      expect(find.text('Photo needs a quick fix'), findsOneWidget);
+
+      expect(repository.callCount, 0);
+      expect(repository.dailyLimitReads, 1);
+      await drainToasts(tester);
+    });
+
     testWidgets(
         'turned away with none left, the photo stays and nothing offers to '
         'send it', (tester) async {
@@ -1669,6 +1760,9 @@ void main() {
           _FakeQuestionsRepository(failure: DailyLimitReachedFailure(noneLeft));
       registerBloc();
       await pumpPage(tester);
+      // The last question went after Solve read the count. A read now says
+      // so too.
+      repository.dailyLimit = noneLeft;
       await selectPhoto(tester);
       await submitPhoto(tester);
 
@@ -1680,6 +1774,34 @@ void main() {
       expect(find.text(noneLeftText), findsNWidgets(2),
           reason: 'the line, and the same sentence as a toast');
       expect(find.byType(PhotoSourceSheetOrganism), findsNothing);
+      await drainToasts(tester);
+    });
+
+    // Solve reads the count only at set moments, so a 0 can outlive its
+    // reset. Each tap the limit turns away reads it again, so the questions
+    // come back on the next tap.
+    testWidgets(
+        'with none left, a tap on Solve reads the count again and asking opens '
+        'once the day has reset', (tester) async {
+      repository = _FakeQuestionsRepository(
+        outcome: _outcome(PhotoQuestionSolveStatus.solved),
+      )..dailyLimit = noneLeft;
+      registerBloc();
+      await pumpPage(tester);
+      expect(find.text(noneLeftText), findsOneWidget);
+
+      // Midnight has passed since the count was read.
+      repository.dailyLimit =
+          DailyLimit(questionsLeft: 5, resetsAt: DateTime(2026, 10, 20));
+      await tester.tap(find.byIcon(Icons.document_scanner_outlined));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PhotoSourceSheetOrganism), findsNothing);
+      expect(repository.dailyLimitReads, 2);
+      expect(find.text('5 questions left today'), findsOneWidget);
+      expect(find.text(noneLeftText), findsOneWidget,
+          reason: 'the toast, shown before the count came back');
+      expect(uploadAndSolveButton(tester).onPressed, isNotNull);
       await drainToasts(tester);
     });
 
@@ -1740,6 +1862,42 @@ void main() {
 
       expect(repository.idempotencyKeys, hasLength(2));
       expect(repository.idempotencyKeys.last, repository.idempotencyKeys.first);
+    });
+
+    // Had the photo options opened, a pick cancelled there would turn this
+    // photo back into a new one, which 0 blocks. On the web, the cancel also
+    // reads the count, so that 0 would arrive at the same moment. Reading
+    // the count straight after the send keeps the options shut instead.
+    testWidgets(
+        'when a lost answer used the last question, Try again stays and the '
+        'photo options stay shut', (tester) async {
+      repository =
+          _FakeQuestionsRepository(failure: NetworkFailure('No connection.'))
+            ..dailyLimit =
+                DailyLimit(questionsLeft: 1, resetsAt: DateTime(2026, 10, 19));
+      registerBloc();
+      await pumpPage(tester);
+      expect(find.text('1 question left today'), findsOneWidget);
+      await selectPhoto(tester);
+
+      // The API saved this photo's answer, which used the last question, and
+      // the connection lost it.
+      repository.dailyLimit = noneLeft;
+      await submitPhoto(tester);
+
+      expect(find.text(noneLeftText), findsOneWidget);
+      expect(tryAgainButton(tester).onPressed, isNotNull);
+
+      final changePhoto = find.widgetWithText(AppButtonAtom, 'Change photo');
+      await tester.ensureVisible(changePhoto);
+      await tester.tap(changePhoto);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PhotoSourceSheetOrganism), findsNothing);
+      expect(find.text(noneLeftText), findsNWidgets(2),
+          reason: 'the line, and the same sentence as a toast');
+      expect(tryAgainButton(tester).onPressed, isNotNull);
+      await drainToasts(tester);
     });
 
     // A timeout is an answer the API saves without the photo's key, so it

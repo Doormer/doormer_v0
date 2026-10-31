@@ -11,8 +11,8 @@ class DailyLimitReachedFailure extends Failure {
       : super("You've used today's questions.");
 }
 
-/// The API turned a photo away because another of the student's photos is
-/// still being solved. Sending the same photo again in a moment works.
+/// The API turned a photo away because a photo the student sent, perhaps this
+/// one, is still being solved. Sending the same photo again in a moment works.
 class PhotoBeingSolvedFailure extends Failure {
   PhotoBeingSolvedFailure()
       : super('Your last photo is still being solved. Try again in a moment.');

@@ -167,8 +167,8 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
         _ => _somethingWentWrong,
       };
 
-  /// The failure for a photo the API turned away on purpose: another photo
-  /// still being solved (409), or no questions left today (429). Null for any
+  /// The failure for a photo the API turned away on purpose: a photo still
+  /// being solved (409), or no questions left today (429). Null for any
   /// other error, and for a 429 whose body can't be read, which is then
   /// reported like any other failed send.
   static Failure? _refusalOf(DioException e) {
