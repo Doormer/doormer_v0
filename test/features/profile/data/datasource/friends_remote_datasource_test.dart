@@ -380,6 +380,12 @@ void main() {
       (
         'sendRequest',
         (friends) => friends.sendRequest('K7QM2XPA', FriendRequestVia.code),
+        404,
+        "We couldn't find that code. Check it and try again.",
+      ),
+      (
+        'sendRequest',
+        (friends) => friends.sendRequest('K7QM2XPA', FriendRequestVia.code),
         409,
         'You have 100 friends. Remove one to add another.',
       ),

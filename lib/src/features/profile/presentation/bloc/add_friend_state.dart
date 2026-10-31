@@ -51,7 +51,8 @@ class AddFriendReady extends AddFriendState {
   /// The code [found] was found by, with no dash.
   final String? foundCode;
 
-  /// How [foundCode] reached the student: typed, or from an invite link.
+  /// How [foundCode] reached the student: from the invite link the page was
+  /// opened from, even when they typed it again, or else typed.
   final FriendRequestVia via;
 
   /// Why the last find found no one.

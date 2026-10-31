@@ -54,6 +54,10 @@ void main() {
         errorMessage: errorMessage,
       );
 
+  /// Waits until a find shows the owner of its code.
+  Future<void> someoneFound(AddFriendBloc bloc) => bloc.stream
+      .firstWhere((state) => state is AddFriendReady && state.found != null);
+
   group('opening', () {
     blocTest<AddFriendBloc, AddFriendState>(
       'from Profile, shows the student their code',
@@ -239,6 +243,66 @@ void main() {
         ),
       ],
     );
+
+    // Accept is a send that the API turns into an accept, which it refuses
+    // while either of the two has 100 friends.
+    for (final (refusal, message) in [
+      (
+        RefusedFailure(409, 'You have 100 friends. Remove one to add another.'),
+        'One of you already has 100 friends.',
+      ),
+      (
+        RefusedFailure(
+            404, "We couldn't find that code. Check it and try again."),
+        "We couldn't find that code. Check it and try again.",
+      ),
+    ]) {
+      blocTest<AddFriendBloc, AddFriendState>(
+        'an Accept refused with ${refusal.statusCode} says "$message"',
+        build: build,
+        seed: () => found(
+            const FoundStudent(
+                student: rua, relation: FriendRelation.requestReceived),
+            ruaCode),
+        setUp: () => repository.failNext['sendRequest'] = refusal,
+        act: (bloc) => bloc.add(const FriendRequestSent()),
+        skip: 1,
+        expect: () => [
+          found(
+            const FoundStudent(
+                student: rua, relation: FriendRelation.requestReceived),
+            ruaCode,
+            errorMessage: message,
+          ),
+        ],
+      );
+    }
+
+    for (final (description, typed, sent) in [
+      (
+        "the invite's code, found again by typing it, is still sent by link",
+        'ruar-5555',
+        'sendRequest $ruaCode link',
+      ),
+      (
+        'another code typed after an invite is sent by code',
+        niaCode,
+        'sendRequest $niaCode code',
+      ),
+    ]) {
+      blocTest<AddFriendBloc, AddFriendState>(
+        description,
+        build: build,
+        act: (bloc) async {
+          bloc.add(const AddFriendStarted(inviteCode: ruaCode));
+          await someoneFound(bloc);
+          bloc.add(FriendCodeSubmitted(typed));
+          await someoneFound(bloc);
+          bloc.add(const FriendRequestSent());
+        },
+        verify: (_) => expect(repository.calls.last, sent),
+      );
+    }
 
     blocTest<AddFriendBloc, AddFriendState>(
       'Unblock leaves the two unconnected',

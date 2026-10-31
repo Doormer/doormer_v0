@@ -1,4 +1,5 @@
 import 'package:doormer/src/core/di/service_locator.dart';
+import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/core/utils/invite_code_storage/in_memory_invite_code_storage.dart';
@@ -21,6 +22,15 @@ import 'package:go_router/go_router.dart';
 import '../../fake_friends_repository.dart';
 
 final _appAddress = Uri.parse('https://app.doormer.test/profile/add');
+
+/// A student who hasn't set up friends yet.
+const _noProfile = FriendProfile(
+  hasProfile: false,
+  nickname: '',
+  friendCode: '',
+  friendsTurnedOff: false,
+  waitingRequests: 0,
+);
 
 void main() {
   setUpAll(AppLogger.disable);
@@ -146,9 +156,10 @@ void main() {
     await pumpAddFriend(tester);
 
     await tester.tap(find.text('Copy'));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(copied, ['K7QM-2XPA']);
+    expect(find.text('Code copied.'), findsOneWidget);
     await waitOutToast(tester);
   });
 
@@ -158,9 +169,10 @@ void main() {
     await pumpAddFriend(tester);
 
     await tester.tap(find.text('Copy invite link'));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(copied, ['https://app.doormer.test/add/K7QM2XPA']);
+    expect(find.text('Invite link copied.'), findsOneWidget);
     await waitOutToast(tester);
   });
 
@@ -176,6 +188,21 @@ void main() {
     expect(find.text('Request sent'), findsOneWidget);
     expect(find.text('Send request'), findsNothing);
     expect(repository.calls, contains('sendRequest $niaCode code'));
+  });
+
+  testWidgets('a request that fails says why', (tester) async {
+    repository.failNext['sendRequest'] =
+        RefusedFailure(409, 'You have 100 friends. Remove one to add another.');
+    await pumpAddFriend(tester);
+
+    await findCode(tester, niaCode);
+    await tester.tap(find.text('Send request'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('You have 100 friends. Remove one to add another.'),
+        findsOneWidget);
+    expect(find.text('Send request'), findsOneWidget);
+    await waitOutToast(tester);
   });
 
   testWidgets(
@@ -260,13 +287,7 @@ void main() {
 
   testWidgets('opened from an invite link before setup, sets up first',
       (tester) async {
-    repository.profile = const FriendProfile(
-      hasProfile: false,
-      nickname: '',
-      friendCode: '',
-      friendsTurnedOff: false,
-      waitingRequests: 0,
-    );
+    repository.profile = _noProfile;
 
     final router =
         await pumpAddFriend(tester, location: '/profile/add/$ruaCode');
@@ -274,6 +295,18 @@ void main() {
     expect(find.text('setup, then $ruaCode'), findsOneWidget);
     expect(router.routerDelegate.currentConfiguration.uri.toString(),
         '/profile/setup?code=$ruaCode');
+  });
+
+  testWidgets('opened from an invite link before setup, forgets the kept code',
+      (tester) async {
+    await inviteCodes.keep(ruaCode);
+    repository.profile = _noProfile;
+
+    await pumpAddFriend(tester, location: '/profile/add/$ruaCode');
+
+    expect(find.text('setup, then $ruaCode'), findsOneWidget);
+    expect(await inviteCodes.read(), isNull,
+        reason: 'setup carries the code in its address instead');
   });
 
   testWidgets('the back arrow goes to Profile', (tester) async {

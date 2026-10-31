@@ -134,8 +134,11 @@ class FriendsRemoteDataSourceImpl implements FriendsRemoteDataSource {
         SendFriendRequestResponseModel.fromJson,
         callMessage: FriendsMessages.couldNotSendRequest,
         refusals: const {
+          // The student reset their code after it was found.
+          404: FriendsMessages.codeNotFound,
           // The app never offers Send to a friend or a blocked student, so a
-          // 409 means 100 friends.
+          // 409 means 100 friends. When the send is an Accept, either student
+          // may be the one with 100, and AddFriendBloc says so instead.
           409: FriendsMessages.youHaveHundredFriends,
           422: FriendsMessages.yourOwnCode,
         },

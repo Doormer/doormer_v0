@@ -32,6 +32,11 @@ class AddFriendBloc extends Bloc<AddFriendEvent, AddFriendState> {
   final ResetFriendCodeUseCase resetCode;
   final ForgetInviteCodeUseCase forgetInviteCode;
 
+  /// The code of the invite link the page was opened from, with no dash. A
+  /// request to its owner counts as sent by link, even after the student
+  /// types the code again.
+  String? _inviteCode;
+
   AddFriendBloc({
     required this.loadProfile,
     required this.findStudent,
@@ -53,6 +58,7 @@ class AddFriendBloc extends Bloc<AddFriendEvent, AddFriendState> {
   ) async {
     final inviteCode = event.inviteCode;
     if (inviteCode != null) {
+      _inviteCode = FriendCodes.normalise(inviteCode);
       try {
         await forgetInviteCode();
       } catch (e, stackTrace) {
@@ -86,7 +92,7 @@ class AddFriendBloc extends Bloc<AddFriendEvent, AddFriendState> {
     }
 
     if (inviteCode != null) {
-      await _find(emit, inviteCode, FriendRequestVia.link);
+      await _find(emit, inviteCode);
     }
   }
 
@@ -94,15 +100,12 @@ class AddFriendBloc extends Bloc<AddFriendEvent, AddFriendState> {
     FriendCodeSubmitted event,
     Emitter<AddFriendState> emit,
   ) =>
-      _find(emit, event.typed, FriendRequestVia.code);
+      _find(emit, event.typed);
 
   /// Looks up [typed], read without regard to case, spaces or dashes. A code
-  /// that can't be anyone's is never looked up.
-  Future<void> _find(
-    Emitter<AddFriendState> emit,
-    String typed,
-    FriendRequestVia via,
-  ) async {
+  /// that can't be anyone's is never looked up. The invite's code counts as
+  /// from the invite link, however it got into the box.
+  Future<void> _find(Emitter<AddFriendState> emit, String typed) async {
     final ready = state;
     if (ready is! AddFriendReady || ready.isFinding) return;
     final code = FriendCodes.normalise(typed);
@@ -120,7 +123,8 @@ class AddFriendBloc extends Bloc<AddFriendEvent, AddFriendState> {
         isFinding: false,
         found: found,
         foundCode: code,
-        via: via,
+        via:
+            code == _inviteCode ? FriendRequestVia.link : FriendRequestVia.code,
       ));
     } on Failure catch (f, stackTrace) {
       AppLogger.error('Finding a friend code failed',
@@ -144,12 +148,27 @@ class AddFriendBloc extends Bloc<AddFriendEvent, AddFriendState> {
     FriendRequestSent event,
     Emitter<AddFriendState> emit,
   ) =>
-      _act(emit, 'Sending a friend request', (ready) async {
-        final result = await sendRequest(ready.foundCode!, ready.via);
-        return result == SendFriendRequestResult.nowFriends
-            ? FriendRelation.friends
-            : FriendRelation.requestSent;
-      });
+      _act(
+        emit,
+        'Sending a friend request',
+        (ready) async {
+          final result = await sendRequest(ready.foundCode!, ready.via);
+          return result == SendFriendRequestResult.nowFriends
+              ? FriendRelation.friends
+              : FriendRelation.requestSent;
+        },
+        failureMessage: _sendFailureMessage,
+      );
+
+  /// What a send that failed says. Accept sends a request back, which the
+  /// API turns into an accept, and an accept is refused while either of the
+  /// two has 100 friends: the send's own words would blame the student alone.
+  static String _sendFailureMessage(Failure failure, FriendRelation relation) =>
+      failure is RefusedFailure &&
+              failure.statusCode == 409 &&
+              relation == FriendRelation.requestReceived
+          ? FriendsMessages.oneOfYouHasHundredFriends
+          : failure.message;
 
   Future<void> _onFoundStudentUnblocked(
     FoundStudentUnblocked event,
@@ -161,12 +180,14 @@ class AddFriendBloc extends Bloc<AddFriendEvent, AddFriendState> {
       });
 
   /// Runs [action] on the found student, and shows how the two are
-  /// connected after it.
+  /// connected after it. When it fails, [failureMessage], given how the two
+  /// were connected, words the failure in place of its own message.
   Future<void> _act(
     Emitter<AddFriendState> emit,
     String what,
-    Future<FriendRelation> Function(AddFriendReady ready) action,
-  ) async {
+    Future<FriendRelation> Function(AddFriendReady ready) action, {
+    String Function(Failure failure, FriendRelation relation)? failureMessage,
+  }) async {
     final ready = state;
     if (ready is! AddFriendReady || ready.isActing) return;
     final found = ready.found;
@@ -179,7 +200,7 @@ class AddFriendBloc extends Bloc<AddFriendEvent, AddFriendState> {
       relation = await action(ready);
     } on Failure catch (f, stackTrace) {
       AppLogger.error('$what failed', error: f, stackTrace: stackTrace);
-      errorMessage = f.message;
+      errorMessage = failureMessage?.call(f, found.relation) ?? f.message;
     } catch (e, stackTrace) {
       AppLogger.error('$what failed unexpectedly',
           error: e, stackTrace: stackTrace);
