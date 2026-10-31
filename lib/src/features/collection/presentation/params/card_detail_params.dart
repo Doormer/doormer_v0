@@ -9,12 +9,13 @@ class CardDetailParams {
 
   /// The student's quarks. The window doesn't show them: the page's balance
   /// is behind it. A rebuild with a higher balance and one fewer copy is a
-  /// shatter, and the difference is what it paid.
-  final int quarkBalance;
+  /// shatter, and the difference is what it paid. Null in a friend's
+  /// collection.
+  final int? quarkBalance;
 
   /// On the quark dot of the page's balance, behind the window. A shatter's
-  /// quark dots fly there.
-  final GlobalKey quarkDotKey;
+  /// quark dots fly there. Null in a friend's collection.
+  final GlobalKey? quarkDotKey;
 
   /// A shatter is waiting for the API's answer.
   final bool isShattering;
@@ -23,17 +24,20 @@ class CardDetailParams {
   /// asked for.
   final String? errorMessage;
 
-  final void Function(CardVariant variant) onShatter;
+  /// Null in a friend's collection: the window then shows no quarks and no
+  /// Shatter.
+  final void Function(CardVariant variant)? onShatter;
+
   final VoidCallback onClose;
 
   const CardDetailParams({
     required this.holding,
     required this.deckName,
-    required this.quarkBalance,
-    required this.quarkDotKey,
-    required this.isShattering,
+    this.quarkBalance,
+    this.quarkDotKey,
+    this.isShattering = false,
     this.errorMessage,
-    required this.onShatter,
+    this.onShatter,
     required this.onClose,
   });
 }

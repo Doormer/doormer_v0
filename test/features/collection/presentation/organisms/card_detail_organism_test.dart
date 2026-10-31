@@ -483,4 +483,39 @@ void main() {
       expect(find.byType(ShatteredCopyMolecule), findsNothing);
     });
   });
+
+  // A friend's card: the window has no quark balance and no shatter.
+  group("a friend's card", () {
+    Future<void> pumpFriendsCard(WidgetTester tester) async {
+      _phone(tester);
+      await tester.pumpWidget(_host(CardDetailOrganism(
+        params: CardDetailParams(
+          holding: const Holding(
+            card: _card,
+            standardCopies: 2,
+            specialCopies: 1,
+          ),
+          deckName: 'Cinder',
+          onClose: () {},
+        ),
+      )));
+    }
+
+    testWidgets('shows the card and its facts', (tester) async {
+      await pumpFriendsCard(tester);
+
+      expect(find.text('Astrolabe'), findsWidgets);
+      expect(find.text('3 · 1 special'), findsOneWidget);
+      expect(find.text('Cinder'), findsOneWidget);
+    });
+
+    testWidgets('has no Shatter and no quarks', (tester) async {
+      await pumpFriendsCard(tester);
+
+      expect(find.text('Shatter one'), findsNothing);
+      expect(find.byType(AppButtonAtom), findsNothing);
+      expect(find.textContaining('quark'), findsNothing);
+      expect(find.text("You can't shatter your only copy."), findsNothing);
+    });
+  });
 }

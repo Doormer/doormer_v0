@@ -220,7 +220,7 @@ class CollectionTemplate extends StatelessWidget {
           children: [
             Flexible(
               child: Text(
-                '${collection.cardsHeld} of ${deck.size} held',
+                CollectionPresenter.heldLabel(collection),
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontSize: 11.5.sp, color: QuestPalette.dim),
               ),

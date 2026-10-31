@@ -3,13 +3,19 @@ import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 
 import '../data/datasource/collection_remote_datasource.dart';
+import '../data/datasource/friend_collection_remote_datasource.dart';
 import '../data/repository/collection_repository_impl.dart';
+import '../data/repository/friend_collection_repository_impl.dart';
 import '../domain/repository/collection_repository.dart';
+import '../domain/repository/friend_collection_repository.dart';
 import '../domain/usecase/draw_card_usecase.dart';
 import '../domain/usecase/load_collection_usecase.dart';
 import '../domain/usecase/load_decks_usecase.dart';
+import '../domain/usecase/load_friend_collection_usecase.dart';
+import '../domain/usecase/load_friend_decks_usecase.dart';
 import '../domain/usecase/shatter_copy_usecase.dart';
 import '../presentation/bloc/collection_bloc.dart';
+import '../presentation/bloc/friend_collection_bloc.dart';
 
 final serviceLocator = GetIt.instance;
 
@@ -47,6 +53,30 @@ void initCollectionModule() {
       loadCollection: serviceLocator<LoadCollectionUseCase>(),
       drawCard: serviceLocator<DrawCardUseCase>(),
       shatterCopy: serviceLocator<ShatterCopyUseCase>(),
+    ),
+  );
+
+  // A friend's collection, read-only.
+  serviceLocator.registerLazySingleton<FriendCollectionRemoteDataSource>(
+    () => FriendCollectionRemoteDataSourceImpl(dio: serviceLocator<Dio>()),
+  );
+  serviceLocator.registerLazySingleton<FriendCollectionRepository>(
+    () => FriendCollectionRepositoryImpl(
+      remoteDataSource: serviceLocator<FriendCollectionRemoteDataSource>(),
+    ),
+  );
+  serviceLocator.registerLazySingleton(
+    () => LoadFriendDecksUseCase(serviceLocator<FriendCollectionRepository>()),
+  );
+  serviceLocator.registerLazySingleton(
+    () => LoadFriendCollectionUseCase(
+      serviceLocator<FriendCollectionRepository>(),
+    ),
+  );
+  serviceLocator.registerFactory(
+    () => FriendCollectionBloc(
+      loadDecks: serviceLocator<LoadFriendDecksUseCase>(),
+      loadCollection: serviceLocator<LoadFriendCollectionUseCase>(),
     ),
   );
 }

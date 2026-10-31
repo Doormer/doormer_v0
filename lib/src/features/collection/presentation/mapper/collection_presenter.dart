@@ -32,6 +32,27 @@ class CollectionPresenter {
     ];
   }
 
+  /// A friend's decks: as [deckRows], without the New and Complete flags.
+  /// Those speak to the student about their own decks; the ring still shows
+  /// how complete each one is.
+  static List<DeckRowParams> friendDeckRows({
+    required List<DeckProgress> decks,
+    required void Function(String deckId) onSelect,
+  }) {
+    return [
+      for (final deck in decks)
+        DeckRowParams(
+          deckId: deck.deckId,
+          name: deck.name,
+          held: deck.cardsHeld,
+          total: deck.cardsTotal,
+          isSelected: false,
+          showFlag: false,
+          onTap: () => onSelect(deck.deckId),
+        ),
+    ];
+  }
+
   static EmptyDeckParams emptyDeck({
     required Deck deck,
     required int quarkBalance,
@@ -63,6 +84,15 @@ class CollectionPresenter {
       'Answer questions to earn quarks.';
 
   static String _quarkWord(int count) => count == 1 ? 'quark' : 'quarks';
+
+  /// The heading of a friend's collection: "Sam's cards", or "Your friend's
+  /// cards" before their nickname is known.
+  static String friendCardsTitle(String? nickname) =>
+      nickname == null ? "Your friend's cards" : "$nickname's cards";
+
+  /// Above a deck's cards: "4 of 6 held".
+  static String heldLabel(Collection collection) =>
+      '${collection.cardsHeld} of ${collection.deck.size} held';
 
   /// The quiet line under a reveal's headline.
   ///

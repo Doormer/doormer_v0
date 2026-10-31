@@ -11,7 +11,9 @@ import '../atoms/collectible_card_atom.dart';
 import '../molecules/shattered_copy_molecule.dart';
 import '../params/card_detail_params.dart';
 
-/// One card, with its facts and the option to shatter a copy.
+/// One card, with its facts and the option to shatter a copy. In a friend's
+/// collection, which has no [CardDetailParams.onShatter], only the card and
+/// its facts.
 ///
 /// **Capped at [maxWidth].** A Flutter `Dialog` expands to its child, so without
 /// an explicit constraint the card drifts away from its facts on a wide window.
@@ -84,14 +86,22 @@ class _CardDetailOrganismState extends State<CardDetailOrganism>
     super.didUpdateWidget(oldWidget);
     final before = oldWidget.params;
     final after = widget.params;
+    final balanceBefore = before.quarkBalance;
+    final balanceAfter = after.quarkBalance;
+    // Only the student's own cards shatter.
+    if (after.onShatter == null ||
+        balanceBefore == null ||
+        balanceAfter == null) {
+      return;
+    }
     final shattered = after.holding.card.id == before.holding.card.id &&
         after.holding.totalCopies == before.holding.totalCopies - 1 &&
-        after.quarkBalance > before.quarkBalance;
+        balanceAfter > balanceBefore;
     if (!shattered || !MotionPolicy.of(context)) return;
 
     final card = after.holding.card;
     _playing = _Shatter(
-      quarksGained: after.quarkBalance - before.quarkBalance,
+      quarksGained: balanceAfter - balanceBefore,
       isSpecial: before.holding.variantToShatter == CardVariant.special,
       shards: ShatteredCopyMolecule.shardsFor(
         card.rarity,
@@ -113,7 +123,7 @@ class _CardDetailOrganismState extends State<CardDetailOrganism>
     final layer = _layerKey.currentContext?.findRenderObject();
     final card = _cardKey.currentContext?.findRenderObject();
     final quarkDot =
-        widget.params.quarkDotKey.currentContext?.findRenderObject();
+        widget.params.quarkDotKey?.currentContext?.findRenderObject();
     final cardAtom = _cardKey.currentWidget;
     if (layer is! RenderBox ||
         card is! RenderBox ||
@@ -187,6 +197,7 @@ class _CardDetailOrganismState extends State<CardDetailOrganism>
     final params = widget.params;
     final holding = params.holding;
     final card = holding.card;
+    final onShatter = params.onShatter;
 
     // Never shatter the last copy: that would empty the grid slot the
     // student just filled. Any copy beyond the first is fair game, whichever
@@ -281,26 +292,28 @@ class _CardDetailOrganismState extends State<CardDetailOrganism>
                           ),
                           _Fact(label: 'Size', value: card.scaleLabel),
                           _Fact(label: 'Deck', value: params.deckName),
-                          SizedBox(height: 16.h),
-                          Center(
-                            child: AppButtonAtom(
-                              label: 'Shatter one',
-                              variant: AppButtonVariant.accent,
-                              isLoading: params.isShattering,
-                              onPressed: canShatter
-                                  ? () => params.onShatter(variant)
-                                  : null,
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.only(top: 6.h),
-                            child: Center(
-                              child: _lineUnderButton(
-                                canShatter: canShatter,
-                                shatterQuarks: shatterQuarks,
+                          if (onShatter != null) ...[
+                            SizedBox(height: 16.h),
+                            Center(
+                              child: AppButtonAtom(
+                                label: 'Shatter one',
+                                variant: AppButtonVariant.accent,
+                                isLoading: params.isShattering,
+                                onPressed: canShatter
+                                    ? () => onShatter(variant)
+                                    : null,
                               ),
                             ),
-                          ),
+                            Padding(
+                              padding: EdgeInsets.only(top: 6.h),
+                              child: Center(
+                                child: _lineUnderButton(
+                                  canShatter: canShatter,
+                                  shatterQuarks: shatterQuarks,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       );
 

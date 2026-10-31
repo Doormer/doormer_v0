@@ -190,4 +190,44 @@ void main() {
       );
     });
   });
+
+  group("a friend's collection", () {
+    test('lists the decks with their progress, and no flags', () {
+      final opened = <String>[];
+      final rows = CollectionPresenter.friendDeckRows(
+        decks: const [
+          DeckProgress(
+              deckId: 'cinder', name: 'Cinder', cardsHeld: 0, cardsTotal: 6),
+          DeckProgress(
+              deckId: 'meridian',
+              name: 'Meridian',
+              cardsHeld: 6,
+              cardsTotal: 6),
+        ],
+        onSelect: opened.add,
+      );
+
+      expect([for (final row in rows) (row.name, row.held, row.total)],
+          [('Cinder', 0, 6), ('Meridian', 6, 6)]);
+      expect(rows.every((row) => !row.showFlag && !row.isSelected), isTrue);
+      rows.last.onTap();
+      expect(opened, ['meridian']);
+    });
+
+    test("is headed with the friend's nickname", () {
+      expect(CollectionPresenter.friendCardsTitle('Sam'), "Sam's cards");
+    });
+
+    test('is headed plainly before the nickname is known', () {
+      expect(CollectionPresenter.friendCardsTitle(null), "Your friend's cards");
+    });
+  });
+
+  test('the held line counts cards held, not copies', () {
+    expect(
+      CollectionPresenter.heldLabel(
+          _collectionWithGnomon(standard: 3, special: 1)),
+      '1 of 2 held',
+    );
+  });
 }

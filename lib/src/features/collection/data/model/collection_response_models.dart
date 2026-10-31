@@ -1,3 +1,5 @@
+import 'package:doormer/src/shared/friends/model/friend_summary_model.dart';
+
 import '../../domain/entity/card_rarity.dart';
 import '../../domain/entity/collectible_card.dart';
 import '../../domain/entity/collection.dart';
@@ -261,4 +263,128 @@ class ShatterResponseModel {
         standardCopies: json['standard_copies'] as int,
         specialCopies: json['special_copies'] as int,
       );
+}
+
+/// A card in a friend's collection: as [HeldCardModel], without what a
+/// shatter pays. Friends never shatter each other's cards.
+class FriendHeldCardModel {
+  final String cardId;
+  final String name;
+  final Rarity rarity;
+  final String artUrl;
+  final String scaleLabel;
+  final String description;
+  final int standardCopies;
+  final int specialCopies;
+
+  const FriendHeldCardModel({
+    required this.cardId,
+    required this.name,
+    required this.rarity,
+    required this.artUrl,
+    required this.scaleLabel,
+    required this.description,
+    required this.standardCopies,
+    required this.specialCopies,
+  });
+
+  factory FriendHeldCardModel.fromJson(Map<String, dynamic> json) {
+    // An empty attribute map arrives as null.
+    final attributes = json['attributes'] as Map<String, dynamic>? ?? const {};
+    return FriendHeldCardModel(
+      cardId: json['card_id'] as String,
+      name: json['name'] as String,
+      rarity: _rarity(json['rarity'] as String),
+      artUrl: json['art_url'] as String,
+      scaleLabel: attributes['scale_label'] as String? ?? '',
+      description: attributes['description'] as String? ?? '',
+      standardCopies: json['standard_copies'] as int,
+      specialCopies: json['special_copies'] as int,
+    );
+  }
+
+  /// The card alone, worth nothing when shattered: the card detail shows no
+  /// Shatter for a friend's card.
+  CollectibleCard toEntity() => CollectibleCard(
+        id: cardId,
+        name: name,
+        rarity: rarity,
+        scaleLabel: scaleLabel,
+        artUrl: artUrl,
+        standardShatterQuarks: 0,
+        specialShatterQuarks: 0,
+        description: description,
+      );
+}
+
+/// The answer to `/friends/decks`: the friend, and their deck list, as
+/// `/collection/decks` sends it, without the quark balance.
+class FriendDecksResponseModel {
+  final FriendSummaryModel friend;
+  final List<DeckProgressModel> decks;
+
+  const FriendDecksResponseModel({required this.friend, required this.decks});
+
+  factory FriendDecksResponseModel.fromJson(Map<String, dynamic> json) =>
+      FriendDecksResponseModel(
+        friend:
+            FriendSummaryModel.fromJson(json['friend'] as Map<String, dynamic>),
+        decks: [
+          for (final deck in json['decks'] as List<dynamic>)
+            DeckProgressModel.fromJson(deck as Map<String, dynamic>),
+        ],
+      );
+}
+
+/// The answer to `/friends/cards`: the friend, the deck, and every card in
+/// it, held or not, without the quark balance or the draw cost.
+class FriendCardsResponseModel {
+  final FriendSummaryModel friend;
+  final String deckId;
+  final String deckName;
+  final List<FriendHeldCardModel> cards;
+
+  const FriendCardsResponseModel({
+    required this.friend,
+    required this.deckId,
+    required this.deckName,
+    required this.cards,
+  });
+
+  factory FriendCardsResponseModel.fromJson(Map<String, dynamic> json) {
+    final deck = json['deck'] as Map<String, dynamic>;
+    return FriendCardsResponseModel(
+      friend:
+          FriendSummaryModel.fromJson(json['friend'] as Map<String, dynamic>),
+      deckId: deck['deck_id'] as String,
+      deckName: deck['name'] as String,
+      cards: [
+        for (final card in json['cards'] as List<dynamic>)
+          FriendHeldCardModel.fromJson(card as Map<String, dynamic>),
+      ],
+    );
+  }
+
+  /// As [CardsResponseModel.toEntity]: only a card with copies gets a
+  /// holding. A friend's deck has no draw cost, since no one draws from it
+  /// here.
+  Collection toEntity() {
+    final deckCards = <CollectibleCard>[];
+    final holdingsByCardId = <String, Holding>{};
+    for (final held in cards) {
+      final card = held.toEntity();
+      deckCards.add(card);
+      if (held.standardCopies + held.specialCopies > 0) {
+        holdingsByCardId[card.id] = Holding(
+          card: card,
+          standardCopies: held.standardCopies,
+          specialCopies: held.specialCopies,
+        );
+      }
+    }
+    return Collection(
+      deck: Deck(id: deckId, name: deckName, drawCost: 0, cards: deckCards),
+      holdingsByCardId: holdingsByCardId,
+    );
+  }
 }
