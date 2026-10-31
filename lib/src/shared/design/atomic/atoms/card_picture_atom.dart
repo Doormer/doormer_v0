@@ -32,12 +32,16 @@ class CardPictureAtom extends StatelessWidget {
     this.imageProviderBuilder = networkCardArtImageProvider,
   });
 
-  /// The first letter of [name], in capitals, such as `Ā` for "āwhina".
-  static String letterOf(String name) {
-    final trimmed = name.trim();
-    if (trimmed.isEmpty) return '?';
-    return trimmed.characters.first.toUpperCase();
-  }
+  /// A character that starts with a Unicode letter, as `é` does even when it
+  /// is written as `e` and a combining accent.
+  static final _letter = RegExp(r'^\p{L}', unicode: true);
+
+  /// The first character of [name] that is a Unicode letter, in capitals, or
+  /// `?` when [name] has no letter, a blank name included. For example, `Ā`
+  /// for "āwhina" and `K` for "_kai".
+  static String letterOf(String name) => name.characters
+      .firstWhere(_letter.hasMatch, orElse: () => '?')
+      .toUpperCase();
 
   @override
   Widget build(BuildContext context) {

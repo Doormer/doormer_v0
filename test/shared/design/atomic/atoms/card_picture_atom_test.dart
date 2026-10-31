@@ -80,4 +80,15 @@ void main() {
     expect(CardPictureAtom.letterOf('élodie'), 'É');
     expect(CardPictureAtom.letterOf('  kai'), 'K');
   });
+
+  test('the letter skips anything before the first letter', () {
+    expect(CardPictureAtom.letterOf('_kai'), 'K');
+    expect(CardPictureAtom.letterOf('4ever'), 'E');
+    expect(CardPictureAtom.letterOf('.sam'), 'S');
+  });
+
+  test('a blank name shows ?', () {
+    expect(CardPictureAtom.letterOf(''), '?');
+    expect(CardPictureAtom.letterOf('   '), '?');
+  });
 }
