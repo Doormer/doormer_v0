@@ -13,7 +13,8 @@ import 'package:flutter/services.dart';
 ///
 /// Every answer takes [delay], and a photo solve [solveDelay] more, so
 /// loading states show. Draws use [random]; the default seed draws the same
-/// cards every run. [clock] dates the saved questions.
+/// cards every run. [clock] dates the saved questions, and the daily limits
+/// start over when it passes the device's midnight.
 FakeBackendAdapter fakeBackend({
   Random? random,
   AssetBundle? bundle,
