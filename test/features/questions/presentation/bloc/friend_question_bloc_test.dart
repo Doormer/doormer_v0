@@ -122,12 +122,71 @@ void main() {
       ]),
     );
 
+    for (final (why, failure) in [
+      (
+        'with no connection',
+        NetworkFailure("We couldn't send the report. Try again."),
+      ),
+      (
+        'with a server error',
+        ServerFailure("We couldn't send the report. Try again."),
+      ),
+      (
+        'with friends turned off',
+        RefusedFailure(403, 'Friends is turned off for your account.'),
+      ),
+    ]) {
+      blocTest<FriendQuestionBloc, FriendQuestionState>(
+        'a report that fails $why says why, and can be sent again',
+        build: build,
+        setUp: () => repository.failNext['reportSharedQuestion'] = failure,
+        seed: () => opened,
+        act: (bloc) => bloc.add(const SharedQuestionReported(
+          reason: ReportReason.other,
+          note: '',
+        )),
+        skip: 1,
+        expect: () => [opened.copyWith(errorMessage: failure.message)],
+      );
+    }
+
+    for (final (why, status, words) in [
+      (
+        'because the share has ended',
+        404,
+        "That question isn't shared with you any more.",
+      ),
+      (
+        'for the day',
+        429,
+        "You've done that a lot today. Try again tomorrow.",
+      ),
+    ]) {
+      blocTest<FriendQuestionBloc, FriendQuestionState>(
+        'a report refused $why ($status) says why, and is refused for good, so '
+        'the student can block without it',
+        build: build,
+        setUp: () => repository.failNext['reportSharedQuestion'] =
+            RefusedFailure(status, words),
+        seed: () => opened,
+        act: (bloc) => bloc.add(const SharedQuestionReported(
+          reason: ReportReason.other,
+          note: '',
+        )),
+        skip: 1,
+        expect: () => [
+          opened.copyWith(isReportRefusedForGood: true, errorMessage: words),
+        ],
+      );
+    }
+
     blocTest<FriendQuestionBloc, FriendQuestionState>(
-      'a report that fails says why, and can be sent again',
+      'a report refused for good stays so, even when sending it again fails '
+      'otherwise',
       build: build,
       setUp: () => repository.failNext['reportSharedQuestion'] =
-          RefusedFailure(404, "That question isn't shared with you any more."),
-      seed: () => opened,
+          NetworkFailure("We couldn't send the report. Try again."),
+      seed: () => opened.copyWith(isReportRefusedForGood: true),
       act: (bloc) => bloc.add(const SharedQuestionReported(
         reason: ReportReason.other,
         note: '',
@@ -135,7 +194,8 @@ void main() {
       skip: 1,
       expect: () => [
         opened.copyWith(
-          errorMessage: "That question isn't shared with you any more.",
+          isReportRefusedForGood: true,
+          errorMessage: "We couldn't send the report. Try again.",
         ),
       ],
     );

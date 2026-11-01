@@ -19,7 +19,8 @@ class ReportSheetParams {
 
   /// Blocks the student. Null offers no Block: the reader offers it only
   /// once a report about a shared question has reached the team, since a
-  /// block ends the share the report is about.
+  /// block ends the share the report is about, or once the report is
+  /// refused in a way trying again won't fix.
   final VoidCallback? onBlock;
 
   final VoidCallback onClose;

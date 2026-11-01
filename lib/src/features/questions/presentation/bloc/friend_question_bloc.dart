@@ -58,19 +58,20 @@ class FriendQuestionBloc
     if (state.isRemoving || state.exit != null) return;
     emit(state.copyWith(isRemoving: true));
     await _reportAnswered;
-    final errorMessage = await _attempt(
+    final failure = await _attempt(
       () => removeSharedQuestion(state.questionId),
       'Removing a shared question',
     );
-    emit(errorMessage == null
+    emit(failure == null
         ? state.copyWith(isRemoving: false, exit: FriendQuestionExit.removed)
-        : state.copyWith(isRemoving: false, errorMessage: errorMessage));
+        : state.copyWith(isRemoving: false, errorMessage: failure.message));
   }
 
   /// Sends the report with the question. The share must still stand when it
-  /// arrives, so the sheet offers Block only after this, and a removal waits
-  /// for it. A report sent while a removal is on its way could arrive after
-  /// the share has ended, so it sends nothing.
+  /// arrives, so the sheet offers Block only after this, unless the report
+  /// is refused for good, and a removal waits for it. A report sent while a
+  /// removal is on its way could arrive after the share has ended, so it
+  /// sends nothing.
   Future<void> _onReported(
     SharedQuestionReported event,
     Emitter<FriendQuestionState> emit,
@@ -92,14 +93,21 @@ class FriendQuestionBloc
       'Reporting a shared question',
     );
     _reportAnswered = answer;
-    final errorMessage = await answer;
-    emit(errorMessage == null
+    final failure = await answer;
+    emit(failure == null
         ? state.copyWith(reportStatus: QuestionReportStatus.sent)
         : state.copyWith(
             reportStatus: QuestionReportStatus.unsent,
-            errorMessage: errorMessage,
+            isReportRefusedForGood: _isRefusedForGood(failure) ? true : null,
+            errorMessage: failure.message,
           ));
   }
+
+  /// Whether trying the report again won't fix [failure]: the share has
+  /// ended (404), or the day's reports are used up (429).
+  static bool _isRefusedForGood(Failure failure) =>
+      failure is RefusedFailure &&
+      (failure.statusCode == 404 || failure.statusCode == 429);
 
   /// Blocking ends every share between the two, this question's included.
   Future<void> _onFriendBlocked(
@@ -109,17 +117,17 @@ class FriendQuestionBloc
     final sharedBy = state.sharedBy;
     if (sharedBy == null || state.isBlocking || state.exit != null) return;
     emit(state.copyWith(isBlocking: true));
-    final errorMessage = await _attempt(
+    final failure = await _attempt(
       () => blockFriend(sharedBy.friendId),
       'Blocking the friend who shared a question',
     );
-    emit(errorMessage == null
+    emit(failure == null
         ? state.copyWith(isBlocking: false, exit: FriendQuestionExit.blocked)
-        : state.copyWith(isBlocking: false, errorMessage: errorMessage));
+        : state.copyWith(isBlocking: false, errorMessage: failure.message));
   }
 
-  /// Runs [action], and answers with why it failed, or null when it worked.
-  Future<String?> _attempt(
+  /// Runs [action], and answers with how it failed, or null when it worked.
+  Future<Failure?> _attempt(
     Future<void> Function() action,
     String what,
   ) async {
@@ -128,11 +136,11 @@ class FriendQuestionBloc
       return null;
     } on Failure catch (f, stackTrace) {
       AppLogger.error('$what failed', error: f, stackTrace: stackTrace);
-      return f.message;
+      return f;
     } catch (e, stackTrace) {
       AppLogger.error('$what failed unexpectedly',
           error: e, stackTrace: stackTrace);
-      return FriendsMessages.somethingWentWrong;
+      return UnknownFailure(FriendsMessages.somethingWentWrong);
     }
   }
 }

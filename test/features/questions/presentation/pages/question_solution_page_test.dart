@@ -713,14 +713,19 @@ void main() {
       expect(find.text('Ask another question'), findsOneWidget);
     }
 
-    /// Reports Sam for bullying, and waits for the sheet's thanks.
-    Future<void> sendReport(WidgetTester tester) async {
+    /// Reports Sam for bullying, and waits for the answer, whatever it is.
+    Future<void> trySendingReport(WidgetTester tester) async {
       await tester.tap(find.text('Report'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Bullying or being mean'));
       await tester.pump();
       await tester.tap(find.text('Send report'));
       await tester.pumpAndSettle();
+    }
+
+    /// Reports Sam for bullying, and waits for the sheet's thanks.
+    Future<void> sendReport(WidgetTester tester) async {
+      await trySendingReport(tester);
       expect(find.text('Thanks. The Doormer team will look at this.'),
           findsOneWidget);
     }
@@ -902,6 +907,63 @@ void main() {
           findsOneWidget);
       expect(find.text('Block'), findsOneWidget);
       expect(sharing.calls, ['reportSharedQuestion 7 301 bullying ']);
+    });
+
+    testWidgets(
+        'a report refused for the day (429) says why, and offers Block, which '
+        'asks, then blocks and goes back to Saved', (tester) async {
+      final router = await pumpFriendQuestion(tester);
+      sharing.failNext['reportSharedQuestion'] = RefusedFailure(
+          429, "You've done that a lot today. Try again tomorrow.");
+
+      await trySendingReport(tester);
+      expect(find.text("You've done that a lot today. Try again tomorrow."),
+          findsOneWidget);
+      // Waited out before the checks below, so a check that fails can't
+      // leave the toast running into the next test.
+      await waitOutToast(tester);
+      expect(find.text('Thanks. The Doormer team will look at this.'),
+          findsNothing);
+      await tester.tap(find.text('Block'));
+      await tester.pumpAndSettle();
+      expect(find.text('Block Sam?'), findsOneWidget);
+      await tester.tap(inDialog('Block'));
+      await tester.pumpAndSettle();
+
+      expect(sharing.calls,
+          ['reportSharedQuestion 7 301 bullying ', 'blockFriend 7']);
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/saved');
+    });
+
+    testWidgets(
+        'a report refused because the share has ended (404) says why, and '
+        'offers Block', (tester) async {
+      await pumpFriendQuestion(tester);
+      sharing.failNext['reportSharedQuestion'] =
+          RefusedFailure(404, "That question isn't shared with you any more.");
+
+      await trySendingReport(tester);
+      expect(find.text("That question isn't shared with you any more."),
+          findsOneWidget);
+      await waitOutToast(tester);
+
+      expect(find.text('Block'), findsOneWidget);
+    });
+
+    testWidgets(
+        'a report that fails with no connection says why, and keeps the form '
+        'to send again, with no Block', (tester) async {
+      await pumpFriendQuestion(tester);
+      sharing.failNext['reportSharedQuestion'] =
+          NetworkFailure("We couldn't send the report. Try again.");
+
+      await trySendingReport(tester);
+      expect(
+          find.text("We couldn't send the report. Try again."), findsOneWidget);
+      await waitOutToast(tester);
+
+      expect(find.text('Send report'), findsOneWidget);
+      expect(find.text('Block'), findsNothing);
     });
 
     testWidgets(

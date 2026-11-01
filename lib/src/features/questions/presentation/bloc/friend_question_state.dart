@@ -21,6 +21,13 @@ class FriendQuestionState extends Equatable {
   /// report sheet opens again on its thanks and Block.
   final QuestionReportStatus reportStatus;
 
+  /// The API refused the report in a way trying again won't fix: the share
+  /// has ended (404), or the student has sent as many reports as a day
+  /// allows (429). Block waits only so that the report keeps its question,
+  /// so the sheet then offers it anyway. It stays set while the reader is
+  /// open.
+  final bool isReportRefusedForGood;
+
   final bool isBlocking;
 
   /// Set once the question has gone, and the reader should close.
@@ -34,6 +41,7 @@ class FriendQuestionState extends Equatable {
     this.sharedBy,
     this.isRemoving = false,
     this.reportStatus = QuestionReportStatus.unsent,
+    this.isReportRefusedForGood = false,
     this.isBlocking = false,
     this.exit,
     this.errorMessage,
@@ -44,6 +52,7 @@ class FriendQuestionState extends Equatable {
   FriendQuestionState copyWith({
     bool? isRemoving,
     QuestionReportStatus? reportStatus,
+    bool? isReportRefusedForGood,
     bool? isBlocking,
     FriendQuestionExit? exit,
     String? errorMessage,
@@ -53,6 +62,8 @@ class FriendQuestionState extends Equatable {
       sharedBy: sharedBy,
       isRemoving: isRemoving ?? this.isRemoving,
       reportStatus: reportStatus ?? this.reportStatus,
+      isReportRefusedForGood:
+          isReportRefusedForGood ?? this.isReportRefusedForGood,
       isBlocking: isBlocking ?? this.isBlocking,
       exit: exit ?? this.exit,
       errorMessage: errorMessage,
@@ -65,6 +76,7 @@ class FriendQuestionState extends Equatable {
         sharedBy,
         isRemoving,
         reportStatus,
+        isReportRefusedForGood,
         isBlocking,
         exit,
         errorMessage,
