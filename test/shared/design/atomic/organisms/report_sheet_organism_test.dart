@@ -1,8 +1,8 @@
 import 'package:doormer/src/core/theme/app_theme.dart';
-import 'package:doormer/src/features/profile/domain/entity/report_reason.dart';
-import 'package:doormer/src/features/profile/presentation/organisms/report_sheet_organism.dart';
-import 'package:doormer/src/features/profile/presentation/params/report_sheet_params.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/organisms/report_sheet_organism.dart';
+import 'package:doormer/src/shared/design/atomic/params/report_sheet_params.dart';
+import 'package:doormer/src/shared/friends/entity/report_reason.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +19,7 @@ Future<_Taps> _pump(
   WidgetTester tester, {
   bool isSending = false,
   bool isSent = false,
+  bool canBlock = true,
 }) async {
   tester.view.physicalSize = const Size(360, 1400);
   tester.view.devicePixelRatio = 1;
@@ -37,7 +38,7 @@ Future<_Taps> _pump(
               isSending: isSending,
               isSent: isSent,
               onSend: (reason, note) => taps.sent.add((reason, note)),
-              onBlock: () => taps.blocks++,
+              onBlock: canBlock ? () => taps.blocks++ : null,
               onClose: () => taps.closes++,
               onOpenLink: taps.links.add,
             ),
@@ -188,6 +189,13 @@ void main() {
 
     expect(taps.blocks, 1);
     expect(sentTaps.blocks, 1);
+  });
+
+  testWidgets('with no way to block given, offers no Block', (tester) async {
+    await _pump(tester, canBlock: false);
+
+    expect(find.text('Block'), findsNothing);
+    expect(find.text('Send report'), findsOneWidget);
   });
 
   testWidgets('closes', (tester) async {

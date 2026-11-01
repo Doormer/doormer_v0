@@ -1,6 +1,5 @@
+import 'package:doormer/src/shared/friends/entity/report_reason.dart';
 import 'package:flutter/foundation.dart';
-
-import '../../domain/entity/report_reason.dart';
 
 /// What the report sheet shows, and what its buttons do.
 class ReportSheetParams {
@@ -16,7 +15,11 @@ class ReportSheetParams {
   /// [note] is trimmed, and empty when the student wrote none.
   final void Function(ReportReason reason, String note) onSend;
 
-  final VoidCallback onBlock;
+  /// Blocks the student. Null offers no Block: the reader offers it only
+  /// once a report about a shared question has reached the team, since a
+  /// block ends the share the report is about.
+  final VoidCallback? onBlock;
+
   final VoidCallback onClose;
 
   /// Opens a help service's site, outside the app.
@@ -27,7 +30,7 @@ class ReportSheetParams {
     required this.isSending,
     required this.isSent,
     required this.onSend,
-    required this.onBlock,
+    this.onBlock,
     required this.onClose,
     required this.onOpenLink,
   });

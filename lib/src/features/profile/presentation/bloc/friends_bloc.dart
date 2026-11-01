@@ -3,12 +3,12 @@ import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
+import 'package:doormer/src/shared/friends/entity/report_reason.dart';
 import 'package:doormer/src/shared/friends/friends_messages.dart';
 import 'package:equatable/equatable.dart';
 
 import '../../domain/entity/friend_profile.dart';
 import '../../domain/entity/friend_request.dart';
-import '../../domain/entity/report_reason.dart';
 import '../../domain/usecase/accept_friend_request_usecase.dart';
 import '../../domain/usecase/block_student_usecase.dart';
 import '../../domain/usecase/decline_friend_request_usecase.dart';

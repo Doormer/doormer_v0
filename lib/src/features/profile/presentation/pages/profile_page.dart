@@ -1,7 +1,9 @@
 import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/routes/shown_destination.dart';
 import 'package:doormer/src/shared/design/atomic/molecules/confirm_dialog_molecule.dart';
+import 'package:doormer/src/shared/design/atomic/organisms/report_sheet_organism.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
+import 'package:doormer/src/shared/design/atomic/params/report_sheet_params.dart';
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:doormer/src/shared/friends/friends_messages.dart';
 import 'package:doormer/src/shared/widget/custom_toast.dart';
@@ -14,12 +16,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../utils/friend_codes.dart';
 import '../bloc/friends_bloc.dart';
 import '../bloc/profile_bloc.dart';
-import '../organisms/report_sheet_organism.dart';
 import '../params/friend_request_row_params.dart';
 import '../params/friend_row_params.dart';
 import '../params/profile_body_params.dart';
 import '../params/profile_header_params.dart';
-import '../params/report_sheet_params.dart';
 import '../templates/profile_template.dart';
 
 /// The Profile tab: friends, and Sign out. The only widget on this screen
@@ -182,8 +182,8 @@ class _ProfileViewState extends State<_ProfileView> {
     final confirmed = await showConfirmDialog(
       context,
       title: 'Remove ${friend.nickname}?',
-      message: "You'll stop seeing each other's cards. You can add each "
-          'other again later.',
+      message: "You'll stop seeing each other's cards and shared questions. "
+          'You can add each other again later.',
       confirmLabel: 'Remove',
       icon: Icons.person_remove_alt_1_rounded,
     );
@@ -201,8 +201,8 @@ class _ProfileViewState extends State<_ProfileView> {
     final confirmed = await showConfirmDialog(
       context,
       title: 'Block ${student.nickname}?',
-      message: "They won't see your cards, and their requests won't reach "
-          "you. They won't be told.",
+      message: "They won't see your cards or anything you shared, and their "
+          "requests won't reach you. They won't be told.",
       confirmLabel: 'Block',
       icon: Icons.block_rounded,
     );

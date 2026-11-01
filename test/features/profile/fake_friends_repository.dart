@@ -5,10 +5,10 @@ import 'package:doormer/src/features/profile/domain/entity/found_student.dart';
 import 'package:doormer/src/features/profile/domain/entity/friend_profile.dart';
 import 'package:doormer/src/features/profile/domain/entity/friend_request.dart';
 import 'package:doormer/src/features/profile/domain/entity/picture_choice.dart';
-import 'package:doormer/src/features/profile/domain/entity/report_reason.dart';
 import 'package:doormer/src/features/profile/domain/repository/friends_repository.dart';
 import 'package:doormer/src/shared/friends/entity/card_picture.dart';
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
+import 'package:doormer/src/shared/friends/entity/report_reason.dart';
 import 'package:doormer/src/shared/friends/friends_messages.dart';
 
 // Pictures with no art, so widget tests never wait on the network: each

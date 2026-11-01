@@ -1,11 +1,11 @@
 import 'package:doormer/src/shared/friends/entity/card_picture.dart';
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
+import 'package:doormer/src/shared/friends/entity/report_reason.dart';
 
 import '../entity/found_student.dart';
 import '../entity/friend_profile.dart';
 import '../entity/friend_request.dart';
 import '../entity/picture_choice.dart';
-import '../entity/report_reason.dart';
 
 /// The student's friends, as the API holds them. The acting student is
 /// always the signed-in one.

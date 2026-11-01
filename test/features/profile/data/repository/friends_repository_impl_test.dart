@@ -4,9 +4,9 @@ import 'package:doormer/src/features/profile/data/model/friends_response_models.
 import 'package:doormer/src/features/profile/data/repository/friends_repository_impl.dart';
 import 'package:doormer/src/features/profile/domain/entity/found_student.dart';
 import 'package:doormer/src/features/profile/domain/entity/friend_request.dart';
-import 'package:doormer/src/features/profile/domain/entity/report_reason.dart';
 import 'package:doormer/src/shared/friends/entity/card_picture.dart';
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
+import 'package:doormer/src/shared/friends/entity/report_reason.dart';
 import 'package:doormer/src/shared/friends/model/card_picture_model.dart';
 import 'package:doormer/src/shared/friends/model/friend_summary_model.dart';
 import 'package:flutter_test/flutter_test.dart';

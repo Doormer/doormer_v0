@@ -5,7 +5,6 @@ import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/profile/domain/entity/friend_profile.dart';
 import 'package:doormer/src/features/profile/domain/entity/friend_request.dart';
-import 'package:doormer/src/features/profile/domain/entity/report_reason.dart';
 import 'package:doormer/src/features/profile/domain/usecase/accept_friend_request_usecase.dart';
 import 'package:doormer/src/features/profile/domain/usecase/block_student_usecase.dart';
 import 'package:doormer/src/features/profile/domain/usecase/decline_friend_request_usecase.dart';
@@ -17,6 +16,7 @@ import 'package:doormer/src/features/profile/domain/usecase/report_student_useca
 import 'package:doormer/src/features/profile/presentation/bloc/friends_bloc.dart';
 import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
+import 'package:doormer/src/shared/friends/entity/report_reason.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../fake_friends_repository.dart';

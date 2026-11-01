@@ -1,4 +1,5 @@
-import '../entity/report_reason.dart';
+import 'package:doormer/src/shared/friends/entity/report_reason.dart';
+
 import '../repository/friends_repository.dart';
 
 class ReportStudentUseCase {
