@@ -18,6 +18,7 @@ Future<void> _pumpPanelWithPhoto(
   WidgetTester tester, {
   VoidCallback? onEditPhoto,
   bool isLoading = false,
+  bool isBlockedByDailyLimit = false,
 }) async {
   tester.view.physicalSize = const Size(390, 1200);
   tester.view.devicePixelRatio = 1;
@@ -36,6 +37,7 @@ Future<void> _pumpPanelWithPhoto(
                 imageBytes: _pngBytes,
                 fileName: 'IMG_1.jpg',
                 isLoading: isLoading,
+                isBlockedByDailyLimit: isBlockedByDailyLimit,
                 copy: photoUploadCopyFor(hasPhoto: true, isRetry: false),
                 onPickPhoto: () {},
                 onSubmit: () {},
@@ -76,5 +78,15 @@ void main() {
     await _pumpPanelWithPhoto(tester);
 
     expect(find.byTooltip('Crop & rotate'), findsNothing);
+  });
+
+  testWidgets('blocked by the daily limit, Submit stays off even with a photo',
+      (tester) async {
+    await _pumpPanelWithPhoto(tester, isBlockedByDailyLimit: true);
+
+    final submit = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Submit to solver'),
+    );
+    expect(submit.onPressed, isNull);
   });
 }

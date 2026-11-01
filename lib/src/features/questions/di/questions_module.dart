@@ -3,6 +3,7 @@ import 'package:doormer/src/features/questions/data/datasource/questions_local_d
 import 'package:doormer/src/features/questions/data/datasource/questions_remote_datasource.dart';
 import 'package:doormer/src/features/questions/data/repository/questions_repository_impl.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_daily_limit_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_question_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
@@ -10,6 +11,7 @@ import 'package:doormer/src/features/questions/domain/usecase/load_solved_questi
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/bloc/daily_limit_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/saved_questions_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_file_input.dart';
@@ -39,6 +41,10 @@ void initQuestionsModule() {
     () => SubmitPhotoQuestionUseCase(serviceLocator<QuestionsRepository>()),
   );
 
+  serviceLocator.registerLazySingleton<LoadDailyLimitUseCase>(
+    () => LoadDailyLimitUseCase(serviceLocator<QuestionsRepository>()),
+  );
+
   serviceLocator.registerLazySingleton<LoadSampleSolutionUseCase>(
     () => LoadSampleSolutionUseCase(serviceLocator<QuestionsRepository>()),
   );
@@ -60,6 +66,12 @@ void initQuestionsModule() {
   serviceLocator.registerFactory<AskByPhotoBloc>(
     () => AskByPhotoBloc(
       submitPhotoQuestionUseCase: serviceLocator<SubmitPhotoQuestionUseCase>(),
+    ),
+  );
+
+  serviceLocator.registerFactory<DailyLimitBloc>(
+    () => DailyLimitBloc(
+      loadDailyLimitUseCase: serviceLocator<LoadDailyLimitUseCase>(),
     ),
   );
 

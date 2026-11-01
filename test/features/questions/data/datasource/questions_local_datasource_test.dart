@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:doormer/src/core/errors/failure.dart';
+import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/data/datasource/questions_local_datasource.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:flutter/foundation.dart';
@@ -25,6 +26,7 @@ class _FakeBundle extends CachingAssetBundle {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(AppLogger.disable);
 
   test('loads and parses the bundled mock solution', () async {
     final bundle = _FakeBundle({

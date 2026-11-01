@@ -1,14 +1,18 @@
 import 'dart:typed_data';
 
+import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/data/datasource/questions_local_datasource.dart';
 import 'package:doormer/src/features/questions/data/datasource/questions_remote_datasource.dart';
 import 'package:doormer/src/features/questions/data/model/answer_reward_model.dart';
+import 'package:doormer/src/features/questions/data/model/daily_limit_model.dart';
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
 import 'package:doormer/src/features/questions/data/model/quark_balance_model.dart';
 import 'package:doormer/src/features/questions/data/model/solved_questions_response_model.dart';
 import 'package:doormer/src/features/questions/data/repository/questions_repository_impl.dart';
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
+import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
+import 'package:doormer/src/features/questions/domain/failure/photo_question_failures.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeQuestionsRemoteDataSource implements QuestionsRemoteDataSource {
@@ -20,6 +24,7 @@ class _FakeQuestionsRemoteDataSource implements QuestionsRemoteDataSource {
   String? loadedQuestionId;
   String? solvedCursor;
   int balanceCalls = 0;
+  Object? submitFailure;
 
   @override
   Future<PhotoQuestionResponseModel> submitPhotoQuestion({
@@ -31,6 +36,8 @@ class _FakeQuestionsRemoteDataSource implements QuestionsRemoteDataSource {
     this.imageBytes = imageBytes;
     this.contentType = contentType;
     this.idempotencyKey = idempotencyKey;
+    final failure = submitFailure;
+    if (failure != null) throw failure;
     return PhotoQuestionResponseModel.fromJson({
       'status': 'timeout',
       'question_id': 'q_timeout',
@@ -83,6 +90,10 @@ class _FakeQuestionsRemoteDataSource implements QuestionsRemoteDataSource {
     balanceCalls++;
     return const QuarkBalanceModel(quarkBalance: 128);
   }
+
+  @override
+  Future<DailyLimitModel> loadDailyLimit() async => DailyLimitModel(
+      questionsLeft: 3, resetsAt: DateTime.utc(2026, 10, 18, 11));
 }
 
 class _FakeQuestionsLocalDataSource implements QuestionsLocalDataSource {
@@ -104,27 +115,54 @@ class _FakeQuestionsLocalDataSource implements QuestionsLocalDataSource {
 }
 
 void main() {
-  test('sends raw bytes with content type and a fresh idempotency key',
+  setUpAll(AppLogger.disable);
+
+  test('sends raw bytes with the content type and the key it is given',
       () async {
     final remoteDataSource = _FakeQuestionsRemoteDataSource();
     final repository = QuestionsRepositoryImpl(
       remoteDataSource: remoteDataSource,
       localDataSource: _FakeQuestionsLocalDataSource(),
-      idempotencyKeyFactory: () => 'uuid-1',
     );
     final bytes = Uint8List.fromList([9, 8, 7]);
 
     final outcome = await repository.submitPhotoQuestion(
       imageBytes: bytes,
       contentType: 'image/png',
+      idempotencyKey: 'photo-key-1',
     );
 
     expect(outcome.status, PhotoQuestionSolveStatus.timeout);
     expect(remoteDataSource.callCount, 1);
     expect(remoteDataSource.imageBytes, same(bytes));
     expect(remoteDataSource.contentType, 'image/png');
-    expect(remoteDataSource.idempotencyKey, 'uuid-1');
+    expect(remoteDataSource.idempotencyKey, 'photo-key-1');
   });
+
+  for (final refusal in [
+    DailyLimitReachedFailure(
+      DailyLimit(questionsLeft: 0, resetsAt: DateTime.utc(2026, 10, 18, 11)),
+    ),
+    PhotoBeingSolvedFailure(),
+  ]) {
+    test('passes a ${refusal.runtimeType} through as it came', () async {
+      final remoteDataSource = _FakeQuestionsRemoteDataSource();
+      remoteDataSource.submitFailure = refusal;
+      final repository = QuestionsRepositoryImpl(
+        remoteDataSource: remoteDataSource,
+        localDataSource: _FakeQuestionsLocalDataSource(),
+      );
+
+      await expectLater(
+        repository.submitPhotoQuestion(
+          imageBytes: Uint8List.fromList([9, 8, 7]),
+          contentType: 'image/png',
+          idempotencyKey: 'photo-key-1',
+        ),
+        throwsA(same(refusal)),
+      );
+    });
+  }
 
   test('loadSampleSolution delegates to the local datasource', () async {
     final local = _FakeQuestionsLocalDataSource();
@@ -185,6 +223,18 @@ void main() {
 
     expect(remote.balanceCalls, 1);
     expect(balance, 128);
+  });
+
+  test('reads the questions left today', () async {
+    final repository = QuestionsRepositoryImpl(
+      remoteDataSource: _FakeQuestionsRemoteDataSource(),
+      localDataSource: _FakeQuestionsLocalDataSource(),
+    );
+
+    final dailyLimit = await repository.loadDailyLimit();
+
+    expect(dailyLimit,
+        DailyLimit(questionsLeft: 3, resetsAt: DateTime.utc(2026, 10, 18, 11)));
   });
 
   test('loadSolvedQuestions passes the cursor and reads the page', () async {

@@ -5,6 +5,9 @@ import 'package:dio/dio.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/data/datasource/questions_remote_datasource.dart';
+import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
+import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
+import 'package:doormer/src/features/questions/domain/failure/photo_question_failures.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeAdapter implements HttpClientAdapter {
@@ -43,6 +46,13 @@ QuestionsRemoteDataSource _dataSource(_FakeAdapter adapter) =>
     QuestionsRemoteDataSourceImpl(
       dio: Dio(BaseOptions(baseUrl: 'https://api.test'))
         ..httpClientAdapter = adapter,
+    );
+
+Future<PhotoQuestionResponseModel> _sendPhoto(_FakeAdapter adapter) =>
+    _dataSource(adapter).submitPhotoQuestion(
+      imageBytes: Uint8List.fromList([1, 2, 3]),
+      contentType: 'image/png',
+      idempotencyKey: 'key-1',
     );
 
 Matcher _throws<T extends Failure>(String message) =>
@@ -97,6 +107,77 @@ void main() {
       expect(adapter.request!.path, '/v1/questions/photo');
       expect(adapter.request!.receiveTimeout, const Duration(seconds: 660));
     });
+
+    test('sends the photo under the key it is given', () async {
+      final adapter = _FakeAdapter(body: {'status': 'unreadable'});
+
+      await _sendPhoto(adapter);
+
+      expect(adapter.request!.headers['Idempotency-Key'], 'key-1');
+    });
+
+    test('a photo still being solved is its own failure', () async {
+      final adapter = _FakeAdapter(status: 409, body: 'Conflict');
+
+      await expectLater(
+        _sendPhoto(adapter),
+        throwsA(isA<PhotoBeingSolvedFailure>().having(
+            (f) => f.message,
+            'message',
+            'Your last photo is still being solved. Try again in a moment.')),
+      );
+    });
+
+    for (final reason in ['daily_question_limit', 'daily_photo_limit']) {
+      test('$reason is no questions left today, with when they reset',
+          () async {
+        final adapter = _FakeAdapter(status: 429, body: {
+          'reason': reason,
+          'daily_limit': {
+            'questions_left': 0,
+            'resets_at': '2026-10-19T00:00:00+13:00',
+          },
+          'next_steps': [],
+        });
+
+        await expectLater(
+          _sendPhoto(adapter),
+          throwsA(isA<DailyLimitReachedFailure>().having(
+            (f) => f.dailyLimit,
+            'dailyLimit',
+            DailyLimit(
+                questionsLeft: 0, resetsAt: DateTime.utc(2026, 10, 18, 11)),
+          )),
+        );
+      });
+    }
+
+    test('a 429 it cannot read is reported like any other failed send',
+        () async {
+      final adapter = _FakeAdapter(status: 429, body: 'Too Many Requests');
+
+      await expectLater(
+        _sendPhoto(adapter),
+        throwsA(
+            isA<ApiFailure>().having((f) => f.statusCode, 'statusCode', 429)),
+      );
+    });
+
+    test(
+        'a 429 whose daily limit cannot be read is reported like any other '
+        'failed send', () async {
+      final adapter = _FakeAdapter(status: 429, body: {
+        'reason': 'daily_question_limit',
+        'daily_limit': {'questions_left': 0},
+        'next_steps': [],
+      });
+
+      await expectLater(
+        _sendPhoto(adapter),
+        throwsA(
+            isA<ApiFailure>().having((f) => f.statusCode, 'statusCode', 429)),
+      );
+    });
   });
 
   group('loadQuarkBalance', () {
@@ -109,6 +190,32 @@ void main() {
       expect(adapter.request!.path, '/v1/quarks/balance');
       expect(adapter.request!.data, isEmpty);
       expect(reply.quarkBalance, 128);
+    });
+  });
+
+  group('loadDailyLimit', () {
+    test('posts an empty body and reads the questions left', () async {
+      final adapter = _FakeAdapter(body: {
+        'questions_left': 3,
+        'resets_at': '2026-10-19T00:00:00+13:00',
+      });
+
+      final dailyLimit = await _dataSource(adapter).loadDailyLimit();
+
+      expect(adapter.request!.method, 'POST');
+      expect(adapter.request!.path, '/v1/questions/daily-limit');
+      expect(adapter.request!.data, isEmpty);
+      expect(dailyLimit.questionsLeft, 3);
+      expect(
+          dailyLimit.resetsAt.isAtSameMomentAs(DateTime.utc(2026, 10, 18, 11)),
+          isTrue);
+    });
+
+    test('a count it cannot read is an unknown failure', () async {
+      final adapter = _FakeAdapter(body: {'questions_left': 3});
+
+      await expectLater(_dataSource(adapter).loadDailyLimit(),
+          _throws<UnknownFailure>(_somethingWentWrong));
     });
   });
 

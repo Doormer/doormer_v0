@@ -4,7 +4,10 @@ import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/routes/shown_destination.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
+import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/bloc/daily_limit_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/mapper/daily_limit_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/photo_upload_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solve_status_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/photo_source_sheet_organism.dart';
@@ -67,18 +70,67 @@ class AskByPhotoPage extends StatefulWidget {
 }
 
 class _AskByPhotoPageState extends State<AskByPhotoPage> {
-  /// The screen inside the bloc provider. Picking a photo reads the bloc from
+  /// The screen inside the bloc providers. Picking a photo reads the bloc from
   /// the context it is given, and this page's own context sits above the
-  /// provider.
+  /// providers.
   final _screenKey = GlobalKey();
+
+  /// Reads the count again when the app comes back to the front.
+  late final AppLifecycleListener _lifecycle;
 
   @override
   void initState() {
     super.initState();
+    _lifecycle = AppLifecycleListener(onResume: _readDailyLimit);
     if (widget.photoSourceOptionsRequest != null) {
       _showPhotoSourceOptionsAfterFrame();
     }
   }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
+  /// Reads how many questions are left today. Solve does this when it opens,
+  /// when the student comes back to it, when the app resumes, after a send
+  /// that brings no count back and when the limit keeps the photo options
+  /// shut. Never on a timer.
+  void _readDailyLimit() {
+    _screenKey.currentContext
+        ?.read<DailyLimitBloc>()
+        .add(const DailyLimitRequested());
+  }
+
+  /// Brings the count up to date when [state] ends a send. An answer or a
+  /// refusal that came back with the count shows it without asking again.
+  /// A send that ended without one, such as a dropped connection, may still
+  /// have used a question, so the count is read again at once. The API counts
+  /// a question only when its solve finishes, so after a 409 the read can
+  /// still show the old count.
+  void _updateDailyLimitAfterSend(
+    BuildContext context,
+    AskByPhotoState state,
+  ) {
+    if (state is! AskByPhotoSolved && state is! AskByPhotoSolveFailed) return;
+    final reported = _dailyLimitReportedBy(state);
+    context.read<DailyLimitBloc>().add(
+          reported == null
+              ? const DailyLimitRequested()
+              : DailyLimitReported(reported),
+        );
+  }
+
+  /// The count an answer or a refusal came back with. Null when it had none.
+  DailyLimit? _dailyLimitReportedBy(AskByPhotoState state) => switch (state) {
+        AskByPhotoSolved(:final dailyLimit) => dailyLimit,
+        AskByPhotoUnreadable(:final dailyLimit) => dailyLimit,
+        AskByPhotoNotAQuestion(:final dailyLimit) => dailyLimit,
+        AskByPhotoTimeout(:final dailyLimit) => dailyLimit,
+        AskByPhotoLimitReached(:final dailyLimit) => dailyLimit,
+        _ => null,
+      };
 
   @override
   void didUpdateWidget(AskByPhotoPage oldWidget) {
@@ -243,6 +295,10 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
   /// earlier photo's solution would then arrive and route the student to a
   /// solution for a photo they had just replaced.
   ///
+  /// With no questions left today, it says when they come back instead: a
+  /// photo picked now could not be sent. It also reads the count again, so a
+  /// 0 that has passed its reset opens asking again by the next tap.
+  ///
   /// On the root navigator, so the sheet covers the nav bar.
   Future<void> _showPhotoSourceOptions(
     BuildContext context, {
@@ -260,6 +316,18 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
 
     if (isSolving) {
       _showStillSolving(context);
+      return;
+    }
+
+    final dailyLimitBloc = context.read<DailyLimitBloc>();
+    final dailyLimit = dailyLimitBloc.state;
+    if (dailyLimit is DailyLimitKnown && dailyLimit.dailyLimit.isReached) {
+      CustomToast.show(
+        context,
+        message: dailyLimitReachedText(dailyLimit.dailyLimit),
+        type: ToastificationType.info,
+      );
+      dailyLimitBloc.add(const DailyLimitRequested());
       return;
     }
 
@@ -396,11 +464,20 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
   Widget build(BuildContext context) {
     final adUnit = widget.solvingAdUnit();
 
-    return BlocProvider<AskByPhotoBloc>(
-      create: (_) => serviceLocator<AskByPhotoBloc>(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<AskByPhotoBloc>(
+          create: (_) => serviceLocator<AskByPhotoBloc>(),
+        ),
+        BlocProvider<DailyLimitBloc>(
+          create: (_) => serviceLocator<DailyLimitBloc>()
+            ..add(const DailyLimitRequested()),
+        ),
+      ],
       child: DestinationListener(
         destination: AppDestination.solve,
         onReturnedTo: () {
+          _readDailyLimit();
           final screen = _screenKey.currentContext;
           if (screen != null) _openWaitingSolution(screen);
         },
@@ -416,7 +493,16 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
   Widget _buildScreen(DisplayAdUnit? adUnit) {
     return BlocConsumer<AskByPhotoBloc, AskByPhotoState>(
       key: _screenKey,
+      // A failed send is heard as it ends a send. Brought back after a
+      // cancelled pick or a photo that can't be prepared, it raises no toast
+      // and reads no count again. A failure that comes back always follows
+      // its own Notice, so only a failure right after a Notice goes unheard:
+      // the end of a send can follow other states, such as a photo whose pick
+      // ended mid-send.
+      listenWhen: (previous, current) =>
+          current is! AskByPhotoSolveFailed || previous is! AskByPhotoNotice,
       listener: (context, state) {
+        _updateDailyLimitAfterSend(context, state);
         if (state is AskByPhotoNotice) {
           CustomToast.show(
             context,
@@ -450,11 +536,18 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
         }
       },
       builder: (context, state) {
+        final dailyLimit =
+            dailyLimitParamsFor(context.watch<DailyLimitBloc>().state);
+        final isDailyLimitReached = dailyLimit?.isReached ?? false;
         final selected = state is AskByPhotoPhotoSelected ? state : null;
         final loading = state is AskByPhotoLoading ? state : null;
         // A failure keeps the bytes so the preview does not collapse the
         // moment the solve goes wrong.
         final failed = state is AskByPhotoSolveFailed ? state : null;
+        // With none left today, only a photo that may have an answer can
+        // still be sent.
+        final isBlockedByDailyLimit =
+            isDailyLimitReached && !(failed?.mayHaveAnswer ?? false);
         // Kept through a solve so the button holds its place, disabled,
         // and comes back after a failure.
         final editablePhoto = selected?.editablePhoto ??
@@ -477,9 +570,10 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
             isLoading: isLoading,
             showWhenEmpty: showEmptyUploadPanel,
             isPreparing: isPreparing,
+            isBlockedByDailyLimit: isBlockedByDailyLimit,
             copy: photoUploadCopyFor(
               hasPhoto: imageBytes != null,
-              isRetry: isRetry,
+              isRetry: isRetry && !isBlockedByDailyLimit,
             ),
             onPickPhoto: () => _showPhotoSourceOptions(context),
             onSubmit: () =>
@@ -487,7 +581,9 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
             onClear: () => context
                 .read<AskByPhotoBloc>()
                 .add(const AskByPhotoClearRequested()),
-            onEditPhoto: editablePhoto == null
+            // With none left, an edit would be a new photo that could not be
+            // sent, and it would replace one that may still have an answer.
+            onEditPhoto: editablePhoto == null || isDailyLimitReached
                 ? null
                 : () => _editPhoto(context, editablePhoto),
           ),
@@ -502,6 +598,7 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
           solving: loading == null
               ? null
               : _solvingViewFor(context, loading, adUnit: adUnit),
+          dailyLimit: dailyLimit,
         );
       },
     );

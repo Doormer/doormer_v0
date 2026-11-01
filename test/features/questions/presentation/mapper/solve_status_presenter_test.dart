@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solve_status_presenter.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -27,6 +28,49 @@ void main() {
       'This can take from a few seconds to a few minutes. Keep this page '
       "open and your solution opens as soon as it's ready.",
     );
+  });
+
+  test('a photo still being solved offers to try again', () {
+    final content = solveStatusContentFor(
+      AskByPhotoStillSolving(imageBytes: bytes, idempotencyKey: 'photo-key-1'),
+    );
+
+    expect(content.title, 'Your last photo is still being solved');
+    expect(content.body,
+        'Try again in a moment. Your photo is still here, so you can send it again.');
+    expect(content.canRetry, isTrue);
+    expect(content.showRetake, isFalse);
+  });
+
+  test('no questions left keeps the photo and says when to send it', () {
+    final content = solveStatusContentFor(AskByPhotoLimitReached(
+      dailyLimit:
+          DailyLimit(questionsLeft: 0, resetsAt: DateTime(2026, 10, 19)),
+      imageBytes: bytes,
+      idempotencyKey: 'photo-key-1',
+    ));
+
+    expect(content.title, "You've used today's questions");
+    expect(content.body,
+        'Your photo is still here. Send it after they reset at midnight.');
+    expect(content.showActions, isTrue);
+    expect(content.canRetry, isFalse);
+    expect(content.showRetake, isFalse);
+  });
+
+  test('no questions left says the reset is tomorrow when it is', () {
+    final content = solveStatusContentFor(
+      AskByPhotoLimitReached(
+        dailyLimit:
+            DailyLimit(questionsLeft: 0, resetsAt: DateTime(2026, 10, 19, 22)),
+        imageBytes: bytes,
+        idempotencyKey: 'photo-key-1',
+      ),
+      now: DateTime(2026, 10, 18, 23),
+    );
+
+    expect(content.body,
+        'Your photo is still here. Send it after they reset tomorrow at 10pm.');
   });
 
   group('canRetry', () {

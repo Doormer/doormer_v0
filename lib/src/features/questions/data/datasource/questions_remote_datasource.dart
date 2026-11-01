@@ -5,9 +5,11 @@ import 'package:doormer/src/core/connection/dio_exception_mapper.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/data/model/answer_reward_model.dart';
+import 'package:doormer/src/features/questions/data/model/daily_limit_model.dart';
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
 import 'package:doormer/src/features/questions/data/model/quark_balance_model.dart';
 import 'package:doormer/src/features/questions/data/model/solved_questions_response_model.dart';
+import 'package:doormer/src/features/questions/domain/failure/photo_question_failures.dart';
 
 abstract class QuestionsRemoteDataSource {
   Future<PhotoQuestionResponseModel> submitPhotoQuestion({
@@ -25,6 +27,9 @@ abstract class QuestionsRemoteDataSource {
   Future<AnswerRewardModel> revealAnswer(String questionId);
 
   Future<QuarkBalanceModel> loadQuarkBalance();
+
+  /// How many questions the student has left today.
+  Future<DailyLimitModel> loadDailyLimit();
 }
 
 class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
@@ -60,6 +65,10 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
       );
 
       final data = response.data;
+      // An answer this app can't read stays a failure Try again retries under
+      // the same key. The API gives back the answer it saved under that key,
+      // so a response garbled on the way then reads fine, and one this app
+      // can't parse fails the same way again without using a question.
       if (data is! Map<String, dynamic>) {
         AppLogger.error('Photo question response had an unexpected shape');
         throw ServerFailure(
@@ -68,6 +77,12 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
 
       return PhotoQuestionResponseModel.fromJson(data);
     } on DioException catch (e, stackTrace) {
+      final refusal = _refusalOf(e);
+      if (refusal != null) {
+        // The API working as meant, not a failure.
+        AppLogger.info('Photo question refused: ${refusal.message}');
+        throw refusal;
+      }
       AppLogger.error('Photo question submission failed',
           error: e, stackTrace: stackTrace);
       throw dioExceptionToFailure(
@@ -114,6 +129,13 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
         QuarkBalanceModel.fromJson,
       );
 
+  @override
+  Future<DailyLimitModel> loadDailyLimit() => _post(
+        '/v1/questions/daily-limit',
+        const {},
+        DailyLimitModel.fromJson,
+      );
+
   Future<T> _post<T>(
     String path,
     Map<String, dynamic> body,
@@ -148,4 +170,32 @@ class QuestionsRemoteDataSourceImpl implements QuestionsRemoteDataSource {
           _couldNotConnect,
         _ => _somethingWentWrong,
       };
+
+  /// The failure for a photo the API turned away on purpose: a photo still
+  /// being solved (409), or no questions left today (429). Null for any
+  /// other error, and for a 429 whose body can't be read, which is then
+  /// reported like any other failed send.
+  static Failure? _refusalOf(DioException e) {
+    if (e.type != DioExceptionType.badResponse) return null;
+    switch (e.response?.statusCode) {
+      case 409:
+        return PhotoBeingSolvedFailure();
+      case 429:
+        final body = e.response?.data;
+        final dailyLimit =
+            body is Map<String, dynamic> ? body['daily_limit'] : null;
+        if (dailyLimit is! Map<String, dynamic>) return null;
+        try {
+          return DailyLimitReachedFailure(
+              DailyLimitModel.fromJson(dailyLimit).toEntity());
+        } on FormatException catch (formatException) {
+          AppLogger.warn("A 429's daily_limit could not be read, so it is "
+              'reported like any other failed send: '
+              '${formatException.message}');
+          return null;
+        }
+      default:
+        return null;
+    }
+  }
 }

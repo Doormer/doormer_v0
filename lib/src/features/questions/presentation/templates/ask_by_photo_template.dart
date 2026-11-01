@@ -1,8 +1,10 @@
 import 'package:doormer/src/features/questions/presentation/molecules/ask_by_photo_header_molecule.dart';
+import 'package:doormer/src/features/questions/presentation/molecules/questions_left_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/solving_explanation_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/photo_upload_panel_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solve_status_panel_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solving_progress_organism.dart';
+import 'package:doormer/src/features/questions/presentation/params/daily_limit_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/photo_upload_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solve_status_panel_params.dart';
 import 'package:doormer/src/features/questions/presentation/params/solving_view_params.dart';
@@ -25,11 +27,15 @@ class AskByPhotoTemplate extends StatelessWidget {
   /// heading and the photo panels.
   final SolvingViewParams? solving;
 
+  /// What to say about today's questions. Null says nothing.
+  final DailyLimitParams? dailyLimit;
+
   const AskByPhotoTemplate({
     super.key,
     required this.uploadParams,
     required this.statusParams,
     this.solving,
+    this.dailyLimit,
   });
 
   @override
@@ -91,10 +97,19 @@ class AskByPhotoTemplate extends StatelessWidget {
               label: 'UPLOAD & SOLVE',
               icon: Icons.camera_alt,
               variant: AppButtonVariant.accent,
-              onPressed: uploadParams.isLoading || uploadParams.isPreparing
+              onPressed: uploadParams.isLoading ||
+                      uploadParams.isPreparing ||
+                      dailyLimit?.isReached == true
                   ? null
                   : uploadParams.onPickPhoto,
             ),
+            if (dailyLimit case final limit?) ...[
+              SizedBox(height: 16.h),
+              QuestionsLeftMolecule(
+                text: limit.text,
+                isReached: limit.isReached,
+              ),
+            ],
           ],
         ),
       ),
@@ -133,6 +148,13 @@ class AskByPhotoTemplate extends StatelessWidget {
       child: Column(
         children: [
           const AskByPhotoHeaderMolecule(),
+          if (dailyLimit case final limit?) ...[
+            SizedBox(height: 12.h),
+            QuestionsLeftMolecule(
+              text: limit.text,
+              isReached: limit.isReached,
+            ),
+          ],
           SizedBox(height: 24.h),
           if (showUploadPanel) ...[
             PhotoUploadPanelOrganism(params: uploadParams),

@@ -1,3 +1,5 @@
+import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
+
 enum PhotoQuestionSolveStatus {
   solved,
   unreadable,
@@ -19,6 +21,10 @@ class PhotoQuestionSolveOutcome {
   /// The theory or rule the solution relies on. Empty when unnamed.
   final String method;
 
+  /// The questions left today after this ask. Only the answer to a photo just
+  /// sent carries it; a saved question opened later has none.
+  final DailyLimit? dailyLimit;
+
   const PhotoQuestionSolveOutcome({
     required this.status,
     required this.questionId,
@@ -26,6 +32,7 @@ class PhotoQuestionSolveOutcome {
     this.note = '',
     this.topic = '',
     this.method = '',
+    this.dailyLimit,
   });
 }
 
