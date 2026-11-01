@@ -5,6 +5,7 @@ import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.da
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:doormer/src/shared/friends/friends_messages.dart';
 import 'package:doormer/src/shared/levels/bloc/level_progress_bloc.dart';
+import 'package:doormer/src/shared/levels/level_labels.dart';
 import 'package:doormer/src/shared/widget/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -178,6 +179,11 @@ class _ProfileViewState extends State<_ProfileView> {
               FriendRowParams(
                 nickname: friend.nickname,
                 artUrl: friend.picture?.artUrl,
+                level: friend.level,
+                semanticsLabel: LevelLabels.nicknameWithLevel(
+                  friend.nickname,
+                  friend.level,
+                ),
                 isBusy: ready.changingFriendIds.contains(friend.friendId),
                 onOpen: () => context.go(
                   '/profile/friends/${Uri.encodeComponent(friend.friendId)}'

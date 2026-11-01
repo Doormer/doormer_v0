@@ -23,6 +23,7 @@ import 'package:doormer/src/features/profile/presentation/molecules/friend_row_m
 import 'package:doormer/src/features/profile/presentation/organisms/level_strip_organism.dart';
 import 'package:doormer/src/features/profile/presentation/pages/profile_page.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/level_icons_atom.dart';
 import 'package:doormer/src/shared/design/atomic/molecules/confirm_dialog_molecule.dart';
 import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
@@ -44,6 +45,14 @@ const _at540 = LevelProgress(
   level: Level(number: 21, suns: 1, moons: 1, stars: 1),
   activeDaysToNextLevel: 32,
   nextLevelIcon: LevelIcon.star,
+);
+
+/// Sam, as the friends list sends him: at level 6.
+const _samAtLevel6 = FriendSummary(
+  friendId: '42',
+  nickname: 'Sam',
+  picture: vernier,
+  level: Level(number: 6, suns: 0, moons: 1, stars: 2),
 );
 
 /// The first active day of a student who just signed up.
@@ -629,5 +638,30 @@ void main() {
     await tester.tap(find.text('Got it'));
     await tester.pumpAndSettle();
     expect(find.text('Friends you add see your level.'), findsNothing);
+  });
+
+  testWidgets(
+      "a friend's row shows their level's icons, which screen readers hear "
+      'with the nickname', (tester) async {
+    friends.friends = [alex, _samAtLevel6];
+    final semantics = tester.ensureSemantics();
+
+    await pumpProfile(tester);
+
+    expect(
+      find.descendant(
+          of: friendRow('Sam'), matching: find.byType(LevelIconsAtom)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+          of: friendRow('Alex'), matching: find.byType(LevelIconsAtom)),
+      findsNothing,
+    );
+    expect(tester.getSemantics(find.text('Sam')).label, 'Sam, level 6');
+    expect(tester.getSemantics(find.text('Alex')).label, 'Alex');
+    expect(find.textContaining('level 6'), findsNothing,
+        reason: 'only screen readers say the number');
+    semantics.dispose();
   });
 }

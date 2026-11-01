@@ -69,4 +69,20 @@ void main() {
       lessThan(tester.getTopLeft(find.text("Sam's cards")).dx),
     );
   });
+
+  testWidgets('puts what trails the title straight after it', (tester) async {
+    await _pump(
+      tester,
+      const PageHeadingMolecule(
+        title: "Sam's cards",
+        trailing: SizedBox(key: Key('level'), width: 24, height: 24),
+      ),
+    );
+
+    expect(
+      tester.getTopLeft(find.byKey(const Key('level'))).dx -
+          tester.getTopRight(find.text("Sam's cards")).dx,
+      moreOrLessEquals(8.w),
+    );
+  });
 }

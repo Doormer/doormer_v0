@@ -1,5 +1,6 @@
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/card_picture_atom.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/level_icons_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/tile_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -8,8 +9,9 @@ import '../params/friend_row_params.dart';
 
 enum _FriendAction { remove, block, report }
 
-/// A friend: their picture and nickname, which open their collection, and a
-/// menu with Remove, Block and Report.
+/// A friend: their picture, nickname and level, which open their collection,
+/// and a menu with Remove, Block and Report. The level's icons follow the
+/// nickname, which is cut short before they are pushed off.
 class FriendRowMolecule extends StatelessWidget {
   final FriendRowParams params;
 
@@ -32,6 +34,7 @@ class FriendRowMolecule extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final onOpen = params.isBusy ? null : params.onOpen;
+    final level = params.level;
     final content = Row(
       children: [
         CardPictureAtom(
@@ -41,11 +44,30 @@ class FriendRowMolecule extends StatelessWidget {
         ),
         SizedBox(width: 12.w),
         Expanded(
-          child: Text(
-            params.nickname,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 14.sp, color: QuestPalette.cream),
+          child: Row(
+            children: [
+              Flexible(
+                child: Text(
+                  params.nickname,
+                  semanticsLabel: params.semanticsLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 14.sp, color: QuestPalette.cream),
+                ),
+              ),
+              if (level != null) ...[
+                SizedBox(width: 6.w),
+                // The nickname's label says the level, so screen readers
+                // skip the icons.
+                LevelIconsAtom(
+                  suns: level.suns,
+                  moons: level.moons,
+                  stars: level.stars,
+                  size: 14.w,
+                  semanticLabel: null,
+                ),
+              ],
+            ],
           ),
         ),
         if (params.isBusy)

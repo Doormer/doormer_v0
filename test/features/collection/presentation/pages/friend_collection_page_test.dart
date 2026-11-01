@@ -15,13 +15,22 @@ import 'package:doormer/src/features/collection/presentation/bloc/friend_collect
 import 'package:doormer/src/features/collection/presentation/molecules/card_tile_molecule.dart';
 import 'package:doormer/src/features/collection/presentation/organisms/card_detail_organism.dart';
 import 'package:doormer/src/features/collection/presentation/pages/friend_collection_page.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/level_icons_atom.dart';
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
+import 'package:doormer/src/shared/levels/entity/level.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 const _sam = FriendSummary(friendId: '42', nickname: 'Sam');
+
+/// Sam, as the API sends him with his collection: at level 6.
+const _samAtLevel6 = FriendSummary(
+  friendId: '42',
+  nickname: 'Sam',
+  level: Level(number: 6, suns: 0, moons: 1, stars: 2),
+);
 
 CollectibleCard _card(String id, String name) => CollectibleCard(
       id: id,
@@ -41,6 +50,9 @@ final _vernier = _card('vernier', 'Vernier');
 class _FakeRepository implements FriendCollectionRepository {
   Object? decksError;
 
+  /// The friend, as the API's answers name them.
+  FriendSummary friend = _sam;
+
   @override
   Future<({FriendSummary friend, List<DeckProgress> decks})> loadDecks(
       String friendId) async {
@@ -48,7 +60,7 @@ class _FakeRepository implements FriendCollectionRepository {
     decksError = null;
     if (error != null) throw error;
     return (
-      friend: _sam,
+      friend: friend,
       decks: const [
         DeckProgress(
             deckId: 'cinder-01', name: 'Cinder', cardsHeld: 0, cardsTotal: 6),
@@ -72,7 +84,7 @@ class _FakeRepository implements FriendCollectionRepository {
             cards: [_gnomon, _vernier])
         : Deck(id: deckId, name: 'Cinder', drawCost: 0, cards: const []);
     return (
-      friend: _sam,
+      friend: friend,
       collection: Collection(
         deck: deck,
         holdingsByCardId: {
@@ -236,5 +248,29 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Profile page'), findsOneWidget);
+  });
+
+  testWidgets(
+      "shows Sam's level beside the heading, heard by screen readers and "
+      'never as a number', (tester) async {
+    repository.friend = _samAtLevel6;
+    final semantics = tester.ensureSemantics();
+
+    await pumpCollection(tester);
+
+    final icons = find.byType(LevelIconsAtom);
+    final drawn = tester.widget<LevelIconsAtom>(icons);
+    expect((drawn.suns, drawn.moons, drawn.stars), (0, 1, 2));
+    expect(tester.getRect(icons).left,
+        greaterThan(tester.getRect(find.text("Sam's cards")).right));
+    expect(tester.getSemantics(icons), containsSemantics(label: 'Level 6'));
+    expect(find.textContaining('Level'), findsNothing);
+    semantics.dispose();
+  });
+
+  testWidgets('a friend with no level shows no icons', (tester) async {
+    await pumpCollection(tester);
+
+    expect(find.byType(LevelIconsAtom), findsNothing);
   });
 }

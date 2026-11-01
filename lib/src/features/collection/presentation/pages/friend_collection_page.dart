@@ -1,6 +1,7 @@
 import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:doormer/src/shared/friends/friends_messages.dart';
+import 'package:doormer/src/shared/levels/level_labels.dart';
 import 'package:doormer/src/shared/widget/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -43,10 +44,13 @@ class FriendCollectionPage extends StatelessWidget {
         },
         builder: (context, state) {
           final shown = _friendIn(state);
+          final level = shown?.level;
           return FriendCollectionTemplate(
             title: CollectionPresenter.friendCardsTitle(shown?.nickname),
             nickname: shown?.nickname,
             artUrl: shown?.picture?.artUrl,
+            level: level,
+            levelLabel: level == null ? null : LevelLabels.levelOf(level),
             body: _bodyFor(context, state),
             onBack: () => context.go('/profile'),
           );

@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// A page's heading: a back arrow first when the page has somewhere to go
-/// back to, then [leading], such as a picture, then the title.
+/// back to, then [leading], such as a picture, then the title, then
+/// [trailing], such as a friend's level, straight after it.
 class PageHeadingMolecule extends StatelessWidget {
   /// Null while the page can't yet say what it is, such as before what it
   /// shows has loaded. The back arrow still shows.
@@ -14,11 +15,15 @@ class PageHeadingMolecule extends StatelessWidget {
 
   final Widget? leading;
 
+  /// Straight after the title, which is cut short before it is pushed off.
+  final Widget? trailing;
+
   const PageHeadingMolecule({
     super.key,
     required this.title,
     this.onBack,
     this.leading,
+    this.trailing,
   });
 
   @override
@@ -26,6 +31,7 @@ class PageHeadingMolecule extends StatelessWidget {
     final title = this.title;
     final onBack = this.onBack;
     final leading = this.leading;
+    final trailing = this.trailing;
     return Padding(
       padding:
           EdgeInsets.fromLTRB(onBack == null ? 20.w : 8.w, 20.h, 20.w, 12.h),
@@ -40,25 +46,30 @@ class PageHeadingMolecule extends StatelessWidget {
               tooltip: 'Back',
             ),
           if (leading != null) ...[leading, SizedBox(width: 10.w)],
-          if (title != null)
-            Expanded(
-              child: Semantics(
-                header: true,
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: kDisplayFont,
-                    fontSize: 22.sp,
-                    fontWeight: FontWeight.w600,
-                    color: QuestPalette.cream,
-                  ),
-                ),
-              ),
-            ),
+          if (title != null && trailing == null)
+            Expanded(child: _heading(title)),
+          if (title != null && trailing != null) ...[
+            Flexible(child: _heading(title)),
+            SizedBox(width: 8.w),
+            trailing,
+          ],
         ],
       ),
     );
   }
+
+  Widget _heading(String title) => Semantics(
+        header: true,
+        child: Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontFamily: kDisplayFont,
+            fontSize: 22.sp,
+            fontWeight: FontWeight.w600,
+            color: QuestPalette.cream,
+          ),
+        ),
+      );
 }
