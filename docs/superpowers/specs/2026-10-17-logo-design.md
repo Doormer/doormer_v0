@@ -189,7 +189,10 @@ night tile.
 - A logo on the app's own screens, such as sign-up and log-in. In mock-ups it
   cluttered the form, and of 11 apps teenagers use, most keep their logo
   small or leave it out of these forms; several name the app in the heading
-  instead.
+  instead. The exception, added on 2026-11-01, is the page a friend's invite
+  link opens for a student who isn't signed in. It shows the rounded tile
+  above its heading, from `assets/images/brand/doormer_icon.png` (96 × 96 px,
+  with 192 and 288 px copies in `2.0x/` and `3.0x/`).
 - The Mac app's name. Its menu bar still says "doormer" because the name
   comes from the Xcode product name, which also names the `doormer.app`
   bundle that the Mac tests load (`TEST_HOST`).
@@ -205,6 +208,8 @@ night tile.
   takes one command (`dart run tool/generate_brand_icons.dart`). Run it by
   hand; it is not part of the build. It also writes the loading screen's
   `web/icons/doormer-icon-artwork.svg`, the master icon without its tile.
+  Given the start of some paths, such as `assets/images/brand`, it makes
+  only the files whose paths start with one of them.
 - Make the wordmark SVGs and the favicon once by converting the Fredoka Bold
   letters to outlines, then commit them. They need no script.
 

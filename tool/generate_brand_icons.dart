@@ -1,10 +1,12 @@
 // Regenerates every exported icon from the two master Doormer icons in
-// web/site/img/brand/, so the website, the web app and the native apps all
-// show the same artwork:
+// web/site/img/brand/, so the website, the web app, the native apps and the
+// app's own pages all show the same artwork:
 //
-// - doormer-icon.svg, the full icon, for app icons. Its artwork without the
-//   background tile also goes to web/icons/doormer-icon-artwork.svg, which
-//   the web app shows while it loads.
+// - doormer-icon.svg, the full icon, for app icons, and for the copies in
+//   assets/images/brand/ that the app's pages show, such as the invite page.
+//   Its artwork without the background tile also goes to
+//   web/icons/doormer-icon-artwork.svg, which the web app shows while it
+//   loads.
 // - doormer-favicon.svg, the "d" from the wordmark, for browser tabs and the
 //   Windows title bar and taskbar. They show icons at 32 px or smaller, where
 //   the full icon's path, levels and door blur together.
@@ -14,6 +16,11 @@
 // icon changes:
 //
 //   dart run tool/generate_brand_icons.dart
+//
+// With no arguments, it makes every file. To make only some, give the start
+// of their paths. This makes only the app's own copies:
+//
+//   dart run tool/generate_brand_icons.dart assets/images/brand
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -68,6 +75,7 @@ class IconFile {
 const iosFolder = 'ios/Runner/Assets.xcassets/AppIcon.appiconset';
 const macFolder = 'macos/Runner/Assets.xcassets/AppIcon.appiconset';
 const androidFolder = 'android/app/src/main/res';
+const appAssetsFolder = 'assets/images/brand';
 
 const androidDensities = {
   'mdpi': 1.0,
@@ -114,6 +122,11 @@ final iconFiles = <IconFile>[
     IconFile('$macFolder/app_icon_$size.png', size, IconShape.mac),
   const IconFile(
       'linux/runner/resources/app_icon.png', 256, IconShape.roundedTile),
+  // The app's own copy, 96 logical pixels square. Flutter takes the 2.0x or
+  // 3.0x one on sharper screens.
+  for (final (folder, scale) in const [('', 1), ('2.0x/', 2), ('3.0x/', 3)])
+    IconFile('$appAssetsFolder/${folder}doormer_icon.png', 96 * scale,
+        IconShape.roundedTile),
 ];
 
 const windowsIconPath = 'windows/runner/resources/app_icon.ico';
@@ -122,8 +135,21 @@ const windowsIconSizes = [16, 24, 32, 48, 64, 128, 256];
 /// Windows shows its 32 px and smaller icons in the title bar and taskbar.
 IconArt windowsArt(int size) => size <= 32 ? IconArt.favicon : IconArt.full;
 
-Future<void> main() async {
-  final chrome = findChrome();
+/// Makes the files whose paths start with one of [pathPrefixes], or every
+/// file when there are none.
+Future<void> main(List<String> pathPrefixes) async {
+  final selectedIconFiles =
+      iconFiles.where((file) => isSelected(file.path, pathPrefixes)).toList();
+  final isWindowsIconSelected = isSelected(windowsIconPath, pathPrefixes);
+  final isLoadingArtworkSelected = isSelected(loadingArtworkPath, pathPrefixes);
+  if (selectedIconFiles.isEmpty &&
+      !isWindowsIconSelected &&
+      !isLoadingArtworkSelected) {
+    stderr.writeln('No icon file starts with ${pathPrefixes.join(' or ')}.');
+    exit(1);
+  }
+
+  late final chrome = findChrome();
   final fullIcon = File(masterIconPath).readAsStringSync();
   final favicon = File(faviconPath).readAsStringSync();
   String masterFor(IconArt art) => switch (art) {
@@ -131,32 +157,41 @@ Future<void> main() async {
         IconArt.favicon => favicon,
       };
 
-  for (final file in iconFiles) {
+  for (final file in selectedIconFiles) {
     await renderPng(chrome, shapeIcon(masterFor(file.art), file.shape),
         file.size, File(file.path),
         transparent: hasTransparency(file.shape));
     stdout.writeln('${file.path} (${file.size} px)');
   }
 
-  final windowsImages = <Uint8List>[];
-  final scratch = await Directory.systemTemp.createTemp('doormer-ico-');
-  try {
-    for (final size in windowsIconSizes) {
-      final png = File('${scratch.path}/$size.png');
-      await renderPng(chrome, masterFor(windowsArt(size)), size, png,
-          transparent: true);
-      windowsImages.add(png.readAsBytesSync());
+  if (isWindowsIconSelected) {
+    final windowsImages = <Uint8List>[];
+    final scratch = await Directory.systemTemp.createTemp('doormer-ico-');
+    try {
+      for (final size in windowsIconSizes) {
+        final png = File('${scratch.path}/$size.png');
+        await renderPng(chrome, masterFor(windowsArt(size)), size, png,
+            transparent: true);
+        windowsImages.add(png.readAsBytesSync());
+      }
+    } finally {
+      scratch.deleteSync(recursive: true);
     }
-  } finally {
-    scratch.deleteSync(recursive: true);
+    File(windowsIconPath)
+        .writeAsBytesSync(buildIco(windowsIconSizes, windowsImages));
+    stdout.writeln('$windowsIconPath (${windowsIconSizes.join(', ')} px)');
   }
-  File(windowsIconPath)
-      .writeAsBytesSync(buildIco(windowsIconSizes, windowsImages));
-  stdout.writeln('$windowsIconPath (${windowsIconSizes.join(', ')} px)');
 
-  File(loadingArtworkPath).writeAsStringSync(withoutBackground(fullIcon));
-  stdout.writeln(loadingArtworkPath);
+  if (isLoadingArtworkSelected) {
+    File(loadingArtworkPath).writeAsStringSync(withoutBackground(fullIcon));
+    stdout.writeln(loadingArtworkPath);
+  }
 }
+
+/// Whether to make the file at [path]: every file when no [pathPrefixes] are
+/// given, otherwise only those whose path starts with one of them.
+bool isSelected(String path, List<String> pathPrefixes) =>
+    pathPrefixes.isEmpty || pathPrefixes.any(path.startsWith);
 
 bool hasTransparency(IconShape shape) => switch (shape) {
       IconShape.square || IconShape.maskable => false,
