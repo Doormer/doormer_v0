@@ -1,3 +1,5 @@
+import 'dart:math';
+
 /// Copies of one card that the student holds, by variant.
 class FakeHolding {
   int standardCopies;
@@ -82,8 +84,40 @@ class FakeFriendProfile {
   });
 }
 
+/// A question one of the student's friends asked.
+class FakeFriendQuestion {
+  /// The friend who asked it.
+  final String askedById;
+
+  final FakeSolvedQuestion question;
+
+  const FakeFriendQuestion({required this.askedById, required this.question});
+}
+
+/// A question one student shared with another.
+class FakeShare {
+  /// The share's own ID. A page of Shared with me ends on one.
+  final int id;
+
+  final String questionId;
+  final String fromId;
+  final String toId;
+  final DateTime sharedAt;
+
+  const FakeShare({
+    required this.id,
+    required this.questionId,
+    required this.fromId,
+    required this.toId,
+    required this.sharedAt,
+  });
+}
+
 /// The student's friends, their requests, and the students around them.
 class FakeFriends {
+  /// The student's own ID, as the API gives it to friends.
+  static const studentId = '100';
+
   /// Null until the student sets up friends.
   FakeFriendProfile? profile;
 
@@ -105,21 +139,42 @@ class FakeFriends {
   /// Newest block first.
   final List<String> blockedIds;
 
-  /// Every report sent: who, why, and the note.
-  final List<({String studentId, String reason, String note})> reports;
+  /// Every report sent: who, why, the note, and the question it is about,
+  /// if any.
+  final List<
+      ({
+        String studentId,
+        String reason,
+        String note,
+        String? questionId,
+      })> reports;
+
+  /// The questions the student's friends asked.
+  final List<FakeFriendQuestion> friendQuestions;
+
+  /// Every share, both ways, newest first.
+  final List<FakeShare> shares;
+
+  int _lastShareId;
 
   FakeFriends({
     required this.profile,
     required this.students,
     required this.friendIds,
     required this.waitingRequests,
+    this.friendQuestions = const [],
+    List<FakeShare> shares = const [],
   })  : acceptedRequests = [],
         requestedIds = {},
         blockedIds = [],
-        reports = [];
+        reports = [],
+        shares = [...shares],
+        _lastShareId = shares.fold(0, (last, share) => max(last, share.id));
 
   /// Kai, set up, with two friends who have cards (Sam and Alex), a request
-  /// from Rua, and Nia, whose code `NEWS2345` can be found.
+  /// from Rua, and Nia, whose code `NEWS2345` can be found. Sam has shared
+  /// two questions with Kai and Alex one, and Kai has shared question 102
+  /// with Sam.
   factory FakeFriends.starting({required DateTime now}) => FakeFriends(
         profile: FakeFriendProfile(
           nickname: 'Kai',
@@ -171,6 +226,68 @@ class FakeFriends {
             sentAt: now.subtract(const Duration(hours: 2)),
           ),
         ],
+        friendQuestions: [
+          FakeFriendQuestion(
+            askedById: '201',
+            question: FakeSolvedQuestion(
+              id: '301',
+              topic: 'Algebra - Simultaneous equations',
+              method: 'Elimination',
+              questionText: 'Solve 2x + y = 7 and x - y = 2.',
+              askedAt: now.subtract(const Duration(days: 2)),
+            ),
+          ),
+          FakeFriendQuestion(
+            askedById: '202',
+            question: FakeSolvedQuestion(
+              id: '302',
+              topic: 'Trigonometry - Right-angled triangles',
+              method: 'SOH CAH TOA',
+              questionText: 'Find the angle x in the right-angled triangle.',
+              askedAt: now.subtract(const Duration(days: 4)),
+            ),
+          ),
+          FakeFriendQuestion(
+            askedById: '201',
+            question: FakeSolvedQuestion(
+              id: '303',
+              topic: 'Statistics - Averages',
+              method: 'Mean from a frequency table',
+              questionText: 'Find the mean number of pets from the table.',
+              askedAt: now.subtract(const Duration(days: 6)),
+            ),
+          ),
+        ],
+        shares: [
+          FakeShare(
+            id: 9004,
+            questionId: '301',
+            fromId: '201',
+            toId: studentId,
+            sharedAt: now.subtract(const Duration(hours: 2)),
+          ),
+          FakeShare(
+            id: 9003,
+            questionId: '302',
+            fromId: '202',
+            toId: studentId,
+            sharedAt: now.subtract(const Duration(days: 1)),
+          ),
+          FakeShare(
+            id: 9002,
+            questionId: '102',
+            fromId: studentId,
+            toId: '201',
+            sharedAt: now.subtract(const Duration(days: 1, hours: 3)),
+          ),
+          FakeShare(
+            id: 9001,
+            questionId: '303',
+            fromId: '201',
+            toId: studentId,
+            sharedAt: now.subtract(const Duration(days: 5)),
+          ),
+        ],
       );
 
   FakeStudent? studentById(String? id) =>
@@ -178,6 +295,67 @@ class FakeFriends {
 
   FakeStudent? studentByCode(String? code) =>
       students.where((student) => student.friendCode == code).firstOrNull;
+
+  FakeFriendQuestion? friendQuestion(String? id) =>
+      friendQuestions.where((asked) => asked.question.id == id).firstOrNull;
+
+  /// Every current friend the student's own [questionId] is shared with, by
+  /// nickname, ignoring case. No one before setup.
+  List<FakeStudent> sharedWith(String questionId) {
+    if (profile == null) return const [];
+    final ids = {
+      for (final share in shares)
+        if (share.questionId == questionId &&
+            share.fromId == studentId &&
+            friendIds.contains(share.toId))
+          share.toId,
+    };
+    return [for (final id in ids) studentById(id)!]..sort(
+        (a, b) => a.nickname.toLowerCase().compareTo(b.nickname.toLowerCase()));
+  }
+
+  /// The friend who shared [questionId] with the student, while the two are
+  /// friends. Null for anyone else, and before setup.
+  FakeStudent? sharerOf(String? questionId) {
+    if (profile == null) return null;
+    final share = shares
+        .where((share) =>
+            share.questionId == questionId &&
+            share.toId == studentId &&
+            friendIds.contains(share.fromId))
+        .firstOrNull;
+    return share == null ? null : studentById(share.fromId);
+  }
+
+  /// Shares [questionId] from [fromId] with [toId], unless it already is.
+  void share(
+    String questionId, {
+    required String fromId,
+    required String toId,
+    required DateTime at,
+  }) {
+    final already = shares.any((share) =>
+        share.questionId == questionId &&
+        share.fromId == fromId &&
+        share.toId == toId);
+    if (already) return;
+    shares.insert(
+      0,
+      FakeShare(
+        id: ++_lastShareId,
+        questionId: questionId,
+        fromId: fromId,
+        toId: toId,
+        sharedAt: at,
+      ),
+    );
+  }
+
+  /// Ends every share between the student and [otherId], both ways, as
+  /// removing or blocking a friend does.
+  void endSharesWith(String otherId) => shares.removeWhere((share) =>
+      (share.fromId == studentId && share.toId == otherId) ||
+      (share.fromId == otherId && share.toId == studentId));
 }
 
 /// Everything the fake backend remembers about its one student.

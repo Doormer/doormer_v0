@@ -7,6 +7,7 @@ import 'package:doormer/src/dev/fake_backend/routes/collection_routes.dart';
 import 'package:doormer/src/dev/fake_backend/routes/friends_routes.dart';
 import 'package:doormer/src/dev/fake_backend/routes/questions_routes.dart';
 import 'package:doormer/src/dev/fake_backend/routes/registration_routes.dart';
+import 'package:doormer/src/dev/fake_backend/routes/sharing_routes.dart';
 import 'package:flutter/services.dart';
 
 /// A fake `taka-api`: one student's data, kept in memory, and an answer to
@@ -14,8 +15,9 @@ import 'package:flutter/services.dart';
 ///
 /// Every answer takes [delay], and a photo solve [solveDelay] more, so
 /// loading states show. Draws use [random]; the default seed draws the same
-/// cards every run. [clock] dates the saved questions and friend requests,
-/// and the daily limits start over when it passes the device's midnight.
+/// cards every run. [clock] dates the saved questions, friend requests and
+/// shared questions, and the daily limits start over when it passes the
+/// device's midnight.
 FakeBackendAdapter fakeBackend({
   Random? random,
   AssetBundle? bundle,
@@ -31,6 +33,7 @@ FakeBackendAdapter fakeBackend({
       ...RegistrationRoutes(state).routes,
       ...CollectionRoutes(state, random ?? Random(7)).routes,
       ...FriendsRoutes(state).routes,
+      ...SharingRoutes(state, clock: now).routes,
       ...QuestionsRoutes(
         state,
         bundle: bundle ?? rootBundle,

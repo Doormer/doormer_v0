@@ -44,7 +44,7 @@ In VS Code, use its built-in browser tools. Elsewhere, use Playwright MCP from `
 
 ## 4. Need a signed-in user?
 
-Sign up a throwaway account at `/auth/signup`: `agent+<current time in ms>@example.com` (digits only; no hyphens), any password of 6+ characters. You land on `/auth/registration`. Never use a real account. On the fake backend, any email and password signs in, as a registered student with quarks, cards, saved questions and friends: two friends with cards, a request waiting from Rua, and the code `NEWS2345` to find. Signing up opens registration instead, and so does every sign-in after it until you register or reload. Signing up also leaves the student with no friend profile, for trying friends setup. Google sign-in can't be automated.
+Sign up a throwaway account at `/auth/signup`: `agent+<current time in ms>@example.com` (digits only; no hyphens), any password of 6+ characters. You land on `/auth/registration`. Never use a real account. On the fake backend, any email and password signs in, as a registered student with quarks, cards, saved questions and friends: two friends with cards, a request waiting from Rua, and the code `NEWS2345` to find. Sam has shared two questions with them and Alex one, under Saved's Shared with me, and their own "Algebra - Linear equations" is shared with Sam. Signing up opens registration instead, and so does every sign-in after it until you register or reload. Signing up also leaves the student with no friend profile, for trying friends setup. Google sign-in can't be automated.
 
 ## 5. Flutter rules
 
