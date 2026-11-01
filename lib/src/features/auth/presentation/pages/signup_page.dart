@@ -174,7 +174,7 @@ class _SignUpPageWebState extends State<SignUpPageWeb> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 8.0),
                                       child: Text(
-                                        'or sign up with',
+                                        'or',
                                         style: textTheme.bodyMedium?.copyWith(
                                           color: colorScheme.onSurfaceVariant,
                                         ),

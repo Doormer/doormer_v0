@@ -156,7 +156,7 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 8.0),
                                       child: Text(
-                                        'or log in with',
+                                        'or',
                                         style: textTheme.bodyMedium?.copyWith(
                                           color: colorScheme.onSurfaceVariant,
                                         ),

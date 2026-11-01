@@ -45,18 +45,14 @@ class EmptyDeckOrganism extends StatelessWidget {
         const ClosedDeckMolecule(),
         SizedBox(height: 20.h),
         Text(
-          'Nothing here yet',
+          // Digits, never words: deck sizes are unbounded. The count is the
+          // headline: what is left to find, not what is missing.
+          '${params.deckSize} ${params.deckSize == 1 ? 'card' : 'cards'} to find',
           style: TextStyle(
             fontSize: 17.sp,
             fontWeight: FontWeight.w800,
             color: QuestPalette.cream,
           ),
-        ),
-        SizedBox(height: 6.h),
-        Text(
-          // Digits, never words: deck sizes are unbounded.
-          '${params.deckSize} ${params.deckSize == 1 ? 'card' : 'cards'} to find',
-          style: TextStyle(fontSize: 12.sp, color: QuestPalette.muted),
         ),
         SizedBox(height: 11.h),
         Wrap(

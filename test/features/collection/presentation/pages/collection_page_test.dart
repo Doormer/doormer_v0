@@ -324,7 +324,6 @@ void main() {
     await _openDeck(tester, 'Cinder');
 
     expect(find.byType(EmptyDeckOrganism), findsOneWidget);
-    expect(find.text('Nothing here yet'), findsOneWidget);
     expect(find.text('6 cards to find'), findsOneWidget);
     expect(find.byType(CardTileMolecule), findsNothing);
   });

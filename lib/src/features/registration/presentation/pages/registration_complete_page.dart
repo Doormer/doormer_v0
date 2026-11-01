@@ -53,15 +53,10 @@ class RegistrationCompletePage extends StatelessWidget {
                   variant: AppButtonVariant.accent,
                   onPressed: () => context.go('/questions/photo'),
                 ),
-                SizedBox(height: 40.h),
-                Text(
-                  'Got 2 minutes? Help us make Doormer better.',
-                  textAlign: TextAlign.center,
-                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-                ),
+                SizedBox(height: 32.h),
                 TextButton(
                   onPressed: _openSurvey,
-                  child: const Text('Take the survey'),
+                  child: const Text('Take a 2-minute survey'),
                 ),
               ],
             ),

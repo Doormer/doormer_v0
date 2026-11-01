@@ -55,7 +55,7 @@ void main() {
   testWidgets('still offers the survey', (tester) async {
     await pumpPage(tester);
 
-    await tester.tap(find.text('Take the survey'));
+    await tester.tap(find.text('Take a 2-minute survey'));
     await tester.pump();
 
     expect(opened, [Uri.parse(AppConfig.surveyURL)]);
