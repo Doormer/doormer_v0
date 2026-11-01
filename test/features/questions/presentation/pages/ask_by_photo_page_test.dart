@@ -57,6 +57,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../levels/register_levels.dart';
+
 class _FakeQuestionsRepository implements QuestionsRepository {
   _FakeQuestionsRepository({this.outcome, this.pending, this.failure});
 
@@ -251,8 +253,9 @@ void main() {
       submitPhotoQuestionUseCase: SubmitPhotoQuestionUseCase(repository),
     );
     serviceLocator.registerFactory<AskByPhotoBloc>(() => bloc);
-    // The nav bar's shell reads Profile's dot from it.
+    // The nav bar's shell reads Profile's dot from it, and counts the day.
     serviceLocator.registerLazySingleton(WaitingFriendRequestsBloc.new);
+    registerLevels();
     serviceLocator.registerFactory<DailyLimitBloc>(
       () => DailyLimitBloc(
         loadDailyLimitUseCase: LoadDailyLimitUseCase(repository),

@@ -88,6 +88,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/levels/register_levels.dart';
 import '../../features/profile/fake_friends_repository.dart';
 
 /// Solve asks it for the count, which never arrives, and nothing else: the
@@ -341,6 +342,9 @@ void main() {
     // hears its count there: one made here would tell it on the real event
     // loop, which a pump never reaches.
     serviceLocator.registerLazySingleton(WaitingFriendRequestsBloc.new);
+    // The shell counts the day when it opens. These tests aren't about it,
+    // so the count never arrives.
+    registerLevels();
     serviceLocator.registerFactory<FriendsBloc>(
       () => FriendsBloc(
         loadProfile: LoadFriendProfileUseCase(friends),

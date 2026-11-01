@@ -32,6 +32,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../levels/register_levels.dart';
+
 CollectibleCard _card(String id, String name, Rarity rarity) {
   const scaleLabels = {
     Rarity.common: 'Small',
@@ -705,8 +707,9 @@ void main() {
   // holds the bar. The other pages are stand-ins here.
   group('inside the nav bar shell', () {
     Future<void> pumpInShell(WidgetTester tester) async {
-      // The shell reads Profile's dot from it.
+      // The shell reads Profile's dot from it, and counts the day.
       GetIt.instance.registerLazySingleton(WaitingFriendRequestsBloc.new);
+      registerLevels();
       final router = GoRouter(
         initialLocation: '/collection',
         routes: [
