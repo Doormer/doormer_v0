@@ -11,6 +11,7 @@ import 'package:doormer/src/features/questions/domain/usecase/share_question_use
 import 'package:doormer/src/features/questions/domain/usecase/stop_sharing_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/daily_limit_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/saved_questions_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/bloc/share_question_bloc.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_file_input.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_preparer.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -61,5 +62,12 @@ void main() {
     expect(GetIt.instance<RemoveSharedQuestionUseCase>(), isNotNull);
     expect(GetIt.instance<ReportSharedQuestionUseCase>(), isNotNull);
     expect(GetIt.instance<BlockFriendUseCase>(), isNotNull);
+  });
+
+  test('registers the bloc that shares a question', () {
+    GetIt.instance.registerSingleton<Dio>(Dio());
+    initQuestionsModule();
+
+    expect(GetIt.instance<ShareQuestionBloc>(), isNotNull);
   });
 }
