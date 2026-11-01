@@ -16,7 +16,11 @@ class FriendQuestionState extends Equatable {
   final FriendSummary? sharedBy;
 
   final bool isRemoving;
+
+  /// Once sent, the report stays sent while the reader is open, so the
+  /// report sheet opens again on its thanks and Block.
   final QuestionReportStatus reportStatus;
+
   final bool isBlocking;
 
   /// Set once the question has gone, and the reader should close.

@@ -26,11 +26,6 @@ class SharedQuestionRemoved extends FriendQuestionEvent {
   const SharedQuestionRemoved();
 }
 
-/// The student opened the report sheet.
-class SharedQuestionReportOpened extends FriendQuestionEvent {
-  const SharedQuestionReportOpened();
-}
-
 /// The student sent a report on the friend, with the question. [note] is
 /// trimmed, and empty when they wrote none.
 class SharedQuestionReported extends FriendQuestionEvent {

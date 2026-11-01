@@ -18,11 +18,15 @@ import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/bloc/friend_question_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/bloc/share_question_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/molecules/confirm_dialog_molecule.dart';
+import 'package:doormer/src/shared/design/atomic/organisms/report_sheet_organism.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -709,15 +713,22 @@ void main() {
       expect(find.text('Ask another question'), findsOneWidget);
     }
 
-    /// Reports Sam for bullying, and opens Block's dialog once the report
-    /// is sent.
-    Future<void> reportThenAskToBlock(WidgetTester tester) async {
+    /// Reports Sam for bullying, and waits for the sheet's thanks.
+    Future<void> sendReport(WidgetTester tester) async {
       await tester.tap(find.text('Report'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Bullying or being mean'));
       await tester.pump();
       await tester.tap(find.text('Send report'));
       await tester.pumpAndSettle();
+      expect(find.text('Thanks. The Doormer team will look at this.'),
+          findsOneWidget);
+    }
+
+    /// Reports Sam for bullying, and opens Block's dialog once the report
+    /// is sent.
+    Future<void> reportThenAskToBlock(WidgetTester tester) async {
+      await sendReport(tester);
       await tester.tap(find.text('Block'));
       await tester.pumpAndSettle();
       expect(find.text('Block Sam?'), findsOneWidget);
@@ -731,6 +742,8 @@ void main() {
       expect(find.text('Remove'), findsOneWidget);
       expect(find.text('Report'), findsOneWidget);
       expect(find.text('Share'), findsNothing);
+      expect(find.byType(BlocProvider<FriendQuestionBloc>), findsOneWidget);
+      expect(find.byType(BlocProvider<ShareQuestionBloc>), findsNothing);
     });
 
     testWidgets(
@@ -789,11 +802,106 @@ void main() {
       await tester.tap(find.text('Block'));
       await tester.pumpAndSettle();
       expect(find.text('Block Sam?'), findsOneWidget);
+      expect(
+        find.text("They won't see your cards or anything you shared, and "
+            "their requests won't reach you. They won't be told."),
+        findsOneWidget,
+      );
       await tester.tap(inDialog('Block'));
       await tester.pumpAndSettle();
 
       expect(sharing.calls.last, 'blockFriend 7');
       expect(router.routerDelegate.currentConfiguration.uri.path, '/saved');
+    });
+
+    testWidgets(
+        'a report that was sent stays sent: Report again shows Thanks and '
+        'Block, not a new form', (tester) async {
+      await pumpFriendQuestion(tester);
+      await sendReport(tester);
+      await tester.tap(find.byKey(const Key('report_close')));
+      await tester.pumpAndSettle();
+      expect(find.text('Report Sam'), findsNothing);
+
+      await tester.tap(find.text('Report'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Thanks. The Doormer team will look at this.'),
+          findsOneWidget);
+      expect(find.text('Block'), findsOneWidget);
+      expect(find.text('Send report'), findsNothing);
+      expect(sharing.calls, ['reportSharedQuestion 7 301 bullying ']);
+    });
+
+    testWidgets(
+        'a Block that fails can be tried again from Report, with no second '
+        'report', (tester) async {
+      final router = await pumpFriendQuestion(tester);
+      await reportThenAskToBlock(tester);
+      sharing.failNext['blockFriend'] =
+          NetworkFailure("We couldn't block that student. Try again.");
+      await tester.tap(inDialog('Block'));
+      await tester.pumpAndSettle();
+      expect(find.text('Report Sam'), findsNothing,
+          reason: 'the sheet closes once Block is confirmed');
+      expect(find.text("We couldn't block that student. Try again."),
+          findsOneWidget);
+      await waitOutToast(tester);
+
+      await tester.tap(find.text('Report'));
+      await tester.pumpAndSettle();
+      expect(find.text('Thanks. The Doormer team will look at this.'),
+          findsOneWidget);
+      await tester.tap(find.text('Block'));
+      await tester.pumpAndSettle();
+      await tester.tap(inDialog('Block'));
+      await tester.pumpAndSettle();
+
+      expect(sharing.calls, [
+        'reportSharedQuestion 7 301 bullying ',
+        'blockFriend 7',
+        'blockFriend 7',
+      ]);
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/saved');
+    });
+
+    testWidgets(
+        'a sheet reopened while its report is on its way shows it being sent, '
+        'then Thanks and Block', (tester) async {
+      await pumpFriendQuestion(tester);
+      await tester.tap(find.text('Report'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Bullying or being mean'));
+      await tester.pump();
+      final answer = sharing.hold = Completer<void>();
+      await tester.tap(find.text('Send report'));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('report_close')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('Report Sam'), findsNothing);
+
+      await tester.tap(find.text('Report'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      final sheet = find.byType(ReportSheetOrganism);
+      expect(sheet, findsOneWidget);
+      expect(find.text('Send report'), findsNothing,
+          reason: 'it spins while the report is on its way');
+      expect(
+        find.descendant(
+          of: sheet,
+          matching: find.byType(CircularProgressIndicator),
+        ),
+        findsOneWidget,
+      );
+      answer.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Thanks. The Doormer team will look at this.'),
+          findsOneWidget);
+      expect(find.text('Block'), findsOneWidget);
+      expect(sharing.calls, ['reportSharedQuestion 7 301 bullying ']);
     });
 
     testWidgets(

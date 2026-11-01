@@ -31,7 +31,6 @@ class FriendQuestionBloc
   }) : super(const FriendQuestionState()) {
     on<FriendQuestionStarted>(_onStarted);
     on<SharedQuestionRemoved>(_onRemoved);
-    on<SharedQuestionReportOpened>(_onReportOpened);
     on<SharedQuestionReported>(_onReported);
     on<FriendBlocked>(_onFriendBlocked);
   }
@@ -59,17 +58,6 @@ class FriendQuestionBloc
     emit(errorMessage == null
         ? state.copyWith(isRemoving: false, exit: FriendQuestionExit.removed)
         : state.copyWith(isRemoving: false, errorMessage: errorMessage));
-  }
-
-  /// Starts a new report each time the sheet opens. While a report is on its
-  /// way, the sheet stays as it is, so a sheet reopened meanwhile shows that
-  /// report being sent, and then its answer.
-  void _onReportOpened(
-    SharedQuestionReportOpened event,
-    Emitter<FriendQuestionState> emit,
-  ) {
-    if (state.reportStatus == QuestionReportStatus.sending) return;
-    emit(state.copyWith(reportStatus: QuestionReportStatus.unsent));
   }
 
   /// Sends the report with the question. The share must still stand when it

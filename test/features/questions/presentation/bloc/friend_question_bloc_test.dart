@@ -70,12 +70,10 @@ void main() {
       'reports the friend with the question, then says it was sent',
       build: build,
       seed: () => opened,
-      act: (bloc) => bloc
-        ..add(const SharedQuestionReportOpened())
-        ..add(const SharedQuestionReported(
-          reason: ReportReason.bullying,
-          note: 'Wrote something mean on it.',
-        )),
+      act: (bloc) => bloc.add(const SharedQuestionReported(
+        reason: ReportReason.bullying,
+        note: 'Wrote something mean on it.',
+      )),
       expect: () => [
         opened.copyWith(reportStatus: QuestionReportStatus.sending),
         opened.copyWith(reportStatus: QuestionReportStatus.sent),
@@ -104,79 +102,32 @@ void main() {
     );
 
     blocTest<FriendQuestionBloc, FriendQuestionState>(
-      'opening the sheet again starts a new report',
+      'a second report while one is on its way sends nothing, and the first '
+      'still gets its answer',
       build: build,
-      seed: () => opened.copyWith(reportStatus: QuestionReportStatus.sent),
-      act: (bloc) => bloc.add(const SharedQuestionReportOpened()),
-      expect: () => [opened],
-    );
-
-    group('a sheet reopened while a report is sending', () {
-      /// Sends a report the fake holds open, then reopens the sheet. Answers
-      /// with what lets the report through.
-      Future<Completer<void>> sendThenReopen(FriendQuestionBloc bloc) async {
+      seed: () => opened,
+      act: (bloc) async {
         final answer = repository.hold = Completer<void>();
         bloc.add(const SharedQuestionReported(
           reason: ReportReason.bullying,
           note: '',
         ));
         await Future<void>.delayed(Duration.zero);
-        bloc.add(const SharedQuestionReportOpened());
+        bloc.add(const SharedQuestionReported(
+          reason: ReportReason.other,
+          note: '',
+        ));
         await Future<void>.delayed(Duration.zero);
-        return answer;
-      }
-
-      blocTest<FriendQuestionBloc, FriendQuestionState>(
-        'keeps that report on its way, and sends no second one',
-        build: build,
-        seed: () => opened,
-        act: (bloc) async {
-          final answer = await sendThenReopen(bloc);
-          bloc.add(const SharedQuestionReported(
-            reason: ReportReason.other,
-            note: '',
-          ));
-          await Future<void>.delayed(Duration.zero);
-          answer.complete();
-        },
-        verify: (_) => expect(repository.calls, [
-          'reportSharedQuestion 7 301 bullying ',
-        ]),
-      );
-
-      blocTest<FriendQuestionBloc, FriendQuestionState>(
-        'says when that report is sent',
-        build: build,
-        seed: () => opened,
-        act: (bloc) async {
-          final answer = await sendThenReopen(bloc);
-          answer.complete();
-        },
-        expect: () => [
-          opened.copyWith(reportStatus: QuestionReportStatus.sending),
-          opened.copyWith(reportStatus: QuestionReportStatus.sent),
-        ],
-      );
-
-      blocTest<FriendQuestionBloc, FriendQuestionState>(
-        'says why that report failed, and can send again',
-        build: build,
-        setUp: () => repository.failNext['reportSharedQuestion'] =
-            NetworkFailure("We couldn't send the report. Try again."),
-        seed: () => opened,
-        act: (bloc) async {
-          final answer = await sendThenReopen(bloc);
-          answer.complete();
-        },
-        expect: () => [
-          opened.copyWith(reportStatus: QuestionReportStatus.sending),
-          opened.copyWith(
-            reportStatus: QuestionReportStatus.unsent,
-            errorMessage: "We couldn't send the report. Try again.",
-          ),
-        ],
-      );
-    });
+        answer.complete();
+      },
+      expect: () => [
+        opened.copyWith(reportStatus: QuestionReportStatus.sending),
+        opened.copyWith(reportStatus: QuestionReportStatus.sent),
+      ],
+      verify: (_) => expect(repository.calls, [
+        'reportSharedQuestion 7 301 bullying ',
+      ]),
+    );
   });
 
   group('Block', () {

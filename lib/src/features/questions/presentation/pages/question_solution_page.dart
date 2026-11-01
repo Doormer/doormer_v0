@@ -329,10 +329,13 @@ class QuestionSolutionPage extends StatelessWidget {
   /// handed in.
   ///
   /// Block shows only once the report is sent: a block ends the share, and a
-  /// report about a share that has ended is refused.
+  /// report about a share that has ended is refused. A sent report stays sent
+  /// while the reader is open, so the sheet opens again on its thanks and
+  /// Block, and a Block that failed can be tried again without a second
+  /// report. A sheet opened while a report is on its way shows it being sent,
+  /// and then its answer.
   void _openReport(BuildContext context, FriendSummary sharedBy) {
-    final bloc = context.read<FriendQuestionBloc>()
-      ..add(const SharedQuestionReportOpened());
+    final bloc = context.read<FriendQuestionBloc>();
     showModalBottomSheet<void>(
       context: context,
       useRootNavigator: true,
