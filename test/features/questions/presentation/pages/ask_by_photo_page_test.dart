@@ -764,7 +764,7 @@ void main() {
     // panels: a spinner, the time so far and what the solver is doing.
     expect(find.byType(SolvingProgressOrganism), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.text('Solving your photo'), findsOneWidget);
+    expect(find.text('Solving your question'), findsOneWidget);
     expect(find.text("What's happening"), findsOneWidget);
     expect(find.byType(PhotoPreviewMolecule), findsNothing);
     expect(repository.callCount, 1);
@@ -916,7 +916,7 @@ void main() {
 
     expect(repository.callCount, 1);
     expect(find.byType(QuestionSolutionPage), findsNothing);
-    expect(find.text('We could not read it'), findsOneWidget);
+    expect(find.text("Couldn't read that photo"), findsOneWidget);
     expect(find.widgetWithText(AppButtonAtom, 'Change photo'), findsOneWidget);
     expect(find.text('Type instead'), findsNothing);
   });
@@ -2038,7 +2038,7 @@ void main() {
       await selectPhoto(tester);
       await submitPhoto(tester);
 
-      expect(find.text('Solver timed out'), findsOneWidget);
+      expect(find.text('That took too long'), findsOneWidget);
       expect(find.text(noneLeftText), findsOneWidget);
       expect(find.text('Try again'), findsNothing);
       expect(submitButton(tester).onPressed, isNull);
@@ -2059,7 +2059,7 @@ void main() {
       await selectPhoto(tester);
       await submitPhoto(tester);
 
-      expect(find.text('We could not read it'), findsOneWidget);
+      expect(find.text("Couldn't read that photo"), findsOneWidget);
       expect(find.text(noneLeftText), findsOneWidget);
       expect(submitButton(tester).onPressed, isNull);
     });
@@ -2180,7 +2180,7 @@ void main() {
       await submitPhoto(tester);
 
       expect(
-          find.text('Your last photo is still being solved'), findsOneWidget);
+          find.text('Still solving your last photo'), findsOneWidget);
 
       repository
         ..failure = null

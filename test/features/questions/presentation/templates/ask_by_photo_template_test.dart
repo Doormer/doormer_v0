@@ -249,7 +249,7 @@ void main() {
       expect(
         tester.getBottomLeft(find.text('Why ads?')).dy,
         lessThanOrEqualTo(
-          tester.getTopLeft(find.textContaining('A powerful AI')).dy,
+          tester.getTopLeft(find.textContaining('Our AI is reading')).dy,
         ),
         reason: 'a link right beside the ad invites accidental taps on it, '
             'and Google could read the wording as part of the ad',
