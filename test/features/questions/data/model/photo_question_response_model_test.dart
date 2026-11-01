@@ -318,6 +318,25 @@ void main() {
           const FriendSummary(friendId: '7', nickname: 'Sam'));
     });
 
+    // Dropping a shared_by it can't read would open a friend's question as
+    // the student's own, with Share and an answer that pays.
+    for (final (what, sharedBy) in [
+      ('a string', 'Sam'),
+      ('an empty object', <String, dynamic>{}),
+    ]) {
+      test("a friend's question whose shared_by is $what can't be read", () {
+        expect(
+          () => PhotoQuestionResponseModel.fromJson({
+            'status': 'unreadable',
+            'question_id': '501',
+            'shared_with': [],
+            'shared_by': sharedBy,
+          }),
+          throwsA(anything),
+        );
+      });
+    }
+
     test('an answer to a photo is shared with no one', () {
       final outcome = PhotoQuestionResponseModel.fromJson(
           {'status': 'unreadable', 'question_id': 'q1'}).toEntity();

@@ -350,5 +350,42 @@ void main() {
         );
       });
     }
+
+    // A status with no words of its own, for this call or for any call.
+    for (final (name, call, status, callMessage)
+        in <(String, _Call, int, String)>[
+      (
+        'sharedQuestions',
+        (sharing) => sharing.sharedQuestions(),
+        404,
+        "We couldn't load the questions shared with you.",
+      ),
+      (
+        'removeSharedQuestion',
+        (sharing) => sharing.removeSharedQuestion('501'),
+        404,
+        "We couldn't remove that question. Try again.",
+      ),
+      (
+        'share',
+        (sharing) => sharing.share('501', ['7']),
+        400,
+        "We couldn't share that question. Try again.",
+      ),
+    ]) {
+      test("$name: $status says the call's words, never what the API wrote",
+          () async {
+        await expectLater(
+          call(_dataSource(_FakeAdapter(
+            status: status,
+            body: 'no row in question_share for question 501',
+          ))),
+          throwsA(isA<ApiFailure>()
+              .having((f) => f.statusCode, 'statusCode', status)
+              .having(
+                  (f) => f.message, 'message', 'Error $status: $callMessage')),
+        );
+      });
+    }
   });
 }

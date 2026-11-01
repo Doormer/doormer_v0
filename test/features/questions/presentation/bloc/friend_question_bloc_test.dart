@@ -262,6 +262,32 @@ void main() {
     );
 
     blocTest<FriendQuestionBloc, FriendQuestionState>(
+      'a second Block while one is on its way sends nothing, and the first '
+      'still gets its answer',
+      build: build,
+      seed: () => opened.copyWith(reportStatus: QuestionReportStatus.sent),
+      act: (bloc) async {
+        final answer = repository.hold = Completer<void>();
+        bloc.add(const FriendBlocked());
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(const FriendBlocked());
+        await Future<void>.delayed(Duration.zero);
+        answer.complete();
+      },
+      expect: () => [
+        opened.copyWith(
+          reportStatus: QuestionReportStatus.sent,
+          isBlocking: true,
+        ),
+        opened.copyWith(
+          reportStatus: QuestionReportStatus.sent,
+          exit: FriendQuestionExit.blocked,
+        ),
+      ],
+      verify: (_) => expect(repository.calls, ['blockFriend 7']),
+    );
+
+    blocTest<FriendQuestionBloc, FriendQuestionState>(
       'a block that fails says why, and stays',
       build: build,
       setUp: () => repository.failNext['blockFriend'] =
