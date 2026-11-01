@@ -7,7 +7,7 @@ sealed class ActiveDayState extends Equatable {
   List<Object?> get props => const [];
 }
 
-/// Nothing counted since the app started.
+/// Nothing counted since the app opened or the session started.
 class ActiveDayNotCounted extends ActiveDayState {
   const ActiveDayNotCounted();
 }

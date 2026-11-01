@@ -152,6 +152,7 @@ try {
   - Never make such a page a top-level route: going there throws the tabs away.
   - A page that stays inside its tab, under the nav bar, is a child route of the tab without `parentNavigatorKey`, such as Profile's `setup`, `add`, `blocked` and `friends/:friendId/cards`. The tab's own page is told when such a page covers it, as `ProfilePage(isCovered: state.uri.path != '/profile')` is, and refreshes when that page closes.
   - Every router that loads `destinationRoutes`, test routers included, is built with `navigatorKey: rootNavigatorKey`.
+- **The nav bar shell counts the active day** (`destination_shell.dart`). It asks `ActiveDayBloc` to count when it first shows and on `AppLifecycleListener.onShow`, when a hidden tab shows again, and it shows the toast for a new level. Tests that build the shell call `registerLevels()` (`test/features/levels/register_levels.dart`).
 - **Invite links**, `/add/<code>` (`invite_routes.dart`): the router's redirect, `guardNavigation` in `route_guard.dart`, keeps the code in `InviteCodeStorage` for 7 days, but only while the student is signed out. Signed in, the first nav bar page they head for opens the code's check, `/profile/add/<code>`, and the check forgets the kept code once it shows. A signed-in student who opens an invite link goes straight to the check, so nothing is kept.
 
 ## Atomic Design (presentation layer)

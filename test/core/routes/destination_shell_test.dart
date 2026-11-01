@@ -126,7 +126,8 @@ void main() {
   testWidgets(
       'a new level shows its toast at the top for 4 seconds, and only once',
       (tester) async {
-    registerLevels(FakeLevelsRepository([newMoonAt32, alreadyCountedAt32]));
+    final levels =
+        registerLevels(FakeLevelsRepository([newMoonAt32, alreadyCountedAt32]));
 
     await pumpShell(tester);
 
@@ -140,11 +141,13 @@ void main() {
     expect(find.text(_newMoon), findsNothing);
 
     // The same day, counted again when the tab comes back, then another
-    // page, which rebuilds the shell: nothing new to celebrate.
+    // page, which rebuilds the shell but counts nothing: nothing new to
+    // celebrate.
     await _leaveTabAndReturn(tester);
     await tester.tap(find.byIcon(Icons.style_outlined));
     await tester.pumpAndSettle();
 
+    expect(levels.counts, 2);
     expect(find.text(_newMoon), findsNothing);
   });
 

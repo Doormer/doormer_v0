@@ -3,12 +3,27 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
+import 'package:doormer/src/features/levels/domain/entity/active_day_outcome.dart';
 import 'package:doormer/src/features/levels/domain/usecase/count_active_day_usecase.dart';
 import 'package:doormer/src/features/levels/presentation/bloc/active_day_bloc.dart';
 import 'package:doormer/src/shared/levels/bloc/level_progress_bloc.dart';
+import 'package:doormer/src/shared/levels/entity/level.dart';
+import 'package:doormer/src/shared/levels/entity/level_icon.dart';
+import 'package:doormer/src/shared/levels/entity/level_progress.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../fake_levels_repository.dart';
+
+/// Another student's first active day: level 0, 4 days from a star.
+const _countedAt1 = ActiveDayOutcome(
+  counted: true,
+  progress: LevelProgress(
+    activeDays: 1,
+    level: Level(number: 0, suns: 0, moons: 0, stars: 0),
+    activeDaysToNextLevel: 4,
+    nextLevelIcon: LevelIcon.star,
+  ),
+);
 
 ActiveDayBloc _bloc(
   FakeLevelsRepository levels, {
@@ -107,5 +122,86 @@ void main() {
 
     await expectLater(bloc.stream, emits(const ActiveDayCounted(newMoonAt32)));
     expect(levels.counts, 1);
+  });
+
+  // Whoever signs in may be another student, so the answer to a count asked
+  // for before the session started is the last student's.
+  group('a new session', () {
+    late FakeLevelsRepository levels;
+    late LevelProgressBloc levelProgress;
+
+    blocTest<ActiveDayBloc, ActiveDayState>(
+      "drops the answer to the last student's count, and counts the new "
+      "student's day",
+      setUp: () {
+        // The last student's count waits for its answer while the new
+        // student's goes ahead, so the new student's outcome comes first.
+        levels = FakeLevelsRepository([_countedAt1, newMoonAt32])
+          ..hold = Completer<void>();
+        levelProgress = LevelProgressBloc();
+      },
+      build: () => _bloc(levels, levelProgress: levelProgress),
+      act: (bloc) async {
+        bloc.add(const ActiveDayCountRequested());
+        await Future<void>.delayed(Duration.zero);
+        final lastStudentsAnswer = levels.hold!;
+        levels.hold = null;
+
+        bloc
+          ..add(const ActiveDaySessionStarted())
+          ..add(const ActiveDayCountRequested());
+        await Future<void>.delayed(Duration.zero);
+        lastStudentsAnswer.complete();
+        await Future<void>.delayed(Duration.zero);
+      },
+      expect: () => const [
+        ActiveDayCounting(),
+        ActiveDayNotCounted(),
+        ActiveDayCounting(),
+        ActiveDayCounted(_countedAt1),
+      ],
+      verify: (_) => expect(levelProgress.state.progress, _countedAt1.progress),
+    );
+
+    blocTest<ActiveDayBloc, ActiveDayState>(
+      'with no count on its way starts afresh, and the next count goes ahead',
+      build: () => _bloc(FakeLevelsRepository([newMoonAt32, _countedAt1])),
+      act: (bloc) async {
+        bloc.add(const ActiveDayCountRequested());
+        await Future<void>.delayed(Duration.zero);
+        bloc
+          ..add(const ActiveDaySessionStarted())
+          ..add(const ActiveDayCountRequested());
+      },
+      expect: () => const [
+        ActiveDayCounting(),
+        ActiveDayCounted(newMoonAt32),
+        ActiveDayNotCounted(),
+        ActiveDayCounting(),
+        ActiveDayCounted(_countedAt1),
+      ],
+    );
+
+    for (final (name, error) in [
+      ('a Failure', ServerFailure("We couldn't count today as an active day.")),
+      ('any other error', StateError('boom')),
+    ]) {
+      blocTest<ActiveDayBloc, ActiveDayState>(
+        "drops the last student's count that fails afterwards, with $name",
+        setUp: () => levels = FakeLevelsRepository()
+          ..failNext = error
+          ..hold = Completer<void>(),
+        build: () => _bloc(levels),
+        act: (bloc) async {
+          bloc.add(const ActiveDayCountRequested());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const ActiveDaySessionStarted());
+          await Future<void>.delayed(Duration.zero);
+          levels.hold!.complete();
+          await Future<void>.delayed(Duration.zero);
+        },
+        expect: () => const [ActiveDayCounting(), ActiveDayNotCounted()],
+      );
+    }
   });
 }

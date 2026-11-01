@@ -4,6 +4,7 @@ import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/routes/app_router.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/collection/domain/repository/collection_repository.dart';
+import 'package:doormer/src/features/levels/presentation/bloc/active_day_bloc.dart';
 import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
 import 'package:doormer/src/shared/levels/bloc/level_progress_bloc.dart';
 import 'package:doormer/src/shared/sessions/bloc/global_session_bloc.dart';
@@ -47,14 +48,16 @@ class MyApp extends StatelessWidget {
           if (state is SessionActiveState) {
             // Whoever just signed in may not be the student the remembered
             // deck list belongs to, whose waiting requests the dot counted,
-            // or whose level Profile showed. Profile counts their requests
-            // once it loads, and their first count of the day brings their
-            // level.
+            // whose level Profile showed, or whose count of the day is still
+            // on its way. Profile counts their requests once it loads, and
+            // any count after signing in brings their progress.
             serviceLocator<CollectionRepository>().forgetLastDeckList();
             serviceLocator<WaitingFriendRequestsBloc>()
                 .add(const WaitingFriendRequestsCounted(0));
             serviceLocator<LevelProgressBloc>()
                 .add(const LevelProgressCleared());
+            serviceLocator<ActiveDayBloc>()
+                .add(const ActiveDaySessionStarted());
           }
           if (state is SessionExpiredState) {
             AppRouter.router.go('/auth');

@@ -12,3 +12,9 @@ sealed class ActiveDayEvent extends Equatable {
 class ActiveDayCountRequested extends ActiveDayEvent {
   const ActiveDayCountRequested();
 }
+
+/// A session started: whoever signed in may be another student, so the
+/// answer to a count asked for before is the last student's.
+class ActiveDaySessionStarted extends ActiveDayEvent {
+  const ActiveDaySessionStarted();
+}

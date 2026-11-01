@@ -8,9 +8,8 @@ abstract final class LevelUpPresenter {
   /// "New moon! You're level 4.", for a count that raised the level. Null
   /// for any other state, which says nothing.
   static String? toastFor(ActiveDayState state) {
-    if (state is! ActiveDayCounted) return null;
-    final newIcon = state.outcome.newIcon;
-    if (newIcon == null) return null;
+    if (state is! ActiveDayCounted || !state.outcome.raisedLevel) return null;
+    final newIcon = state.outcome.newIcon!;
     final level = state.outcome.progress.level.number;
     return "New ${LevelLabels.iconName(newIcon)}! You're level $level.";
   }

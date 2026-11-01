@@ -22,4 +22,11 @@ void main() {
     expect(locator<CountActiveDayUseCase>(), isNotNull);
     expect(locator<ActiveDayBloc>(), same(locator<ActiveDayBloc>()));
   });
+
+  test('the bloc tells its progress to the app-wide LevelProgressBloc', () {
+    expect(
+      locator<ActiveDayBloc>().levelProgress,
+      same(locator<LevelProgressBloc>()),
+    );
+  });
 }
