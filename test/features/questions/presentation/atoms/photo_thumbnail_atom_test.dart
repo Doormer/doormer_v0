@@ -150,4 +150,26 @@ void main() {
     expect(tester.widget<RawImage>(find.byType(RawImage)).image, isNotNull,
         reason: 'the photo stays on show until the new link loads');
   });
+
+  // A list can hand a thumbnail to another question, as Saved's rows do
+  // when a question comes in at the top.
+  testWidgets('starts blank for another photo, never showing the last one',
+      (tester) async {
+    final photo = await tester.runAsync(() => createTestImage(width: 3));
+    await tester.pumpWidget(_host(PhotoThumbnailAtom(
+      url: 'https://example.test/thumbnail/42.jpg?sig=monday',
+      height: 80,
+      imageProviderBuilder: (_) => _DownloadedImageProvider(photo!),
+    )));
+    expect(tester.widget<RawImage>(find.byType(RawImage)).image, isNotNull);
+
+    await tester.pumpWidget(_host(PhotoThumbnailAtom(
+      url: 'https://example.test/thumbnail/43.jpg?sig=monday',
+      height: 80,
+      imageProviderBuilder: (_) => _DownloadingImageProvider(),
+    )));
+
+    expect(tester.widget<RawImage>(find.byType(RawImage)).image, isNull,
+        reason: "question 42's photo isn't shown for question 43");
+  });
 }
