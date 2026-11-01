@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/profile/presentation/templates/invite_template.dart';
@@ -9,6 +12,10 @@ import 'package:flutter_test/flutter_test.dart';
 const _heading = 'A friend invited you to Doormer';
 const _line =
     'Snap a homework question and Doormer turns it into a step-by-step quest.';
+
+/// The width in pixels of the PNG image at [path].
+int _pngWidth(String path) =>
+    ByteData.sublistView(File(path).readAsBytesSync()).getUint32(16);
 
 /// The invite page as the app shows it, in a [window] of that size.
 Future<void> _pump(
@@ -80,6 +87,20 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.getTopLeft(_logo).dy, lessThan(start.dy));
+  });
+
+  testWidgets(
+      'at the largest UI scale, no screen draws the logo larger than its '
+      'image', (tester) async {
+    await _pump(tester, window: const Size(1920, 1080));
+    await tester.pumpAndSettle();
+
+    final drawn = tester.getSize(_logo).width;
+    for (final (folder, pixelRatio) in [('', 1), ('2.0x/', 2), ('3.0x/', 3)]) {
+      final image = 'assets/images/brand/${folder}doormer_icon.png';
+      expect(_pngWidth(image), greaterThanOrEqualTo(drawn * pixelRatio),
+          reason: image);
+    }
   });
 
   testWidgets('with animations off, the logo never moves', (tester) async {

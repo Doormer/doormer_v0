@@ -191,8 +191,9 @@ night tile.
   small or leave it out of these forms; several name the app in the heading
   instead. The exception, added on 2026-11-01, is the page a friend's invite
   link opens for a student who isn't signed in. It shows the rounded tile
-  above its heading, from `assets/images/brand/doormer_icon.png` (96 × 96 px,
-  with 192 and 288 px copies in `2.0x/` and `3.0x/`).
+  above its heading, from `assets/images/brand/doormer_icon.png` (128 × 128
+  px, with 256 and 384 px copies in `2.0x/` and `3.0x/`). The page draws it
+  at up to 128 logical pixels, so no screen enlarges the image.
 - The Mac app's name. Its menu bar still says "doormer" because the name
   comes from the Xcode product name, which also names the `doormer.app`
   bundle that the Mac tests load (`TEST_HOST`).

@@ -122,10 +122,11 @@ final iconFiles = <IconFile>[
     IconFile('$macFolder/app_icon_$size.png', size, IconShape.mac),
   const IconFile(
       'linux/runner/resources/app_icon.png', 256, IconShape.roundedTile),
-  // The app's own copy, 96 logical pixels square. Flutter takes the 2.0x or
-  // 3.0x one on sharper screens.
+  // The app's own copy, 128 px square: the invite page draws the logo 88
+  // design pixels wide, which is up to 128 logical pixels at the UI's largest
+  // scale, 1.45. Flutter takes the 2.0x or 3.0x copy on sharper screens.
   for (final (folder, scale) in const [('', 1), ('2.0x/', 2), ('3.0x/', 3)])
-    IconFile('$appAssetsFolder/${folder}doormer_icon.png', 96 * scale,
+    IconFile('$appAssetsFolder/${folder}doormer_icon.png', 128 * scale,
         IconShape.roundedTile),
 ];
 
