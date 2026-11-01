@@ -576,7 +576,8 @@ void main() {
       _registerReader(repository, sharing: sharing);
     });
 
-    /// Opens Sam's question 301 from Saved, on a phone's screen.
+    /// Opens Sam's question 301 from Saved, on a phone's screen. Solve is
+    /// there too, where Ask another question goes.
     Future<GoRouter> pumpFriendQuestion(WidgetTester tester) async {
       tester.view.physicalSize = const Size(360, 690);
       tester.view.devicePixelRatio = 1;
@@ -584,6 +585,10 @@ void main() {
       final router = GoRouter(
         initialLocation: '/saved/301/solution',
         routes: [
+          GoRoute(
+            path: '/questions/photo',
+            builder: (_, __) => const Scaffold(body: Text('Solve page')),
+          ),
           GoRoute(
             path: '/saved',
             builder: (_, __) => const Scaffold(body: Text('Saved page')),
@@ -623,6 +628,29 @@ void main() {
           of: find.byType(ConfirmDialogMolecule),
           matching: find.widgetWithText(AppButtonAtom, label),
         );
+
+    /// Reads Sam's question to the end and opens its answer, so the button
+    /// under it says Ask another question, which goes to Solve.
+    Future<void> readToTheAnswer(WidgetTester tester) async {
+      final outcome = await _AssetRepository().loadSampleSolution();
+      await _revealTheAnswer(tester, outcome.solution!.steps.length);
+      await tester.pumpAndSettle();
+      expect(find.text('Ask another question'), findsOneWidget);
+    }
+
+    /// Reports Sam for bullying, and opens Block's dialog once the report
+    /// is sent.
+    Future<void> reportThenAskToBlock(WidgetTester tester) async {
+      await tester.tap(find.text('Report'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Bullying or being mean'));
+      await tester.pump();
+      await tester.tap(find.text('Send report'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Block'));
+      await tester.pumpAndSettle();
+      expect(find.text('Block Sam?'), findsOneWidget);
+    }
 
     testWidgets('says who shared it, with Remove and Report, and no Share',
         (tester) async {
@@ -695,6 +723,130 @@ void main() {
 
       expect(sharing.calls.last, 'blockFriend 7');
       expect(router.routerDelegate.currentConfiguration.uri.path, '/saved');
+    });
+
+    testWidgets(
+        'a removal that answers as the reader closes toward Solve leaves the '
+        'student on Solve, and still says it is removed', (tester) async {
+      final router = await pumpFriendQuestion(tester);
+      await readToTheAnswer(tester);
+      await tester.tap(find.text('Remove'));
+      await tester.pumpAndSettle();
+      final answer = sharing.hold = Completer<void>();
+      await tester.tap(inDialog('Remove'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // The reader takes 300ms to close. The removal answers halfway through.
+      await tester.tap(find.text('Ask another question'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      answer.complete();
+      await tester.pumpAndSettle();
+      final landedOn = router.routerDelegate.currentConfiguration.uri.path;
+      expect(find.text('Question removed.'), findsOneWidget);
+      // Waited out before the checks below, so a check that fails can't leave
+      // the toast running into the next test.
+      await waitOutToast(tester);
+
+      expect(sharing.calls, ['removeSharedQuestion 301']);
+      expect(landedOn, '/questions/photo');
+      expect(find.text('Solve page'), findsOneWidget);
+    });
+
+    testWidgets(
+        'a block that answers as the reader closes toward Solve leaves the '
+        'student on Solve', (tester) async {
+      final router = await pumpFriendQuestion(tester);
+      await readToTheAnswer(tester);
+      await reportThenAskToBlock(tester);
+      final answer = sharing.hold = Completer<void>();
+      await tester.tap(inDialog('Block'));
+      await tester.pumpAndSettle();
+      expect(find.text('Report Sam'), findsNothing);
+
+      // The reader takes 300ms to close. The block answers halfway through.
+      await tester.tap(find.text('Ask another question'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      answer.complete();
+      await tester.pumpAndSettle();
+
+      expect(sharing.calls.last, 'blockFriend 7');
+      expect(router.routerDelegate.currentConfiguration.uri.path,
+          '/questions/photo');
+      expect(find.text('Solve page'), findsOneWidget);
+    });
+
+    testWidgets(
+        'a block that fails as the report sheet closes says why, and leaves '
+        'the reader open', (tester) async {
+      final router = await pumpFriendQuestion(tester);
+      await reportThenAskToBlock(tester);
+      final answer = sharing.hold = Completer<void>();
+      sharing.failNext['blockFriend'] =
+          RefusedFailure(404, "We couldn't find that student.");
+      await tester.tap(inDialog('Block'));
+
+      // The sheet takes a moment to close. The block fails as it does.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      answer.complete();
+      await tester.pumpAndSettle();
+
+      expect(router.routerDelegate.currentConfiguration.uri.path,
+          '/saved/301/solution');
+      expect(find.text('Report Sam'), findsNothing);
+      expect(find.text('Shared by Sam'), findsOneWidget);
+      expect(find.text("We couldn't find that student."), findsOneWidget);
+      await waitOutToast(tester);
+    });
+
+    testWidgets('a removal that fails says why, and leaves the reader open',
+        (tester) async {
+      final router = await pumpFriendQuestion(tester);
+      sharing.failNext['removeSharedQuestion'] =
+          NetworkFailure("We couldn't remove that question. Try again.");
+
+      await tester.tap(find.text('Remove'));
+      await tester.pumpAndSettle();
+      await tester.tap(inDialog('Remove'));
+      await tester.pumpAndSettle();
+
+      expect(sharing.calls, ['removeSharedQuestion 301']);
+      expect(router.routerDelegate.currentConfiguration.uri.path,
+          '/saved/301/solution');
+      expect(find.text("We couldn't remove that question. Try again."),
+          findsOneWidget);
+      expect(find.text('Remove'), findsOneWidget,
+          reason: 'the student can try again');
+      await waitOutToast(tester);
+    });
+
+    testWidgets(
+        'a removal that answers while the report sheet is open goes back to '
+        'Saved, and takes the sheet with it', (tester) async {
+      final router = await pumpFriendQuestion(tester);
+      await tester.tap(find.text('Remove'));
+      await tester.pumpAndSettle();
+      final answer = sharing.hold = Completer<void>();
+      await tester.tap(inDialog('Remove'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // The sheet covers the reader, which is still open, when the removal
+      // answers.
+      await tester.tap(find.text('Report'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('Report Sam'), findsOneWidget);
+      answer.complete();
+      await tester.pumpAndSettle();
+
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/saved');
+      expect(find.text('Report Sam'), findsNothing);
+      expect(find.text('Question removed.'), findsOneWidget);
+      await waitOutToast(tester);
     });
   });
 }

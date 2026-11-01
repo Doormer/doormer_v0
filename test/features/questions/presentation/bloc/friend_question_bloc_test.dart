@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
@@ -108,6 +110,73 @@ void main() {
       act: (bloc) => bloc.add(const SharedQuestionReportOpened()),
       expect: () => [opened],
     );
+
+    group('a sheet reopened while a report is sending', () {
+      /// Sends a report the fake holds open, then reopens the sheet. Answers
+      /// with what lets the report through.
+      Future<Completer<void>> sendThenReopen(FriendQuestionBloc bloc) async {
+        final answer = repository.hold = Completer<void>();
+        bloc.add(const SharedQuestionReported(
+          reason: ReportReason.bullying,
+          note: '',
+        ));
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(const SharedQuestionReportOpened());
+        await Future<void>.delayed(Duration.zero);
+        return answer;
+      }
+
+      blocTest<FriendQuestionBloc, FriendQuestionState>(
+        'keeps that report on its way, and sends no second one',
+        build: build,
+        seed: () => opened,
+        act: (bloc) async {
+          final answer = await sendThenReopen(bloc);
+          bloc.add(const SharedQuestionReported(
+            reason: ReportReason.other,
+            note: '',
+          ));
+          await Future<void>.delayed(Duration.zero);
+          answer.complete();
+        },
+        verify: (_) => expect(repository.calls, [
+          'reportSharedQuestion 7 301 bullying ',
+        ]),
+      );
+
+      blocTest<FriendQuestionBloc, FriendQuestionState>(
+        'says when that report is sent',
+        build: build,
+        seed: () => opened,
+        act: (bloc) async {
+          final answer = await sendThenReopen(bloc);
+          answer.complete();
+        },
+        expect: () => [
+          opened.copyWith(reportStatus: QuestionReportStatus.sending),
+          opened.copyWith(reportStatus: QuestionReportStatus.sent),
+        ],
+      );
+
+      blocTest<FriendQuestionBloc, FriendQuestionState>(
+        'says why that report failed, and can send again',
+        build: build,
+        setUp: () => repository.failNext['reportSharedQuestion'] =
+            NetworkFailure("We couldn't send the report. Try again."),
+        seed: () => opened,
+        act: (bloc) async {
+          final answer = await sendThenReopen(bloc);
+          answer.complete();
+        },
+        expect: () => [
+          opened.copyWith(reportStatus: QuestionReportStatus.sending),
+          opened.copyWith(
+            reportStatus: QuestionReportStatus.unsent,
+            errorMessage: "We couldn't send the report. Try again.",
+          ),
+        ],
+      );
+    });
   });
 
   group('Block', () {

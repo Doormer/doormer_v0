@@ -61,10 +61,14 @@ class FriendQuestionBloc
         : state.copyWith(isRemoving: false, errorMessage: errorMessage));
   }
 
+  /// Starts a new report each time the sheet opens. While a report is on its
+  /// way, the sheet stays as it is, so a sheet reopened meanwhile shows that
+  /// report being sent, and then its answer.
   void _onReportOpened(
     SharedQuestionReportOpened event,
     Emitter<FriendQuestionState> emit,
   ) {
+    if (state.reportStatus == QuestionReportStatus.sending) return;
     emit(state.copyWith(reportStatus: QuestionReportStatus.unsent));
   }
 

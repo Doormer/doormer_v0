@@ -299,6 +299,10 @@ class QuestionSolutionPage extends StatelessWidget {
       CustomToast.show(context,
           message: 'Question removed.', type: ToastificationType.success);
     }
+    // An answer can come as the reader closes because the student left it,
+    // such as by Ask another question. The reader has then left the
+    // navigator, and going to the tab would undo where they chose to go.
+    if (!(ModalRoute.of(context)?.isActive ?? false)) return;
     context.go(tabLocation);
   }
 
