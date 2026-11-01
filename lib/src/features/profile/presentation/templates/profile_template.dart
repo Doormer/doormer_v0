@@ -12,7 +12,20 @@ import '../params/profile_body_params.dart';
 
 /// Profile, the home for friends: its heading, whatever [body] holds, and
 /// Sign out, which works whatever state friends are in.
+///
+/// On a wide screen, friends and requests sit two to a line, as tiles, so
+/// each one's actions stay beside their name, and the buttons keep their
+/// own width instead of stretching across the column.
 class ProfileTemplate extends StatelessWidget {
+  /// From this width up, the screen is wide.
+  ///
+  /// Measured against the content column, not the window: see
+  /// `CollectionTemplate.railBreakpoint`. The column is at most 760 wide.
+  static const double wideBreakpoint = 600;
+
+  /// The narrowest Add a friend and Sign out get on a wide screen.
+  static const double minWideButtonWidth = 240;
+
   final ProfileBodyParams body;
   final bool isSigningOut;
   final VoidCallback onSignOut;
@@ -26,6 +39,7 @@ class ProfileTemplate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isWide = MediaQuery.sizeOf(context).width >= wideBreakpoint;
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -37,14 +51,17 @@ class ProfileTemplate extends StatelessWidget {
               child: ListView(
                 padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 24.h),
                 children: [
-                  ..._content(),
+                  ..._content(isWide: isWide),
                   SizedBox(height: 24.h),
-                  AppButtonAtom(
-                    label: 'Sign out',
-                    variant: AppButtonVariant.outlined,
-                    expand: true,
-                    isLoading: isSigningOut,
-                    onPressed: isSigningOut ? null : onSignOut,
+                  _keepOwnWidthWhenWide(
+                    AppButtonAtom(
+                      label: 'Sign out',
+                      variant: AppButtonVariant.outlined,
+                      expand: !isWide,
+                      isLoading: isSigningOut,
+                      onPressed: isSigningOut ? null : onSignOut,
+                    ),
+                    isWide: isWide,
                   ),
                 ],
               ),
@@ -55,8 +72,23 @@ class ProfileTemplate extends StatelessWidget {
     );
   }
 
-  List<Widget> _content() {
+  /// On a wide screen, [button] keeps its own width, but no narrower than
+  /// [minWideButtonWidth], on the left. On a phone it stays as wide as the
+  /// column.
+  Widget _keepOwnWidthWhenWide(AppButtonAtom button, {required bool isWide}) {
+    if (!isWide) return button;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: minWideButtonWidth),
+        child: button,
+      ),
+    );
+  }
+
+  List<Widget> _content({required bool isWide}) {
     final messageStyle = TextStyle(fontSize: 13.sp, color: QuestPalette.body);
+    final columns = isWide ? 2 : 1;
     return switch (body) {
       ProfileLoadingParams() => [
           Padding(
@@ -86,18 +118,24 @@ class ProfileTemplate extends StatelessWidget {
       ProfileFriendsParams friends => [
           ProfileHeaderOrganism(params: friends.header),
           SizedBox(height: 16.h),
-          AppButtonAtom(
-            label: 'Add a friend',
-            icon: Icons.person_add_alt_1,
-            expand: true,
-            onPressed: friends.onAddFriend,
+          _keepOwnWidthWhenWide(
+            AppButtonAtom(
+              label: 'Add a friend',
+              icon: Icons.person_add_alt_1,
+              expand: !isWide,
+              onPressed: friends.onAddFriend,
+            ),
+            isWide: isWide,
           ),
           if (friends.requests.isNotEmpty) ...[
             SizedBox(height: 24.h),
-            FriendRequestListOrganism(requests: friends.requests),
+            FriendRequestListOrganism(
+              requests: friends.requests,
+              columns: columns,
+            ),
           ],
           SizedBox(height: 24.h),
-          FriendListOrganism(friends: friends.friends),
+          FriendListOrganism(friends: friends.friends, columns: columns),
           SizedBox(height: 16.h),
           Align(
             alignment: Alignment.centerLeft,

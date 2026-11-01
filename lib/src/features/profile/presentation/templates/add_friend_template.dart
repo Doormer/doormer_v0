@@ -12,6 +12,11 @@ import '../params/add_friend_body_params.dart';
 /// Add a friend: the student's own code, then the box to find a friend's
 /// code and what it found. It sits inside the Profile tab, above the nav bar.
 class AddFriendTemplate extends StatelessWidget {
+  /// The widest the page's body grows. On a wide screen, the code, its
+  /// buttons, the find box and the student found stop here, on the left
+  /// under the heading, instead of stretching across the column.
+  static const double maxBodyWidth = 520;
+
   final AddFriendBodyParams body;
   final VoidCallback onBack;
 
@@ -58,24 +63,36 @@ class AddFriendTemplate extends StatelessWidget {
                   retryLabel: 'Try again',
                 ),
         ),
-      AddFriendFormParams form => ListView(
-          padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 24.h),
-          children: [
-            FriendCodeOrganism(params: form.yourCode),
-            SizedBox(height: 24.h),
-            FindFriendMolecule(
-              initialCode: form.initialCode,
-              isFinding: form.isFinding,
-              onFind: form.onFind,
-            ),
-            SizedBox(height: 16.h),
-            if (form.findMessage case final message?)
-              Text(
-                message,
-                style: TextStyle(fontSize: 13.sp, color: QuestPalette.body),
+      AddFriendFormParams form => CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 24.h),
+              sliver: SliverConstrainedCrossAxis(
+                maxExtent: maxBodyWidth,
+                sliver: SliverList.list(
+                  children: [
+                    FriendCodeOrganism(params: form.yourCode),
+                    SizedBox(height: 24.h),
+                    FindFriendMolecule(
+                      initialCode: form.initialCode,
+                      isFinding: form.isFinding,
+                      onFind: form.onFind,
+                    ),
+                    SizedBox(height: 16.h),
+                    if (form.findMessage case final message?)
+                      Text(
+                        message,
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          color: QuestPalette.body,
+                        ),
+                      ),
+                    if (form.found case final found?)
+                      FoundStudentOrganism(params: found),
+                  ],
+                ),
               ),
-            if (form.found case final found?)
-              FoundStudentOrganism(params: found),
+            ),
           ],
         ),
     };

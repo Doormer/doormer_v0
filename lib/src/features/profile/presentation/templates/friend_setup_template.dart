@@ -13,6 +13,11 @@ import '../params/friend_setup_body_params.dart';
 /// the picture, and above Done, what friends will see. It sits inside the
 /// Profile tab, above the nav bar.
 class FriendSetupTemplate extends StatelessWidget {
+  /// The widest the page's body grows. On a wide screen, the nickname box,
+  /// the pictures and Done stop here, on the left under the heading, instead
+  /// of stretching across the column.
+  static const double maxBodyWidth = 520;
+
   /// Null until the page knows whether the student is set up, so the heading
   /// never says the wrong one.
   final String? title;
@@ -54,27 +59,38 @@ class FriendSetupTemplate extends StatelessWidget {
             retryLabel: 'Try again',
           ),
         ),
-      FriendSetupFormParams form => ListView(
-          padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 24.h),
-          children: [
-            NicknameFieldMolecule(
-              initialNickname: form.initialNickname,
-              problem: form.nicknameProblem,
-              onChanged: form.onNicknameChanged,
-            ),
-            SizedBox(height: 20.h),
-            PicturePickerOrganism(params: form.picturePicker),
-            SizedBox(height: 24.h),
-            Text(
-              'Friends you accept will see your nickname, picture and cards.',
-              style: TextStyle(fontSize: 12.sp, color: QuestPalette.body),
-            ),
-            SizedBox(height: 12.h),
-            AppButtonAtom(
-              label: 'Done',
-              expand: true,
-              isLoading: form.isSaving,
-              onPressed: form.onDone,
+      FriendSetupFormParams form => CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 24.h),
+              sliver: SliverConstrainedCrossAxis(
+                maxExtent: maxBodyWidth,
+                sliver: SliverList.list(
+                  children: [
+                    NicknameFieldMolecule(
+                      initialNickname: form.initialNickname,
+                      problem: form.nicknameProblem,
+                      onChanged: form.onNicknameChanged,
+                    ),
+                    SizedBox(height: 20.h),
+                    PicturePickerOrganism(params: form.picturePicker),
+                    SizedBox(height: 24.h),
+                    Text(
+                      'Friends you accept will see your nickname, picture '
+                      'and cards.',
+                      style:
+                          TextStyle(fontSize: 12.sp, color: QuestPalette.body),
+                    ),
+                    SizedBox(height: 12.h),
+                    AppButtonAtom(
+                      label: 'Done',
+                      expand: true,
+                      isLoading: form.isSaving,
+                      onPressed: form.onDone,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),

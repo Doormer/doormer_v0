@@ -9,6 +9,8 @@ import 'package:doormer/src/features/profile/domain/usecase/load_friend_profile_
 import 'package:doormer/src/features/profile/domain/usecase/load_picture_choices_usecase.dart';
 import 'package:doormer/src/features/profile/domain/usecase/save_friend_profile_usecase.dart';
 import 'package:doormer/src/features/profile/presentation/bloc/friend_setup_bloc.dart';
+import 'package:doormer/src/features/profile/presentation/molecules/nickname_field_molecule.dart';
+import 'package:doormer/src/features/profile/presentation/organisms/picture_picker_organism.dart';
 import 'package:doormer/src/features/profile/presentation/pages/friend_setup_page.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:flutter/material.dart';
@@ -49,8 +51,9 @@ void main() {
     WidgetTester tester, {
     String location = '/profile/setup',
     bool settle = true,
+    Size window = const Size(360, 1200),
   }) async {
-    tester.view.physicalSize = const Size(360, 1200);
+    tester.view.physicalSize = window;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final router = GoRouter(
@@ -102,6 +105,25 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Done'), findsOneWidget);
+  });
+
+  testWidgets(
+      'on a wide screen, keeps the nickname box, the pictures and Done to '
+      '520 wide, on the left', (tester) async {
+    await pumpSetup(tester, window: const Size(760, 1200));
+
+    final parts = [
+      find.byType(NicknameFieldMolecule),
+      find.byType(PicturePickerOrganism),
+      find.widgetWithText(AppButtonAtom, 'Done'),
+    ];
+    final left = tester.getRect(parts.first).left;
+    for (final part in parts) {
+      final rect = tester.getRect(part);
+      expect(rect.width, lessThanOrEqualTo(520), reason: '$part');
+      expect(rect.left, left, reason: '$part');
+    }
+    expect(left, lessThan((760 - 520) / 2), reason: 'not centred');
   });
 
   testWidgets('Done saves the nickname and the card picked, then goes back',

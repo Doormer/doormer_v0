@@ -11,6 +11,9 @@ import 'package:doormer/src/features/profile/domain/usecase/reset_friend_code_us
 import 'package:doormer/src/features/profile/domain/usecase/send_friend_request_usecase.dart';
 import 'package:doormer/src/features/profile/domain/usecase/unblock_student_usecase.dart';
 import 'package:doormer/src/features/profile/presentation/bloc/add_friend_bloc.dart';
+import 'package:doormer/src/features/profile/presentation/molecules/find_friend_molecule.dart';
+import 'package:doormer/src/features/profile/presentation/organisms/found_student_organism.dart';
+import 'package:doormer/src/features/profile/presentation/organisms/friend_code_organism.dart';
 import 'package:doormer/src/features/profile/presentation/pages/add_friend_page.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/molecules/confirm_dialog_molecule.dart';
@@ -63,8 +66,9 @@ void main() {
   Future<GoRouter> pumpAddFriend(
     WidgetTester tester, {
     String location = '/profile/add',
+    Size window = const Size(360, 1000),
   }) async {
-    tester.view.physicalSize = const Size(360, 1000);
+    tester.view.physicalSize = window;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final router = GoRouter(
@@ -175,6 +179,26 @@ void main() {
     expect(find.text('Copy invite link'), findsOneWidget);
     expect(find.text('Reset code'), findsOneWidget);
     expect(find.text('Find'), findsOneWidget);
+  });
+
+  testWidgets(
+      'on a wide screen, keeps your code, the box and the student found to '
+      '520 wide, on the left', (tester) async {
+    await pumpAddFriend(tester, window: const Size(760, 1000));
+    await findCode(tester, niaCode);
+
+    final parts = [
+      find.byType(FriendCodeOrganism),
+      find.byType(FindFriendMolecule),
+      find.byType(FoundStudentOrganism),
+    ];
+    final left = tester.getRect(parts.first).left;
+    for (final part in parts) {
+      final rect = tester.getRect(part);
+      expect(rect.width, lessThanOrEqualTo(520), reason: '$part');
+      expect(rect.left, left, reason: '$part');
+    }
+    expect(left, lessThan((760 - 520) / 2), reason: 'not centred');
   });
 
   testWidgets('Copy puts your code on the clipboard, with its dash',

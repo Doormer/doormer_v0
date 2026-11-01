@@ -5,7 +5,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../params/profile_header_params.dart';
 
-/// The student's picture, nickname and friend code, with Edit.
+/// The student's picture, nickname and friend code, with Edit straight after
+/// the nickname. A long nickname is cut short before Edit is pushed off.
 class ProfileHeaderOrganism extends StatelessWidget {
   final ProfileHeaderParams params;
 
@@ -25,18 +26,36 @@ class ProfileHeaderOrganism extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                params.nickname,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: kDisplayFont,
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w600,
-                  color: QuestPalette.cream,
-                ),
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      params.nickname,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: kDisplayFont,
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w600,
+                        color: QuestPalette.cream,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 6.w),
+                  TextButton.icon(
+                    onPressed: params.onEdit,
+                    icon: Icon(Icons.edit_outlined, size: 14.w),
+                    label: const Text('Edit'),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      minimumSize: Size(0, 32.h),
+                      padding: EdgeInsets.symmetric(horizontal: 8.w),
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(height: 4.h),
+              SizedBox(height: 2.h),
               Text(
                 'Friend code',
                 style: TextStyle(fontSize: 11.sp, color: QuestPalette.muted),
@@ -53,7 +72,6 @@ class ProfileHeaderOrganism extends StatelessWidget {
             ],
           ),
         ),
-        TextButton(onPressed: params.onEdit, child: const Text('Edit')),
       ],
     );
   }
