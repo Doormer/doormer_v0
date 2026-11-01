@@ -76,8 +76,8 @@ class FriendSetupTemplate extends StatelessWidget {
                     PicturePickerOrganism(params: form.picturePicker),
                     SizedBox(height: 24.h),
                     Text(
-                      'Friends you accept will see your nickname, picture '
-                      'and cards.',
+                      'Friends you accept will see your nickname, picture, '
+                      'level and cards.',
                       style:
                           TextStyle(fontSize: 12.sp, color: QuestPalette.body),
                     ),

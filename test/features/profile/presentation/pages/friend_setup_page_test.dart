@@ -100,8 +100,8 @@ void main() {
     expect(find.text("Don't use your full name."), findsOneWidget);
     expect(find.text('Picture'), findsOneWidget);
     expect(
-      find.text('Friends you accept will see your nickname, picture and '
-          'cards.'),
+      find.text('Friends you accept will see your nickname, picture, level '
+          'and cards.'),
       findsOneWidget,
     );
     expect(find.text('Done'), findsOneWidget);

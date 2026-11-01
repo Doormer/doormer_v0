@@ -20,17 +20,39 @@ import 'package:doormer/src/features/profile/presentation/bloc/friends_bloc.dart
 import 'package:doormer/src/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:doormer/src/features/profile/presentation/molecules/friend_request_row_molecule.dart';
 import 'package:doormer/src/features/profile/presentation/molecules/friend_row_molecule.dart';
+import 'package:doormer/src/features/profile/presentation/organisms/level_strip_organism.dart';
 import 'package:doormer/src/features/profile/presentation/pages/profile_page.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/molecules/confirm_dialog_molecule.dart';
 import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
+import 'package:doormer/src/shared/levels/bloc/level_progress_bloc.dart';
+import 'package:doormer/src/shared/levels/entity/level.dart';
+import 'package:doormer/src/shared/levels/entity/level_icon.dart';
+import 'package:doormer/src/shared/levels/entity/level_progress.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../levels/register_levels.dart';
 import '../../fake_friends_repository.dart';
+
+/// 540 active days: level 21, 32 days from a star.
+const _at540 = LevelProgress(
+  activeDays: 540,
+  level: Level(number: 21, suns: 1, moons: 1, stars: 1),
+  activeDaysToNextLevel: 32,
+  nextLevelIcon: LevelIcon.star,
+);
+
+/// The first active day of a student who just signed up.
+const _at1 = LevelProgress(
+  activeDays: 1,
+  level: Level(number: 0, suns: 0, moons: 0, stars: 0),
+  activeDaysToNextLevel: 4,
+  nextLevelIcon: LevelIcon.star,
+);
 
 class _FakeSessionService implements SessionService {
   int logouts = 0;
@@ -55,6 +77,8 @@ void main() {
     friends = FakeFriendsRepository();
     session = _FakeSessionService();
     waiting = WaitingFriendRequestsBloc();
+    // Profile reads the student's level from the app-wide bloc.
+    registerLevels();
     serviceLocator.registerFactory<ProfileBloc>(
       () => ProfileBloc(signOut: SignOutUseCase(session)),
     );
@@ -552,5 +576,58 @@ void main() {
 
     expect(session.logouts, 1);
     expect(find.text('login'), findsOneWidget);
+  });
+
+  testWidgets(
+      "shows the student's level under their friend code once a count of "
+      'the day brings it', (tester) async {
+    await pumpProfile(tester);
+    expect(find.byType(LevelStripOrganism), findsNothing,
+        reason: 'no count of the day yet');
+
+    serviceLocator<LevelProgressBloc>().add(const LevelProgressUpdated(_at540));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Level 21'), findsOneWidget);
+    expect(find.text('540 active days · 32 to your next star'), findsOneWidget);
+    expect(tester.getRect(find.byType(LevelStripOrganism)).top,
+        greaterThanOrEqualTo(tester.getRect(find.text('K7QM-2XPA')).bottom));
+  });
+
+  testWidgets('before setup, the level sits above the friends intro',
+      (tester) async {
+    friends.profile = const FriendProfile(
+      hasProfile: false,
+      nickname: '',
+      friendCode: '',
+      friendsTurnedOff: false,
+      waitingRequests: 0,
+    );
+    serviceLocator<LevelProgressBloc>().add(const LevelProgressUpdated(_at1));
+
+    await pumpProfile(tester);
+
+    expect(find.text('Level 0'), findsOneWidget);
+    expect(find.text('1 active day · 4 to your next star'), findsOneWidget);
+    expect(
+      tester.getRect(find.byType(LevelStripOrganism)).bottom,
+      lessThanOrEqualTo(tester
+          .getRect(find.text(
+              "Add friends with a friend code and see each other's cards."))
+          .top),
+    );
+  });
+
+  testWidgets('ⓘ opens How levels work, and Got it closes it', (tester) async {
+    serviceLocator<LevelProgressBloc>().add(const LevelProgressUpdated(_at540));
+    await pumpProfile(tester);
+
+    await tester.tap(find.byTooltip('How levels work'));
+    await tester.pumpAndSettle();
+    expect(find.text('Friends you add see your level.'), findsOneWidget);
+
+    await tester.tap(find.text('Got it'));
+    await tester.pumpAndSettle();
+    expect(find.text('Friends you add see your level.'), findsNothing);
   });
 }

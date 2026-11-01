@@ -4,6 +4,7 @@ import 'package:doormer/src/shared/design/atomic/molecules/confirm_dialog_molecu
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:doormer/src/shared/friends/friends_messages.dart';
+import 'package:doormer/src/shared/levels/bloc/level_progress_bloc.dart';
 import 'package:doormer/src/shared/widget/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,6 +15,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../utils/friend_codes.dart';
 import '../bloc/friends_bloc.dart';
 import '../bloc/profile_bloc.dart';
+import '../mapper/level_strip_presenter.dart';
+import '../organisms/how_levels_work_sheet_organism.dart';
 import '../organisms/report_sheet_organism.dart';
 import '../params/friend_request_row_params.dart';
 import '../params/friend_row_params.dart';
@@ -22,8 +25,8 @@ import '../params/profile_header_params.dart';
 import '../params/report_sheet_params.dart';
 import '../templates/profile_template.dart';
 
-/// The Profile tab: friends, and Sign out. The only widget on this screen
-/// that touches flutter_bloc.
+/// The Profile tab: the student's level, friends, and Sign out. The only
+/// widget on this screen that touches flutter_bloc.
 class ProfilePage extends StatelessWidget {
   /// Whether a page under Profile, such as Add a friend, covers it. When
   /// that page goes, Profile reads friends again, quietly: the student may
@@ -93,12 +96,19 @@ class _ProfileViewState extends State<_ProfileView> {
                 _toast(context, (state as FriendsReady).errorMessage!),
           ),
         ],
-        child: Builder(
-          builder: (context) {
+        // The level comes from the app-wide bloc that the nav bar's count
+        // of the day feeds, as the nav bar reads Profile's dot.
+        child: BlocBuilder<LevelProgressBloc, LevelProgressState>(
+          bloc: serviceLocator<LevelProgressBloc>(),
+          builder: (context, levelProgress) {
             final profileState = context.watch<ProfileBloc>().state;
             final friendsState = context.watch<FriendsBloc>().state;
             return ProfileTemplate(
               body: _bodyFor(context, friendsState),
+              levelStrip: LevelStripPresenter.stripFor(
+                levelProgress,
+                onExplain: () => _explainLevels(context),
+              ),
               isSigningOut: profileState is ProfileSigningOut,
               onSignOut: () =>
                   context.read<ProfileBloc>().add(const SignOutRequested()),
@@ -114,6 +124,18 @@ class _ProfileViewState extends State<_ProfileView> {
         message: message,
         type: ToastificationType.error,
       );
+
+  /// How levels work, over the whole screen, nav bar included.
+  void _explainLevels(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      showDragHandle: true,
+      builder: (sheetContext) => HowLevelsWorkSheetOrganism(
+        onClose: () => Navigator.of(sheetContext).pop(),
+      ),
+    );
+  }
 
   ProfileBodyParams _bodyFor(BuildContext context, FriendsState state) {
     final bloc = context.read<FriendsBloc>();

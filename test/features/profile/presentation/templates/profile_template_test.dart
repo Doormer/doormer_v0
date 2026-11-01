@@ -3,14 +3,17 @@ import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/profile/presentation/molecules/friend_request_row_molecule.dart';
 import 'package:doormer/src/features/profile/presentation/molecules/friend_row_molecule.dart';
+import 'package:doormer/src/features/profile/presentation/organisms/level_strip_organism.dart';
 import 'package:doormer/src/features/profile/presentation/params/friend_request_row_params.dart';
 import 'package:doormer/src/features/profile/presentation/params/friend_row_params.dart';
+import 'package:doormer/src/features/profile/presentation/params/level_strip_params.dart';
 import 'package:doormer/src/features/profile/presentation/params/profile_body_params.dart';
 import 'package:doormer/src/features/profile/presentation/params/profile_header_params.dart';
 import 'package:doormer/src/features/profile/presentation/templates/profile_template.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/glow_badge_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/surface_card_atom.dart';
+import 'package:doormer/src/shared/levels/entity/level.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -38,6 +41,7 @@ Future<void> _pump(
   WidgetTester tester, {
   required Size window,
   required ProfileBodyParams body,
+  LevelStripParams? levelStrip,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = window;
@@ -46,7 +50,12 @@ Future<void> _pump(
   await tester.pumpWidget(MaterialApp(
     theme: AppTheme.dark,
     builder: (context, child) => ResponsiveAppShell(child: child!),
-    home: ProfileTemplate(body: body, isSigningOut: false, onSignOut: () {}),
+    home: ProfileTemplate(
+      body: body,
+      levelStrip: levelStrip,
+      isSigningOut: false,
+      onSignOut: () {},
+    ),
   ));
 }
 
@@ -291,6 +300,75 @@ void main() {
           lessThan(tester.getSize(card).width / 2));
       expect(tester.getCenter(setUp).dx,
           moreOrLessEquals(tester.getCenter(card).dx));
+    });
+  });
+
+  group('the level strip', () {
+    final strip = LevelStripParams(
+      level: const Level(number: 21, suns: 1, moons: 1, stars: 1),
+      title: 'Level 21',
+      activeDaysLine: '540 active days · 32 to your next star',
+      onExplain: () {},
+    );
+    final shown = find.byType(LevelStripOrganism);
+
+    testWidgets(
+        'sits under the picture, nickname and friend code once friends is '
+        'set up, above Add a friend', (tester) async {
+      await _pump(tester, window: _narrow, body: _kai(), levelStrip: strip);
+
+      final rect = tester.getRect(shown);
+      expect(rect.top,
+          greaterThanOrEqualTo(tester.getRect(find.text('K7QM-2XPA')).bottom));
+      expect(rect.bottom,
+          lessThanOrEqualTo(tester.getRect(_button('Add a friend')).top));
+    });
+
+    testWidgets('sits above the friends intro before setup', (tester) async {
+      await _pump(
+        tester,
+        window: _narrow,
+        body: ProfileNotSetUpParams(onSetUp: () {}),
+        levelStrip: strip,
+      );
+
+      const intro =
+          "Add friends with a friend code and see each other's cards.";
+      expect(tester.getRect(shown).bottom,
+          lessThanOrEqualTo(tester.getRect(find.text(intro)).top));
+    });
+
+    testWidgets('sits above the message when friends is turned off',
+        (tester) async {
+      const turnedOff = 'Friends is turned off for your account.';
+      await _pump(
+        tester,
+        window: _narrow,
+        body: const ProfileTurnedOffParams(message: turnedOff),
+        levelStrip: strip,
+      );
+
+      expect(tester.getRect(shown).bottom,
+          lessThanOrEqualTo(tester.getRect(find.text(turnedOff)).top));
+    });
+
+    testWidgets("sits above the error when friends can't load", (tester) async {
+      const error = "We couldn't load your friends.";
+      await _pump(
+        tester,
+        window: _narrow,
+        body: ProfileErrorParams(message: error, onRetry: () {}),
+        levelStrip: strip,
+      );
+
+      expect(tester.getRect(shown).bottom,
+          lessThanOrEqualTo(tester.getRect(find.text(error)).top));
+    });
+
+    testWidgets('is not there without a level', (tester) async {
+      await _pump(tester, window: _narrow, body: _kai());
+
+      expect(shown, findsNothing);
     });
   });
 }
