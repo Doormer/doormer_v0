@@ -1027,5 +1027,37 @@ void main() {
       expect(find.text('Question removed.'), findsOneWidget);
       await waitOutToast(tester);
     });
+
+    testWidgets(
+        'while a removal is on its way, Send report is off: the removal ends '
+        'the share the report is about', (tester) async {
+      await pumpFriendQuestion(tester);
+      await tester.tap(find.text('Remove'));
+      await tester.pumpAndSettle();
+      final answer = sharing.hold = Completer<void>();
+      await tester.tap(inDialog('Remove'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text('Report'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.text('Bullying or being mean'));
+      await tester.pump();
+
+      expect(
+        tester
+            .widget<AppButtonAtom>(
+                find.widgetWithText(AppButtonAtom, 'Send report'))
+            .onPressed,
+        isNull,
+      );
+      await tester.tap(find.text('Send report'));
+      await tester.pump();
+      expect(sharing.calls, ['removeSharedQuestion 301']);
+      answer.complete();
+      await tester.pumpAndSettle();
+      await waitOutToast(tester);
+    });
   });
 }

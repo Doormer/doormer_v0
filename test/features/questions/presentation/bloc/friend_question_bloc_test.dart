@@ -63,6 +63,45 @@ void main() {
         ),
       ],
     );
+
+    blocTest<FriendQuestionBloc, FriendQuestionState>(
+      'waits for a report on its way, so the report reaches the team before '
+      'the removal ends the share it is about',
+      build: build,
+      seed: () => opened,
+      act: (bloc) async {
+        final answer = repository.hold = Completer<void>();
+        bloc.add(const SharedQuestionReported(
+          reason: ReportReason.bullying,
+          note: '',
+        ));
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(const SharedQuestionRemoved());
+        await Future<void>.delayed(Duration.zero);
+        expect(repository.calls, ['reportSharedQuestion 7 301 bullying '],
+            reason: 'the removal waits until the report has its answer');
+        answer.complete();
+      },
+      expect: () => [
+        opened.copyWith(reportStatus: QuestionReportStatus.sending),
+        opened.copyWith(
+          reportStatus: QuestionReportStatus.sending,
+          isRemoving: true,
+        ),
+        opened.copyWith(
+          reportStatus: QuestionReportStatus.sent,
+          isRemoving: true,
+        ),
+        opened.copyWith(
+          reportStatus: QuestionReportStatus.sent,
+          exit: FriendQuestionExit.removed,
+        ),
+      ],
+      verify: (_) => expect(repository.calls, [
+        'reportSharedQuestion 7 301 bullying ',
+        'removeSharedQuestion 301',
+      ]),
+    );
   });
 
   group('Report', () {
@@ -127,6 +166,19 @@ void main() {
       verify: (_) => expect(repository.calls, [
         'reportSharedQuestion 7 301 bullying ',
       ]),
+    );
+
+    blocTest<FriendQuestionBloc, FriendQuestionState>(
+      'a report sent while a removal is on its way sends nothing: the removal '
+      'ends the share the report is about',
+      build: build,
+      seed: () => opened.copyWith(isRemoving: true),
+      act: (bloc) => bloc.add(const SharedQuestionReported(
+        reason: ReportReason.bullying,
+        note: '',
+      )),
+      expect: () => const <FriendQuestionState>[],
+      verify: (_) => expect(repository.calls, isEmpty),
     );
   });
 

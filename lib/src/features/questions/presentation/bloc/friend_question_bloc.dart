@@ -24,6 +24,9 @@ class FriendQuestionBloc
   final ReportSharedQuestionUseCase reportSharedQuestion;
   final BlockFriendUseCase blockFriend;
 
+  /// Answers once the last report sent has its answer, however it went.
+  Future<void> _reportAnswered = Future.value();
+
   FriendQuestionBloc({
     required this.removeSharedQuestion,
     required this.reportSharedQuestion,
@@ -45,12 +48,16 @@ class FriendQuestionBloc
     ));
   }
 
+  /// Takes the question out of Shared with me. That ends the share, and the
+  /// API refuses a report about a share that has ended, so a report on its
+  /// way gets its answer first.
   Future<void> _onRemoved(
     SharedQuestionRemoved event,
     Emitter<FriendQuestionState> emit,
   ) async {
     if (state.isRemoving || state.exit != null) return;
     emit(state.copyWith(isRemoving: true));
+    await _reportAnswered;
     final errorMessage = await _attempt(
       () => removeSharedQuestion(state.questionId),
       'Removing a shared question',
@@ -61,18 +68,21 @@ class FriendQuestionBloc
   }
 
   /// Sends the report with the question. The share must still stand when it
-  /// arrives, so the sheet offers Block only after this.
+  /// arrives, so the sheet offers Block only after this, and a removal waits
+  /// for it. A report sent while a removal is on its way could arrive after
+  /// the share has ended, so it sends nothing.
   Future<void> _onReported(
     SharedQuestionReported event,
     Emitter<FriendQuestionState> emit,
   ) async {
     final sharedBy = state.sharedBy;
     if (sharedBy == null ||
-        state.reportStatus == QuestionReportStatus.sending) {
+        state.reportStatus == QuestionReportStatus.sending ||
+        state.isRemoving) {
       return;
     }
     emit(state.copyWith(reportStatus: QuestionReportStatus.sending));
-    final errorMessage = await _attempt(
+    final answer = _attempt(
       () => reportSharedQuestion(
         friendId: sharedBy.friendId,
         questionId: state.questionId,
@@ -81,6 +91,8 @@ class FriendQuestionBloc
       ),
       'Reporting a shared question',
     );
+    _reportAnswered = answer;
+    final errorMessage = await answer;
     emit(errorMessage == null
         ? state.copyWith(reportStatus: QuestionReportStatus.sent)
         : state.copyWith(

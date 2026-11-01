@@ -8,20 +8,36 @@ import 'package:doormer/src/features/questions/domain/entity/shared_questions_pa
 import 'package:doormer/src/features/questions/domain/entity/solved_question_summary.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_shared_questions_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/shared_questions_bloc.dart';
+import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../fake_question_sharing_repository.dart';
 
-SharedQuestionSummary _shared(String id) => SharedQuestionSummary(
+/// A row of Shared with me. [signed] names the read that signed its photo
+/// links: the API signs them afresh on every read, so a share read again
+/// comes back with other links.
+SharedQuestionSummary _shared(
+  String id, {
+  String? signed,
+  FriendSummary sharedBy = sam,
+  DateTime? sharedAt,
+}) =>
+    SharedQuestionSummary(
       question: SolvedQuestionSummary(
         questionId: id,
         topic: 'Topic $id',
         method: 'Method $id',
         questionText: 'Question $id',
         askedAt: DateTime.utc(2026, 10, 30),
+        thumbnailUrl: signed == null
+            ? null
+            : 'https://photos.test/$id/thumbnail.jpg?sig=$signed',
+        photoUrl: signed == null
+            ? null
+            : 'https://photos.test/$id/photo.jpg?sig=$signed',
       ),
-      sharedBy: sam,
-      sharedAt: DateTime.utc(2026, 11, 1),
+      sharedBy: sharedBy,
+      sharedAt: sharedAt ?? DateTime.utc(2026, 11, 1),
     );
 
 /// The cursor the API gave for the second page: the last row's share ID,
@@ -34,6 +50,9 @@ final _firstPage = SharedQuestionsPage(
 );
 
 final _lastPage = SharedQuestionsPage(questions: [_shared('301')]);
+
+/// Sam, after picking a new nickname.
+const _samRenamed = FriendSummary(friendId: '7', nickname: 'Sammy');
 
 void main() {
   setUpAll(AppLogger.disable);
@@ -196,6 +215,89 @@ void main() {
       expect: () => const <SharedQuestionsState>[],
       verify: (_) => expect(repository.calls,
           ['loadSharedQuestions', 'loadSharedQuestions $_cursor']),
+    );
+
+    blocTest<SharedQuestionsBloc, SharedQuestionsState>(
+      'changes nothing when only the links changed: the rows keep the links '
+      'they show, so their thumbnails stay as they are',
+      build: build,
+      setUp: () => repository.sharedPages = {
+        null: SharedQuestionsPage(
+          questions: [
+            _shared('303', signed: 'tuesday'),
+            _shared('302', signed: 'tuesday'),
+          ],
+          nextCursor: _cursor,
+        ),
+      },
+      seed: () => SharedQuestionsReady(
+        questions: [
+          _shared('303', signed: 'monday'),
+          _shared('302', signed: 'monday'),
+        ],
+        nextCursor: _cursor,
+      ),
+      act: (bloc) => bloc.add(const SharedQuestionsRefreshRequested()),
+      expect: () => const <SharedQuestionsState>[],
+      verify: (_) => expect(repository.calls, ['loadSharedQuestions']),
+    );
+
+    blocTest<SharedQuestionsBloc, SharedQuestionsState>(
+      'with a question removed, the rows left keep the links they show',
+      build: build,
+      setUp: () => repository.sharedPages = {
+        null: SharedQuestionsPage(questions: [
+          _shared('304', signed: 'tuesday'),
+          _shared('302', signed: 'tuesday'),
+        ]),
+      },
+      seed: () => SharedQuestionsReady(questions: [
+        _shared('304', signed: 'monday'),
+        _shared('303', signed: 'monday'),
+        _shared('302', signed: 'monday'),
+      ]),
+      act: (bloc) => bloc.add(const SharedQuestionsRefreshRequested()),
+      expect: () => [
+        SharedQuestionsReady(questions: [
+          _shared('304', signed: 'monday'),
+          _shared('302', signed: 'monday'),
+        ]),
+      ],
+      verify: (bloc) => expect(
+        [
+          for (final row in (bloc.state as SharedQuestionsReady).questions)
+            row.question.thumbnailUrl,
+        ],
+        [
+          'https://photos.test/304/thumbnail.jpg?sig=monday',
+          'https://photos.test/302/thumbnail.jpg?sig=monday',
+        ],
+      ),
+    );
+
+    blocTest<SharedQuestionsBloc, SharedQuestionsState>(
+      'a row whose share changed comes in as read: one shared again since, '
+      'and one from a friend with a new nickname',
+      build: build,
+      setUp: () => repository.sharedPages = {
+        null: SharedQuestionsPage(questions: [
+          _shared('303',
+              signed: 'tuesday', sharedAt: DateTime.utc(2026, 11, 2)),
+          _shared('302', signed: 'tuesday', sharedBy: _samRenamed),
+        ]),
+      },
+      seed: () => SharedQuestionsReady(questions: [
+        _shared('303', signed: 'monday'),
+        _shared('302', signed: 'monday'),
+      ]),
+      act: (bloc) => bloc.add(const SharedQuestionsRefreshRequested()),
+      expect: () => [
+        SharedQuestionsReady(questions: [
+          _shared('303',
+              signed: 'tuesday', sharedAt: DateTime.utc(2026, 11, 2)),
+          _shared('302', signed: 'tuesday', sharedBy: _samRenamed),
+        ]),
+      ],
     );
 
     blocTest<SharedQuestionsBloc, SharedQuestionsState>(

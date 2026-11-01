@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
+import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:doormer/src/shared/friends/friends_messages.dart';
 import 'package:equatable/equatable.dart';
 
@@ -69,7 +70,9 @@ class SharedQuestionsBloc
   /// Reads again as many rows as are showing, from the first page on,
   /// following `next_cursor`, and swaps them in at once, ending where the
   /// last page read ends. A question removed, or no longer shared, goes; one
-  /// shared since comes in at the top; and the student keeps their place.
+  /// shared since comes in at the top; and the student keeps their place. A
+  /// share that hasn't changed keeps the row already showing, so a read that
+  /// changes no share changes nothing.
   ///
   /// Quiet: no spinner, and a failure leaves the list as it was. It is
   /// ignored while a page is on its way, and its answer is dropped if other
@@ -100,10 +103,35 @@ class SharedQuestionsBloc
     }
     final current = state;
     if (!_showsSameRows(current, opened)) return;
-    final refreshed = _firstPageState(rows);
+    final refreshed = _firstPageState(_keepingRowsShown(rows, current));
     if (_showsSameRows(current, refreshed)) return;
     emit(refreshed);
   }
+
+  /// [page], with the row [shown] already has for each share that hasn't
+  /// changed: the same question, shared by the same friend at the same time.
+  /// The API signs a row's photo links afresh on every read, so keeping the
+  /// row keeps its links, and its thumbnail stays as it is.
+  static SharedQuestionsPage _keepingRowsShown(
+    SharedQuestionsPage page,
+    SharedQuestionsState shown,
+  ) {
+    if (shown is! SharedQuestionsReady) return page;
+    final showing = {for (final row in shown.questions) _shareOf(row): row};
+    return SharedQuestionsPage(
+      questions: [
+        for (final row in page.questions) showing[_shareOf(row)] ?? row,
+      ],
+      nextCursor: page.nextCursor,
+    );
+  }
+
+  /// What tells one share from another: the question, who shared it, and
+  /// when.
+  static (String, FriendSummary, DateTime) _shareOf(
+    SharedQuestionSummary row,
+  ) =>
+      (row.question.questionId, row.sharedBy, row.sharedAt);
 
   /// The first [count] rows, or every row if there are fewer, read a whole
   /// page at a time from the first, as one page ending where the last page

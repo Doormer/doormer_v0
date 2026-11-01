@@ -49,8 +49,9 @@ class _ReportSheetOrganismState extends State<ReportSheetOrganism> {
   /// a word was composing can hold more than the cap allows.
   void _send() {
     final reason = _reason;
-    if (reason == null) return;
-    widget.params.onSend(
+    final onSend = widget.params.onSend;
+    if (reason == null || onSend == null) return;
+    onSend(
       reason,
       CodePointLimitFormatter.truncate(
         _note.text.trim(),
@@ -151,7 +152,8 @@ class _ReportSheetOrganismState extends State<ReportSheetOrganism> {
                   label: 'Send report',
                   expand: true,
                   isLoading: params.isSending,
-                  onPressed: _reason == null ? null : _send,
+                  onPressed:
+                      _reason == null || params.onSend == null ? null : _send,
                 ),
               ],
               SizedBox(height: 20.h),

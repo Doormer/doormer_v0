@@ -333,7 +333,8 @@ class QuestionSolutionPage extends StatelessWidget {
   /// while the reader is open, so the sheet opens again on its thanks and
   /// Block, and a Block that failed can be tried again without a second
   /// report. A sheet opened while a report is on its way shows it being sent,
-  /// and then its answer.
+  /// and then its answer. While a removal is on its way, Send report is off,
+  /// since the removal ends the share too.
   void _openReport(BuildContext context, FriendSummary sharedBy) {
     final bloc = context.read<FriendQuestionBloc>();
     showModalBottomSheet<void>(
@@ -351,9 +352,11 @@ class QuestionSolutionPage extends StatelessWidget {
               title: 'Report ${sharedBy.nickname}',
               isSending: status == QuestionReportStatus.sending,
               isSent: status == QuestionReportStatus.sent,
-              onSend: (reason, note) => bloc.add(
-                SharedQuestionReported(reason: reason, note: note),
-              ),
+              onSend: friendQuestion.isRemoving
+                  ? null
+                  : (reason, note) => bloc.add(
+                        SharedQuestionReported(reason: reason, note: note),
+                      ),
               onBlock: status == QuestionReportStatus.sent
                   ? () => _blockAfterAsking(sheetContext, bloc, sharedBy)
                   : null,

@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/photo_thumbnail_atom.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,6 +25,42 @@ class _FailingImageProvider extends MemoryImage {
       Future<ImageInfo>.error(Exception('403 expired SAS URL')),
     );
   }
+}
+
+/// An image already downloaded, which shows at once.
+class _DownloadedImageProvider extends ImageProvider<_DownloadedImageProvider> {
+  final ui.Image image;
+
+  _DownloadedImageProvider(this.image);
+
+  @override
+  Future<_DownloadedImageProvider> obtainKey(
+          ImageConfiguration configuration) =>
+      SynchronousFuture(this);
+
+  @override
+  ImageStreamCompleter loadImage(
+    _DownloadedImageProvider key,
+    ImageDecoderCallback decode,
+  ) =>
+      OneFrameImageStreamCompleter(
+          SynchronousFuture(ImageInfo(image: image.clone())));
+}
+
+/// An image still downloading.
+class _DownloadingImageProvider
+    extends ImageProvider<_DownloadingImageProvider> {
+  @override
+  Future<_DownloadingImageProvider> obtainKey(
+          ImageConfiguration configuration) =>
+      SynchronousFuture(this);
+
+  @override
+  ImageStreamCompleter loadImage(
+    _DownloadingImageProvider key,
+    ImageDecoderCallback decode,
+  ) =>
+      OneFrameImageStreamCompleter(Completer<ImageInfo>().future);
 }
 
 Widget _host(Widget child) => ScreenUtilInit(
@@ -89,5 +127,27 @@ void main() {
     await tester.pump();
 
     expect(tester.widget<RawImage>(find.byType(RawImage)).fit, BoxFit.contain);
+  });
+
+  // The API signs a thumbnail's link afresh on each read, so a row read
+  // again can come back with another link to the same photo.
+  testWidgets('keeps showing the photo while a new link to it loads',
+      (tester) async {
+    final photo = await tester.runAsync(() => createTestImage(width: 3));
+    await tester.pumpWidget(_host(PhotoThumbnailAtom(
+      url: 'https://example.test/thumbnail/42.jpg?sig=monday',
+      height: 80,
+      imageProviderBuilder: (_) => _DownloadedImageProvider(photo!),
+    )));
+    expect(tester.widget<RawImage>(find.byType(RawImage)).image, isNotNull);
+
+    await tester.pumpWidget(_host(PhotoThumbnailAtom(
+      url: 'https://example.test/thumbnail/42.jpg?sig=tuesday',
+      height: 80,
+      imageProviderBuilder: (_) => _DownloadingImageProvider(),
+    )));
+
+    expect(tester.widget<RawImage>(find.byType(RawImage)).image, isNotNull,
+        reason: 'the photo stays on show until the new link loads');
   });
 }

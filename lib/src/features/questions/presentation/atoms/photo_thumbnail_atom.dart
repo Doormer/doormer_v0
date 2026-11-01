@@ -11,7 +11,8 @@ ImageProvider networkPhotoImageProvider(String url) => NetworkImage(url);
 /// makes every thumbnail 3:2 with the whole question fitted in, so the frame
 /// has that shape too; a thumbnail of another shape is shown whole, not cut.
 /// With no link, or a photo that will not load, it shows a plain tile with an
-/// image icon instead.
+/// image icon instead. Given a new link, such as one the API signed afresh,
+/// it keeps the photo it shows until the new one loads.
 class PhotoThumbnailAtom extends StatelessWidget {
   /// The frame's width for each point of its height.
   static const double aspectRatio = 3 / 2;
@@ -45,6 +46,7 @@ class PhotoThumbnailAtom extends StatelessWidget {
                   image: imageProviderBuilder(url),
                   fit: BoxFit.contain,
                   excludeFromSemantics: true,
+                  gaplessPlayback: true,
                   errorBuilder: (context, error, stackTrace) =>
                       _PlainTile(iconSize: iconSize),
                 ),
