@@ -63,6 +63,35 @@ Future<void> _waitOut(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+/// Shows a success toast saying each of [messages] in turn, one for each tap
+/// on `go`.
+Future<void> _pumpToasts(WidgetTester tester, List<String> messages) {
+  var shown = 0;
+  return _pumpApp(
+    tester,
+    onGo: (context) => CustomToast.show(
+      context,
+      message: messages[shown++],
+      type: ToastificationType.success,
+    ),
+  );
+}
+
+/// How opaque the toast saying [message] is drawn.
+double _opacityOf(WidgetTester tester, String message) => tester
+    .widget<FadeTransition>(find
+        .ancestor(of: find.text(message), matching: find.byType(FadeTransition))
+        .first)
+    .opacity
+    .value;
+
+/// The semantics of the toast saying [message].
+SemanticsNode _semanticsOf(WidgetTester tester, String message) =>
+    tester.getSemantics(find.ancestor(
+      of: find.text(message),
+      matching: find.byType(ToastAtom),
+    ));
+
 void main() {
   test('errors stay longer than other toasts', () {
     expect(CustomToast.defaultDurationFor(ToastificationType.error),
@@ -174,18 +203,103 @@ void main() {
     await _waitOut(tester);
   });
 
-  testWidgets('a success toast closes after 2 seconds', (tester) async {
+  testWidgets('a success toast fades out on its own after 2 seconds',
+      (tester) async {
     await _pumpToast(tester);
 
     await tester.tap(find.text('go'));
     await tester.pump();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 1900));
-    expect(find.text('Code copied.'), findsOneWidget);
+    expect(_opacityOf(tester, 'Code copied.'), 1.0);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(_opacityOf(tester, 'Code copied.'), inExclusiveRange(0.0, 1.0),
+        reason: 'part-way through fading out at 2.08 s');
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+
+    expect(find.text('Code copied.'), findsNothing,
+        reason: "gone by 2.18 s, before toastification's backstop at 2.48 s");
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets(
+      'a toast arriving above another leaves it steady, and it still fades '
+      'out on time', (tester) async {
+    await _pumpToasts(tester, ['Code copied.', 'Invite link copied.']);
+    await tester.tap(find.text('go'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    await tester.tap(find.text('go'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(_opacityOf(tester, 'Code copied.'), 1.0,
+        reason: 'it arrived a second ago, so it does not arrive again');
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(_opacityOf(tester, 'Code copied.'), inExclusiveRange(0.0, 1.0),
+        reason: 'its 2 s are up at 2 s, not 3 s, so it is fading out');
+    expect(_opacityOf(tester, 'Invite link copied.'), 1.0);
+    await _waitOut(tester);
+  });
+
+  testWidgets(
+      'when a toast above another leaves, the one below moves up without '
+      'arriving again', (tester) async {
+    await _pumpToasts(tester, ['Code copied.', 'Invite link copied.']);
+    await tester.tap(find.text('go'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.text('go'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    final below = tester.getTopLeft(find.text('Code copied.')).dy;
+
+    // At 0.8 s the upper toast fades out, then its empty slot closes.
+    await tester.tap(find.text('Invite link copied.'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
+
+    expect(find.text('Invite link copied.'), findsNothing);
+    expect(tester.getTopLeft(find.text('Code copied.')).dy, lessThan(below),
+        reason: 'it moved up into the empty slot');
+    expect(_opacityOf(tester, 'Code copied.'), 1.0);
     await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(_opacityOf(tester, 'Code copied.'), inExclusiveRange(0.0, 1.0),
+        reason: 'its 2 s are up, so it is fading out');
+    await _waitOut(tester);
+  });
+
+  testWidgets(
+      'a toast keeps its live region when another arrives, so screen '
+      'readers announce it once', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await _pumpToasts(tester, ['Code copied.', 'Invite link copied.']);
+    await tester.tap(find.text('go'));
+    await tester.pumpAndSettle();
+    final announced = _semanticsOf(tester, 'Code copied.');
+    expect(announced,
+        containsSemantics(label: 'Code copied.', isLiveRegion: true));
+
+    await tester.tap(find.text('go'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Code copied.'), findsNothing);
+    expect(_semanticsOf(tester, 'Code copied.').id, announced.id,
+        reason: 'a new live region would be announced again');
+    expect(_semanticsOf(tester, 'Invite link copied.'),
+        containsSemantics(label: 'Invite link copied.', isLiveRegion: true));
+    await _waitOut(tester);
+    semantics.dispose();
   });
 
   testWidgets('a tap closes it at once', (tester) async {
@@ -220,14 +334,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     final message = find.text('Code copied.');
     final early = tester.getTopLeft(message).dy;
-    final fade = tester
-        .widget<FadeTransition>(
-          find
-              .ancestor(of: message, matching: find.byType(FadeTransition))
-              .first,
-        )
-        .opacity
-        .value;
+    final fade = _opacityOf(tester, 'Code copied.');
     await tester.pumpAndSettle();
     return (early: early, arrived: tester.getTopLeft(message).dy, fade: fade);
   }

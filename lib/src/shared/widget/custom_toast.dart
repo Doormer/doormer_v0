@@ -52,6 +52,11 @@ class CustomToast {
       // its own.
       autoCloseDuration: shownFor + _departure * 3,
       builder: (_, item) => _ShownToast(
+        // toastification's list matches toasts to its slots by position, so
+        // a toast changes slot whenever another arrives above it or leaves.
+        // Its own global key moves it to the new slot. Built afresh instead,
+        // it would arrive again, restart its time and be announced again.
+        key: GlobalObjectKey(item),
         shownFor: shownFor,
         fromBelow: alignment.y > 0,
         onGone: () => toastification.dismiss(item, showRemoveAnimation: false),
@@ -89,6 +94,7 @@ class _ShownToast extends StatefulWidget {
   final Widget child;
 
   const _ShownToast({
+    super.key,
     required this.shownFor,
     required this.fromBelow,
     required this.onGone,
