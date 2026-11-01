@@ -18,15 +18,20 @@ import 'package:flutter/services.dart';
 /// cards every run. [clock] dates the saved questions, friend requests and
 /// shared questions, and the daily limits start over when it passes the
 /// device's midnight.
+///
+/// The data starts as [FakeBackendState.starting] has it at [clock]'s time,
+/// unless a test passes its own [state], to arrange what no request can,
+/// such as a friend sharing a question.
 FakeBackendAdapter fakeBackend({
   Random? random,
   AssetBundle? bundle,
   DateTime Function()? clock,
+  FakeBackendState? state,
   Duration delay = const Duration(milliseconds: 400),
   Duration solveDelay = const Duration(seconds: 3),
 }) {
   final now = clock ?? DateTime.now;
-  final state = FakeBackendState.starting(now: now());
+  state ??= FakeBackendState.starting(now: now());
   return FakeBackendAdapter(
     [
       ...AuthRoutes(state).routes,

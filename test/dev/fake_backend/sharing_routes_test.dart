@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/dev/fake_backend/fake_backend.dart';
+import 'package:doormer/src/dev/fake_backend/fake_backend_state.dart';
 import 'package:doormer/src/features/profile/data/datasource/friends_remote_datasource.dart';
 import 'package:doormer/src/features/questions/data/datasource/question_sharing_remote_datasource.dart';
 import 'package:doormer/src/features/questions/data/datasource/questions_remote_datasource.dart';
@@ -17,20 +18,25 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(AppLogger.disable);
 
+  /// The fake's data, which a test can change where no request can.
+  late FakeBackendState state;
   late Dio dio;
   late QuestionSharingRemoteDataSource sharing;
   late QuestionsRemoteDataSource questions;
   late FriendsRemoteDataSource friends;
 
   setUp(() {
+    final now = DateTime.utc(2026, 11, 1, 9);
+    state = FakeBackendState.starting(now: now);
     dio = Dio(BaseOptions(
       baseUrl: 'https://api.test',
       headers: {'Authorization': 'Bearer a-student-token'},
     ))
       ..httpClientAdapter = fakeBackend(
+        state: state,
         delay: Duration.zero,
         solveDelay: Duration.zero,
-        clock: () => DateTime.utc(2026, 11, 1, 9),
+        clock: () => now,
       );
     sharing = QuestionSharingRemoteDataSourceImpl(dio: dio);
     questions = QuestionsRemoteDataSourceImpl(dio: dio);
@@ -61,6 +67,52 @@ void main() {
     expect(sams.question.questionText, 'Solve 2x + y = 7 and x - y = 2.');
     expect(sams.sharedBy.picture?.cardId, 'flint');
     expect(sams.sharedAt, DateTime.utc(2026, 11, 1, 7));
+  });
+
+  test('Shared with me comes 20 at a time, and its cursor brings the rest',
+      () async {
+    // Alex shares 20 more questions, a minute apart, after the first three.
+    for (var minute = 1; minute <= 20; minute++) {
+      final questionId = '${400 + minute}';
+      state.friends
+        ..friendQuestions.add(FakeFriendQuestion(
+          askedById: '202',
+          question: FakeSolvedQuestion(
+            id: questionId,
+            topic: 'Number - Fractions',
+            method: 'Common denominators',
+            questionText: 'Add the fractions in question $minute.',
+            askedAt: DateTime.utc(2026, 10, 30),
+          ),
+        ))
+        ..share(
+          questionId,
+          fromId: '202',
+          toId: FakeFriends.studentId,
+          at: DateTime.utc(2026, 11, 1, 8, minute),
+        );
+    }
+
+    final first = (await sharing.sharedQuestions()).toEntity();
+    final rest =
+        (await sharing.sharedQuestions(cursor: first.nextCursor)).toEntity();
+
+    expect(first.questions, hasLength(20));
+    expect(first.nextCursor, isNotNull);
+    expect(rest.nextCursor, isNull);
+    // All 23, newest share first, each once.
+    expect(
+      [
+        for (final shared in [...first.questions, ...rest.questions])
+          shared.question.questionId,
+      ],
+      [
+        for (var minute = 20; minute >= 1; minute--) '${400 + minute}',
+        '301',
+        '302',
+        '303',
+      ],
+    );
   });
 
   test("Sam's question opens with who shared it, and its answer pays nothing",
@@ -156,6 +208,50 @@ void main() {
       _refused(404, "That question isn't shared with you any more."),
     );
   });
+
+  for (final (ending, endTheShare) in <(String, Future<void> Function())>[
+    (
+      'he stops sharing it',
+      () async {
+        // Sam's own Stop sharing, which no request of Kai's can send.
+        state.friends.shares.removeWhere(
+            (share) => share.questionId == '301' && share.fromId == '201');
+      },
+    ),
+    (
+      'Kai removes him, even if they are friends again',
+      () async {
+        await friends.remove('201');
+        // The fake's other students never answer a request.
+        state.friends.friendIds.add('201');
+      },
+    ),
+    (
+      'Kai blocks him, even if they are friends again',
+      () async {
+        await friends.block('201');
+        await friends.unblock('201');
+        state.friends.friendIds.add('201');
+      },
+    ),
+  ]) {
+    test(
+        "a report about Sam's question is refused, and none is kept, once "
+        '$ending', () async {
+      await endTheShare();
+
+      await expectLater(
+        sharing.report(
+          friendId: '201',
+          questionId: '301',
+          reason: ReportReason.bullying,
+          note: '',
+        ),
+        _refused(404, "That question isn't shared with you any more."),
+      );
+      expect(state.friends.reports, isEmpty);
+    });
+  }
 
   test('before setup, Shared with me is empty, and sharing asks for friends',
       () async {
