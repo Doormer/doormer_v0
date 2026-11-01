@@ -657,8 +657,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pump(const Duration(milliseconds: 700));
-    expect(
-        find.text('Still preparing your photo.'), findsOneWidget);
+    expect(find.text('Still preparing your photo.'), findsOneWidget);
     expect(find.text('Choose from gallery'), findsNothing);
 
     preparer.pending!.complete(_preparedJpeg);
@@ -2181,8 +2180,7 @@ void main() {
       await selectPhoto(tester);
       await submitPhoto(tester);
 
-      expect(
-          find.text('Still solving your last photo'), findsOneWidget);
+      expect(find.text('Still solving your last photo'), findsOneWidget);
 
       repository
         ..failure = null
