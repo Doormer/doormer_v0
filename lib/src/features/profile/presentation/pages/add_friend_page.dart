@@ -1,5 +1,6 @@
 import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
+import 'package:doormer/src/shared/design/atomic/molecules/confirm_dialog_molecule.dart';
 import 'package:doormer/src/shared/friends/friends_messages.dart';
 import 'package:doormer/src/shared/widget/custom_toast.dart';
 import 'package:flutter/material.dart';
@@ -184,24 +185,13 @@ class _AddFriendPageState extends State<AddFriendPage> {
 
   Future<void> _confirmReset(BuildContext context) async {
     final bloc = context.read<AddFriendBloc>();
-    final reset = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Reset code?'),
-        content:
-            const Text('Your old code and invite links will stop working.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Reset code'),
-          ),
-        ],
-      ),
+    final reset = await showConfirmDialog(
+      context,
+      title: 'Reset code?',
+      message: 'Your old code and invite links will stop working.',
+      confirmLabel: 'Reset code',
+      icon: Icons.restart_alt_rounded,
     );
-    if (reset ?? false) bloc.add(const FriendCodeReset());
+    if (reset) bloc.add(const FriendCodeReset());
   }
 }

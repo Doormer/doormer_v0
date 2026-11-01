@@ -1,6 +1,7 @@
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -48,6 +49,78 @@ void main() {
         darkTheme.colorScheme.onTertiary,
         reason: 'accent foreground should be colorScheme.onTertiary',
       );
+    });
+  });
+
+  group('AppButtonAtom danger', () {
+    final darkTheme = AppTheme.dark;
+
+    Color paintedBackground(WidgetTester tester) {
+      final material = tester.widget<Material>(find.descendant(
+        of: find.byType(FilledButton),
+        matching: find.byType(Material),
+      ));
+      return material.color!;
+    }
+
+    testWidgets(
+        "fills with the theme's error red and draws its label in onError",
+        (tester) async {
+      await tester.pumpWidget(_pump(
+        AppButtonAtom(
+          label: 'Block',
+          variant: AppButtonVariant.danger,
+          onPressed: () {},
+        ),
+        theme: darkTheme,
+      ));
+
+      expect(paintedBackground(tester), darkTheme.colorScheme.error);
+      expect(
+        tester
+            .renderObject<RenderParagraph>(find.text('Block'))
+            .text
+            .style
+            ?.color,
+        darkTheme.colorScheme.onError,
+      );
+    });
+
+    testWidgets('is disabled, as filled is, when it has nothing to do',
+        (tester) async {
+      await tester.pumpWidget(_pump(
+        const AppButtonAtom(label: 'Remove'),
+        theme: darkTheme,
+      ));
+      final filledDisabled = paintedBackground(tester);
+
+      await tester.pumpWidget(_pump(
+        const AppButtonAtom(label: 'Remove', variant: AppButtonVariant.danger),
+        theme: darkTheme,
+      ));
+
+      expect(tester.widget<FilledButton>(find.byType(FilledButton)).enabled,
+          isFalse);
+      expect(paintedBackground(tester), filledDisabled);
+    });
+
+    testWidgets('keeps its red while loading, under an onError spinner',
+        (tester) async {
+      await tester.pumpWidget(_pump(
+        AppButtonAtom(
+          label: 'Block',
+          variant: AppButtonVariant.danger,
+          isLoading: true,
+          onPressed: () {},
+        ),
+        theme: darkTheme,
+      ));
+
+      expect(paintedBackground(tester), darkTheme.colorScheme.error);
+      final spinner = tester.widget<CircularProgressIndicator>(
+        find.byType(CircularProgressIndicator),
+      );
+      expect(spinner.color, darkTheme.colorScheme.onError);
     });
   });
 

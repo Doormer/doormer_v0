@@ -2,7 +2,15 @@ import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-enum AppButtonVariant { filled, accent, outlined }
+enum AppButtonVariant {
+  filled,
+  accent,
+  outlined,
+
+  /// For an action that can't be undone, such as Remove or Block: filled
+  /// with the theme's error red, so it never looks like Cancel.
+  danger,
+}
 
 class AppButtonAtom extends StatelessWidget {
   final String label;
@@ -18,6 +26,10 @@ class AppButtonAtom extends StatelessWidget {
   final bool expand;
   final Color? borderColor;
 
+  /// Takes the keyboard focus when the button first shows, as Cancel does
+  /// in a confirmation.
+  final bool autofocus;
+
   const AppButtonAtom({
     super.key,
     required this.label,
@@ -28,6 +40,7 @@ class AppButtonAtom extends StatelessWidget {
     this.loadingLabel,
     this.expand = false,
     this.borderColor,
+    this.autofocus = false,
   });
 
   @override
@@ -42,14 +55,12 @@ class AppButtonAtom extends StatelessWidget {
       borderRadius: BorderRadius.circular(20.r),
     );
 
-    final Color spinnerColor;
-    if (variant == AppButtonVariant.outlined) {
-      spinnerColor = cs.primary;
-    } else if (variant == AppButtonVariant.accent) {
-      spinnerColor = cs.onTertiary;
-    } else {
-      spinnerColor = cs.onPrimary;
-    }
+    final Color spinnerColor = switch (variant) {
+      AppButtonVariant.outlined => cs.primary,
+      AppButtonVariant.accent => cs.onTertiary,
+      AppButtonVariant.danger => cs.onError,
+      AppButtonVariant.filled => cs.onPrimary,
+    };
 
     final Widget spinner = SizedBox(
       height: 20.h,
@@ -93,53 +104,42 @@ class AppButtonAtom extends StatelessWidget {
       button = icon == null
           ? OutlinedButton(
               onPressed: effectiveOnPressed,
+              autofocus: autofocus,
               style: style,
               child: content,
             )
           : OutlinedButton.icon(
               onPressed: effectiveOnPressed,
-              style: style,
-              icon: Icon(icon),
-              label: content,
-            );
-    } else if (variant == AppButtonVariant.accent) {
-      final style = FilledButton.styleFrom(
-        backgroundColor: cs.tertiary,
-        foregroundColor: cs.onTertiary,
-        disabledBackgroundColor: isLoading ? cs.tertiary : null,
-        disabledForegroundColor: isLoading ? cs.onTertiary : null,
-        padding: padding,
-        shape: shape,
-      );
-      button = icon == null
-          ? FilledButton(
-              onPressed: effectiveOnPressed,
-              style: style,
-              child: content,
-            )
-          : FilledButton.icon(
-              onPressed: effectiveOnPressed,
+              autofocus: autofocus,
               style: style,
               icon: Icon(icon),
               label: content,
             );
     } else {
+      // Filled, accent and danger differ only in their colours.
+      final (background, foreground) = switch (variant) {
+        AppButtonVariant.accent => (cs.tertiary, cs.onTertiary),
+        AppButtonVariant.danger => (cs.error, cs.onError),
+        _ => (cs.primary, cs.onPrimary),
+      };
       final style = FilledButton.styleFrom(
-        backgroundColor: cs.primary,
-        foregroundColor: cs.onPrimary,
-        disabledBackgroundColor: isLoading ? cs.primary : null,
-        disabledForegroundColor: isLoading ? cs.onPrimary : null,
+        backgroundColor: background,
+        foregroundColor: foreground,
+        disabledBackgroundColor: isLoading ? background : null,
+        disabledForegroundColor: isLoading ? foreground : null,
         padding: padding,
         shape: shape,
       );
       button = icon == null
           ? FilledButton(
               onPressed: effectiveOnPressed,
+              autofocus: autofocus,
               style: style,
               child: content,
             )
           : FilledButton.icon(
               onPressed: effectiveOnPressed,
+              autofocus: autofocus,
               style: style,
               icon: Icon(icon),
               label: content,

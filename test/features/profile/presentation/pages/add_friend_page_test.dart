@@ -12,6 +12,8 @@ import 'package:doormer/src/features/profile/domain/usecase/send_friend_request_
 import 'package:doormer/src/features/profile/domain/usecase/unblock_student_usecase.dart';
 import 'package:doormer/src/features/profile/presentation/bloc/add_friend_bloc.dart';
 import 'package:doormer/src/features/profile/presentation/pages/add_friend_page.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/molecules/confirm_dialog_molecule.dart';
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -151,6 +153,12 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// The button saying [label] in the dialog that asks before a reset.
+  Finder inResetDialog(String label) => find.descendant(
+        of: find.byType(ConfirmDialogMolecule),
+        matching: find.widgetWithText(AppButtonAtom, label),
+      );
+
   /// Lets a toast run its course.
   Future<void> waitOutToast(WidgetTester tester) async {
     await tester.pump(const Duration(seconds: 5));
@@ -245,7 +253,7 @@ void main() {
 
     await tester.tap(find.text('Reset code'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, 'Reset code').last);
+    await tester.tap(inResetDialog('Reset code'));
     await tester.pumpAndSettle();
 
     expect(find.text('https://app.doormer.test/add/K7QM2XPA'), findsNothing,
@@ -329,23 +337,53 @@ void main() {
         findsOneWidget);
   });
 
-  testWidgets('Reset code warns first, then shows the new code',
-      (tester) async {
+  testWidgets(
+      "Reset code asks first, in the app's dialog, with a red Reset code "
+      'beside Cancel', (tester) async {
     await pumpAddFriend(tester);
 
     await tester.tap(find.text('Reset code'));
     await tester.pumpAndSettle();
-    expect(find.text('Your old code and invite links will stop working.'),
+
+    final dialog = find.byType(ConfirmDialogMolecule);
+    expect(dialog, findsOneWidget);
+    expect(find.descendant(of: dialog, matching: find.text('Reset code?')),
         findsOneWidget);
-    await tester.tap(find.text('Cancel'));
-    await tester.pumpAndSettle();
-    expect(repository.calls, isNot(contains('resetCode')));
+    expect(
+      find.descendant(
+        of: dialog,
+        matching:
+            find.text('Your old code and invite links will stop working.'),
+      ),
+      findsOneWidget,
+    );
+    expect(inResetDialog('Cancel'), findsOneWidget);
+    expect(tester.widget<AppButtonAtom>(inResetDialog('Reset code')).variant,
+        AppButtonVariant.danger);
+  });
+
+  testWidgets('Cancel in the reset dialog keeps the code', (tester) async {
+    await pumpAddFriend(tester);
 
     await tester.tap(find.text('Reset code'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, 'Reset code').last);
+    await tester.tap(inResetDialog('Cancel'));
     await tester.pumpAndSettle();
 
+    expect(find.byType(ConfirmDialogMolecule), findsNothing);
+    expect(repository.calls, isNot(contains('resetCode')));
+    expect(find.text('K7QM-2XPA'), findsOneWidget);
+  });
+
+  testWidgets('confirming the reset shows the new code', (tester) async {
+    await pumpAddFriend(tester);
+
+    await tester.tap(find.text('Reset code'));
+    await tester.pumpAndSettle();
+    await tester.tap(inResetDialog('Reset code'));
+    await tester.pumpAndSettle();
+
+    expect(repository.calls, contains('resetCode'));
     expect(find.text('ZQ9X-4W2T'), findsOneWidget);
   });
 

@@ -64,6 +64,11 @@ class AppTheme {
   static ThemeData get dark => _build(_darkScheme);
 
   static ThemeData _build(ColorScheme scheme) {
+    const menuText = TextStyle(
+      fontFamily: kBodyFont,
+      fontSize: 14,
+      color: QuestPalette.body,
+    );
     return ThemeData(
       useMaterial3: true,
       fontFamily: kBodyFont,
@@ -78,6 +83,23 @@ class AppTheme {
         backgroundColor: scheme.surface,
         foregroundColor: scheme.onSurface,
         elevation: 0,
+      ),
+      // Every popup menu, such as the Options menus on Profile. The theme is
+      // built above ScreenUtilInit (see main.dart), so its sizes are logical
+      // pixels, as AppTextStyles' are, not `.r` and `.sp`.
+      popupMenuTheme: PopupMenuThemeData(
+        color: QuestPalette.card,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: scheme.outlineVariant),
+        ),
+        textStyle: menuText,
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.disabled)
+              ? menuText.copyWith(color: QuestPalette.muted)
+              : menuText,
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
