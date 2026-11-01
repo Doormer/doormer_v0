@@ -1,6 +1,7 @@
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/data/model/daily_limit_model.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
+import 'package:doormer/src/shared/friends/model/friend_summary_model.dart';
 
 class PhotoQuestionResponseModel {
   final PhotoQuestionSolveStatus status;
@@ -11,6 +12,13 @@ class PhotoQuestionResponseModel {
   final String method;
   final DailyLimitModel? dailyLimit;
 
+  /// `shared_with`. Only `/questions/solution` sends it.
+  final List<FriendSummaryModel> sharedWith;
+
+  /// `shared_by`. Only `/questions/solution` sends it, and only to a friend
+  /// the question was shared with.
+  final FriendSummaryModel? sharedBy;
+
   const PhotoQuestionResponseModel({
     required this.status,
     required this.questionId,
@@ -19,6 +27,8 @@ class PhotoQuestionResponseModel {
     this.topic = '',
     this.method = '',
     this.dailyLimit,
+    this.sharedWith = const [],
+    this.sharedBy,
   });
 
   factory PhotoQuestionResponseModel.fromJson(Map<String, dynamic> json) {
@@ -40,6 +50,13 @@ class PhotoQuestionResponseModel {
       topic: json['topic']?.toString() ?? '',
       method: json['method']?.toString() ?? '',
       dailyLimit: _readDailyLimit(json['daily_limit']),
+      sharedWith: json['shared_with'] == null
+          ? const []
+          : FriendSummaryModel.listFromJson(json, 'shared_with'),
+      sharedBy: json['shared_by'] == null
+          ? null
+          : FriendSummaryModel.fromJson(
+              json['shared_by'] as Map<String, dynamic>),
     );
   }
 
@@ -52,6 +69,8 @@ class PhotoQuestionResponseModel {
       topic: topic,
       method: method,
       dailyLimit: dailyLimit?.toEntity(),
+      sharedWith: [for (final friend in sharedWith) friend.toEntity()],
+      sharedBy: sharedBy?.toEntity(),
     );
   }
 

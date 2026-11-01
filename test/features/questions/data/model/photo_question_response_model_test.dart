@@ -5,6 +5,8 @@ import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
 import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
+import 'package:doormer/src/shared/friends/entity/card_picture.dart';
+import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -268,6 +270,60 @@ void main() {
 
       expect(model.toEntity().status, PhotoQuestionSolveStatus.unreadable);
       expect(model.toEntity().dailyLimit, isNull);
+    });
+
+    test("the student's own question names the friends it is shared with", () {
+      final outcome = PhotoQuestionResponseModel.fromJson({
+        'status': 'unreadable',
+        'question_id': '501',
+        'shared_with': [
+          {'friend_id': '11', 'nickname': 'Alex'},
+          {
+            'friend_id': '13',
+            'nickname': 'Kate',
+            'picture': {
+              'deck_id': 'cinder-01',
+              'card_id': 'flint',
+              'art_url': 'https://example.test/flint.png',
+            },
+          },
+        ],
+      }).toEntity();
+
+      expect(outcome.sharedWith, const [
+        FriendSummary(friendId: '11', nickname: 'Alex'),
+        FriendSummary(
+          friendId: '13',
+          nickname: 'Kate',
+          picture: CardPicture(
+            deckId: 'cinder-01',
+            cardId: 'flint',
+            artUrl: 'https://example.test/flint.png',
+          ),
+        ),
+      ]);
+      expect(outcome.sharedBy, isNull);
+    });
+
+    test("a friend's question says who shared it", () {
+      final outcome = PhotoQuestionResponseModel.fromJson({
+        'status': 'unreadable',
+        'question_id': '501',
+        'shared_with': [],
+        'shared_by': {'friend_id': '7', 'nickname': 'Sam'},
+      }).toEntity();
+
+      expect(outcome.sharedWith, isEmpty);
+      expect(outcome.sharedBy,
+          const FriendSummary(friendId: '7', nickname: 'Sam'));
+    });
+
+    test('an answer to a photo is shared with no one', () {
+      final outcome = PhotoQuestionResponseModel.fromJson(
+          {'status': 'unreadable', 'question_id': 'q1'}).toEntity();
+
+      expect(outcome.sharedWith, isEmpty);
+      expect(outcome.sharedBy, isNull);
     });
   });
 }

@@ -1,4 +1,5 @@
 import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
+import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 
 enum PhotoQuestionSolveStatus {
   solved,
@@ -25,6 +26,15 @@ class PhotoQuestionSolveOutcome {
   /// sent carries it; a saved question opened later has none.
   final DailyLimit? dailyLimit;
 
+  /// The friends the student's own question is shared with, by nickname.
+  /// Only a saved question opened later carries them, and a question a friend
+  /// shared never does: it is empty then.
+  final List<FriendSummary> sharedWith;
+
+  /// The friend who shared this question with the student. Null for the
+  /// student's own question.
+  final FriendSummary? sharedBy;
+
   const PhotoQuestionSolveOutcome({
     required this.status,
     required this.questionId,
@@ -33,6 +43,8 @@ class PhotoQuestionSolveOutcome {
     this.topic = '',
     this.method = '',
     this.dailyLimit,
+    this.sharedWith = const [],
+    this.sharedBy,
   });
 }
 
