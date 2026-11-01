@@ -1,5 +1,4 @@
 import 'package:doormer/src/core/theme/app_theme.dart';
-import 'package:doormer/src/shared/design/atomic/atoms/surface_card_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/tile_grid_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -25,11 +24,8 @@ Future<void> _pump(WidgetTester tester, TileGridAtom grid) async {
   ));
 }
 
-/// The tile holding [text].
-Rect _tile(WidgetTester tester, String text) => tester.getRect(find.ancestor(
-      of: find.text(text),
-      matching: find.byType(SurfaceCardAtom),
-    ));
+/// Where the tile saying [text] is laid out.
+Rect _tile(WidgetTester tester, String text) => tester.getRect(find.text(text));
 
 void main() {
   testWidgets('lays tiles out two to a line, each as wide as the others',

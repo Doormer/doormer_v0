@@ -24,8 +24,10 @@ class FriendRequestListOrganism extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isTiled = columns > 1;
     final rows = [
-      for (final request in requests) FriendRequestRowMolecule(params: request),
+      for (final request in requests)
+        FriendRequestRowMolecule(params: request, isTile: isTiled),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -42,10 +44,10 @@ class FriendRequestListOrganism extends StatelessWidget {
           ),
         ),
         SizedBox(height: 6.h),
-        if (columns == 1)
-          ...rows
+        if (isTiled)
+          TileGridAtom(columns: columns, children: rows)
         else
-          TileGridAtom(columns: columns, children: rows),
+          ...rows,
       ],
     );
   }

@@ -75,7 +75,7 @@ class BlockedStudentsTemplate extends StatelessWidget {
                 columns: 2,
                 children: [
                   for (final row in rows)
-                    BlockedStudentRowMolecule(params: row),
+                    BlockedStudentRowMolecule(params: row, isTile: true),
                 ],
               )
             else

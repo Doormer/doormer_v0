@@ -66,6 +66,18 @@ void main() {
     expect(edits, 1);
   });
 
+  testWidgets('on a small phone, Edit keeps a full-height tap target',
+      (tester) async {
+    await _pump(tester, window: const Size(360, 640));
+
+    expect(
+      tester.getSize(_edit).height,
+      greaterThanOrEqualTo(32 * AppLayout.minScale),
+      reason: 'Edit is 32 design pixels tall, so at least 27 px even at the '
+          'smallest UI scale',
+    );
+  });
+
   testWidgets(
       'a long nickname is cut short with an ellipsis, and Edit stays in view',
       (tester) async {

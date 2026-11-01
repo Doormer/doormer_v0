@@ -47,7 +47,6 @@ class ProfileHeaderOrganism extends StatelessWidget {
                     icon: Icon(Icons.edit_outlined, size: 14.w),
                     label: const Text('Edit'),
                     style: TextButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       minimumSize: Size(0, 32.h),
                       padding: EdgeInsets.symmetric(horizontal: 8.w),

@@ -23,8 +23,10 @@ class FriendListOrganism extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isTiled = columns > 1;
     final rows = [
-      for (final friend in friends) FriendRowMolecule(params: friend)
+      for (final friend in friends)
+        FriendRowMolecule(params: friend, isTile: isTiled),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -46,10 +48,10 @@ class FriendListOrganism extends StatelessWidget {
             'No friends yet. Add one with their friend code.',
             style: TextStyle(fontSize: 13.sp, color: QuestPalette.muted),
           )
-        else if (columns == 1)
-          ...rows
+        else if (isTiled)
+          TileGridAtom(columns: columns, children: rows)
         else
-          TileGridAtom(columns: columns, children: rows),
+          ...rows,
       ],
     );
   }

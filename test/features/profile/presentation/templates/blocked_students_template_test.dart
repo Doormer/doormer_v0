@@ -36,8 +36,9 @@ Future<void> _pump(WidgetTester tester, {required Size window}) async {
 Finder _row(String nickname) =>
     find.widgetWithText(BlockedStudentRowMolecule, nickname);
 
-Finder _tileAround(Finder row) =>
-    find.ancestor(of: row, matching: find.byType(SurfaceCardAtom));
+/// The tile holding [content], if it is in one.
+Finder _tileAround(Finder content) =>
+    find.ancestor(of: content, matching: find.byType(SurfaceCardAtom));
 
 void main() {
   testWidgets(
@@ -45,8 +46,8 @@ void main() {
       'its Unblock', (tester) async {
     await _pump(tester, window: const Size(760, 900));
 
-    final tama = tester.getRect(_tileAround(_row('Tama')));
-    final nia = tester.getRect(_tileAround(_row('Nia')));
+    final tama = tester.getRect(_tileAround(find.text('Tama')));
+    final nia = tester.getRect(_tileAround(find.text('Nia')));
     expect(nia.top, tama.top, reason: 'on the same line');
     expect(nia.left, greaterThan(tama.right));
     expect(nia.width, moreOrLessEquals(tama.width));
@@ -63,7 +64,7 @@ void main() {
       (tester) async {
     await _pump(tester, window: const Size(360, 800));
 
-    expect(_tileAround(_row('Tama')), findsNothing);
+    expect(_tileAround(find.text('Tama')), findsNothing);
     expect(tester.getRect(_row('Nia')).top,
         greaterThanOrEqualTo(tester.getRect(_row('Tama')).bottom));
     expect(tester.getSize(_row('Tama')).width, 320);

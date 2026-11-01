@@ -12,13 +12,26 @@ import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/glow_badge_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/surface_card_atom.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// A window whose content column is 760 wide: a computer's.
+/// A window whose content column is 760 wide: a computer's. It is tall
+/// enough for the UI's largest scale, 1.45.
 const _wide = Size(760, 1400);
 
 /// A phone's window, 360 wide.
 const _narrow = Size(360, 1400);
+
+/// Loads the app's reading face, so labels take the room they take in the
+/// app rather than the test font's 1 em a letter.
+Future<void> _loadReadingFace() async {
+  final face = FontLoader(kBodyFont);
+  for (final weight in [400, 500, 600, 700]) {
+    face.addFont(rootBundle.load('assets/fonts/SpaceGrotesk-$weight.ttf'));
+  }
+  await face.load();
+}
 
 /// Profile as the app shows it in a [window] of that size.
 Future<void> _pump(
@@ -37,10 +50,12 @@ Future<void> _pump(
   ));
 }
 
-/// Kai, set up, with [friends] and requests from [requesters].
+/// Kai, set up, with [friends] and requests from [requesters]. Opening a
+/// friend tells [onOpen] their nickname.
 ProfileFriendsParams _kai({
   List<String> friends = const ['Alex', 'Sam'],
   List<String> requesters = const ['Rua', 'Nia'],
+  void Function(String nickname)? onOpen,
 }) =>
     ProfileFriendsParams(
       header: ProfileHeaderParams(
@@ -68,7 +83,7 @@ ProfileFriendsParams _kai({
             nickname: nickname,
             artUrl: null,
             isBusy: false,
-            onOpen: () {},
+            onOpen: () => onOpen?.call(nickname),
             onRemove: () {},
             onBlock: () {},
             onReport: () {},
@@ -83,26 +98,81 @@ Finder _requestRow(String nickname) =>
     find.widgetWithText(FriendRequestRowMolecule, nickname);
 Finder _button(String label) => find.widgetWithText(AppButtonAtom, label);
 
-/// The tile around [row], if it has one.
-Finder _tileAround(Finder row) =>
-    find.ancestor(of: row, matching: find.byType(SurfaceCardAtom));
+/// The tile holding [content], if it is in one.
+Finder _tileAround(Finder content) =>
+    find.ancestor(of: content, matching: find.byType(SurfaceCardAtom));
+
+/// How many lines [text] takes.
+int _linesOf(WidgetTester tester, Finder text) {
+  final paragraph = tester.renderObject<RenderParagraph>(text);
+  final length = paragraph.text.toPlainText().length;
+  return paragraph
+      .getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: length))
+      .map((box) => box.top)
+      .toSet()
+      .length;
+}
 
 void main() {
+  setUpAll(_loadReadingFace);
+
   group('on a wide screen', () {
     testWidgets('friends and requests sit two to a line, each in a tile',
         (tester) async {
       await _pump(tester, window: _wide, body: _kai());
 
-      for (final (left, right) in [
-        (_requestRow('Rua'), _requestRow('Nia')),
-        (_friendRow('Alex'), _friendRow('Sam')),
-      ]) {
-        final leftTile = tester.getRect(_tileAround(left));
-        final rightTile = tester.getRect(_tileAround(right));
+      for (final (left, right) in [('Rua', 'Nia'), ('Alex', 'Sam')]) {
+        final leftTile = tester.getRect(_tileAround(find.text(left)));
+        final rightTile = tester.getRect(_tileAround(find.text(right)));
         expect(rightTile.top, leftTile.top, reason: 'on the same line');
         expect(rightTile.left, greaterThan(leftTile.right));
         expect(rightTile.width, moreOrLessEquals(leftTile.width));
       }
+    });
+
+    testWidgets(
+        'at the largest UI scale, Accept and Decline share one line in a '
+        'request tile', (tester) async {
+      await _pump(tester, window: _wide, body: _kai());
+
+      final row = _requestRow('Rua');
+      final accept = find.descendant(of: row, matching: _button('Accept'));
+      final decline = find.descendant(of: row, matching: _button('Decline'));
+      expect(tester.getRect(decline).top,
+          moreOrLessEquals(tester.getRect(accept).top),
+          reason: 'on one line');
+      expect(tester.getRect(decline).left,
+          greaterThan(tester.getRect(accept).right));
+      for (final (button, label) in [
+        (accept, 'Accept'),
+        (decline, 'Decline'),
+      ]) {
+        expect(
+          _linesOf(
+              tester, find.descendant(of: button, matching: find.text(label))),
+          1,
+          reason: '$label fits its button',
+        );
+      }
+    });
+
+    testWidgets(
+        "a friend's whole tile opens them, its rim included, but its ⋮ opens "
+        'only the menu', (tester) async {
+      final opened = <String>[];
+      await _pump(tester, window: _wide, body: _kai(onOpen: opened.add));
+
+      final tile = tester.getRect(_tileAround(find.text('Sam')));
+      await tester.tapAt(Offset(tile.left + 4, tile.center.dy));
+      expect(opened, ['Sam']);
+
+      await tester.tap(find.descendant(
+        of: _friendRow('Sam'),
+        matching: find.byIcon(Icons.more_vert),
+      ));
+      await tester.pumpAndSettle();
+      expect(opened, ['Sam'], reason: 'the ⋮ opens its menu, not the friend');
+      expect(find.text('Remove'), findsOneWidget);
     });
 
     testWidgets("each ⋮ is within one tile's width of its nickname",
@@ -155,8 +225,12 @@ void main() {
         (_requestRow('Rua'), _requestRow('Nia')),
         (_friendRow('Alex'), _friendRow('Sam')),
       ]) {
-        expect(_tileAround(upper), findsNothing);
-        expect(_tileAround(lower), findsNothing);
+        for (final row in [upper, lower]) {
+          expect(_tileAround(row), findsNothing);
+          expect(
+              find.descendant(of: row, matching: find.byType(SurfaceCardAtom)),
+              findsNothing);
+        }
         expect(tester.getRect(lower).top,
             greaterThanOrEqualTo(tester.getRect(upper).bottom));
         expect(tester.getSize(upper).width, 320);
