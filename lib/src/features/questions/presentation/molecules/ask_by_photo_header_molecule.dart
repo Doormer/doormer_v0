@@ -14,7 +14,7 @@ class AskByPhotoHeaderMolecule extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
-          'Ready to solve?',
+          'Stuck on a question?',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: kDisplayFont,
@@ -25,7 +25,7 @@ class AskByPhotoHeaderMolecule extends StatelessWidget {
         ),
         SizedBox(height: 24.h),
         Text(
-          'Upload a photo',
+          'Snap it. Solve it.',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: kDisplayFont,
@@ -36,7 +36,7 @@ class AskByPhotoHeaderMolecule extends StatelessWidget {
         ),
         SizedBox(height: 6.h),
         Text(
-          "We'll help you solve it step by step",
+          'Unlock the answer, step by step.',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: kBodyFont,

@@ -189,7 +189,7 @@ void main() {
     await tester.pumpAndSettle();
 
     Rect heroRect() => tester.getRect(find.ancestor(
-          of: find.text('UPLOAD & SOLVE'),
+          of: find.text('Add a photo'),
           matching: find.byType(AppButtonAtom),
         ));
 

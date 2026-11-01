@@ -401,7 +401,7 @@ void main() {
 
   FilledButton submitButton(WidgetTester tester) {
     return tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Submit to solver'),
+      find.widgetWithText(FilledButton, 'Solve it'),
     );
   }
 
@@ -411,9 +411,9 @@ void main() {
     );
   }
 
-  AppButtonAtom uploadAndSolveButton(WidgetTester tester) {
+  AppButtonAtom addPhotoButton(WidgetTester tester) {
     return tester.widget<AppButtonAtom>(
-      find.widgetWithText(AppButtonAtom, 'UPLOAD & SOLVE'),
+      find.widgetWithText(AppButtonAtom, 'Add a photo'),
     );
   }
 
@@ -421,7 +421,7 @@ void main() {
   // student's next tap. The fake answers at once, so the answer, and the
   // count it carries, are on screen when this returns.
   Future<void> submitPhoto(WidgetTester tester) async {
-    final submit = find.widgetWithText(FilledButton, 'Submit to solver');
+    final submit = find.widgetWithText(FilledButton, 'Solve it');
     await tester.ensureVisible(submit);
     await tester.tap(submit);
     await tester.pumpAndSettle();
@@ -454,10 +454,10 @@ void main() {
     // The idle landing screen is a single-CTA hero: the upload and status
     // panels stay unmounted until there is a photo, a solve in flight, or a
     // recoverable failure.
-    expect(find.text('Ready to solve?'), findsOneWidget);
-    expect(find.text('Upload a photo'), findsOneWidget);
-    expect(find.text('UPLOAD & SOLVE'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Submit to solver'), findsNothing);
+    expect(find.text('Stuck on a question?'), findsOneWidget);
+    expect(find.text('Snap it. Solve it.'), findsOneWidget);
+    expect(find.text('Add a photo'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Solve it'), findsNothing);
     expect(find.text('Ready when the page is readable'), findsNothing);
   });
 
@@ -520,7 +520,7 @@ void main() {
     await pumpPage(tester);
     await tester.pumpAndSettle();
 
-    expect(find.text('UPLOAD & SOLVE'), findsOneWidget);
+    expect(find.text('Add a photo'), findsOneWidget);
     expect(find.text('Open camera'), findsNothing);
   });
 
@@ -551,7 +551,7 @@ void main() {
 
     // And because the header now sits on the surface rather than on primary,
     // it takes the surface's ink.
-    final uploadHeading = tester.widget<Text>(find.text('Upload a photo'));
+    final uploadHeading = tester.widget<Text>(find.text('Snap it. Solve it.'));
     expect(uploadHeading.style?.color, colorScheme.onSurface);
   });
 
@@ -624,9 +624,9 @@ void main() {
     expect(submitButton(tester).onPressed, isNotNull);
 
     await tester.ensureVisible(
-      find.widgetWithText(FilledButton, 'Submit to solver'),
+      find.widgetWithText(FilledButton, 'Solve it'),
     );
-    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Solve it'));
     await tester.pump();
     await tester.pump();
 
@@ -702,7 +702,7 @@ void main() {
 
     expect(fileInput.pickedFromCamera, [false]);
     expect(preparer.prepared, isEmpty);
-    expect(find.text('Ready to solve?'), findsOneWidget);
+    expect(find.text('Stuck on a question?'), findsOneWidget);
     await drainToasts(tester);
   });
 
@@ -754,9 +754,9 @@ void main() {
     await selectPhoto(tester);
 
     await tester.ensureVisible(
-      find.widgetWithText(FilledButton, 'Submit to solver'),
+      find.widgetWithText(FilledButton, 'Solve it'),
     );
-    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Solve it'));
     await tester.pump(); // dispatch AskByPhotoSubmitted
     await tester.pump(); // BlocConsumer rebuilds into the Loading state
 
@@ -810,9 +810,9 @@ void main() {
     await pumpPage(tester);
     await selectPhoto(tester);
     await tester.ensureVisible(
-      find.widgetWithText(FilledButton, 'Submit to solver'),
+      find.widgetWithText(FilledButton, 'Solve it'),
     );
-    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Solve it'));
     await tester.pump();
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
@@ -847,9 +847,9 @@ void main() {
     await pumpPage(tester);
     await selectPhoto(tester);
     await tester.ensureVisible(
-      find.widgetWithText(FilledButton, 'Submit to solver'),
+      find.widgetWithText(FilledButton, 'Solve it'),
     );
-    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Solve it'));
     await tester.pump();
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
@@ -863,9 +863,9 @@ void main() {
     repository.pending = second;
     await selectPhoto(tester);
     await tester.ensureVisible(
-      find.widgetWithText(FilledButton, 'Submit to solver'),
+      find.widgetWithText(FilledButton, 'Solve it'),
     );
-    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Solve it'));
     await tester.pump();
     await tester.pump();
 
@@ -905,9 +905,9 @@ void main() {
     await selectPhoto(tester);
 
     await tester.ensureVisible(
-      find.widgetWithText(FilledButton, 'Submit to solver'),
+      find.widgetWithText(FilledButton, 'Solve it'),
     );
-    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Solve it'));
     await tester.pump(); // dispatch AskByPhotoSubmitted
     await tester.pump(); // Loading
     await tester
@@ -931,9 +931,9 @@ void main() {
     await selectPhoto(tester);
 
     await tester.ensureVisible(
-      find.widgetWithText(FilledButton, 'Submit to solver'),
+      find.widgetWithText(FilledButton, 'Solve it'),
     );
-    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Solve it'));
     await tester.pump();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
@@ -959,7 +959,7 @@ void main() {
   group('a failed solve does not throw the photo away', () {
     Future<void> failTheSolve(WidgetTester tester) async {
       await selectPhoto(tester);
-      await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Solve it'));
       await tester.pump();
       await tester.pump();
     }
@@ -978,7 +978,7 @@ void main() {
       // The retry is the upload panel's own button, relabelled - not a second
       // control competing with it.
       expect(find.widgetWithText(AppButtonAtom, 'Try again'), findsOneWidget);
-      expect(find.text('Submit to solver'), findsNothing);
+      expect(find.text('Solve it'), findsNothing);
       expect(find.widgetWithText(AppButtonAtom, 'Change photo'), findsOneWidget,
           reason:
               'exactly one Change photo: the status panel must not repeat the '
@@ -1024,7 +1024,7 @@ void main() {
           reason: 'the student should see which photo was rejected');
       expect(find.text('Try again'), findsNothing,
           reason: 'the same blurry bytes read as blurry every time');
-      expect(find.text('Submit to solver'), findsOneWidget,
+      expect(find.text('Solve it'), findsOneWidget,
           reason: 'the button stays generic when a resend would not help');
       expect(
           find.widgetWithText(AppButtonAtom, 'Change photo'), findsOneWidget);
@@ -1044,9 +1044,9 @@ void main() {
 
     await selectPhoto(tester);
     await tester.ensureVisible(
-      find.widgetWithText(FilledButton, 'Submit to solver'),
+      find.widgetWithText(FilledButton, 'Solve it'),
     );
-    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Solve it'));
     await tester.pump();
     await tester.pump();
 
@@ -1091,9 +1091,9 @@ void main() {
 
     await selectPhoto(tester);
     await tester.ensureVisible(
-      find.widgetWithText(FilledButton, 'Submit to solver'),
+      find.widgetWithText(FilledButton, 'Solve it'),
     );
-    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Solve it'));
     await tester.pump();
     await tester.pump();
 
@@ -1144,9 +1144,9 @@ void main() {
 
     await selectPhoto(tester);
     await tester.ensureVisible(
-      find.widgetWithText(FilledButton, 'Submit to solver'),
+      find.widgetWithText(FilledButton, 'Solve it'),
     );
-    await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Solve it'));
     await tester.pump();
     await tester.pump();
 
@@ -1180,7 +1180,7 @@ void main() {
     // The solving view's spinner and timer never settle, so these tests pump
     // set durations instead of pumpAndSettle.
     Future<void> submitAndWait(WidgetTester tester) async {
-      await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Solve it'));
       await tester.pump();
       await tester.pump();
     }
@@ -1327,7 +1327,7 @@ void main() {
       await pumpPage(tester, solvingAdUnit: () => adUnit);
       await selectPhoto(tester);
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Solve it'));
       await tester.pump();
       await tester.pump();
       await tester.pump(const Duration(seconds: 3));
@@ -1401,9 +1401,9 @@ void main() {
       expect(preparer.edits, [PhotoEdit.none, turned]);
 
       await tester.ensureVisible(
-        find.widgetWithText(FilledButton, 'Submit to solver'),
+        find.widgetWithText(FilledButton, 'Solve it'),
       );
-      await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Solve it'));
       await tester.pump();
       await tester.pump();
 
@@ -1450,9 +1450,9 @@ void main() {
       await pumpPage(tester);
       await pickFromGallery(tester);
       await tester.ensureVisible(
-        find.widgetWithText(FilledButton, 'Submit to solver'),
+        find.widgetWithText(FilledButton, 'Solve it'),
       );
-      await tester.tap(find.widgetWithText(FilledButton, 'Submit to solver'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Solve it'));
       await tester.pump();
       await tester.pump();
 
@@ -1543,7 +1543,7 @@ void main() {
       await pumpPage(tester);
 
       expect(find.text(noneLeftText), findsOneWidget);
-      expect(uploadAndSolveButton(tester).onPressed, isNull);
+      expect(addPhotoButton(tester).onPressed, isNull);
 
       await tester.tap(find.byIcon(Icons.document_scanner_outlined));
       await tester.pumpAndSettle();
@@ -1627,7 +1627,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('UPLOAD & SOLVE'), findsOneWidget);
+      expect(find.text('Add a photo'), findsOneWidget);
       expect(find.text('4 questions left today'), findsOneWidget);
       expect(repository.dailyLimitReads, 1);
     });
@@ -1802,7 +1802,7 @@ void main() {
       expect(find.text('5 questions left today'), findsOneWidget);
       expect(find.text(noneLeftText), findsOneWidget,
           reason: 'the toast, shown before the count came back');
-      expect(uploadAndSolveButton(tester).onPressed, isNotNull);
+      expect(addPhotoButton(tester).onPressed, isNotNull);
       await drainToasts(tester);
     });
 
@@ -1994,7 +1994,7 @@ void main() {
       registerBloc();
       await pumpPage(tester);
       await selectPhoto(tester);
-      final submit = find.widgetWithText(FilledButton, 'Submit to solver');
+      final submit = find.widgetWithText(FilledButton, 'Solve it');
       await tester.ensureVisible(submit);
       await tester.tap(submit);
       // Not pumpAndSettle: the solving view's spinner runs until the send

@@ -94,7 +94,7 @@ class AskByPhotoTemplate extends StatelessWidget {
             const AskByPhotoHeaderMolecule(),
             SizedBox(height: 24.h),
             AppButtonAtom(
-              label: 'UPLOAD & SOLVE',
+              label: 'Add a photo',
               icon: Icons.camera_alt,
               variant: AppButtonVariant.accent,
               onPressed: uploadParams.isLoading ||

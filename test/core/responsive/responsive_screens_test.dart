@@ -160,8 +160,8 @@ void main() {
       expect(tester.takeException(), isNull);
 
       // The hero must be reachable, not pushed off the painted column.
-      expect(find.text('UPLOAD & SOLVE'), findsOneWidget);
-      final heroWidth = tester.getSize(find.text('UPLOAD & SOLVE')).width;
+      expect(find.text('Add a photo'), findsOneWidget);
+      final heroWidth = tester.getSize(find.text('Add a photo')).width;
       expect(heroWidth, lessThanOrEqualTo(AppLayout.maxContentWidth));
     });
 
@@ -213,7 +213,7 @@ void main() {
       // matches the exact runtime type.
       buttonWidths[entry.key] = tester
           .getSize(find.ancestor(
-            of: find.text('UPLOAD & SOLVE'),
+            of: find.text('Add a photo'),
             matching: find.byType(AppButtonAtom),
           ))
           .width;
@@ -227,7 +227,7 @@ void main() {
       await tester.pump();
 
       headingHeights[entry.key] =
-          tester.getSize(find.text('Photo input')).height;
+          tester.getSize(find.text('Your question')).height;
     }
 
     void expectNoZoom(String what, Map<String, double> measured) {
