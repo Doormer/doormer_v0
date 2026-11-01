@@ -47,6 +47,11 @@ class SolutionReaderReady extends SolutionReaderState {
   /// the same page from sending the request twice.
   final bool revealRewardRequested;
 
+  /// The friends the student's own question is shared with, as it opened.
+  /// Empty for a question shared with no one, a solve just handed over, and
+  /// the sample.
+  final List<FriendSummary> sharedWith;
+
   const SolutionReaderReady({
     required this.document,
     this.stepIndex = 0,
@@ -60,6 +65,7 @@ class SolutionReaderReady extends SolutionReaderState {
     this.quarksEarned = 0,
     this.rewardFlightId = 0,
     this.revealRewardRequested = false,
+    this.sharedWith = const [],
   });
 
   bool get isFirstStep => stepIndex == 0;
@@ -96,6 +102,7 @@ class SolutionReaderReady extends SolutionReaderState {
       rewardFlightId: rewardFlightId ?? this.rewardFlightId,
       revealRewardRequested:
           revealRewardRequested ?? this.revealRewardRequested,
+      sharedWith: sharedWith,
     );
   }
 
@@ -114,6 +121,7 @@ class SolutionReaderReady extends SolutionReaderState {
         quarksEarned,
         rewardFlightId,
         revealRewardRequested,
+        sharedWith,
       ];
 }
 

@@ -19,16 +19,23 @@ import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usec
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/molecules/confirm_dialog_molecule.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../fake_question_sharing_repository.dart';
 
 /// Serves the real bundled payload, so this exercises the content students
 /// actually get rather than a hand-written stand-in.
 class _AssetRepository implements QuestionsRepository {
   final List<String> loadedIds = [];
   Object? loadQuestionError;
+
+  /// Who a question loaded by id is shared with, as the API sends it.
+  List<Map<String, Object?>> sharedWith = const [];
 
   @override
   Future<PhotoQuestionSolveOutcome> loadSampleSolution() async {
@@ -50,6 +57,7 @@ class _AssetRepository implements QuestionsRepository {
     return PhotoQuestionResponseModel.fromJson({
       ...json,
       'question_id': questionId,
+      'shared_with': sharedWith,
     }).toEntity();
   }
 
@@ -112,19 +120,29 @@ Future<void> _revealTheAnswer(WidgetTester tester, int stepCount) async {
   await tester.pump(const Duration(milliseconds: 500));
 }
 
+/// Registers the reader's bloc, playing [repository], and the bloc that
+/// shares the student's own question, playing [sharing].
+void _registerReader(
+  QuestionsRepository repository, {
+  FakeQuestionSharingRepository? sharing,
+}) {
+  serviceLocator.registerFactory<SolutionReaderBloc>(
+    () => SolutionReaderBloc(
+      loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
+      loadQuestionUseCase: LoadQuestionUseCase(repository),
+      loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(repository),
+      revealAnswerUseCase: RevealAnswerUseCase(repository),
+    ),
+  );
+  registerQuestionSharingBlocs(sharing ?? FakeQuestionSharingRepository());
+}
+
 void main() {
   setUpAll(AppLogger.disable);
 
   setUp(() {
     final repository = _AssetRepository();
-    serviceLocator.registerFactory<SolutionReaderBloc>(
-      () => SolutionReaderBloc(
-        loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
-        loadQuestionUseCase: LoadQuestionUseCase(repository),
-        loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(repository),
-        revealAnswerUseCase: RevealAnswerUseCase(repository),
-      ),
-    );
+    _registerReader(repository);
   });
 
   tearDown(() async {
@@ -149,14 +167,7 @@ void main() {
       (tester) async {
     await serviceLocator.reset();
     final repository = _AssetRepository();
-    serviceLocator.registerFactory<SolutionReaderBloc>(
-      () => SolutionReaderBloc(
-        loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
-        loadQuestionUseCase: LoadQuestionUseCase(repository),
-        loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(repository),
-        revealAnswerUseCase: RevealAnswerUseCase(repository),
-      ),
-    );
+    _registerReader(repository);
 
     await tester.pumpWidget(_app(questionId: '57'));
     await tester.pumpAndSettle();
@@ -176,14 +187,7 @@ void main() {
     await serviceLocator.reset();
     final repository = _AssetRepository()
       ..loadQuestionError = ApiFailure(404, 'That question does not exist.');
-    serviceLocator.registerFactory<SolutionReaderBloc>(
-      () => SolutionReaderBloc(
-        loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
-        loadQuestionUseCase: LoadQuestionUseCase(repository),
-        loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(repository),
-        revealAnswerUseCase: RevealAnswerUseCase(repository),
-      ),
-    );
+    _registerReader(repository);
     final router = GoRouter(initialLocation: location, routes: routes);
     addTearDown(router.dispose);
 
@@ -373,14 +377,7 @@ void main() {
 
     await serviceLocator.reset();
     final solvedRepository = _RecordingRepository();
-    serviceLocator.registerFactory<SolutionReaderBloc>(
-      () => SolutionReaderBloc(
-        loadSampleSolutionUseCase: LoadSampleSolutionUseCase(solvedRepository),
-        loadQuestionUseCase: LoadQuestionUseCase(solvedRepository),
-        loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(solvedRepository),
-        revealAnswerUseCase: RevealAnswerUseCase(solvedRepository),
-      ),
-    );
+    _registerReader(solvedRepository);
 
     await tester.pumpWidget(_app(
       solvedState: AskByPhotoSolved(
@@ -397,14 +394,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await serviceLocator.reset();
     final loadedRepository = _RecordingRepository();
-    serviceLocator.registerFactory<SolutionReaderBloc>(
-      () => SolutionReaderBloc(
-        loadSampleSolutionUseCase: LoadSampleSolutionUseCase(loadedRepository),
-        loadQuestionUseCase: LoadQuestionUseCase(loadedRepository),
-        loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(loadedRepository),
-        revealAnswerUseCase: RevealAnswerUseCase(loadedRepository),
-      ),
-    );
+    _registerReader(loadedRepository);
 
     await tester.pumpWidget(_app(questionId: '57'));
     await tester.pumpAndSettle();
@@ -420,14 +410,7 @@ void main() {
 
     await serviceLocator.reset();
     final sampleRepository = _RecordingRepository();
-    serviceLocator.registerFactory<SolutionReaderBloc>(
-      () => SolutionReaderBloc(
-        loadSampleSolutionUseCase: LoadSampleSolutionUseCase(sampleRepository),
-        loadQuestionUseCase: LoadQuestionUseCase(sampleRepository),
-        loadQuarkBalanceUseCase: LoadQuarkBalanceUseCase(sampleRepository),
-        revealAnswerUseCase: RevealAnswerUseCase(sampleRepository),
-      ),
-    );
+    _registerReader(sampleRepository);
 
     await tester.pumpWidget(_app(questionId: null));
     await tester.pumpAndSettle();
@@ -435,5 +418,89 @@ void main() {
 
     expect(sampleRepository.loadedIds, isEmpty);
     expect(sampleRepository.revealedIds, isEmpty);
+  });
+
+  group('sharing your own question', () {
+    late _AssetRepository repository;
+    late FakeQuestionSharingRepository sharing;
+
+    setUp(() async {
+      await serviceLocator.reset();
+      repository = _AssetRepository();
+      sharing = FakeQuestionSharingRepository();
+      _registerReader(repository, sharing: sharing);
+    });
+
+    /// Opens the reader on a phone's screen.
+    Future<void> pumpReader(WidgetTester tester, {String? questionId}) async {
+      tester.view.physicalSize = const Size(360, 690);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(_app(questionId: questionId));
+      await tester.pumpAndSettle();
+    }
+
+    /// Lets a toast run its course.
+    Future<void> waitOutToast(WidgetTester tester) async {
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('Share lists the friends, and Send shares with those ticked',
+        (tester) async {
+      await pumpReader(tester, questionId: ownQuestionId);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Share'));
+      await tester.pumpAndSettle();
+      expect(find.text('Share with friends'), findsOneWidget);
+      expect(find.text('Friends will see your photo and the full solution'),
+          findsOneWidget);
+      await tester.tap(find.text('Kate'));
+      await tester.pump();
+      await tester.tap(find.text('Send'));
+      await tester.pumpAndSettle();
+
+      expect(sharing.calls, ['loadFriends', 'share $ownQuestionId 13']);
+      expect(find.text('Share with friends'), findsNothing);
+      expect(find.text('Question shared.'), findsOneWidget);
+      expect(find.text('Shared with Kate'), findsOneWidget);
+      await waitOutToast(tester);
+    });
+
+    testWidgets(
+        'a question already shared says who with, and Stop sharing asks first',
+        (tester) async {
+      repository.sharedWith = [
+        {'friend_id': '7', 'nickname': 'Sam'},
+      ];
+      sharing.sharedWith[ownQuestionId] = [sam];
+      await pumpReader(tester, questionId: ownQuestionId);
+      expect(find.text('Shared with Sam'), findsOneWidget);
+
+      await tester.tap(find.text('Stop sharing'));
+      await tester.pumpAndSettle();
+      expect(find.text('Stop sharing?'), findsOneWidget);
+      expect(find.text("Your friends won't see this question any more."),
+          findsOneWidget);
+      await tester.tap(find.descendant(
+        of: find.byType(ConfirmDialogMolecule),
+        matching: find.widgetWithText(AppButtonAtom, 'Stop sharing'),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(sharing.calls, ['stopSharing $ownQuestionId']);
+      expect(find.text('Stopped sharing.'), findsOneWidget);
+      expect(find.text('Shared with Sam'), findsNothing);
+      expect(find.text('Share'), findsOneWidget);
+      await waitOutToast(tester);
+    });
+
+    testWidgets('the sample offers no Share', (tester) async {
+      await pumpReader(tester);
+
+      expect(find.byKey(const Key('solution_briefing')), findsOneWidget);
+      expect(find.text('Share'), findsNothing);
+    });
   });
 }

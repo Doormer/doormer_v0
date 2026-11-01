@@ -57,6 +57,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../fake_question_sharing_repository.dart';
+
 class _FakeQuestionsRepository implements QuestionsRepository {
   _FakeQuestionsRepository({this.outcome, this.pending, this.failure});
 
@@ -269,6 +271,8 @@ void main() {
         revealAnswerUseCase: RevealAnswerUseCase(repository),
       ),
     );
+    // A finished solve opens the student's own solution, which offers Share.
+    registerQuestionSharingBlocs(FakeQuestionSharingRepository());
     fileInput = _FakePhotoFileInput();
     preparer = _FakePhotoPreparer();
     serviceLocator.registerLazySingleton<PhotoFileInput>(() => fileInput);

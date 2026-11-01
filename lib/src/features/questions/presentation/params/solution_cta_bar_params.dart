@@ -1,3 +1,4 @@
+import 'package:doormer/src/features/questions/presentation/params/solution_share_line_params.dart';
 import 'package:flutter/widgets.dart';
 
 /// Plain holder — deliberately not Equatable, because it carries callbacks
@@ -23,6 +24,10 @@ class SolutionCtaBarParams {
   /// Whether the student has already swiped, which is what retires the hint.
   final bool swipeHintUsed;
 
+  /// The line about sharing, above the buttons. Null on the sample, which
+  /// can't be shared.
+  final SolutionShareLineParams? share;
+
   const SolutionCtaBarParams({
     required this.ctaLabel,
     required this.ctaSolved,
@@ -31,5 +36,6 @@ class SolutionCtaBarParams {
     required this.onBack,
     required this.showSwipeHint,
     required this.swipeHintUsed,
+    this.share,
   });
 }

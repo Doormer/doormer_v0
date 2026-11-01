@@ -6,6 +6,7 @@ import 'package:doormer/src/features/questions/presentation/mapper/solution_read
 import 'package:doormer/src/features/questions/presentation/organisms/solution_trail_organism.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/solution_step_organism.dart';
 import 'package:doormer/src/features/questions/presentation/params/solution_reader_params.dart';
+import 'package:doormer/src/features/questions/presentation/params/solution_share_line_params.dart';
 import 'package:doormer/src/features/questions/presentation/templates/solution_reader_template.dart';
 import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/features/questions/presentation/organisms/quest_hud_organism.dart';
@@ -174,6 +175,7 @@ SolutionReaderParams _params(
   VoidCallback? onNext,
   VoidCallback? onBack,
   VoidCallback? onRevealAnswer,
+  SolutionShareLineParams? share,
 }) {
   return SolutionReaderParams(
     content: solutionReaderContent(state),
@@ -183,6 +185,7 @@ SolutionReaderParams _params(
     onRevealAnswer: onRevealAnswer ?? () {},
     onTravelTo: (_) {},
     onEnlargeVisual: (_) {},
+    share: share,
   );
 }
 
@@ -209,6 +212,36 @@ void main() {
     expect(trailY, lessThan(scrollY),
         reason: 'the trail sits above the scroll');
     expect(ctaY, greaterThan(scrollY), reason: 'the CTA sits below the scroll');
+  });
+
+  testWidgets('puts the share line in the dock, just above the buttons',
+      (tester) async {
+    await tester.pumpWidget(_pump(_params(
+      const SolutionReaderReady(document: _document),
+      share: OwnQuestionShareLineParams(
+        sharedWithLabel: 'Shared with Sam',
+        isStopping: false,
+        onShare: () {},
+        onStopSharing: () {},
+      ),
+    )));
+    await tester.pump();
+
+    final line = tester.getRect(find.text('Shared with Sam'));
+    final scroll = tester.getRect(find.byKey(const Key('solution_scroll')));
+    final cta = tester.getRect(find.byKey(const Key('solution_cta')));
+    expect(line.top, greaterThanOrEqualTo(scroll.bottom));
+    expect(line.bottom, lessThanOrEqualTo(cta.top));
+  });
+
+  testWidgets('with no share line, the dock holds the buttons alone',
+      (tester) async {
+    await tester.pumpWidget(
+      _pump(_params(const SolutionReaderReady(document: _document))),
+    );
+    await tester.pump();
+
+    expect(find.text('Share'), findsNothing);
   });
 
   testWidgets('the CTA reports upward and reads Next step mid-solution',

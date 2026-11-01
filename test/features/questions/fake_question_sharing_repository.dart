@@ -1,10 +1,15 @@
 import 'dart:async';
 
+import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/features/questions/domain/entity/shared_question_summary.dart';
 import 'package:doormer/src/features/questions/domain/entity/shared_questions_page.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_question_summary.dart';
 import 'package:doormer/src/features/questions/domain/repository/question_sharing_repository.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_friends_to_share_with_usecase.dart';
+import 'package:doormer/src/features/questions/domain/usecase/share_question_usecase.dart';
+import 'package:doormer/src/features/questions/domain/usecase/stop_sharing_question_usecase.dart';
+import 'package:doormer/src/features/questions/presentation/bloc/share_question_bloc.dart';
 import 'package:doormer/src/shared/friends/entity/card_picture.dart';
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:doormer/src/shared/friends/entity/report_reason.dart';
@@ -150,4 +155,16 @@ class FakeQuestionSharingRepository implements QuestionSharingRepository {
         ),
     };
   }
+}
+
+/// Registers the sharing bloc a page asks GetIt for, playing [repository]:
+/// the reader of the student's own question shares it.
+void registerQuestionSharingBlocs(FakeQuestionSharingRepository repository) {
+  serviceLocator.registerFactory<ShareQuestionBloc>(
+    () => ShareQuestionBloc(
+      loadFriends: LoadFriendsToShareWithUseCase(repository),
+      shareQuestion: ShareQuestionUseCase(repository),
+      stopSharing: StopSharingQuestionUseCase(repository),
+    ),
+  );
 }

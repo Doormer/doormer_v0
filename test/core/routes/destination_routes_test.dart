@@ -89,6 +89,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/profile/fake_friends_repository.dart';
+import '../../features/questions/fake_question_sharing_repository.dart';
 
 /// Solve asks it for the count, which never arrives, and nothing else: the
 /// Solve page only opens here.
@@ -683,6 +684,8 @@ void main() {
           revealAnswerUseCase: RevealAnswerUseCase(solutions),
         ),
       );
+      // The student's own solution offers Share.
+      registerQuestionSharingBlocs(FakeQuestionSharingRepository());
       // Made when Solve is first built, inside the test's fake time, so the
       // solve's answer arrives there. The test drives this one instance.
       serviceLocator.unregister<AskByPhotoBloc>();

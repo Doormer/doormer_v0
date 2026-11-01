@@ -6,6 +6,7 @@ import 'package:doormer/src/features/questions/domain/usecase/load_question_usec
 import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
+import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:equatable/equatable.dart';
 
 part 'solution_reader_event.dart';
@@ -116,6 +117,7 @@ class SolutionReaderBloc
       note: outcome.note,
       topic: outcome.topic,
       method: outcome.method,
+      sharedWith: outcome.sharedWith,
     );
   }
 
@@ -125,6 +127,7 @@ class SolutionReaderBloc
     String note = '',
     String topic = '',
     String method = '',
+    List<FriendSummary> sharedWith = const [],
   }) async {
     emit(SolutionReaderReady(
       document: document,
@@ -132,6 +135,7 @@ class SolutionReaderBloc
       note: note,
       topic: topic,
       method: method,
+      sharedWith: sharedWith,
     ));
     await _attachQuarkBalance(emit);
   }
