@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:doormer/src/core/theme/app_theme.dart';
+import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/card_picture_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -73,6 +74,27 @@ void main() {
         _host(const CardPictureAtom(name: 'Sam', artUrl: null, size: 40)));
 
     expect(tester.getSize(find.byType(CardPictureAtom)), const Size(40, 40));
+  });
+
+  testWidgets(
+      'the letter tile stands out on a card: its fill is not the card colour, '
+      'and it has an edge with the same rounded corners', (tester) async {
+    await tester.pumpWidget(
+        _host(const CardPictureAtom(name: 'Nia', artUrl: null, size: 50)));
+
+    expect(
+      tester.widget(find.byKey(_letter)),
+      isA<DecoratedBox>().having(
+        (tile) => tile.decoration,
+        'decoration',
+        isA<BoxDecoration>()
+            .having((looks) => looks.color, 'fill', isNot(QuestPalette.card))
+            .having((looks) => looks.border?.top.width, 'edge width', 1)
+            .having((looks) => looks.borderRadius, 'corners',
+                BorderRadius.circular(50 * 0.22)),
+      ),
+    );
+    expect(find.text('N'), findsOneWidget);
   });
 
   test('the letter keeps macrons and accents, in capitals', () {

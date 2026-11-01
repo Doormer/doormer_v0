@@ -237,8 +237,9 @@ void main() {
         findsOneWidget);
   });
 
-  testWidgets('before setup, shows only Set up friends and Sign out',
-      (tester) async {
+  testWidgets(
+      'before setup, says what friends is, with only Set up friends and '
+      'Sign out', (tester) async {
     friends.profile = const FriendProfile(
       hasProfile: false,
       nickname: '',
@@ -249,6 +250,9 @@ void main() {
 
     await pumpProfile(tester);
 
+    expect(
+        find.text("Add friends with a friend code and see each other's cards."),
+        findsOneWidget);
     expect(find.text('Set up friends'), findsOneWidget);
     expect(find.text('Sign out'), findsOneWidget);
     expect(find.text('Add a friend'), findsNothing);

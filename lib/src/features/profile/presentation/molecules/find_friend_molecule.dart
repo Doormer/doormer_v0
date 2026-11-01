@@ -2,7 +2,9 @@ import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// A box to type a friend's code, and Find.
+import '../../utils/upper_case_formatter.dart';
+
+/// A box to type a friend's code, in capitals, and Find.
 class FindFriendMolecule extends StatefulWidget {
   /// What the box starts with: an invite's code, or nothing.
   final String initialCode;
@@ -46,6 +48,7 @@ class _FindFriendMoleculeState extends State<FindFriendMolecule> {
             onSubmitted: (_) => _find(),
             textInputAction: TextInputAction.search,
             textCapitalization: TextCapitalization.characters,
+            inputFormatters: const [UpperCaseFormatter()],
             autocorrect: false,
             enableSuggestions: false,
             decoration: const InputDecoration(labelText: "A friend's code"),

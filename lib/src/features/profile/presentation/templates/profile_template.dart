@@ -1,5 +1,7 @@
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/glow_badge_atom.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/surface_card_atom.dart';
 import 'package:doormer/src/shared/design/atomic/molecules/error_with_retry_molecule.dart';
 import 'package:doormer/src/shared/design/atomic/molecules/page_heading_molecule.dart';
 import 'package:flutter/material.dart';
@@ -106,10 +108,35 @@ class ProfileTemplate extends StatelessWidget {
           ),
         ],
       ProfileNotSetUpParams(:final onSetUp) => [
-          AppButtonAtom(
-            label: 'Set up friends',
-            expand: true,
-            onPressed: onSetUp,
+          SurfaceCardAtom(
+            child: Column(
+              children: [
+                GlowBadgeAtom(
+                  icon: Icons.group_add_rounded,
+                  color: QuestPalette.violet,
+                  size: 44.w,
+                  iconSize: 22.w,
+                  glowRadius: 16.r,
+                ),
+                SizedBox(height: 14.h),
+                Text(
+                  "Add friends with a friend code and see each other's cards.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: kBodyFont,
+                    fontSize: 14.sp,
+                    height: 1.4,
+                    color: QuestPalette.body,
+                  ),
+                ),
+                SizedBox(height: 18.h),
+                AppButtonAtom(
+                  label: 'Set up friends',
+                  expand: !isWide,
+                  onPressed: onSetUp,
+                ),
+              ],
+            ),
           ),
         ],
       ProfileTurnedOffParams(:final message) => [

@@ -1,6 +1,7 @@
 import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/glow_badge_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -80,23 +81,12 @@ class ConfirmDialogMolecule extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 44.w,
-                    height: 44.w,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: accent.withValues(alpha: 0.16),
-                      boxShadow: [
-                        // Outer only, so the glow rings the badge without
-                        // brightening its fill.
-                        BoxShadow(
-                          color: accent.withValues(alpha: 0.35),
-                          blurRadius: 16.r,
-                          blurStyle: BlurStyle.outer,
-                        ),
-                      ],
-                    ),
-                    child: Icon(icon, size: 22.w, color: accent),
+                  GlowBadgeAtom(
+                    icon: icon,
+                    color: accent,
+                    size: 44.w,
+                    iconSize: 22.w,
+                    glowRadius: 16.r,
                   ),
                   SizedBox(height: 14.h),
                   Text(

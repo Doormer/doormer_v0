@@ -1,5 +1,6 @@
 import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
+import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/profile/presentation/molecules/friend_request_row_molecule.dart';
 import 'package:doormer/src/features/profile/presentation/molecules/friend_row_molecule.dart';
 import 'package:doormer/src/features/profile/presentation/params/friend_request_row_params.dart';
@@ -8,6 +9,7 @@ import 'package:doormer/src/features/profile/presentation/params/profile_body_pa
 import 'package:doormer/src/features/profile/presentation/params/profile_header_params.dart';
 import 'package:doormer/src/features/profile/presentation/templates/profile_template.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/glow_badge_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/surface_card_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -168,6 +170,53 @@ void main() {
       for (final label in ['Add a friend', 'Sign out']) {
         expect(tester.getSize(_button(label)).width, 320, reason: label);
       }
+    });
+  });
+
+  group('before setup', () {
+    const intro = "Add friends with a friend code and see each other's cards.";
+    final card = find.byType(SurfaceCardAtom);
+    final setUp = _button('Set up friends');
+
+    testWidgets(
+        'says what friends is on a card, under a badge and above Set up '
+        'friends, with Sign out below the card', (tester) async {
+      await _pump(tester,
+          window: _narrow, body: ProfileNotSetUpParams(onSetUp: () {}));
+
+      final badge = find.byType(GlowBadgeAtom);
+      for (final part in [badge, find.text(intro), setUp]) {
+        expect(find.descendant(of: card, matching: part), findsOneWidget);
+      }
+      expect(tester.widget<GlowBadgeAtom>(badge).icon, Icons.group_add_rounded);
+      expect(tester.widget<GlowBadgeAtom>(badge).color, QuestPalette.violet);
+      expect(tester.getRect(badge).bottom,
+          lessThanOrEqualTo(tester.getRect(find.text(intro)).top));
+      expect(tester.getRect(find.text(intro)).bottom,
+          lessThanOrEqualTo(tester.getRect(setUp).top));
+      expect(find.descendant(of: card, matching: _button('Sign out')),
+          findsNothing);
+      expect(tester.getRect(_button('Sign out')).top,
+          greaterThan(tester.getRect(card).bottom));
+    });
+
+    testWidgets('on a phone, Set up friends fills the card', (tester) async {
+      await _pump(tester,
+          window: _narrow, body: ProfileNotSetUpParams(onSetUp: () {}));
+
+      expect(tester.getSize(setUp).width,
+          greaterThan(tester.getSize(card).width * 0.8));
+    });
+
+    testWidgets('on a wide screen, Set up friends keeps its own width',
+        (tester) async {
+      await _pump(tester,
+          window: _wide, body: ProfileNotSetUpParams(onSetUp: () {}));
+
+      expect(tester.getSize(setUp).width,
+          lessThan(tester.getSize(card).width / 2));
+      expect(tester.getCenter(setUp).dx,
+          moreOrLessEquals(tester.getCenter(card).dx));
     });
   });
 }

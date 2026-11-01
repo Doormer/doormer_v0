@@ -7,12 +7,12 @@ typedef CardArtImageProviderBuilder = ImageProvider Function(String url);
 ImageProvider networkCardArtImageProvider(String url) => NetworkImage(url);
 
 /// A student's picture: their card's art as a small rounded square, or the
-/// first letter of their nickname on a plain tile. The letter also shows
-/// while there is no art, and when the art fails to load.
+/// first letter of their nickname on an edged, violet-tinted tile. The
+/// letter also shows while there is no art, and when the art fails to load.
 ///
 /// The name is always written beside it, so screen readers skip it.
 class CardPictureAtom extends StatelessWidget {
-  /// Whose first letter the plain tile shows: a student's nickname, or a
+  /// Whose first letter the letter tile shows: a student's nickname, or a
   /// card's name in the picture picker.
   final String name;
 
@@ -76,9 +76,20 @@ class _LetterTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
+    // Tinted violet and edged, so the tile still shows on a card of
+    // QuestPalette.card, such as a found student's.
+    return DecoratedBox(
       key: const Key('card_picture_letter'),
-      color: QuestPalette.card,
+      decoration: BoxDecoration(
+        color: Color.alphaBlend(
+          QuestPalette.violet.withValues(alpha: 0.30),
+          QuestPalette.card,
+        ),
+        border: Border.all(
+          color: QuestPalette.markerLine.withValues(alpha: 0.4),
+        ),
+        borderRadius: BorderRadius.circular(size * 0.22),
+      ),
       child: Center(
         child: Text(
           letter,

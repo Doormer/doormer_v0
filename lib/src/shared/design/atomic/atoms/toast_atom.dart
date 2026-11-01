@@ -1,5 +1,6 @@
 import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/glow_badge_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -53,23 +54,12 @@ class ToastAtom extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 28.w,
-                height: 28.w,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: accent.withValues(alpha: 0.16),
-                  boxShadow: [
-                    // Outer only, so the glow rings the badge without
-                    // brightening its fill.
-                    BoxShadow(
-                      color: accent.withValues(alpha: 0.35),
-                      blurRadius: 12.r,
-                      blurStyle: BlurStyle.outer,
-                    ),
-                  ],
-                ),
-                child: Icon(icon, size: 18.w, color: accent),
+              GlowBadgeAtom(
+                icon: icon,
+                color: accent,
+                size: 28.w,
+                iconSize: 18.w,
+                glowRadius: 12.r,
               ),
               SizedBox(width: 10.w),
               Flexible(
