@@ -5,6 +5,7 @@ import 'package:doormer/src/core/routes/app_router.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/collection/domain/repository/collection_repository.dart';
 import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
+import 'package:doormer/src/shared/levels/bloc/level_progress_bloc.dart';
 import 'package:doormer/src/shared/sessions/bloc/global_session_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -45,11 +46,15 @@ class MyApp extends StatelessWidget {
         listener: (context, state) {
           if (state is SessionActiveState) {
             // Whoever just signed in may not be the student the remembered
-            // deck list belongs to, or whose waiting requests the dot
-            // counted. Profile counts theirs once it loads.
+            // deck list belongs to, whose waiting requests the dot counted,
+            // or whose level Profile showed. Profile counts their requests
+            // once it loads, and their first count of the day brings their
+            // level.
             serviceLocator<CollectionRepository>().forgetLastDeckList();
             serviceLocator<WaitingFriendRequestsBloc>()
                 .add(const WaitingFriendRequestsCounted(0));
+            serviceLocator<LevelProgressBloc>()
+                .add(const LevelProgressCleared());
           }
           if (state is SessionExpiredState) {
             AppRouter.router.go('/auth');

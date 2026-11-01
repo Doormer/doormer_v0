@@ -12,6 +12,7 @@ import 'package:doormer/src/features/profile/di/profile_module.dart';
 import 'package:doormer/src/features/questions/di/questions_module.dart';
 import 'package:doormer/src/features/registration/di/registration_module.dart';
 import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
+import 'package:doormer/src/shared/levels/bloc/level_progress_bloc.dart';
 import 'package:doormer/src/shared/sessions/bloc/global_session_bloc.dart';
 
 import 'package:get_it/get_it.dart';
@@ -46,6 +47,10 @@ Future<void> initDependencies() async {
   serviceLocator.registerSingleton<WaitingFriendRequestsBloc>(
     WaitingFriendRequestsBloc(),
   );
+
+  // The signed-in student's latest level progress, for Profile's level
+  // strip. The levels feature's active day bloc keeps it up to date.
+  serviceLocator.registerSingleton<LevelProgressBloc>(LevelProgressBloc());
 
   // Register Dio
   serviceLocator.registerLazySingleton<Dio>(
