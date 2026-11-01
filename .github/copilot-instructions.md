@@ -94,7 +94,7 @@ lib/src/
   }
   ```
 - Cross-BLoC: inject the target BLoC, call `.add(Event)`.
-  - That's the one deliberate exception to "BLoCs depend on UseCases only". In friends, `FriendsBloc` takes the app-wide `WaitingFriendRequestsBloc` (`shared/friends/bloc/`) and tells it how many friend requests are waiting, to feed the count behind the nav bar's dot on Profile. Keep it: no use case holds that count.
+  - That's the one deliberate exception to "BLoCs depend on UseCases only", and it has two uses. In friends, `FriendsBloc` takes the app-wide `WaitingFriendRequestsBloc` (`shared/friends/bloc/`) and tells it how many friend requests are waiting, to feed the count behind the nav bar's dot on Profile. In levels, the app-wide `ActiveDayBloc` (`features/levels/`) takes the app-wide `LevelProgressBloc` (`shared/levels/bloc/`) and tells it the progress each count of the day brings back, for Profile's level strip. Keep both: no use case holds that count or that progress.
 - See `lib/src/features/auth/presentation/bloc/` for the reference pattern.
 
 ### Dependency Injection (GetIt)
