@@ -36,7 +36,8 @@ class AskByPhotoHeaderMolecule extends StatelessWidget {
         ),
         SizedBox(height: 6.h),
         Text(
-          'Unlock the answer, step by step.',
+          // Broken by hand so a phone never leaves "step." alone on a line.
+          'Unlock the answer,\nstep by step.',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: kBodyFont,
