@@ -9,7 +9,7 @@ class EmptyDeckParams {
   final bool canAfford;
 
   /// How far short of a draw the student is, as the screen says it:
-  /// "25 more quarks to draw. Answer questions to earn quarks.".
+  /// "25 more quarks to draw. Solve questions to earn more.".
   /// Shown only when not [canAfford].
   final String quarksShortLabel;
 

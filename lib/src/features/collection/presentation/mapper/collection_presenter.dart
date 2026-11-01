@@ -60,7 +60,7 @@ class CollectionPresenter {
   /// Under a draw button the student can't afford yet.
   static String quarksShortLabel(int quarksShort) =>
       '$quarksShort more ${_quarkWord(quarksShort)} to draw. '
-      'Answer questions to earn quarks.';
+      'Solve questions to earn more.';
 
   static String _quarkWord(int count) => count == 1 ? 'quark' : 'quarks';
 

@@ -5,7 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('says nothing is saved yet, and Solve a question calls back',
+  testWidgets('says where solved questions go, and Solve a question calls back',
       (tester) async {
     var solves = 0;
     await tester.pumpWidget(ScreenUtilInit(
@@ -20,7 +20,7 @@ void main() {
 
     expect(
       find.text(
-          "No solved questions yet. Snap a photo and it'll be saved here."),
+          "Every question you solve shows up here."),
       findsOneWidget,
     );
     await tester.tap(find.text('Solve a question'));
