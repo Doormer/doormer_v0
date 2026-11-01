@@ -8,6 +8,7 @@ import 'package:doormer/src/features/profile/domain/entity/found_student.dart';
 import 'package:doormer/src/features/profile/domain/entity/friend_request.dart';
 import 'package:doormer/src/features/profile/domain/entity/report_reason.dart';
 import 'package:doormer/src/shared/friends/entity/card_picture.dart';
+import 'package:doormer/src/shared/levels/entity/level.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Matcher _refused(int status, String message) => throwsA(isA<RefusedFailure>()
@@ -247,5 +248,53 @@ void main() {
   test("a student who isn't a friend has no collection to see", () async {
     await expectLater(collections.decks('204'),
         _refused(404, "We couldn't find that friend."));
+  });
+
+  group('levels', () {
+    const samsLevel = Level(number: 6, suns: 0, moons: 1, stars: 2);
+
+    test('the friends list has a level only for friends at level 1 or more',
+        () async {
+      final listed = {
+        for (final friend in await friends.friends())
+          friend.nickname: friend.toEntity().level,
+      };
+
+      expect(listed, {'Alex': null, 'Sam': samsLevel});
+    });
+
+    test("accepting Rua's request answers with Rua's level", () async {
+      final accepted = await friends.acceptRequest('501');
+
+      expect(
+        accepted.friend.toEntity().level,
+        const Level(number: 2, suns: 0, moons: 0, stars: 2),
+      );
+    });
+
+    test("Sam's decks and cards come with Sam's level", () async {
+      final decks = await collections.decks('201');
+      final cards = await collections.cards('201', 'cinder-01');
+
+      expect(decks.friend.toEntity().level, samsLevel);
+      expect(cards.friend.toEntity().level, samsLevel);
+    });
+
+    test('finding a code, requests and Blocked never carry a level', () async {
+      final found =
+          await dio.post('/v1/friends/find', data: {'friend_code': 'SAMQ2345'});
+      final requests = await dio.post('/v1/friends/requests', data: {});
+      await friends.block('201');
+      final blocked = await dio.post('/v1/friends/blocked', data: {});
+
+      expect((found.data as Map)['student'], isNot(contains('level')),
+          reason: 'Sam, found by code');
+      expect(((requests.data as Map)['requests'] as List).single['from'],
+          isNot(contains('level')),
+          reason: "Rua's request");
+      expect(((blocked.data as Map)['blocked'] as List).single,
+          isNot(contains('level')),
+          reason: 'Sam, blocked');
+    });
   });
 }

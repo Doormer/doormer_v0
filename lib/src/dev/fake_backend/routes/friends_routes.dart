@@ -1,5 +1,6 @@
 import 'package:doormer/src/dev/fake_backend/fake_backend_state.dart';
 import 'package:doormer/src/dev/fake_backend/fake_decks.dart';
+import 'package:doormer/src/dev/fake_backend/fake_levels.dart';
 import 'package:doormer/src/dev/fake_backend/fake_request.dart';
 import 'package:doormer/src/dev/fake_backend/fake_response.dart';
 import 'package:doormer/src/dev/fake_backend/fake_route.dart';
@@ -202,7 +203,7 @@ class FriendsRoutes {
         .firstOrNull;
     if (accepted == null) return _notFound;
     return FakeResponse.ok({
-      'friend': _summary(_friends.studentById(accepted.fromId)!),
+      'friend': _friendSummary(_friends.studentById(accepted.fromId)!),
     });
   }
 
@@ -228,7 +229,7 @@ class FriendsRoutes {
     ]..sort(
         (a, b) => a.nickname.toLowerCase().compareTo(b.nickname.toLowerCase()));
     return FakeResponse.ok({
-      'friends': [for (final friend in friends) _summary(friend)],
+      'friends': [for (final friend in friends) _friendSummary(friend)],
     });
   }
 
@@ -292,7 +293,7 @@ class FriendsRoutes {
     final friend = _friendIn(request);
     if (friend == null) return _notFound;
     return FakeResponse.ok({
-      'friend': _summary(friend),
+      'friend': _friendSummary(friend),
       'decks': [
         for (final deck in fakeDecks)
           {
@@ -314,7 +315,7 @@ class FriendsRoutes {
     final deck = fakeDeckById(request.fields['deck_id']?.toString());
     if (friend == null || deck == null) return _notFound;
     return FakeResponse.ok({
-      'friend': _summary(friend),
+      'friend': _friendSummary(friend),
       'deck': {'deck_id': deck.id, 'name': deck.name},
       'cards': [
         for (final card in deck.cards)
@@ -360,6 +361,17 @@ class FriendsRoutes {
         'nickname': student.nickname,
         ..._pictureField(student.picture),
       };
+
+  /// A friend as the routes that show friends send them: [_summary], with
+  /// their level from level 1. Finding a code, requests and Blocked show
+  /// students, never a level.
+  Map<String, Object?> _friendSummary(FakeStudent student) {
+    final level = fakeLevelFor(student.activeDays);
+    return {
+      ..._summary(student),
+      if (level > 0) 'level': fakeLevelJson(level),
+    };
+  }
 
   /// The `picture` field, left out with no picture, or for a card no longer
   /// in the catalog.

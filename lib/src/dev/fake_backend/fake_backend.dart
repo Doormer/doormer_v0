@@ -5,6 +5,7 @@ import 'package:doormer/src/dev/fake_backend/fake_backend_state.dart';
 import 'package:doormer/src/dev/fake_backend/routes/auth_routes.dart';
 import 'package:doormer/src/dev/fake_backend/routes/collection_routes.dart';
 import 'package:doormer/src/dev/fake_backend/routes/friends_routes.dart';
+import 'package:doormer/src/dev/fake_backend/routes/levels_routes.dart';
 import 'package:doormer/src/dev/fake_backend/routes/questions_routes.dart';
 import 'package:doormer/src/dev/fake_backend/routes/registration_routes.dart';
 import 'package:flutter/services.dart';
@@ -15,7 +16,8 @@ import 'package:flutter/services.dart';
 /// Every answer takes [delay], and a photo solve [solveDelay] more, so
 /// loading states show. Draws use [random]; the default seed draws the same
 /// cards every run. [clock] dates the saved questions and friend requests,
-/// and the daily limits start over when it passes the device's midnight.
+/// and the daily limits and the active day start over when it passes the
+/// device's midnight.
 FakeBackendAdapter fakeBackend({
   Random? random,
   AssetBundle? bundle,
@@ -31,6 +33,7 @@ FakeBackendAdapter fakeBackend({
       ...RegistrationRoutes(state).routes,
       ...CollectionRoutes(state, random ?? Random(7)).routes,
       ...FriendsRoutes(state).routes,
+      ...LevelsRoutes(state, clock: now).routes,
       ...QuestionsRoutes(
         state,
         bundle: bundle ?? rootBundle,

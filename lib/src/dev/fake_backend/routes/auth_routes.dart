@@ -20,10 +20,14 @@ class AuthRoutes {
       ];
 
   /// A new student has not registered yet, so the app opens registration,
-  /// and has no friend profile, so Profile offers Set up friends.
+  /// has no friend profile, so Profile offers Set up friends, and has no
+  /// active days, so their first count makes 1.
   FakeResponse _signUp(FakeRequest request) {
     _state.registrationStatus = 0;
     _state.friends.profile = null;
+    _state
+      ..activeDays = 0
+      ..countedToday = false;
     return _signedIn();
   }
 

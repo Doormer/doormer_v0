@@ -47,12 +47,16 @@ class FakeStudent {
   /// Their copies, by deck id and then card id: what friends see.
   final Map<String, Map<String, FakeHolding>> holdings;
 
+  /// Their active days. Friends see the level they reach, from level 1.
+  final int activeDays;
+
   const FakeStudent({
     required this.id,
     required this.nickname,
     required this.friendCode,
     this.picture,
     this.holdings = const {},
+    this.activeDays = 0,
   });
 }
 
@@ -118,8 +122,9 @@ class FakeFriends {
         blockedIds = [],
         reports = [];
 
-  /// Kai, set up, with two friends who have cards (Sam and Alex), a request
-  /// from Rua, and Nia, whose code `NEWS2345` can be found.
+  /// Kai, set up, with two friends who have cards (Sam, at level 6, and
+  /// Alex, at level 0), a request from Rua, at level 2, and Nia, whose code
+  /// `NEWS2345` can be found.
   factory FakeFriends.starting({required DateTime now}) => FakeFriends(
         profile: FakeFriendProfile(
           nickname: 'Kai',
@@ -132,6 +137,7 @@ class FakeFriends {
             nickname: 'Sam',
             friendCode: 'SAMQ2345',
             picture: (deckId: 'cinder-01', cardId: 'flint'),
+            activeDays: 60,
             holdings: {
               'cinder-01': {
                 'flint': FakeHolding(standardCopies: 2),
@@ -144,6 +150,7 @@ class FakeFriends {
             id: '202',
             nickname: 'Alex',
             friendCode: 'ALEX7777',
+            activeDays: 2,
             holdings: {
               'meridian-01': {
                 'gnomon': FakeHolding(standardCopies: 1),
@@ -160,6 +167,7 @@ class FakeFriends {
             nickname: 'Rua',
             friendCode: 'RUAR5555',
             picture: (deckId: 'meridian-01', cardId: 'vernier'),
+            activeDays: 12,
           ),
           const FakeStudent(id: '204', nickname: 'Nia', friendCode: 'NEWS2345'),
         ],
@@ -193,10 +201,15 @@ class FakeBackendState {
   /// Newest first.
   final List<FakeSolvedQuestion> solvedQuestions;
 
-  /// Photos started and questions solved today, and when today ends. The
-  /// questions routes start a new day once [dayEndsAt] has passed.
+  /// The student's active days.
+  int activeDays;
+
+  /// Photos started and questions solved today, whether today has counted
+  /// as an active day, and when today ends. [startNewDayIfDue] starts a new
+  /// day once [dayEndsAt] has passed.
   int photosSentToday = 0;
   int questionsSolvedToday = 0;
+  bool countedToday = false;
   DateTime? dayEndsAt;
 
   /// The `Idempotency-Key` of the photo being solved, if one is.
@@ -210,6 +223,7 @@ class FakeBackendState {
   FakeBackendState({
     required this.registrationStatus,
     required this.quarkBalance,
+    required this.activeDays,
     required this.holdings,
     required this.solvedQuestions,
     required this.friends,
@@ -217,12 +231,14 @@ class FakeBackendState {
 
   /// A registered student with quarks for five draws, three Meridian cards
   /// (one with a spare copy to shatter, one with a special copy), nothing
-  /// from Cinder, three saved questions, and friends as
-  /// [FakeFriends.starting] has them.
+  /// from Cinder, three saved questions, friends as [FakeFriends.starting]
+  /// has them, and 31 active days: the first count after a reload makes the
+  /// 32nd, a new moon at level 4.
   factory FakeBackendState.starting({required DateTime now}) =>
       FakeBackendState(
         registrationStatus: 1,
         quarkBalance: 200,
+        activeDays: 31,
         holdings: {
           'meridian-01': {
             'gnomon': FakeHolding(standardCopies: 2),
@@ -261,6 +277,19 @@ class FakeBackendState {
   FakeHolding holdingOf(String deckId, String cardId) => holdings
       .putIfAbsent(deckId, () => {})
       .putIfAbsent(cardId, FakeHolding.new);
+
+  /// Starts a new day once the last one has ended, at the device's midnight:
+  /// the photos, the questions and the active day start over. The API's day
+  /// is Auckland's; the fake's is the device's own.
+  void startNewDayIfDue(DateTime now) {
+    final dayEndsAt = this.dayEndsAt;
+    if (dayEndsAt != null && now.isBefore(dayEndsAt)) return;
+    final local = now.toLocal();
+    this.dayEndsAt = DateTime(local.year, local.month, local.day + 1);
+    photosSentToday = 0;
+    questionsSolvedToday = 0;
+    countedToday = false;
+  }
 
   FakeSolvedQuestion? solvedQuestion(String? id) =>
       solvedQuestions.where((question) => question.id == id).firstOrNull;

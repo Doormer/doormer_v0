@@ -116,16 +116,7 @@ class QuestionsRoutes {
       };
 
   /// Starts a new day once the last one has ended.
-  void _startNewDayIfDue() {
-    final now = _clock();
-    final dayEndsAt = _state.dayEndsAt;
-    if (dayEndsAt != null && now.isBefore(dayEndsAt)) return;
-    final local = now.toLocal();
-    _state
-      ..dayEndsAt = DateTime(local.year, local.month, local.day + 1)
-      ..photosSentToday = 0
-      ..questionsSolvedToday = 0;
-  }
+  void _startNewDayIfDue() => _state.startNewDayIfDue(_clock());
 
   Future<FakeResponse> _solution(FakeRequest request) async {
     final question = _questionIn(request);
