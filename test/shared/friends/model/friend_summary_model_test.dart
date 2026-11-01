@@ -1,6 +1,7 @@
 import 'package:doormer/src/shared/friends/entity/card_picture.dart';
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:doormer/src/shared/friends/model/friend_summary_model.dart';
+import 'package:doormer/src/shared/levels/entity/level.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -35,6 +36,27 @@ void main() {
             .toEntity();
 
     expect(summary.picture, isNull);
+  });
+
+  test("reads a friend's level", () {
+    final summary = FriendSummaryModel.fromJson({
+      'friend_id': '42',
+      'nickname': 'Sam',
+      'level': {'number': 6, 'suns': 0, 'moons': 1, 'stars': 2},
+    }).toEntity();
+
+    expect(
+      summary.level,
+      const Level(number: 6, suns: 0, moons: 1, stars: 2),
+    );
+  });
+
+  test('a student shown with no level has none', () {
+    final summary =
+        FriendSummaryModel.fromJson({'friend_id': '7', 'nickname': 'Alex'})
+            .toEntity();
+
+    expect(summary.level, isNull);
   });
 
   test('reads the list under its key', () {
