@@ -160,7 +160,13 @@ class QuestionSolutionPage extends StatelessWidget {
           BlocConsumer<ShareQuestionBloc, ShareQuestionState>(
         bloc: bloc,
         listenWhen: (_, current) => current.notice == ShareNotice.shared,
-        listener: (_, __) => Navigator.of(sheetContext).pop(),
+        listener: (_, __) {
+          // A share can answer as the sheet closes. The sheet has then left
+          // the top of the navigator, and a pop would close the reader.
+          if (ModalRoute.of(sheetContext)?.isCurrent ?? false) {
+            Navigator.of(sheetContext).pop();
+          }
+        },
         // Once sent, the sheet keeps its friends on screen as it closes.
         buildWhen: (_, current) => current.sheet is! ShareSheetClosed,
         builder: (_, sharing) => ShareQuestionSheetOrganism(

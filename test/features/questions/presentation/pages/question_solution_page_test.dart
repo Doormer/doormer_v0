@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -464,6 +465,60 @@ void main() {
       expect(sharing.calls, ['loadFriends', 'share $ownQuestionId 13']);
       expect(find.text('Share with friends'), findsNothing);
       expect(find.text('Question shared.'), findsOneWidget);
+      expect(find.text('Shared with Kate'), findsOneWidget);
+      await waitOutToast(tester);
+    });
+
+    testWidgets(
+        'a share that answers as its sheet closes leaves the reader open',
+        (tester) async {
+      tester.view.physicalSize = const Size(360, 690);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final router = GoRouter(
+        initialLocation: '/saved/$ownQuestionId/solution',
+        routes: [
+          GoRoute(
+            path: '/saved',
+            builder: (_, __) => const Scaffold(body: Text('Saved page')),
+            routes: [
+              GoRoute(
+                path: ':questionId/solution',
+                builder: (_, state) => QuestionSolutionPage(
+                  questionId: state.pathParameters['questionId'],
+                  tabLocation: '/saved',
+                  tabName: 'Saved',
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(ScreenUtilInit(
+        designSize: const Size(360, 690),
+        builder: (_, __) =>
+            MaterialApp.router(theme: AppTheme.dark, routerConfig: router),
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Share'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Kate'));
+      await tester.pump();
+      final answer = sharing.hold = Completer<void>();
+      await tester.tap(find.text('Send'));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('share_close')));
+      // The sheet takes 200ms to close. The share answers halfway through.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      answer.complete();
+      await tester.pumpAndSettle();
+
+      expect(router.routerDelegate.currentConfiguration.uri.path,
+          '/saved/$ownQuestionId/solution');
+      expect(find.text('Saved page'), findsNothing);
       expect(find.text('Shared with Kate'), findsOneWidget);
       await waitOutToast(tester);
     });
