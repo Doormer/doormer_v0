@@ -22,6 +22,7 @@ import 'package:doormer/src/features/questions/domain/usecase/stop_sharing_quest
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/daily_limit_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/bloc/friend_question_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/saved_questions_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/share_question_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
@@ -161,6 +162,14 @@ void _initQuestionSharing() {
       loadFriends: serviceLocator<LoadFriendsToShareWithUseCase>(),
       shareQuestion: serviceLocator<ShareQuestionUseCase>(),
       stopSharing: serviceLocator<StopSharingQuestionUseCase>(),
+    ),
+  );
+
+  serviceLocator.registerFactory<FriendQuestionBloc>(
+    () => FriendQuestionBloc(
+      removeSharedQuestion: serviceLocator<RemoveSharedQuestionUseCase>(),
+      reportSharedQuestion: serviceLocator<ReportSharedQuestionUseCase>(),
+      blockFriend: serviceLocator<BlockFriendUseCase>(),
     ),
   );
 }

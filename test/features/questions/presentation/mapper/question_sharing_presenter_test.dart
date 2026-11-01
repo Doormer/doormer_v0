@@ -28,4 +28,11 @@ void main() {
       });
     }
   });
+
+  test('sharedByLabel names the friend who shared it', () {
+    expect(
+      sharedByLabel(const FriendSummary(friendId: '7', nickname: 'Sam')),
+      'Shared by Sam',
+    );
+  });
 }

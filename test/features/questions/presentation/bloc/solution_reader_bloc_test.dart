@@ -243,6 +243,28 @@ void main() {
     );
 
     blocTest<SolutionReaderBloc, SolutionReaderState>(
+      "a friend's question says who shared it, and keeps saying it",
+      build: () => _bloc(
+        loadedOutcome: const PhotoQuestionSolveOutcome(
+          status: PhotoQuestionSolveStatus.solved,
+          questionId: '301',
+          solution: _document,
+          sharedBy: _sam,
+        ),
+      ),
+      act: (bloc) => bloc.add(const SolutionReaderStarted(questionId: '301')),
+      skip: 1,
+      expect: () => [
+        const SolutionReaderReady(document: _document, sharedBy: _sam),
+        const SolutionReaderReady(
+          document: _document,
+          sharedBy: _sam,
+          quarkBalance: 128,
+        ),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
       'handed-over document does not load by id',
       build: () {
         final built = _blocWithRepository(
@@ -669,6 +691,34 @@ void main() {
           document: _document,
           stepIndex: 2,
           answerRevealed: true,
+        ),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      "opens a friend's answer without calling reveal-answer, so it earns "
+      'nothing',
+      build: () {
+        final built = _blocWithRepository();
+        addTearDown(() => expect(built.repository.revealedIds, isEmpty));
+        return built.bloc;
+      },
+      seed: () => const SolutionReaderReady(
+        document: _document,
+        stepIndex: 2,
+        quarkBalance: 128,
+        sharedBy: _sam,
+      ),
+      act: (bloc) =>
+          bloc.add(const SolutionReaderAnswerRevealed(questionId: '301')),
+      wait: const Duration(milliseconds: 1),
+      expect: () => const [
+        SolutionReaderReady(
+          document: _document,
+          stepIndex: 2,
+          answerRevealed: true,
+          quarkBalance: 128,
+          sharedBy: _sam,
         ),
       ],
     );

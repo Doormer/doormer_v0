@@ -118,6 +118,7 @@ class SolutionReaderBloc
       topic: outcome.topic,
       method: outcome.method,
       sharedWith: outcome.sharedWith,
+      sharedBy: outcome.sharedBy,
     );
   }
 
@@ -128,6 +129,7 @@ class SolutionReaderBloc
     String topic = '',
     String method = '',
     List<FriendSummary> sharedWith = const [],
+    FriendSummary? sharedBy,
   }) async {
     emit(SolutionReaderReady(
       document: document,
@@ -136,6 +138,7 @@ class SolutionReaderBloc
       topic: topic,
       method: method,
       sharedWith: sharedWith,
+      sharedBy: sharedBy,
     ));
     await _attachQuarkBalance(emit);
   }
@@ -260,13 +263,15 @@ class SolutionReaderBloc
       return;
     }
 
+    // Only the student who asked a question is paid for it, so a question a
+    // friend shared opens here and never asks reveal-answer.
+    final questionId = current.sharedBy == null ? event.questionId : null;
     emit(current.copyWith(
       answerRevealed: true,
       revealRewardRequested:
-          current.revealRewardRequested || event.questionId != null,
+          current.revealRewardRequested || questionId != null,
     ));
 
-    final questionId = event.questionId;
     if (questionId == null || current.revealRewardRequested) return;
 
     try {

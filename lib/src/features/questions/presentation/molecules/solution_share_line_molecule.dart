@@ -1,12 +1,13 @@
 import 'package:doormer/src/core/theme/app_theme_context.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/questions/presentation/params/solution_share_line_params.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/card_picture_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// The line above the reader's buttons about sharing the question: for the
 /// student's own question, Share, and once it is shared, who with and Stop
-/// sharing.
+/// sharing; for a question a friend shared, who shared it, Remove and Report.
 ///
 /// The buttons follow the words, so on a wide screen none sits at the far
 /// end of the bar, away from what it acts on.
@@ -19,6 +20,7 @@ class SolutionShareLineMolecule extends StatelessWidget {
   Widget build(BuildContext context) {
     return switch (params) {
       OwnQuestionShareLineParams own => _ownQuestion(own),
+      FriendQuestionShareLineParams friend => _friendQuestion(friend),
     };
   }
 
@@ -45,6 +47,34 @@ class SolutionShareLineMolecule extends StatelessWidget {
           isRisky: true,
           isBusy: own.isStopping,
           onPressed: own.onStopSharing,
+        ),
+      ],
+    );
+  }
+
+  Widget _friendQuestion(FriendQuestionShareLineParams friend) {
+    return Row(
+      children: [
+        CardPictureAtom(
+          name: friend.nickname,
+          artUrl: friend.artUrl,
+          size: 22.w,
+        ),
+        SizedBox(width: 8.w),
+        Flexible(child: _Words(friend.sharedByLabel)),
+        SizedBox(width: 4.w),
+        _LineButton(
+          key: const Key('shared_question_remove'),
+          label: 'Remove',
+          isRisky: true,
+          isBusy: friend.isRemoving,
+          onPressed: friend.onRemove,
+        ),
+        _LineButton(
+          key: const Key('shared_question_report'),
+          label: 'Report',
+          icon: Icons.flag_outlined,
+          onPressed: friend.onReport,
         ),
       ],
     );

@@ -38,6 +38,10 @@ class _AssetRepository implements QuestionsRepository {
   /// Who a question loaded by id is shared with, as the API sends it.
   List<Map<String, Object?>> sharedWith = const [];
 
+  /// The friend who shared a question loaded by id, as the API sends them.
+  /// Null for the student's own question.
+  Map<String, Object?>? sharedBy;
+
   @override
   Future<PhotoQuestionSolveOutcome> loadSampleSolution() async {
     final raw =
@@ -59,6 +63,7 @@ class _AssetRepository implements QuestionsRepository {
       ...json,
       'question_id': questionId,
       'shared_with': sharedWith,
+      if (sharedBy != null) 'shared_by': sharedBy,
     }).toEntity();
   }
 
@@ -556,6 +561,140 @@ void main() {
 
       expect(find.byKey(const Key('solution_briefing')), findsOneWidget);
       expect(find.text('Share'), findsNothing);
+    });
+  });
+
+  group('a question a friend shared', () {
+    late _RecordingRepository repository;
+    late FakeQuestionSharingRepository sharing;
+
+    setUp(() async {
+      await serviceLocator.reset();
+      repository = _RecordingRepository()
+        ..sharedBy = {'friend_id': '7', 'nickname': 'Sam'};
+      sharing = FakeQuestionSharingRepository();
+      _registerReader(repository, sharing: sharing);
+    });
+
+    /// Opens Sam's question 301 from Saved, on a phone's screen.
+    Future<GoRouter> pumpFriendQuestion(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(360, 690);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final router = GoRouter(
+        initialLocation: '/saved/301/solution',
+        routes: [
+          GoRoute(
+            path: '/saved',
+            builder: (_, __) => const Scaffold(body: Text('Saved page')),
+            routes: [
+              GoRoute(
+                path: ':questionId/solution',
+                builder: (_, state) => QuestionSolutionPage(
+                  questionId: state.pathParameters['questionId'],
+                  tabLocation: '/saved',
+                  tabName: 'Saved',
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(ScreenUtilInit(
+        designSize: const Size(360, 690),
+        builder: (_, __) => MaterialApp.router(
+          theme: AppTheme.dark,
+          routerConfig: router,
+        ),
+      ));
+      await tester.pumpAndSettle();
+      return router;
+    }
+
+    /// Lets a toast run its course.
+    Future<void> waitOutToast(WidgetTester tester) async {
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+    }
+
+    /// The button saying [label] in the dialog that asks first.
+    Finder inDialog(String label) => find.descendant(
+          of: find.byType(ConfirmDialogMolecule),
+          matching: find.widgetWithText(AppButtonAtom, label),
+        );
+
+    testWidgets('says who shared it, with Remove and Report, and no Share',
+        (tester) async {
+      await pumpFriendQuestion(tester);
+
+      expect(find.text('Shared by Sam'), findsOneWidget);
+      expect(find.text('Remove'), findsOneWidget);
+      expect(find.text('Report'), findsOneWidget);
+      expect(find.text('Share'), findsNothing);
+    });
+
+    testWidgets(
+        'opening its answer earns nothing: reveal-answer is never asked',
+        (tester) async {
+      final outcome = await _AssetRepository().loadSampleSolution();
+      await pumpFriendQuestion(tester);
+
+      await _revealTheAnswer(tester, outcome.solution!.steps.length);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('vault_revealed')), findsOneWidget);
+      expect(repository.revealedIds, isEmpty);
+    });
+
+    testWidgets(
+        'Remove asks first, then takes it out of Shared with me and goes back '
+        'to Saved', (tester) async {
+      final router = await pumpFriendQuestion(tester);
+
+      await tester.tap(find.text('Remove'));
+      await tester.pumpAndSettle();
+      expect(find.text('Remove this question?'), findsOneWidget);
+      expect(
+        find.text('It leaves your Shared with me list. Only Sam can share it '
+            'with you again.'),
+        findsOneWidget,
+      );
+      await tester.tap(inDialog('Remove'));
+      await tester.pumpAndSettle();
+
+      expect(sharing.calls, ['removeSharedQuestion 301']);
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/saved');
+      expect(find.text('Question removed.'), findsOneWidget);
+      await waitOutToast(tester);
+    });
+
+    testWidgets(
+        'Report sends the question with it, and offers Block only once sent; '
+        'Block asks, then goes back to Saved', (tester) async {
+      final router = await pumpFriendQuestion(tester);
+
+      await tester.tap(find.text('Report'));
+      await tester.pumpAndSettle();
+      expect(find.text('Report Sam'), findsOneWidget);
+      expect(find.text('Block'), findsNothing,
+          reason: 'a block would end the share before the report is sent');
+      await tester.tap(find.text('Bullying or being mean'));
+      await tester.pump();
+      await tester.tap(find.text('Send report'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Thanks. The Doormer team will look at this.'),
+          findsOneWidget);
+      expect(sharing.calls, ['reportSharedQuestion 7 301 bullying ']);
+      await tester.tap(find.text('Block'));
+      await tester.pumpAndSettle();
+      expect(find.text('Block Sam?'), findsOneWidget);
+      await tester.tap(inDialog('Block'));
+      await tester.pumpAndSettle();
+
+      expect(sharing.calls.last, 'blockFriend 7');
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/saved');
     });
   });
 }

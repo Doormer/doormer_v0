@@ -1,6 +1,7 @@
 import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/bloc/friend_question_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/share_question_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/question_sharing_presenter.dart';
@@ -13,12 +14,15 @@ import 'package:doormer/src/features/questions/presentation/params/solution_shar
 import 'package:doormer/src/features/questions/presentation/templates/solution_reader_placeholder_template.dart';
 import 'package:doormer/src/features/questions/presentation/templates/solution_reader_template.dart';
 import 'package:doormer/src/shared/design/atomic/molecules/confirm_dialog_molecule.dart';
+import 'package:doormer/src/shared/design/atomic/organisms/report_sheet_organism.dart';
+import 'package:doormer/src/shared/design/atomic/params/report_sheet_params.dart';
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:doormer/src/shared/widget/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:toastification/toastification.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// The only layer that touches flutter_bloc.
 class QuestionSolutionPage extends StatelessWidget {
@@ -57,6 +61,10 @@ class QuestionSolutionPage extends StatelessWidget {
             final id = questionId;
             // The sample can't be shared.
             if (id == null) return _reader(context, state);
+            final sharedBy = state.sharedBy;
+            if (sharedBy != null) {
+              return _friendQuestionReader(context, state, id, sharedBy);
+            }
             return _ownQuestionReader(context, state, id);
           }
 
@@ -97,6 +105,38 @@ class QuestionSolutionPage extends StatelessWidget {
             isStopping: sharing.isStopping,
             onShare: () => _openShareSheet(context),
             onStopSharing: () => _stopSharingAfterAsking(context),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// A question [sharedBy] shared with the student, which they can remove
+  /// or report.
+  Widget _friendQuestionReader(
+    BuildContext context,
+    SolutionReaderReady state,
+    String id,
+    FriendSummary sharedBy,
+  ) {
+    return BlocProvider<FriendQuestionBloc>(
+      create: (_) => serviceLocator<FriendQuestionBloc>()
+        ..add(FriendQuestionStarted(questionId: id, sharedBy: sharedBy)),
+      child: BlocConsumer<FriendQuestionBloc, FriendQuestionState>(
+        listenWhen: (previous, current) =>
+            current.errorMessage != null ||
+            (current.exit != null && previous.exit == null),
+        listener: _actOnFriendQuestion,
+        builder: (context, friendQuestion) => _reader(
+          context,
+          state,
+          share: FriendQuestionShareLineParams(
+            sharedByLabel: sharedByLabel(sharedBy),
+            nickname: sharedBy.nickname,
+            artUrl: sharedBy.picture?.artUrl,
+            isRemoving: friendQuestion.isRemoving,
+            onRemove: () => _removeAfterAsking(context, sharedBy),
+            onReport: () => _openReport(context, sharedBy),
           ),
         ),
       ),
@@ -242,6 +282,102 @@ class QuestionSolutionPage extends StatelessWidget {
       icon: Icons.link_off_rounded,
     );
     if (confirmed) bloc.add(const SharingStopped());
+  }
+
+  /// Says why an action failed, or, once the question has left the
+  /// student's list, goes back to the tab it opened from.
+  void _actOnFriendQuestion(
+    BuildContext context,
+    FriendQuestionState friendQuestion,
+  ) {
+    final error = friendQuestion.errorMessage;
+    if (error != null) {
+      CustomToast.show(context, message: error, type: ToastificationType.error);
+      return;
+    }
+    if (friendQuestion.exit == FriendQuestionExit.removed) {
+      CustomToast.show(context,
+          message: 'Question removed.', type: ToastificationType.success);
+    }
+    context.go(tabLocation);
+  }
+
+  /// Asks before taking the question out of Shared with me. Only the friend
+  /// can share it again.
+  Future<void> _removeAfterAsking(
+    BuildContext context,
+    FriendSummary sharedBy,
+  ) async {
+    final bloc = context.read<FriendQuestionBloc>();
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Remove this question?',
+      message: 'It leaves your Shared with me list. Only '
+          '${sharedBy.nickname} can share it with you again.',
+      confirmLabel: 'Remove',
+      icon: Icons.remove_circle_outline_rounded,
+    );
+    if (confirmed) bloc.add(const SharedQuestionRemoved());
+  }
+
+  /// The report sheet for [sharedBy], with the question attached. It sits on
+  /// the root navigator, outside this page's providers, so the bloc is
+  /// handed in.
+  ///
+  /// Block shows only once the report is sent: a block ends the share, and a
+  /// report about a share that has ended is refused.
+  void _openReport(BuildContext context, FriendSummary sharedBy) {
+    final bloc = context.read<FriendQuestionBloc>()
+      ..add(const SharedQuestionReportOpened());
+    showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) =>
+          BlocBuilder<FriendQuestionBloc, FriendQuestionState>(
+        bloc: bloc,
+        builder: (_, friendQuestion) {
+          final status = friendQuestion.reportStatus;
+          return ReportSheetOrganism(
+            params: ReportSheetParams(
+              title: 'Report ${sharedBy.nickname}',
+              isSending: status == QuestionReportStatus.sending,
+              isSent: status == QuestionReportStatus.sent,
+              onSend: (reason, note) => bloc.add(
+                SharedQuestionReported(reason: reason, note: note),
+              ),
+              onBlock: status == QuestionReportStatus.sent
+                  ? () => _blockAfterAsking(sheetContext, bloc, sharedBy)
+                  : null,
+              onClose: () => Navigator.of(sheetContext).pop(),
+              onOpenLink: (link) =>
+                  launchUrl(link, webOnlyWindowName: '_blank'),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Asks before blocking [sharedBy], in Profile's words, then closes the
+  /// report sheet. Blocking also ends this share, so the reader closes too.
+  Future<void> _blockAfterAsking(
+    BuildContext sheetContext,
+    FriendQuestionBloc bloc,
+    FriendSummary sharedBy,
+  ) async {
+    final confirmed = await showConfirmDialog(
+      sheetContext,
+      title: 'Block ${sharedBy.nickname}?',
+      message: "They won't see your cards or anything you shared, and their "
+          "requests won't reach you. They won't be told.",
+      confirmLabel: 'Block',
+      icon: Icons.block_rounded,
+    );
+    if (!confirmed) return;
+    bloc.add(const FriendBlocked());
+    if (sheetContext.mounted) Navigator.of(sheetContext).pop();
   }
 
   void _openEnlarge(BuildContext context, VisualSolutionSegment visual) {

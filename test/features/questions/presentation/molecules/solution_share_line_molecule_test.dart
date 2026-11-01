@@ -105,4 +105,43 @@ void main() {
     expect(stop.left - share.right, lessThan(24));
     expect(stop.right, lessThan(600), reason: 'not at the far end');
   });
+
+  group("a friend's question", () {
+    FriendQuestionShareLineParams friendLine(
+      _Taps taps, {
+      bool isRemoving = false,
+    }) =>
+        FriendQuestionShareLineParams(
+          sharedByLabel: 'Shared by Sam',
+          nickname: 'Sam',
+          artUrl: null,
+          isRemoving: isRemoving,
+          onRemove: () => taps.pressed.add('remove'),
+          onReport: () => taps.pressed.add('report'),
+        );
+
+    testWidgets('says who shared it, with their picture, Remove and Report',
+        (tester) async {
+      final taps = await _pump(tester, friendLine);
+
+      expect(find.text('Shared by Sam'), findsOneWidget);
+      expect(find.byKey(const Key('card_picture_letter')), findsOneWidget);
+      expect(find.text('Share'), findsNothing);
+      await tester.tap(find.text('Remove'));
+      await tester.tap(find.text('Report'));
+
+      expect(taps.pressed, ['remove', 'report']);
+    });
+
+    testWidgets('Remove is red, and spins while it removes', (tester) async {
+      await _pump(tester, friendLine);
+      final red =
+          Theme.of(tester.element(find.text('Remove'))).colorScheme.error;
+      expect(tester.widget<Text>(find.text('Remove')).style?.color, red);
+
+      await _pump(tester, (taps) => friendLine(taps, isRemoving: true));
+      expect(find.text('Remove'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+  });
 }

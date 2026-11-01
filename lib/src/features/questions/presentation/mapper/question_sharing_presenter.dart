@@ -14,3 +14,7 @@ String sharedWithLabel(List<FriendSummary> sharedWith) {
   final more = sharedWith.length - _namedFriends;
   return more > 0 ? 'Shared with $named and $more more' : 'Shared with $named';
 }
+
+/// "Shared by Sam".
+String sharedByLabel(FriendSummary sharedBy) =>
+    'Shared by ${sharedBy.nickname}';

@@ -52,6 +52,10 @@ class SolutionReaderReady extends SolutionReaderState {
   /// the sample.
   final List<FriendSummary> sharedWith;
 
+  /// The friend who shared this question with the student. Null for the
+  /// student's own question and the sample. Opening its answer earns nothing.
+  final FriendSummary? sharedBy;
+
   const SolutionReaderReady({
     required this.document,
     this.stepIndex = 0,
@@ -66,6 +70,7 @@ class SolutionReaderReady extends SolutionReaderState {
     this.rewardFlightId = 0,
     this.revealRewardRequested = false,
     this.sharedWith = const [],
+    this.sharedBy,
   });
 
   bool get isFirstStep => stepIndex == 0;
@@ -103,6 +108,7 @@ class SolutionReaderReady extends SolutionReaderState {
       revealRewardRequested:
           revealRewardRequested ?? this.revealRewardRequested,
       sharedWith: sharedWith,
+      sharedBy: sharedBy,
     );
   }
 
@@ -122,6 +128,7 @@ class SolutionReaderReady extends SolutionReaderState {
         rewardFlightId,
         revealRewardRequested,
         sharedWith,
+        sharedBy,
       ];
 }
 
