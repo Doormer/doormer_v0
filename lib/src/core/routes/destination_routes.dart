@@ -39,7 +39,8 @@ final List<RouteBase> destinationRoutes = [
       StatefulShellBranch(preload: true, routes: [
         GoRoute(
           path: '/saved',
-          builder: (context, state) => const SavedQuestionsPage(),
+          builder: (context, state) =>
+              SavedQuestionsPage(isCovered: state.uri.path != '/saved'),
           routes: [solutionRoute(tabLocation: '/saved', tabName: 'Saved')],
         ),
       ]),

@@ -24,7 +24,7 @@ SavedQuestionListParams _list(
           SavedQuestionRowParams(
             title: 'Topic $i',
             detail: 'Question $i',
-            askedLabel: 'Today',
+            dayLabel: 'Today',
             thumbnailUrl: null,
             onOpen: () {},
             onEnlargePhoto: () {},

@@ -1,12 +1,16 @@
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/questions/presentation/atoms/photo_thumbnail_atom.dart';
 import 'package:doormer/src/features/questions/presentation/params/saved_question_row_params.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/card_picture_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// One question in the Saved list: the student's photo on the left, then the
 /// topic, when it was asked, and the question itself. Tapping the photo shows
 /// the full photo; tapping anywhere else opens the solution.
+///
+/// In Shared with me, it says when the question was shared instead, and the
+/// friend who shared it, with their picture, under the question.
 class SavedQuestionRowMolecule extends StatelessWidget {
   final SavedQuestionRowParams params;
   final PhotoImageProviderBuilder imageProviderBuilder;
@@ -67,7 +71,7 @@ class SavedQuestionRowMolecule extends StatelessWidget {
                         ),
                         SizedBox(width: 8.w),
                         Text(
-                          params.askedLabel,
+                          params.dayLabel,
                           style: TextStyle(
                             fontSize: 11.sp,
                             color: QuestPalette.muted,
@@ -85,6 +89,31 @@ class SavedQuestionRowMolecule extends StatelessWidget {
                           fontSize: 12.sp,
                           color: QuestPalette.body,
                         ),
+                      ),
+                    ],
+                    if (params.sender case final sender?) ...[
+                      SizedBox(height: 6.h),
+                      Row(
+                        key: const Key('saved_question_sender'),
+                        children: [
+                          CardPictureAtom(
+                            name: sender.nickname,
+                            artUrl: sender.artUrl,
+                            size: 18.w,
+                          ),
+                          SizedBox(width: 6.w),
+                          Flexible(
+                            child: Text(
+                              sender.nickname,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: QuestPalette.muted,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ],

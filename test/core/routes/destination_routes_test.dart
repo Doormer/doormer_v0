@@ -665,6 +665,7 @@ void main() {
   group('a solution', () {
     late _CountingSavedQuestionsRepository saved;
     late _SolutionsRepository solutions;
+    late FakeQuestionSharingRepository sharing;
     late AskByPhotoBloc solveBloc;
 
     setUp(() {
@@ -684,8 +685,9 @@ void main() {
           revealAnswerUseCase: RevealAnswerUseCase(solutions),
         ),
       );
-      // The student's own solution offers Share.
-      registerQuestionSharingBlocs(FakeQuestionSharingRepository());
+      // The student's own solution offers Share, and Saved lists Shared with
+      // me.
+      registerQuestionSharingBlocs(sharing = FakeQuestionSharingRepository());
       // Made when Solve is first built, inside the test's fake time, so the
       // solve's answer arrives there. The test drives this one instance.
       serviceLocator.unregister<AskByPhotoBloc>();
@@ -743,6 +745,28 @@ void main() {
       expect(saved.reads, 1, reason: 'no reload');
       expect(litDestination(tester), AppDestination.saved.index);
       expect(router.routerDelegate.currentConfiguration.uri.path, '/saved');
+    });
+
+    testWidgets(
+        'closing a solution opened from Shared with me reads that list again',
+        (tester) async {
+      final router = await pumpDestinations(tester, initialLocation: '/saved');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Shared with me'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Solve 2x + y = 7 and x - y = 2.'));
+      await tester.pumpAndSettle();
+      expect(router.routerDelegate.currentConfiguration.uri.path,
+          '/saved/301/solution');
+      await browserBackTo(router, '/saved');
+      await tester.pumpAndSettle();
+
+      expect(
+        sharing.calls.where((call) => call == 'loadSharedQuestions'),
+        hasLength(2),
+      );
+      expect(saved.reads, 1, reason: 'Mine is not read again');
     });
 
     testWidgets('starting on its address opens it over a loaded Saved',

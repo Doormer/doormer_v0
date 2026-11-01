@@ -16,14 +16,16 @@ Widget _host(Widget child) => ScreenUtilInit(
 SavedQuestionRowParams _row({
   String title = 'Geometry · Area',
   String detail = 'Find the area of the paddock.',
+  ({String nickname, String? artUrl})? sender,
   VoidCallback? onOpen,
   VoidCallback? onEnlargePhoto,
 }) =>
     SavedQuestionRowParams(
       title: title,
       detail: detail,
-      askedLabel: 'Today',
+      dayLabel: 'Today',
       thumbnailUrl: null,
+      sender: sender,
       onOpen: onOpen ?? () {},
       onEnlargePhoto: onEnlargePhoto ?? () {},
     );
@@ -57,6 +59,33 @@ void main() {
     expect(find.text('Geometry · Area'), findsOneWidget);
     expect(find.byType(Text), findsNWidgets(2),
         reason: 'only the title and when it was asked');
+  });
+
+  testWidgets("a shared question's row names who shared it, under the question",
+      (tester) async {
+    await tester.pumpWidget(_host(SavedQuestionRowMolecule(
+      params: _row(sender: (nickname: 'Sam', artUrl: null)),
+    )));
+
+    final sender = find.byKey(const Key('saved_question_sender'));
+    expect(find.descendant(of: sender, matching: find.text('Sam')),
+        findsOneWidget);
+    expect(
+      find.descendant(
+          of: sender, matching: find.byKey(const Key('card_picture_letter'))),
+      findsOneWidget,
+    );
+    expect(
+      tester.getTopLeft(sender).dy,
+      greaterThan(
+          tester.getBottomLeft(find.text('Find the area of the paddock.')).dy),
+    );
+  });
+
+  testWidgets('a row of your own names no one', (tester) async {
+    await tester.pumpWidget(_host(SavedQuestionRowMolecule(params: _row())));
+
+    expect(find.byKey(const Key('saved_question_sender')), findsNothing);
   });
 
   testWidgets('tapping the row opens the solution', (tester) async {

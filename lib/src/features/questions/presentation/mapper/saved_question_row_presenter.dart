@@ -1,3 +1,4 @@
+import 'package:doormer/src/features/questions/domain/entity/shared_question_summary.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_question_summary.dart';
 
 /// The words one row of the Saved list shows for a question.
@@ -30,7 +31,43 @@ SavedQuestionRowContent savedQuestionRowContent(
       questionText: question.questionText,
       method: question.method,
     ),
-    askedLabel: askedLabel(question.askedAt, now: now),
+    askedLabel: dayLabel(question.askedAt, now: now),
+  );
+}
+
+/// The words one row of Shared with me shows for a question a friend shared.
+class SharedQuestionRowContent {
+  /// The topic, such as "Algebra · Linear equations".
+  final String title;
+
+  /// As a saved row's: the first line of the question text, or the method.
+  final String detail;
+
+  /// When the friend shared it, such as "Today" or "3 Oct".
+  final String sharedLabel;
+
+  const SharedQuestionRowContent({
+    required this.title,
+    required this.detail,
+    required this.sharedLabel,
+  });
+}
+
+/// What the row for [shared] says: the question as a saved row says it, but
+/// when it was shared, measured against [now], rather than when it was asked.
+/// Shared with me lists questions newest share first.
+SharedQuestionRowContent sharedQuestionRowContent(
+  SharedQuestionSummary shared, {
+  required DateTime now,
+}) {
+  final question = shared.question;
+  return SharedQuestionRowContent(
+    title: savedQuestionTitle(question.topic),
+    detail: savedQuestionDetail(
+      questionText: question.questionText,
+      method: question.method,
+    ),
+    sharedLabel: dayLabel(shared.sharedAt, now: now),
   );
 }
 
@@ -62,11 +99,12 @@ const _months = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
-/// When a question was asked, in the device's time zone: "Today",
-/// "Yesterday", the weekday within the last week, then the day and month,
-/// with the year added once it is an earlier year.
-String askedLabel(DateTime askedAt, {required DateTime now}) {
-  final asked = askedAt.toLocal();
+/// The day [time] fell on, such as when a question was asked or shared, in
+/// the device's time zone: "Today", "Yesterday", the weekday within the last
+/// week, then the day and month, with the year added once it is an earlier
+/// year.
+String dayLabel(DateTime time, {required DateTime now}) {
+  final day = time.toLocal();
   final today = now.toLocal();
   // Whole calendar days, counted on UTC midnights so a daylight-saving change
   // cannot shorten a day to 23 hours.
@@ -74,10 +112,10 @@ String askedLabel(DateTime askedAt, {required DateTime now}) {
     today.year,
     today.month,
     today.day,
-  ).difference(DateTime.utc(asked.year, asked.month, asked.day)).inDays;
+  ).difference(DateTime.utc(day.year, day.month, day.day)).inDays;
   if (daysAgo <= 0) return 'Today';
   if (daysAgo == 1) return 'Yesterday';
-  if (daysAgo < 7) return _weekdays[asked.weekday - 1];
-  final dayAndMonth = '${asked.day} ${_months[asked.month - 1]}';
-  return asked.year == today.year ? dayAndMonth : '$dayAndMonth ${asked.year}';
+  if (daysAgo < 7) return _weekdays[day.weekday - 1];
+  final dayAndMonth = '${day.day} ${_months[day.month - 1]}';
+  return day.year == today.year ? dayAndMonth : '$dayAndMonth ${day.year}';
 }

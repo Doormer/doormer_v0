@@ -8,12 +8,14 @@ import 'package:doormer/src/features/questions/domain/entity/solved_question_sum
 import 'package:doormer/src/features/questions/domain/repository/question_sharing_repository.dart';
 import 'package:doormer/src/features/questions/domain/usecase/block_friend_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_friends_to_share_with_usecase.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_shared_questions_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/remove_shared_question_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/report_shared_question_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/share_question_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/stop_sharing_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/friend_question_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/share_question_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/bloc/shared_questions_bloc.dart';
 import 'package:doormer/src/shared/friends/entity/card_picture.dart';
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:doormer/src/shared/friends/entity/report_reason.dart';
@@ -170,7 +172,7 @@ class FakeQuestionSharingRepository implements QuestionSharingRepository {
 
 /// Registers the sharing blocs a page asks GetIt for, playing [repository]:
 /// the reader shares the student's own question, and acts on a question a
-/// friend shared.
+/// friend shared, and Saved lists Shared with me.
 void registerQuestionSharingBlocs(FakeQuestionSharingRepository repository) {
   serviceLocator.registerFactory<ShareQuestionBloc>(
     () => ShareQuestionBloc(
@@ -184,6 +186,11 @@ void registerQuestionSharingBlocs(FakeQuestionSharingRepository repository) {
       removeSharedQuestion: RemoveSharedQuestionUseCase(repository),
       reportSharedQuestion: ReportSharedQuestionUseCase(repository),
       blockFriend: BlockFriendUseCase(repository),
+    ),
+  );
+  serviceLocator.registerFactory<SharedQuestionsBloc>(
+    () => SharedQuestionsBloc(
+      loadSharedQuestions: LoadSharedQuestionsUseCase(repository),
     ),
   );
 }

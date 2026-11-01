@@ -13,6 +13,7 @@ import 'package:doormer/src/features/questions/presentation/bloc/daily_limit_blo
 import 'package:doormer/src/features/questions/presentation/bloc/friend_question_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/saved_questions_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/share_question_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/bloc/shared_questions_bloc.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_file_input.dart';
 import 'package:doormer/src/features/questions/utils/photo/photo_preparer.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -77,5 +78,12 @@ void main() {
     initQuestionsModule();
 
     expect(GetIt.instance<FriendQuestionBloc>(), isNotNull);
+  });
+
+  test('registers the Shared with me list bloc', () {
+    GetIt.instance.registerSingleton<Dio>(Dio());
+    initQuestionsModule();
+
+    expect(GetIt.instance<SharedQuestionsBloc>(), isNotNull);
   });
 }

@@ -1,5 +1,7 @@
+import 'package:doormer/src/features/questions/domain/entity/shared_question_summary.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_question_summary.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/saved_question_row_presenter.dart';
+import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Tuesday 6 October 2026, 8pm, in the device's own time zone. Every time
@@ -62,8 +64,8 @@ void main() {
     });
   });
 
-  group('askedLabel', () {
-    String label(DateTime askedAt) => askedLabel(askedAt, now: _now);
+  group('dayLabel', () {
+    String label(DateTime day) => dayLabel(day, now: _now);
 
     test('says Today for earlier the same day', () {
       expect(label(DateTime(2026, 10, 6, 0, 5)), 'Today');
@@ -113,5 +115,28 @@ void main() {
     expect(content.title, 'Geometry · Area');
     expect(content.detail, 'Find the area of the paddock.');
     expect(content.askedLabel, 'Today');
+  });
+
+  test(
+      'sharedQuestionRowContent says when a question was shared, not when it '
+      'was asked', () {
+    final content = sharedQuestionRowContent(
+      SharedQuestionSummary(
+        question: SolvedQuestionSummary(
+          questionId: '301',
+          topic: 'Algebra - Simultaneous equations',
+          method: 'Elimination',
+          questionText: 'Solve 2x + y = 7 and x - y = 2.',
+          askedAt: DateTime(2026, 9, 29, 9),
+        ),
+        sharedBy: const FriendSummary(friendId: '7', nickname: 'Sam'),
+        sharedAt: DateTime(2026, 10, 5, 18),
+      ),
+      now: _now,
+    );
+
+    expect(content.title, 'Algebra · Simultaneous equations');
+    expect(content.detail, 'Solve 2x + y = 7 and x - y = 2.');
+    expect(content.sharedLabel, 'Yesterday');
   });
 }
