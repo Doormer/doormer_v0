@@ -1,3 +1,4 @@
+import 'package:bloc/bloc.dart';
 import 'package:dio/dio.dart';
 import 'package:doormer/src/features/questions/di/questions_module.dart';
 import 'package:doormer/src/features/questions/domain/usecase/block_friend_usecase.dart';
@@ -85,5 +86,35 @@ void main() {
     initQuestionsModule();
 
     expect(GetIt.instance<SharedQuestionsBloc>(), isNotNull);
+  });
+
+  test(
+      'one repository takes every Remove, Block and read of Shared with me, '
+      'so the reads can wait for the changes', () {
+    GetIt.instance.registerSingleton<Dio>(Dio());
+    initQuestionsModule();
+
+    final repository = GetIt.instance<RemoveSharedQuestionUseCase>().repository;
+
+    expect(GetIt.instance<BlockFriendUseCase>().repository, same(repository));
+    expect(GetIt.instance<LoadSharedQuestionsUseCase>().repository,
+        same(repository));
+  });
+
+  test('each sharing bloc is made afresh for every page that asks', () async {
+    GetIt.instance.registerSingleton<Dio>(Dio());
+    initQuestionsModule();
+
+    Future<void> expectMadeAfresh<T extends BlocBase<Object?>>() async {
+      final first = GetIt.instance<T>();
+      final second = GetIt.instance<T>();
+      expect(second, isNot(same(first)), reason: '$T');
+      await first.close();
+      await second.close();
+    }
+
+    await expectMadeAfresh<ShareQuestionBloc>();
+    await expectMadeAfresh<FriendQuestionBloc>();
+    await expectMadeAfresh<SharedQuestionsBloc>();
   });
 }

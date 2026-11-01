@@ -136,7 +136,7 @@ class _Words extends StatelessWidget {
 }
 
 /// A quiet button on the line. A risky one, which can't be undone by a tap,
-/// is red.
+/// is red. A busy one spins in place of its label, at the same width.
 class _LineButton extends StatelessWidget {
   final String label;
   final IconData? icon;
@@ -161,17 +161,7 @@ class _LineButton extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: 10.w),
       minimumSize: Size(0, 40.h),
     );
-    if (isBusy) {
-      return TextButton(
-        style: style,
-        onPressed: null,
-        child: SizedBox.square(
-          dimension: 16.w,
-          child: CircularProgressIndicator(strokeWidth: 2, color: color),
-        ),
-      );
-    }
-    final text = Text(
+    Widget text = Text(
       label,
       style: TextStyle(
         fontFamily: kDisplayFont,
@@ -180,6 +170,28 @@ class _LineButton extends StatelessWidget {
         color: color,
       ),
     );
+    if (isBusy) {
+      // The label stays laid out under the spinner, hidden, so the button
+      // keeps its width and a screen reader still hears its name.
+      text = Stack(
+        alignment: Alignment.center,
+        children: [
+          Visibility(
+            visible: false,
+            maintainSize: true,
+            maintainAnimation: true,
+            maintainState: true,
+            maintainSemantics: true,
+            child: text,
+          ),
+          SizedBox.square(
+            dimension: 16.w,
+            child: CircularProgressIndicator(strokeWidth: 2, color: color),
+          ),
+        ],
+      );
+    }
+    final onPressed = isBusy ? null : this.onPressed;
     final glyph = icon;
     return glyph == null
         ? TextButton(style: style, onPressed: onPressed, child: text)

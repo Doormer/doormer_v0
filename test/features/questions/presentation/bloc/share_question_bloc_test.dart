@@ -436,6 +436,28 @@ void main() {
       ],
       verify: (_) => expect(repository.calls, ['loadFriends', 'loadFriends']),
     );
+
+    blocTest<ShareQuestionBloc, ShareQuestionState>(
+      'a load answering after another failed fills the sheet with the friends',
+      build: build,
+      setUp: () => repository.failNext['loadFriends'] =
+          NetworkFailure("We couldn't load your friends."),
+      seed: started,
+      act: (bloc) async {
+        await openTwice(bloc);
+        firstLoad.complete();
+        await settle();
+        secondLoad.complete();
+      },
+      expect: () => [
+        started().copyWith(sheet: const ShareSheetLoading()),
+        started().copyWith(
+          sheet: const ShareSheetError("We couldn't load your friends."),
+        ),
+        picking({}),
+      ],
+      verify: (_) => expect(repository.calls, ['loadFriends', 'loadFriends']),
+    );
   });
 
   group('stopping', () {

@@ -51,9 +51,9 @@ class ShareQuestionBloc extends Bloc<ShareQuestionEvent, ShareQuestionState> {
   ///
   /// While a send is on its way, the sheet stays as it is, so a sheet reopened
   /// meanwhile shows the send, and then its answer. The friends fill the sheet
-  /// only if it is still loading when they arrive. A load that answers after
-  /// another load has filled the sheet, or after a send has started or closed
-  /// it, changes nothing.
+  /// only if it is still loading when they arrive, or showing a load that
+  /// failed. A load that answers after another load has filled the sheet with
+  /// friends, or after a send has started or closed it, changes nothing.
   Future<void> _onSheetOpened(
     ShareSheetOpened event,
     Emitter<ShareQuestionState> emit,
@@ -61,8 +61,9 @@ class ShareQuestionBloc extends Bloc<ShareQuestionEvent, ShareQuestionState> {
     if (state.sheet case ShareSheetReady(isSending: true)) return;
     emit(state.copyWith(sheet: const ShareSheetLoading()));
     final sheet = await _readFriends(keepTicked: const {});
-    if (state.sheet is! ShareSheetLoading) return;
-    emit(state.copyWith(sheet: sheet));
+    if (state.sheet case ShareSheetLoading() || ShareSheetError()) {
+      emit(state.copyWith(sheet: sheet));
+    }
   }
 
   /// A friend the question is already shared with stays ticked, and no more

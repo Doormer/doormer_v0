@@ -102,6 +102,7 @@ lib/src/
 - Central setup: `core/di/service_locator.dart` → calls each feature's `init<Feature>Module()` (actual names: `initAuthModule()`, `initRegisterModule()` — registration abbreviates to "Register").
 - **factory** for BLoCs (each page needs a fresh instance with clean state).
 - **lazySingleton** for repos, usecases, datasources, and services (stateless — one instance is enough).
+  - `QuestionSharingRepositoryImpl` holds a Remove or Block on its way, so that reads of Shared with me wait for it, and must stay a single lazy singleton.
 - **singleton** (eager) for app-wide BLoCs (e.g. `GlobalSessionBloc`) and platform services (e.g. `TokenStorage`) that must exist before any lazy resolution occurs.
 - Access: `serviceLocator<T>()`.
 

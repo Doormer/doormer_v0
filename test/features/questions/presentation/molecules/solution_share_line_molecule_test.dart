@@ -76,6 +76,22 @@ void _expectWordsInFullAndButtonsBelow(
   expect(tester.takeException(), isNull, reason: 'nothing overflows');
 }
 
+/// Checks that a busy button spins over its [label], which stays laid out,
+/// hidden, so the button keeps its width.
+void _expectHiddenUnderSpinner(WidgetTester tester, String label) {
+  expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  expect(
+    find.ancestor(
+      of: find.text(label),
+      matching: find.byWidgetPredicate(
+        (widget) => widget is Visibility && !widget.visible,
+      ),
+    ),
+    findsOneWidget,
+    reason: '$label is hidden under the spinner',
+  );
+}
+
 void main() {
   testWidgets('a question shared with no one offers Share alone',
       (tester) async {
@@ -116,8 +132,51 @@ void main() {
       (taps) =>
           _own(taps, sharedWithLabel: 'Shared with Sam', isStopping: true),
     );
-    expect(find.text('Stop sharing'), findsNothing);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    _expectHiddenUnderSpinner(tester, 'Stop sharing');
+  });
+
+  testWidgets(
+      'a busy Stop sharing keeps its width, so the buttons stay where they '
+      'are', (tester) async {
+    // At this width, "Shared with Sam, Alex" leaves room on its row for
+    // Share and a spinner, but not for Share and Stop sharing.
+    Future<({Rect share, Rect stop})> buttons({
+      required bool isStopping,
+    }) async {
+      await _pump(
+        tester,
+        (taps) => _own(
+          taps,
+          sharedWithLabel: 'Shared with Sam, Alex',
+          isStopping: isStopping,
+        ),
+        width: 480,
+      );
+      return (
+        share: tester.getRect(find.byKey(const Key('share_open'))),
+        stop: tester.getRect(find.byKey(const Key('share_stop'))),
+      );
+    }
+
+    final idle = await buttons(isStopping: false);
+    final busy = await buttons(isStopping: true);
+
+    expect(busy.share, idle.share, reason: 'Share stays where it was');
+    expect(busy.stop, idle.stop, reason: 'Stop sharing keeps its place');
+  });
+
+  testWidgets('a busy Stop sharing still tells a screen reader its name',
+      (tester) async {
+    await _pump(
+      tester,
+      (taps) =>
+          _own(taps, sharedWithLabel: 'Shared with Sam', isStopping: true),
+    );
+
+    expect(
+      tester.getSemantics(find.byKey(const Key('share_stop'))),
+      containsSemantics(label: 'Stop sharing', isButton: true),
+    );
   });
 
   testWidgets(
@@ -198,8 +257,17 @@ void main() {
       expect(tester.widget<Text>(find.text('Remove')).style?.color, red);
 
       await _pump(tester, (taps) => friendLine(taps, isRemoving: true));
-      expect(find.text('Remove'), findsNothing);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      _expectHiddenUnderSpinner(tester, 'Remove');
+    });
+
+    testWidgets('a busy Remove still tells a screen reader its name',
+        (tester) async {
+      await _pump(tester, (taps) => friendLine(taps, isRemoving: true));
+
+      expect(
+        tester.getSemantics(find.byKey(const Key('shared_question_remove'))),
+        containsSemantics(label: 'Remove', isButton: true),
+      );
     });
 
     testWidgets(
