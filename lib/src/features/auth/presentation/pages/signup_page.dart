@@ -137,14 +137,14 @@ class _SignUpPageWebState extends State<SignUpPageWeb> {
                               children: [
                                 // Heading at the top center
                                 Text(
-                                  'Join Today!',
+                                  'Turn homework into a quest',
                                   textAlign: TextAlign.center,
                                   style: textTheme.displayMedium,
                                 ),
                                 const SizedBox(height: 8),
                                 // Hint text below the heading
                                 Text(
-                                  'Sign up to get started',
+                                  'Snap a question. Unlock the answer. Collect cards.',
                                   textAlign: TextAlign.center,
                                   style: textTheme.bodyMedium?.copyWith(
                                     color: colorScheme.onSurfaceVariant,
@@ -220,7 +220,7 @@ class _SignUpPageWebState extends State<SignUpPageWeb> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(
-                                      "Already have an account? ",
+                                      'Have an account? ',
                                       style: textTheme.bodyMedium,
                                     ),
                                     GestureDetector(
@@ -228,7 +228,7 @@ class _SignUpPageWebState extends State<SignUpPageWeb> {
                                         GoRouter.of(context).go('/auth/login');
                                       },
                                       child: Text(
-                                        "Login",
+                                        'Log in',
                                         style: textTheme.bodyMedium?.copyWith(
                                           color: colorScheme.primary,
                                           decoration: TextDecoration.underline,
