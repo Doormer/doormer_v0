@@ -48,8 +48,12 @@ class ShareQuestionBloc extends Bloc<ShareQuestionEvent, ShareQuestionState> {
   }
 
   /// Reads the friends afresh each time the sheet opens, with no one ticked.
+  ///
   /// While a send is on its way, the sheet stays as it is, so a sheet reopened
-  /// meanwhile shows the send, and then its answer.
+  /// meanwhile shows the send, and then its answer. The friends fill the sheet
+  /// only if it is still loading when they arrive. A load that answers after
+  /// another load has filled the sheet, or after a send has started or closed
+  /// it, changes nothing.
   Future<void> _onSheetOpened(
     ShareSheetOpened event,
     Emitter<ShareQuestionState> emit,
@@ -57,6 +61,7 @@ class ShareQuestionBloc extends Bloc<ShareQuestionEvent, ShareQuestionState> {
     if (state.sheet case ShareSheetReady(isSending: true)) return;
     emit(state.copyWith(sheet: const ShareSheetLoading()));
     final sheet = await _readFriends(keepTicked: const {});
+    if (state.sheet is! ShareSheetLoading) return;
     emit(state.copyWith(sheet: sheet));
   }
 
@@ -83,8 +88,9 @@ class ShareQuestionBloc extends Bloc<ShareQuestionEvent, ShareQuestionState> {
   /// Shares with the friends ticked, in the order the sheet lists them, and
   /// closes the sheet. A refused share shares with no one.
   ///
-  /// While it sends, nothing ticks, sends or reopens the sheet, so the sheet
-  /// read before the request is still the one in the state when it answers.
+  /// While it sends, nothing ticks, sends or reopens the sheet, and a friends
+  /// load that answers meanwhile leaves it alone. So the sheet read before the
+  /// request is still the one in the state when it answers.
   Future<void> _onSent(
       ShareSent event, Emitter<ShareQuestionState> emit) async {
     final sheet = state.sheet;

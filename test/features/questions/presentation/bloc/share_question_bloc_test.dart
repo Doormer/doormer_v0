@@ -319,6 +319,125 @@ void main() {
     );
   });
 
+  group('opening the sheet again before the friends load', () {
+    late Completer<void> firstLoad;
+    late Completer<void> secondLoad;
+    late Completer<void> send;
+
+    setUp(() {
+      firstLoad = Completer<void>();
+      secondLoad = Completer<void>();
+      send = Completer<void>();
+      repository.holdInTurn.addAll([firstLoad, secondLoad, send]);
+    });
+
+    /// Lets everything already set off happen.
+    Future<void> settle() => Future<void>.delayed(Duration.zero);
+
+    /// The student opens the sheet, closes it while the friends load, and
+    /// opens it again, so two loads are on their way.
+    Future<void> openTwice(ShareQuestionBloc bloc) {
+      bloc
+        ..add(const ShareSheetOpened())
+        ..add(const ShareSheetOpened());
+      return settle();
+    }
+
+    blocTest<ShareQuestionBloc, ShareQuestionState>(
+      'a load answering mid-send leaves the sheet sending, and a failed send '
+      'keeps its ticks',
+      build: build,
+      setUp: () => repository.failNext['share'] =
+          ServerFailure("We couldn't share that question. Try again."),
+      seed: started,
+      act: (bloc) async {
+        await openTwice(bloc);
+        firstLoad.complete();
+        await settle();
+        bloc
+          ..add(const ShareFriendToggled('11'))
+          ..add(const ShareSent());
+        await settle();
+        secondLoad.complete();
+        await settle();
+        // The sheet still sends, so ticking Kate and sending again do
+        // nothing.
+        bloc
+          ..add(const ShareFriendToggled('13'))
+          ..add(const ShareSent());
+        await settle();
+        send.complete();
+      },
+      expect: () => [
+        started().copyWith(sheet: const ShareSheetLoading()),
+        picking({}),
+        picking({'11'}),
+        picking({'11'}, isSending: true),
+        picking(
+          {'11'},
+          errorMessage: "We couldn't share that question. Try again.",
+        ),
+      ],
+      verify: (_) => expect(
+        repository.calls,
+        ['loadFriends', 'loadFriends', 'share 501 11'],
+      ),
+    );
+
+    blocTest<ShareQuestionBloc, ShareQuestionState>(
+      'a load answering after a send closed the sheet changes nothing',
+      build: build,
+      seed: started,
+      act: (bloc) async {
+        await openTwice(bloc);
+        firstLoad.complete();
+        await settle();
+        bloc
+          ..add(const ShareFriendToggled('11'))
+          ..add(const ShareSent());
+        await settle();
+        send.complete();
+        await settle();
+        secondLoad.complete();
+      },
+      expect: () => [
+        started().copyWith(sheet: const ShareSheetLoading()),
+        picking({}),
+        picking({'11'}),
+        picking({'11'}, isSending: true),
+        const ShareQuestionState(
+          questionId: ownQuestionId,
+          sharedWith: [alex],
+          notice: ShareNotice.shared,
+        ),
+      ],
+      verify: (_) => expect(
+        repository.calls,
+        ['loadFriends', 'loadFriends', 'share 501 11'],
+      ),
+    );
+
+    blocTest<ShareQuestionBloc, ShareQuestionState>(
+      'a load answering after another filled the sheet keeps the ticks',
+      build: build,
+      seed: started,
+      act: (bloc) async {
+        await openTwice(bloc);
+        secondLoad.complete();
+        await settle();
+        bloc.add(const ShareFriendToggled('11'));
+        await settle();
+        firstLoad.complete();
+      },
+      expect: () => [
+        started().copyWith(sheet: const ShareSheetLoading()),
+        picking({}),
+        picking({'11'}),
+      ],
+      verify: (_) => expect(repository.calls, ['loadFriends', 'loadFriends']),
+    );
+  });
+
   group('stopping', () {
     blocTest<ShareQuestionBloc, ShareQuestionState>(
       'Stop sharing shares the question with no one',

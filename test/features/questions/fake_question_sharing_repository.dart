@@ -49,7 +49,8 @@ final samsQuestion = SharedQuestionSummary(
 /// has shared one question with them. Every action changes what the next
 /// read returns, as the API would: sharing with someone who is no longer a
 /// friend is refused with 404, and nothing is shared. A test can make one
-/// kind of call fail, or hold every call open until it lets them answer.
+/// kind of call fail, hold every call open until it lets them all answer, or
+/// hold calls one at a time and let each answer in its own turn.
 class FakeQuestionSharingRepository implements QuestionSharingRepository {
   List<FriendSummary> friends = [alex, kate, sam];
 
@@ -71,9 +72,15 @@ class FakeQuestionSharingRepository implements QuestionSharingRepository {
   /// While set, every call waits for it before it answers.
   Completer<void>? hold;
 
+  /// The next calls each wait for one of these before they answer, in turn:
+  /// the first call for the first, the second for the second, and so on. A
+  /// test then lets each call answer when it chooses. A call that finds none
+  /// left waits for [hold], if it is set.
+  final List<Completer<void>> holdInTurn = [];
+
   Future<void> _call(String name, [String details = '']) async {
     calls.add(details.isEmpty ? name : '$name $details');
-    final wait = hold;
+    final wait = holdInTurn.isNotEmpty ? holdInTurn.removeAt(0) : hold;
     if (wait != null) await wait.future;
     final failure = failNext.remove(name);
     if (failure != null) throw failure;
