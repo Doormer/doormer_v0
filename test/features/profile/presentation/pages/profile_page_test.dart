@@ -21,6 +21,8 @@ import 'package:doormer/src/features/profile/presentation/bloc/profile_bloc.dart
 import 'package:doormer/src/features/profile/presentation/molecules/friend_request_row_molecule.dart';
 import 'package:doormer/src/features/profile/presentation/molecules/friend_row_molecule.dart';
 import 'package:doormer/src/features/profile/presentation/pages/profile_page.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/molecules/confirm_dialog_molecule.dart';
 import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:flutter/material.dart';
@@ -140,6 +142,47 @@ void main() {
       find.widgetWithText(FriendRowMolecule, nickname);
   Finder requestRow(String nickname) =>
       find.widgetWithText(FriendRequestRowMolecule, nickname);
+
+  const removeMessage =
+      "You'll stop seeing each other's cards. You can add each other again "
+      'later.';
+  const blockMessage = "They won't see your cards, and their requests won't "
+      "reach you. They won't be told.";
+
+  /// The dialog that asks before Remove or Block.
+  final dialog = find.byType(ConfirmDialogMolecule);
+
+  /// Expects the dialog to ask [title] and say [message], with Cancel and
+  /// [confirmLabel].
+  void expectAsked({
+    required String title,
+    required String message,
+    required String confirmLabel,
+  }) {
+    expect(dialog, findsOneWidget);
+    expect(find.descendant(of: dialog, matching: find.text(title)),
+        findsOneWidget);
+    expect(find.descendant(of: dialog, matching: find.text(message)),
+        findsOneWidget);
+    for (final label in ['Cancel', confirmLabel]) {
+      expect(
+        find.descendant(
+          of: dialog,
+          matching: find.widgetWithText(AppButtonAtom, label),
+        ),
+        findsOneWidget,
+      );
+    }
+  }
+
+  /// Taps the dialog's button saying [label].
+  Future<void> answer(WidgetTester tester, String label) async {
+    await tester.tap(find.descendant(
+      of: dialog,
+      matching: find.widgetWithText(AppButtonAtom, label),
+    ));
+    await tester.pumpAndSettle();
+  }
 
   /// Lets an error toast run its course.
   Future<void> waitOutToast(WidgetTester tester) async {
@@ -287,23 +330,87 @@ void main() {
         '/profile/friends/42/cards');
   });
 
-  testWidgets('Remove takes the friend away', (tester) async {
+  testWidgets('Remove asks first, and confirming takes the friend away',
+      (tester) async {
     await pumpProfile(tester);
 
     await chooseFromMenu(tester, row: friendRow('Sam'), action: 'Remove');
+    expectAsked(
+      title: 'Remove Sam?',
+      message: removeMessage,
+      confirmLabel: 'Remove',
+    );
+    expect(friends.calls, isNot(contains('removeFriend 42')),
+        reason: 'nothing happens until the student confirms');
+    await answer(tester, 'Remove');
 
+    expect(dialog, findsNothing);
     expect(find.text('Sam'), findsNothing);
     expect(friends.calls, contains('removeFriend 42'));
   });
 
-  testWidgets("Block on a request takes it away, and the sender isn't added",
+  testWidgets('Cancel on Remove keeps the friend', (tester) async {
+    await pumpProfile(tester);
+
+    await chooseFromMenu(tester, row: friendRow('Sam'), action: 'Remove');
+    await answer(tester, 'Cancel');
+
+    expect(dialog, findsNothing);
+    expect(friendRow('Sam'), findsOneWidget);
+    expect(friends.calls, isNot(contains('removeFriend 42')));
+  });
+
+  testWidgets("Block on a friend's row asks first, then blocks them",
       (tester) async {
     await pumpProfile(tester);
 
+    await chooseFromMenu(tester, row: friendRow('Sam'), action: 'Block');
+    expectAsked(
+      title: 'Block Sam?',
+      message: blockMessage,
+      confirmLabel: 'Block',
+    );
+    await answer(tester, 'Block');
+
+    expect(find.text('Sam'), findsNothing);
+    expect(friends.calls, contains('blockStudent 42'));
+  });
+
+  testWidgets('Cancel on Block keeps the friend, unblocked', (tester) async {
+    await pumpProfile(tester);
+
+    await chooseFromMenu(tester, row: friendRow('Sam'), action: 'Block');
+    await answer(tester, 'Cancel');
+
+    expect(friendRow('Sam'), findsOneWidget);
+    expect(friends.calls, isNot(contains('blockStudent 42')));
+  });
+
+  testWidgets(
+      "Block on a request asks first, then takes it away, and the sender "
+      "isn't added", (tester) async {
+    await pumpProfile(tester);
+
     await chooseFromMenu(tester, row: requestRow('Rua'), action: 'Block');
+    expectAsked(
+      title: 'Block Rua?',
+      message: blockMessage,
+      confirmLabel: 'Block',
+    );
+    await answer(tester, 'Block');
 
     expect(find.text('Rua'), findsNothing);
     expect(friends.calls, contains('blockStudent 55'));
+  });
+
+  testWidgets('Cancel on Block keeps the request waiting', (tester) async {
+    await pumpProfile(tester);
+
+    await chooseFromMenu(tester, row: requestRow('Rua'), action: 'Block');
+    await answer(tester, 'Cancel');
+
+    expect(requestRow('Rua'), findsOneWidget);
+    expect(friends.calls, isNot(contains('blockStudent 55')));
   });
 
   testWidgets('Report opens the sheet, and sending says thanks',
@@ -324,17 +431,39 @@ void main() {
         reason: 'a report on its own removes no one');
   });
 
-  testWidgets('Block in the report sheet closes it and blocks the student',
-      (tester) async {
+  testWidgets(
+      'Block in the report sheet asks first, then closes the sheet and '
+      'blocks the student', (tester) async {
     await pumpProfile(tester);
 
     await chooseFromMenu(tester, row: requestRow('Rua'), action: 'Report');
     await tester.tap(find.text('Block'));
     await tester.pumpAndSettle();
+    expectAsked(
+      title: 'Block Rua?',
+      message: blockMessage,
+      confirmLabel: 'Block',
+    );
+    expect(find.text('Report Rua'), findsOneWidget,
+        reason: 'the sheet waits under the dialog');
+    await answer(tester, 'Block');
 
     expect(find.text('Report Rua'), findsNothing);
     expect(find.text('Rua'), findsNothing);
     expect(friends.calls, contains('blockStudent 55'));
+  });
+
+  testWidgets('Cancel on Block leaves the report sheet open', (tester) async {
+    await pumpProfile(tester);
+
+    await chooseFromMenu(tester, row: requestRow('Rua'), action: 'Report');
+    await tester.tap(find.text('Block'));
+    await tester.pumpAndSettle();
+    await answer(tester, 'Cancel');
+
+    expect(dialog, findsNothing);
+    expect(find.text('Report Rua'), findsOneWidget);
+    expect(friends.calls, isNot(contains('blockStudent 55')));
   });
 
   testWidgets(
@@ -382,6 +511,7 @@ void main() {
     await pumpProfile(tester);
 
     await chooseFromMenu(tester, row: friendRow('Sam'), action: 'Remove');
+    await answer(tester, 'Remove');
 
     expect(find.text("We couldn't remove that friend. Try again."),
         findsOneWidget);

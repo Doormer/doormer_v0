@@ -1,5 +1,6 @@
 import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/routes/shown_destination.dart';
+import 'package:doormer/src/shared/design/atomic/molecules/confirm_dialog_molecule.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:doormer/src/shared/friends/friends_messages.dart';
@@ -146,7 +147,7 @@ class _ProfileViewState extends State<_ProfileView> {
                     bloc.add(FriendRequestAccepted(request.requestId)),
                 onDecline: () =>
                     bloc.add(FriendRequestDeclined(request.requestId)),
-                onBlock: () => bloc.add(StudentBlocked(request.from.friendId)),
+                onBlock: () => _blockAfterAsking(context, bloc, request.from),
                 onReport: () => _openReport(context, request.from),
               ),
           ],
@@ -161,14 +162,52 @@ class _ProfileViewState extends State<_ProfileView> {
                   '/cards',
                   extra: friend,
                 ),
-                onRemove: () => bloc.add(FriendRemoved(friend.friendId)),
-                onBlock: () => bloc.add(StudentBlocked(friend.friendId)),
+                onRemove: () => _removeAfterAsking(context, bloc, friend),
+                onBlock: () => _blockAfterAsking(context, bloc, friend),
                 onReport: () => _openReport(context, friend),
               ),
           ],
           onOpenBlocked: () => context.go('/profile/blocked'),
         ),
     };
+  }
+
+  /// Asks before removing [friend], and removes them only if the student
+  /// confirms. Neither can undo it, short of a new request accepted.
+  Future<void> _removeAfterAsking(
+    BuildContext context,
+    FriendsBloc bloc,
+    FriendSummary friend,
+  ) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Remove ${friend.nickname}?',
+      message: "You'll stop seeing each other's cards. You can add each "
+          'other again later.',
+      confirmLabel: 'Remove',
+      icon: Icons.person_remove_alt_1_rounded,
+    );
+    if (confirmed) bloc.add(FriendRemoved(friend.friendId));
+  }
+
+  /// Asks before blocking [student], and blocks them only if the student
+  /// confirms. Answers whether they were blocked. Unblocking later doesn't
+  /// bring a friendship back.
+  Future<bool> _blockAfterAsking(
+    BuildContext context,
+    FriendsBloc bloc,
+    FriendSummary student,
+  ) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Block ${student.nickname}?',
+      message: "They won't see your cards, and their requests won't reach "
+          "you. They won't be told.",
+      confirmLabel: 'Block',
+      icon: Icons.block_rounded,
+    );
+    if (confirmed) bloc.add(StudentBlocked(student.friendId));
+    return confirmed;
   }
 
   /// The report sheet for [student], over the whole screen, nav bar
@@ -199,9 +238,12 @@ class _ProfileViewState extends State<_ProfileView> {
                 reason: reason,
                 note: note,
               )),
-              onBlock: () {
-                bloc.add(StudentBlocked(student.friendId));
-                Navigator.of(sheetContext).pop();
+              onBlock: () async {
+                final blocked =
+                    await _blockAfterAsking(sheetContext, bloc, student);
+                if (blocked && sheetContext.mounted) {
+                  Navigator.of(sheetContext).pop();
+                }
               },
               onClose: () => Navigator.of(sheetContext).pop(),
               onOpenLink: (link) =>
