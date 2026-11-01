@@ -10,7 +10,7 @@ class SignUpButton extends StatelessWidget {
     super.key,
     required this.isLoading,
     required this.onPressed,
-    this.buttonText = 'Sign Up',
+    this.buttonText = 'Sign up',
   });
 
   @override

@@ -35,7 +35,7 @@ class PhotoEditTemplate extends StatelessWidget {
           child: Column(
             children: [
               Text(
-                'Drag the corners so only the question is inside the box.',
+                'Keep only the question inside the box.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context)
                     .textTheme

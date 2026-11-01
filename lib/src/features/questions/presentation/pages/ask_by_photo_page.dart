@@ -308,7 +308,7 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
     if (isPreparing) {
       CustomToast.show(
         context,
-        message: 'Still preparing your photo. One moment.',
+        message: 'Still preparing your photo.',
         type: ToastificationType.info,
       );
       return;
@@ -357,7 +357,7 @@ class _AskByPhotoPageState extends State<AskByPhotoPage> {
   void _showStillSolving(BuildContext context) {
     CustomToast.show(
       context,
-      message: 'Still solving your last photo. One moment.',
+      message: 'Still solving your last photo.',
       type: ToastificationType.info,
     );
   }

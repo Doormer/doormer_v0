@@ -124,14 +124,14 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                               children: [
                                 // Heading at the top center
                                 Text(
-                                  'Welcome Back!',
+                                  'Welcome back',
                                   textAlign: TextAlign.center,
                                   style: textTheme.displayMedium,
                                 ),
                                 const SizedBox(height: 8),
                                 // Hint text below the heading
                                 Text(
-                                  'Log in to continue your journey.',
+                                  'Your questions and cards are waiting.',
                                   textAlign: TextAlign.center,
                                   style: textTheme.bodyMedium?.copyWith(
                                     color: colorScheme.onSurfaceVariant,
@@ -156,7 +156,7 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 8.0),
                                       child: Text(
-                                        'or log in with',
+                                        'or',
                                         style: textTheme.bodyMedium?.copyWith(
                                           color: colorScheme.onSurfaceVariant,
                                         ),
@@ -187,7 +187,7 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                                 SizedBox(
                                   width: double.infinity,
                                   child: SignUpButton(
-                                    buttonText: 'Login',
+                                    buttonText: 'Log in',
                                     isLoading: state is AuthLoading,
                                     onPressed: state is AuthLoading
                                         ? null
@@ -200,7 +200,7 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(
-                                      "Don't have an account? ",
+                                      'New here? ',
                                       style: textTheme.bodyMedium,
                                     ),
                                     GestureDetector(
@@ -208,7 +208,7 @@ class _LoginPageWebState extends State<LoginPageWeb> {
                                         GoRouter.of(context).go('/auth/signup');
                                       },
                                       child: Text(
-                                        "Sign Up",
+                                        'Sign up',
                                         style: textTheme.bodyMedium?.copyWith(
                                           color: colorScheme.primary,
                                           decoration: TextDecoration.underline,

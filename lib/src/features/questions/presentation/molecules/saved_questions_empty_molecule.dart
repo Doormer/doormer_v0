@@ -20,7 +20,7 @@ class SavedQuestionsEmptyMolecule extends StatelessWidget {
           Icon(Icons.bookmark_outline, size: 40.w, color: QuestPalette.muted),
           SizedBox(height: 12.h),
           Text(
-            "No solved questions yet. Snap a photo and it'll be saved here.",
+            'Every question you solve shows up here.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13.sp,

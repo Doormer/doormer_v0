@@ -24,7 +24,7 @@ class PhotoUploadPanelOrganism extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Photo input',
+            'Your question',
             style: tt.titleLarge?.copyWith(fontSize: 20.sp),
           ),
           SizedBox(height: 16.h),

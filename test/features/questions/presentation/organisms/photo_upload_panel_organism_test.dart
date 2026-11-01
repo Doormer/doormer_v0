@@ -85,7 +85,7 @@ void main() {
     await _pumpPanelWithPhoto(tester, isBlockedByDailyLimit: true);
 
     final submit = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Submit to solver'),
+      find.widgetWithText(FilledButton, 'Solve it'),
     );
     expect(submit.onPressed, isNull);
   });

@@ -88,7 +88,7 @@ void main() {
     expect(params.drawLabel, 'Draw a card · 40 quarks');
     expect(params.canAfford, isFalse);
     expect(params.quarksShortLabel,
-        '25 more quarks to draw. Answer questions to earn quarks.');
+        'Solve questions to earn 25 more quarks.');
     expect(params.isDrawing, isFalse);
   });
 
@@ -106,11 +106,11 @@ void main() {
 
   test('the shortfall says how to earn more', () {
     expect(CollectionPresenter.quarksShortLabel(40),
-        '40 more quarks to draw. Answer questions to earn quarks.');
+        'Solve questions to earn 40 more quarks.');
     expect(CollectionPresenter.quarksShortLabel(1),
-        '1 more quark to draw. Answer questions to earn quarks.');
+        'Solve questions to earn 1 more quark.');
     expect(CollectionPresenter.quarksShortLabel(25),
-        '25 more quarks to draw. Answer questions to earn quarks.');
+        'Solve questions to earn 25 more quarks.');
   });
 
   test('the empty deck is told when a draw is in flight', () {

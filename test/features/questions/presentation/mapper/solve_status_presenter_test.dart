@@ -18,16 +18,11 @@ void main() {
     );
   });
 
-  test('while solving, says how long it can take and that it opens by itself',
-      () {
+  test('while solving, says to keep the page open', () {
     final content = solveStatusContentFor(const AskByPhotoLoading());
 
-    expect(content.title, 'Solving your photo');
-    expect(
-      content.body,
-      'This can take from a few seconds to a few minutes. Keep this page '
-      "open and your solution opens as soon as it's ready.",
-    );
+    expect(content.title, 'Solving your question');
+    expect(content.body, 'Keep this page open.');
   });
 
   test('a photo still being solved offers to try again', () {
@@ -35,9 +30,8 @@ void main() {
       AskByPhotoStillSolving(imageBytes: bytes, idempotencyKey: 'photo-key-1'),
     );
 
-    expect(content.title, 'Your last photo is still being solved');
-    expect(content.body,
-        'Try again in a moment. Your photo is still here, so you can send it again.');
+    expect(content.title, 'Still solving your last photo');
+    expect(content.body, 'Your photo is still here. Try again in a moment.');
     expect(content.canRetry, isTrue);
     expect(content.showRetake, isFalse);
   });
@@ -165,8 +159,8 @@ void main() {
 
   group('error copy', () {
     for (final (cause, title) in [
-      (SolveErrorCause.network, 'Could not reach the solver'),
-      (SolveErrorCause.server, 'The solver ran into a problem'),
+      (SolveErrorCause.network, "Can't connect"),
+      (SolveErrorCause.server, 'Something broke on our side'),
       (SolveErrorCause.unknown, 'Something went wrong'),
     ]) {
       test('a $cause failure is titled "$title"', () {
@@ -178,6 +172,27 @@ void main() {
         expect(content.title, title);
       });
     }
+
+    test("no problem message uses the server's words", () {
+      final states = <AskByPhotoState>[
+        AskByPhotoUnreadable(questionId: 'q', imageBytes: Uint8List(1)),
+        AskByPhotoNotAQuestion(questionId: 'q', imageBytes: Uint8List(1)),
+        AskByPhotoTimeout(questionId: 'q', imageBytes: Uint8List(1)),
+        const AskByPhotoTimeout(questionId: 'q'),
+        AskByPhotoStillSolving(
+            imageBytes: Uint8List(1), idempotencyKey: 'photo-key-1'),
+        for (final cause in SolveErrorCause.values)
+          AskByPhotoNetworkError('Please try again.',
+              cause: cause, imageBytes: Uint8List(1)),
+      ];
+      for (final state in states) {
+        final content = solveStatusContentFor(state);
+        final words = '${content.title} ${content.body}'.toLowerCase();
+        for (final word in ['accepted', 'received', 'solver']) {
+          expect(words, isNot(contains(word)), reason: '$state says "$word"');
+        }
+      }
+    });
 
     test('no copy offers typing the question', () {
       final states = <AskByPhotoState>[

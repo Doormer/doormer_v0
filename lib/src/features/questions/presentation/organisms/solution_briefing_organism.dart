@@ -23,16 +23,6 @@ class SolutionBriefingOrganism extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'BRIEFING',
-            style: TextStyle(
-              fontSize: 10.sp,
-              letterSpacing: 1.8,
-              fontWeight: FontWeight.w700,
-              color: QuestPalette.pink,
-            ),
-          ),
-          SizedBox(height: 6.h),
           Row(
             children: [
               Icon(Icons.flag_rounded, size: 17.sp, color: QuestPalette.violet),

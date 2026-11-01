@@ -67,7 +67,7 @@ void main() {
 
     expect(find.text('Crop & rotate'), findsOneWidget);
     expect(
-      find.text('Drag the corners so only the question is inside the box.'),
+      find.text('Keep only the question inside the box.'),
       findsOneWidget,
     );
     expect(find.byTooltip('Turn left'), findsOneWidget);

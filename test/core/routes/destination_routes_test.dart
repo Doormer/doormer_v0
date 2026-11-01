@@ -773,7 +773,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    // The button promises a solve, so a second tap on UPLOAD & SOLVE would be
+    // The button promises a solve, so a second tap on Add a photo would be
     // one too many.
     testWidgets('Solve a question opens Solve with the photo options up',
         (tester) async {

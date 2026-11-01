@@ -246,7 +246,7 @@ void main() {
           selectedDeckId: 'meridian',
           collection: _meridian,
         ));
-    expect(find.text('1 more quark to draw. Answer questions to earn quarks.'),
+    expect(find.text('Solve questions to earn 1 more quark.'),
         findsOneWidget);
   });
 
@@ -261,7 +261,7 @@ void main() {
           collection: _meridian,
         ));
     expect(
-        find.text('25 more quarks to draw. Answer questions to earn quarks.'),
+        find.text('Solve questions to earn 25 more quarks.'),
         findsOneWidget);
     expect(tester.widget<AppButtonAtom>(find.byType(AppButtonAtom)).onPressed,
         isNull);

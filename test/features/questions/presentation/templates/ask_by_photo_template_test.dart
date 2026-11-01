@@ -60,13 +60,13 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('UPLOAD & SOLVE'));
+    await tester.tap(find.text('Add a photo'));
     expect(pickCount, 1);
     expect(submitCount, 0);
   });
 
   testWidgets(
-      'UPLOAD & SOLVE CTA uses accent variant for contrast on primary scaffold',
+      'Add a photo CTA uses accent variant for contrast on primary scaffold',
       (tester) async {
     tester.view.physicalSize = const Size(360, 690);
     tester.view.devicePixelRatio = 1;
@@ -100,7 +100,7 @@ void main() {
     );
 
     final btnFinder = find.byWidgetPredicate(
-      (w) => w is AppButtonAtom && w.label == 'UPLOAD & SOLVE',
+      (w) => w is AppButtonAtom && w.label == 'Add a photo',
     );
     expect(btnFinder, findsOneWidget);
     final btn = tester.widget<AppButtonAtom>(btnFinder);
@@ -166,7 +166,7 @@ void main() {
     );
 
     expect(find.text('Preparing your photo…'), findsOneWidget);
-    expect(find.text('UPLOAD & SOLVE'), findsNothing);
+    expect(find.text('Add a photo'), findsNothing);
 
     final buttons = tester.widgetList<AppButtonAtom>(find.descendant(
       of: find.byType(PhotoUploadPanelOrganism),
@@ -192,7 +192,7 @@ void main() {
       expect(find.byType(SolvingProgressOrganism), findsOneWidget);
       expect(find.byType(SolvingExplanationMolecule), findsOneWidget);
       expect(find.text("What's happening"), findsOneWidget);
-      expect(find.text('Upload a photo'), findsNothing);
+      expect(find.text('Snap it. Solve it.'), findsNothing);
       expect(find.byType(PhotoUploadPanelOrganism), findsNothing);
       expect(find.byType(SolveStatusPanelOrganism), findsNothing);
     });
@@ -249,7 +249,7 @@ void main() {
       expect(
         tester.getBottomLeft(find.text('Why ads?')).dy,
         lessThanOrEqualTo(
-          tester.getTopLeft(find.textContaining('A powerful AI')).dy,
+          tester.getTopLeft(find.textContaining('Our AI is working')).dy,
         ),
         reason: 'a link right beside the ad invites accidental taps on it, '
             'and Google could read the wording as part of the ad',
@@ -267,11 +267,7 @@ void main() {
 
       final illustration = tester.getRect(_starterIllustrationFinder());
       expect(
-        illustration.overlaps(tester.getRect(find.text('Upload a photo'))),
-        isFalse,
-      );
-      expect(
-        illustration.overlaps(tester.getRect(find.text('Ready to solve?'))),
+        illustration.overlaps(tester.getRect(find.text('Snap it. Solve it.'))),
         isFalse,
       );
     });
@@ -292,11 +288,11 @@ void main() {
       (tester) async {
     await _pumpTemplate(tester, window: const Size(390, 844));
 
-    final uploadHeading = tester.widget<Text>(find.text('Upload a photo'));
+    final uploadHeading = tester.widget<Text>(find.text('Snap it. Solve it.'));
     expect(uploadHeading.style?.fontFamily, kDisplayFont);
 
     final buttonParagraph =
-        tester.renderObject<RenderParagraph>(find.text('UPLOAD & SOLVE'));
+        tester.renderObject<RenderParagraph>(find.text('Add a photo'));
     final buttonText = buttonParagraph.text as TextSpan;
     final buttonStyle = buttonText.style;
     final usesBodyFont = buttonStyle?.fontFamily == kBodyFont ||
@@ -314,31 +310,33 @@ void main() {
       isReached: true,
     );
 
-    AppButtonAtom uploadAndSolve(WidgetTester tester) =>
+    AppButtonAtom addPhotoButton(WidgetTester tester) =>
         tester.widget<AppButtonAtom>(find.byWidgetPredicate(
-          (w) => w is AppButtonAtom && w.label == 'UPLOAD & SOLVE',
+          (w) => w is AppButtonAtom && w.label == 'Add a photo',
         ));
 
     testWidgets('the hero shows the questions left today', (tester) async {
       await _pumpTemplate(tester, window: phone, dailyLimit: threeLeft);
 
       expect(find.text('3 questions left today'), findsOneWidget);
-      expect(uploadAndSolve(tester).onPressed, isNotNull);
+      expect(addPhotoButton(tester).onPressed, isNotNull);
     });
 
     testWidgets(
         'with none left, the hero says when they come back and '
-        'UPLOAD & SOLVE is off', (tester) async {
+        'Add a photo is off', (tester) async {
       await _pumpTemplate(tester, window: phone, dailyLimit: noneLeft);
 
       expect(
         find.text("You've used today's questions. They reset at midnight."),
         findsOneWidget,
       );
-      expect(uploadAndSolve(tester).onPressed, isNull);
+      expect(addPhotoButton(tester).onPressed, isNull);
     });
 
-    testWidgets('the panels show the count under the heading', (tester) async {
+    testWidgets(
+        'the photo screen leads with the count and does not repeat the '
+        'start heading', (tester) async {
       await _pumpTemplate(
         tester,
         window: phone,
@@ -348,14 +346,11 @@ void main() {
 
       final count = find.text('3 questions left today');
       expect(count, findsOneWidget);
-      expect(
-        tester.getTopLeft(count).dy,
-        greaterThan(tester.getTopLeft(find.text('Upload a photo')).dy),
-      );
+      expect(find.text('Snap it. Solve it.'), findsNothing);
       expect(
         tester.getTopLeft(count).dy,
         lessThan(tester.getTopLeft(find.byType(PhotoUploadPanelOrganism)).dy),
-        reason: 'the count sits with the heading, above the photo',
+        reason: 'the count sits above the photo',
       );
     });
 

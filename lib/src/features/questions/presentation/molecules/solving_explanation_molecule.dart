@@ -56,8 +56,8 @@ class SolvingExplanationMolecule extends StatelessWidget {
           Padding(
             padding: EdgeInsets.only(left: iconSize + iconGap),
             child: Text(
-              'A powerful AI is reading your photo and working through '
-              'the question step by step. Harder questions take longer.',
+              'Our AI is working out every step. '
+              'Tricky ones can take a few minutes.',
               style: tt.bodyMedium?.copyWith(fontSize: 14.sp),
             ),
           ),
