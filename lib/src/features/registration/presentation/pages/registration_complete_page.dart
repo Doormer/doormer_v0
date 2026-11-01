@@ -1,78 +1,67 @@
 import 'package:doormer/src/core/config/app_config.dart';
 import 'package:doormer/src/core/theme/app_theme_context.dart';
-import 'package:flutter/gestures.dart';
+import 'package:doormer/src/core/utils/app_logger.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:flutter/material.dart';
-
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// Where a signed-in student lands after log-in or registration: a welcome,
+/// the way into Solve, and the beta survey.
 class RegistrationCompletePage extends StatelessWidget {
-  const RegistrationCompletePage({super.key});
+  /// Opens the survey. Defaults to the browser; tests pass a fake.
+  final Future<bool> Function(Uri url) openSurvey;
 
-  Future<void> _launchSurvey() async {
-    final Uri url = Uri.parse(AppConfig.surveyURL);
-    if (!await launchUrl(url)) {
-      throw 'Could not launch $url';
+  const RegistrationCompletePage({super.key, this.openSurvey = launchUrl});
+
+  Future<void> _openSurvey() async {
+    final url = Uri.parse(AppConfig.surveyURL);
+    if (!await openSurvey(url)) {
+      AppLogger.warn('Could not open the survey at $url');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = context.colorScheme;
+    final tt = context.textTheme;
 
     return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              style: TextStyle(fontSize: 18, color: cs.onSurface),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 32.h),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const TextSpan(
-                  text: "Registration complete.\n\n",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.normal,
-                  ),
+                Text(
+                  "You're in!",
+                  textAlign: TextAlign.center,
+                  style: tt.headlineMedium,
                 ),
-                const TextSpan(
-                  style: TextStyle(
-                    fontSize: 16,
-                  ),
-                  text: "Please access the beta version through ",
+                SizedBox(height: 8.h),
+                Text(
+                  'Your next quest starts with a photo.',
+                  textAlign: TextAlign.center,
+                  style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant),
                 ),
-                const TextSpan(
-                  text: "email",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                SizedBox(height: 24.h),
+                AppButtonAtom(
+                  label: 'Solve a question',
+                  icon: Icons.camera_alt,
+                  variant: AppButtonVariant.accent,
+                  onPressed: () => context.go('/questions/photo'),
                 ),
-                const TextSpan(
-                  style: TextStyle(
-                    fontSize: 16,
-                  ),
-                  text: " or ",
+                SizedBox(height: 40.h),
+                Text(
+                  'Got 2 minutes? Help us make Doormer better.',
+                  textAlign: TextAlign.center,
+                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
                 ),
-                const TextSpan(
-                  text: "www.doormer.com",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const TextSpan(
-                  text: ".\n\n\n\n",
-                ),
-                const TextSpan(
-                  style: TextStyle(
-                    fontSize: 16,
-                  ),
-                  text:
-                      "We'd appreciate it if you could take a moment to complete a short survey (1–2 minutes) to help us improve your experience.\n\n ",
-                ),
-                TextSpan(
-                  text: "Take our survey",
-                  style: TextStyle(
-                    color: cs.primary,
-                    fontSize: 16,
-                    decoration: TextDecoration.underline,
-                  ),
-                  recognizer: TapGestureRecognizer()..onTap = _launchSurvey,
+                TextButton(
+                  onPressed: _openSurvey,
+                  child: const Text('Take the survey'),
                 ),
               ],
             ),
