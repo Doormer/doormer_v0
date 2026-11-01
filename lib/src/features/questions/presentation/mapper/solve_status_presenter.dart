@@ -115,7 +115,7 @@ SolveStatusContent solveStatusContentFor(AskByPhotoState state,
   if (state is AskByPhotoLoading) {
     return const SolveStatusContent(
       title: 'Solving your question',
-      body: 'Keep this page open. Your solution opens by itself.',
+      body: 'Keep this page open.',
       showActions: false,
     );
   }

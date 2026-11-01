@@ -14,17 +14,6 @@ class AskByPhotoHeaderMolecule extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
-          'Stuck on a question?',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontFamily: kDisplayFont,
-            color: onSurface,
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        SizedBox(height: 24.h),
-        Text(
           'Snap it. Solve it.',
           textAlign: TextAlign.center,
           style: TextStyle(

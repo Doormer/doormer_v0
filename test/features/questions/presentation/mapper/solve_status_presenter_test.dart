@@ -18,11 +18,11 @@ void main() {
     );
   });
 
-  test('while solving, says to stay and that it opens by itself', () {
+  test('while solving, says to keep the page open', () {
     final content = solveStatusContentFor(const AskByPhotoLoading());
 
     expect(content.title, 'Solving your question');
-    expect(content.body, 'Keep this page open. Your solution opens by itself.');
+    expect(content.body, 'Keep this page open.');
   });
 
   test('a photo still being solved offers to try again', () {

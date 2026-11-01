@@ -454,7 +454,6 @@ void main() {
     // The idle landing screen is a single-CTA hero: the upload and status
     // panels stay unmounted until there is a photo, a solve in flight, or a
     // recoverable failure.
-    expect(find.text('Stuck on a question?'), findsOneWidget);
     expect(find.text('Snap it. Solve it.'), findsOneWidget);
     expect(find.text('Add a photo'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Solve it'), findsNothing);
@@ -656,7 +655,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pump(const Duration(milliseconds: 700));
     expect(
-        find.text('Still preparing your photo. One moment.'), findsOneWidget);
+        find.text('Still preparing your photo.'), findsOneWidget);
     expect(find.text('Choose from gallery'), findsNothing);
 
     preparer.pending!.complete(_preparedJpeg);
@@ -702,7 +701,7 @@ void main() {
 
     expect(fileInput.pickedFromCamera, [false]);
     expect(preparer.prepared, isEmpty);
-    expect(find.text('Stuck on a question?'), findsOneWidget);
+    expect(find.text('Snap it. Solve it.'), findsOneWidget);
     await drainToasts(tester);
   });
 

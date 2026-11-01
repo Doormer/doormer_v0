@@ -145,17 +145,17 @@ class AskByPhotoTemplate extends StatelessWidget {
   Widget _buildSolvePanels(bool showUploadPanel, bool showStatusPanel) {
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
+      // No heading here: the start screen already said what this is, and the
+      // photo panel names itself.
       child: Column(
         children: [
-          const AskByPhotoHeaderMolecule(),
           if (dailyLimit case final limit?) ...[
-            SizedBox(height: 12.h),
             QuestionsLeftMolecule(
               text: limit.text,
               isReached: limit.isReached,
             ),
+            SizedBox(height: 16.h),
           ],
-          SizedBox(height: 24.h),
           if (showUploadPanel) ...[
             PhotoUploadPanelOrganism(params: uploadParams),
             SizedBox(height: 16.h),

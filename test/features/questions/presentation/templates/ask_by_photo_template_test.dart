@@ -249,7 +249,7 @@ void main() {
       expect(
         tester.getBottomLeft(find.text('Why ads?')).dy,
         lessThanOrEqualTo(
-          tester.getTopLeft(find.textContaining('Our AI is reading')).dy,
+          tester.getTopLeft(find.textContaining('Our AI is working')).dy,
         ),
         reason: 'a link right beside the ad invites accidental taps on it, '
             'and Google could read the wording as part of the ad',
@@ -268,10 +268,6 @@ void main() {
       final illustration = tester.getRect(_starterIllustrationFinder());
       expect(
         illustration.overlaps(tester.getRect(find.text('Snap it. Solve it.'))),
-        isFalse,
-      );
-      expect(
-        illustration.overlaps(tester.getRect(find.text('Stuck on a question?'))),
         isFalse,
       );
     });
@@ -338,7 +334,9 @@ void main() {
       expect(addPhotoButton(tester).onPressed, isNull);
     });
 
-    testWidgets('the panels show the count under the heading', (tester) async {
+    testWidgets(
+        'the photo screen leads with the count and does not repeat the '
+        'start heading', (tester) async {
       await _pumpTemplate(
         tester,
         window: phone,
@@ -348,14 +346,11 @@ void main() {
 
       final count = find.text('3 questions left today');
       expect(count, findsOneWidget);
-      expect(
-        tester.getTopLeft(count).dy,
-        greaterThan(tester.getTopLeft(find.text('Snap it. Solve it.')).dy),
-      );
+      expect(find.text('Snap it. Solve it.'), findsNothing);
       expect(
         tester.getTopLeft(count).dy,
         lessThan(tester.getTopLeft(find.byType(PhotoUploadPanelOrganism)).dy),
-        reason: 'the count sits with the heading, above the photo',
+        reason: 'the count sits above the photo',
       );
     });
 
