@@ -24,7 +24,7 @@ class PhotoUploadPanelOrganism extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Photo input',
+            'Your question',
             style: tt.titleLarge?.copyWith(fontSize: 20.sp),
           ),
           SizedBox(height: 16.h),
@@ -56,7 +56,10 @@ class PhotoUploadPanelOrganism extends StatelessWidget {
             variant: AppButtonVariant.accent,
             expand: true,
             isLoading: params.isLoading,
-            onPressed: hasPhoto && !params.isLoading && !isPreparing
+            onPressed: hasPhoto &&
+                    !params.isLoading &&
+                    !isPreparing &&
+                    !params.isBlockedByDailyLimit
                 ? params.onSubmit
                 : null,
           ),

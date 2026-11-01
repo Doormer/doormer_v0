@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
+import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_questions_page.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
@@ -36,8 +37,12 @@ class _FakeRepository implements QuestionsRepository {
   Future<PhotoQuestionSolveOutcome> submitPhotoQuestion({
     required Uint8List imageBytes,
     required String contentType,
+    required String idempotencyKey,
   }) =>
       throw UnimplementedError();
+
+  @override
+  Future<DailyLimit> loadDailyLimit() => throw UnimplementedError();
 }
 
 void main() {

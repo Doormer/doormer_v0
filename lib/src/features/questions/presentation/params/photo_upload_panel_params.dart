@@ -11,6 +11,11 @@ class PhotoUploadPanelParams {
   /// submitted until it is ready.
   final bool isPreparing;
 
+  /// No questions are left today, and sending the photo on screen could not
+  /// bring back an answer the student hasn't seen: Submit stays off, whatever
+  /// else holds.
+  final bool isBlockedByDailyLimit;
+
   /// Button labels, resolved above this layer because they change with state —
   /// including whether the submit button is sending or resending.
   final PhotoUploadCopy copy;
@@ -29,6 +34,7 @@ class PhotoUploadPanelParams {
     required this.isLoading,
     this.showWhenEmpty = false,
     this.isPreparing = false,
+    this.isBlockedByDailyLimit = false,
     required this.copy,
     required this.onPickPhoto,
     required this.onSubmit,

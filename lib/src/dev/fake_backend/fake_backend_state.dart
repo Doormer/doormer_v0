@@ -193,6 +193,15 @@ class FakeBackendState {
   /// Newest first.
   final List<FakeSolvedQuestion> solvedQuestions;
 
+  /// Photos started and questions solved today, and when today ends. The
+  /// questions routes start a new day once [dayEndsAt] has passed.
+  int photosSentToday = 0;
+  int questionsSolvedToday = 0;
+  DateTime? dayEndsAt;
+
+  /// The `Idempotency-Key` of the photo being solved, if one is.
+  String? solvingKey;
+
   final FakeFriends friends;
 
   int _lastQuestionNumber = 1000;

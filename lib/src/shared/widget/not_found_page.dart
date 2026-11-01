@@ -29,12 +29,6 @@ class NotFoundPage extends StatelessWidget {
                   style: context.textTheme.headlineMedium,
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(height: 8.h),
-                Text(
-                  "This page doesn't exist or has moved.",
-                  style: context.textTheme.bodyMedium,
-                  textAlign: TextAlign.center,
-                ),
                 SizedBox(height: 24.h),
                 AppButtonAtom(label: 'Go home', onPressed: onGoHome),
               ],

@@ -45,7 +45,7 @@ To check the UI in a real browser, follow `.agents/skills/browser-testing/SKILL.
 
 ### Running without the backend
 
-`lib/main_fake_backend.dart` starts the app as `main.dart` does, then answers every API request from a fake backend held in memory (`lib/src/dev/fake_backend/`), so `taka-api` isn't needed. Any email and password signs in, as one student with quarks, cards, saved questions and friends. Signing up instead gives a student with no friend profile, for trying friends setup. The data starts over on every page reload. To change an answer, edit its route in `lib/src/dev/fake_backend/routes/`. Production builds use `lib/main.dart`, which never imports any of it. Google sign-in, the camera and ads don't go through it.
+`lib/main_fake_backend.dart` starts the app as `main.dart` does, then answers every API request from a fake backend held in memory (`lib/src/dev/fake_backend/`), so `taka-api` isn't needed. Any email and password signs in, as one student with quarks, cards, saved questions and friends. Signing up instead gives a student with no friend profile, for trying friends setup. Each day allows 5 questions and 20 photos, as the API does, and ends at the device's midnight. The data starts over on every page reload. To change an answer, edit its route in `lib/src/dev/fake_backend/routes/`. Production builds use `lib/main.dart`, which never imports any of it. Google sign-in, the camera and ads don't go through it.
 
 ## Architecture — Clean Architecture
 
@@ -61,7 +61,7 @@ lib/src/
 ├── features/<feature>/
 │   ├── di/            # GetIt module for this feature
 │   ├── data/          # datasource/ (Remote + Local), model/ (DTOs), repository/ (impl)
-│   ├── domain/        # entity/, repository/ (abstract), usecase/
+│   ├── domain/        # entity/, failure/ (the feature's own Failure types), repository/ (abstract), usecase/
 │   ├── presentation/  # bloc/, pages/, widget/
 │   └── utils/         # feature-level helpers and validators
 └── shared/     # cross-feature code: user/ (User entity + model), sessions/ (GlobalSessionBloc), widget/
@@ -82,7 +82,7 @@ lib/src/
 - Use `part` directives to split event/state files from the BLoC file.
 - Handler naming: `on<EventName>(_onEventName)` — private async methods.
 - State flow: emit `Loading` → `Success` or an **error state**.
-- **Error states use the `XxxError` suffix** (e.g., `AuthError`), NOT `XxxFailure`. `XxxFailure` names are reserved for the domain `Failure` types in `core/errors/failure.dart` — using them as state names creates a collision.
+- **Error states use the `XxxError` suffix** (e.g., `AuthError`), NOT `XxxFailure`. `XxxFailure` names are reserved for the domain `Failure` types, in `core/errors/failure.dart` and a feature's `domain/failure/` — using them as state names creates a collision.
 - BLoC error handling: catch typed `Failure` first, then a generic fallback. Always log in both branches:
   ```dart
   } on Failure catch (f, stackTrace) {
@@ -120,7 +120,7 @@ lib/src/
 
 ### Error Handling
 
-Typed `Failure` hierarchy in `core/errors/failure.dart` (pure Dart): `NetworkFailure`, `ServerFailure`, `ApiFailure(statusCode, message)`, `RefusedFailure(statusCode, message)`, `AuthFailure`, `ValidationFailure`, `DatabaseFailure`, `UnknownFailure`. `Failure.toString()` returns its `message`. A data source that words a 4xx itself, as the friends data sources do for each status the API refuses with, throws `RefusedFailure`: unlike `ApiFailure`, its message is shown as it is, and a bloc can tell the statuses apart.
+Typed `Failure` hierarchy in `core/errors/failure.dart` (pure Dart): `NetworkFailure`, `ServerFailure`, `ApiFailure(statusCode, message)`, `RefusedFailure(statusCode, message)`, `AuthFailure`, `ValidationFailure`, `DatabaseFailure`, `UnknownFailure`. `Failure.toString()` returns its `message`. A data source that words a 4xx itself, as the friends data sources do for each status the API refuses with, throws `RefusedFailure`: unlike `ApiFailure`, its message is shown as it is, and a bloc can tell the statuses apart. A feature can add its own `Failure` subclasses in `domain/failure/`, such as the questions feature's `DailyLimitReachedFailure` and `PhotoBeingSolvedFailure`, which its bloc catches before the generic `Failure`.
 
 Rules:
 

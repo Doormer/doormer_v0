@@ -1,4 +1,5 @@
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/mapper/daily_limit_presenter.dart';
 
 class SolveStatusContent {
   final String title;
@@ -29,9 +30,11 @@ class SolveStatusContent {
   bool get showRetake => showActions && !photoOnScreen;
 }
 
-/// Pure function mapping a bloc state to the status-panel display copy.
-/// Page-invoked only — no presentational widget imports this.
-SolveStatusContent solveStatusContentFor(AskByPhotoState state) {
+/// Pure function mapping a bloc state to the status-panel display copy. It
+/// reads the device clock unless [now] is given. Page-invoked only — no
+/// presentational widget imports this.
+SolveStatusContent solveStatusContentFor(AskByPhotoState state,
+    {DateTime? now}) {
   // A retry needs both a reason to expect a different answer and a photo left
   // to send. `AskByPhotoValidationError` has neither, which is why it is not
   // an `AskByPhotoSolveFailed`.
@@ -41,30 +44,49 @@ SolveStatusContent solveStatusContentFor(AskByPhotoState state) {
 
   if (state is AskByPhotoUnreadable) {
     return SolveStatusContent(
-      title: 'We could not read it',
-      body:
-          'The photo was accepted, but the question was too blurry, cropped, or dark to solve. Retake it with the whole question in frame.',
+      title: "Couldn't read that photo",
+      body: 'It may be blurry, dark or cut off. '
+          'Retake it with the whole question in frame.',
       showActions: true,
       photoOnScreen: photoOnScreen,
     );
   }
   if (state is AskByPhotoNotAQuestion) {
     return SolveStatusContent(
-      title: 'This does not look like a question',
-      body:
-          'The image was received, but it did not contain a question we can solve. Retake it with the question clearly in frame.',
+      title: 'No question found',
+      body: 'Retake it with the question clearly in frame.',
       showActions: true,
       photoOnScreen: photoOnScreen,
     );
   }
   if (state is AskByPhotoTimeout) {
     return SolveStatusContent(
-      title: 'Solver timed out',
+      title: 'That took too long',
       body: canRetry
-          ? 'The solver took too long on this photo. Your photo is still here — try again, or retake a sharper image.'
-          : 'The solver took too long on this photo. Retake a sharper image and try again.',
+          ? 'Your photo is still here. Try again, or retake a sharper one.'
+          : 'Retake a sharper photo and try again.',
       showActions: true,
       canRetry: canRetry,
+      photoOnScreen: photoOnScreen,
+    );
+  }
+  if (state is AskByPhotoStillSolving) {
+    return SolveStatusContent(
+      title: 'Still solving your last photo',
+      body: canRetry
+          ? 'Your photo is still here. Try again in a moment.'
+          : 'Try again in a moment.',
+      showActions: true,
+      canRetry: canRetry,
+      photoOnScreen: photoOnScreen,
+    );
+  }
+  if (state is AskByPhotoLimitReached) {
+    final resetsAt = resetMomentLabel(state.dailyLimit.resetsAt, now: now);
+    return SolveStatusContent(
+      title: "You've used today's questions",
+      body: 'Your photo is still here. Send it after they reset $resetsAt.',
+      showActions: true,
       photoOnScreen: photoOnScreen,
     );
   }
@@ -78,12 +100,12 @@ SolveStatusContent solveStatusContentFor(AskByPhotoState state) {
   if (state is AskByPhotoNetworkError) {
     return SolveStatusContent(
       title: switch (state.cause) {
-        SolveErrorCause.network => 'Could not reach the solver',
-        SolveErrorCause.server => 'The solver ran into a problem',
+        SolveErrorCause.network => "Can't connect",
+        SolveErrorCause.server => 'Something broke on our side',
         SolveErrorCause.unknown => 'Something went wrong',
       },
       body: canRetry
-          ? '${state.message} Your photo is still here, so you can send it again.'
+          ? '${state.message} Your photo is still here.'
           : state.message,
       showActions: true,
       canRetry: canRetry,
@@ -92,9 +114,8 @@ SolveStatusContent solveStatusContentFor(AskByPhotoState state) {
   }
   if (state is AskByPhotoLoading) {
     return const SolveStatusContent(
-      title: 'Solving your photo',
-      body: 'This can take from a few seconds to a few minutes. Keep this '
-          "page open and your solution opens as soon as it's ready.",
+      title: 'Solving your question',
+      body: 'Keep this page open.',
       showActions: false,
     );
   }

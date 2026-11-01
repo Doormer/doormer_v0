@@ -16,7 +16,7 @@ void main() {
   test('names the send button by whether it is a resend', () {
     expect(
       photoUploadCopyFor(hasPhoto: true, isRetry: false).submitLabel,
-      'Submit to solver',
+      'Solve it',
     );
     expect(
       photoUploadCopyFor(hasPhoto: true, isRetry: true).submitLabel,

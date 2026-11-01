@@ -1,3 +1,5 @@
+import 'package:doormer/src/core/utils/app_logger.dart';
+import 'package:doormer/src/features/questions/data/model/daily_limit_model.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 
 class PhotoQuestionResponseModel {
@@ -7,6 +9,7 @@ class PhotoQuestionResponseModel {
   final String note;
   final String topic;
   final String method;
+  final DailyLimitModel? dailyLimit;
 
   const PhotoQuestionResponseModel({
     required this.status,
@@ -15,6 +18,7 @@ class PhotoQuestionResponseModel {
     this.note = '',
     this.topic = '',
     this.method = '',
+    this.dailyLimit,
   });
 
   factory PhotoQuestionResponseModel.fromJson(Map<String, dynamic> json) {
@@ -35,6 +39,7 @@ class PhotoQuestionResponseModel {
       note: json['note']?.toString() ?? '',
       topic: json['topic']?.toString() ?? '',
       method: json['method']?.toString() ?? '',
+      dailyLimit: _readDailyLimit(json['daily_limit']),
     );
   }
 
@@ -46,7 +51,23 @@ class PhotoQuestionResponseModel {
       note: note,
       topic: topic,
       method: method,
+      dailyLimit: dailyLimit?.toEntity(),
     );
+  }
+
+  /// The questions left after this ask. Only the ask route sends it. One that
+  /// can't be read is dropped rather than failing the answer with it: Solve
+  /// then reads the count itself.
+  static DailyLimitModel? _readDailyLimit(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    try {
+      return DailyLimitModel.fromJson(json);
+    } on FormatException catch (e) {
+      // Only the reason, never the body: the answer may carry a solution.
+      AppLogger.warn("The answer's daily_limit could not be read, so it was "
+          'dropped: ${e.message}');
+      return null;
+    }
   }
 
   static PhotoQuestionSolveStatus _parseStatus(String? status) {

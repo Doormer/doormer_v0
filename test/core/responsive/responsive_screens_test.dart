@@ -15,15 +15,18 @@ import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/domain/entity/answer_reward.dart';
+import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_questions_page.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_daily_limit_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_question_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/bloc/daily_limit_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/mapper/solution_reader_presenter.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
@@ -40,8 +43,14 @@ class _FakeQuestionsRepository implements QuestionsRepository {
   Future<PhotoQuestionSolveOutcome> submitPhotoQuestion({
     required Uint8List imageBytes,
     required String contentType,
+    required String idempotencyKey,
   }) =>
       Completer<PhotoQuestionSolveOutcome>().future;
+
+  // Solve asks for the count when it opens. These tests are not about it, so
+  // it never arrives and Solve shows none.
+  @override
+  Future<DailyLimit> loadDailyLimit() => Completer<DailyLimit>().future;
 
   @override
   Future<PhotoQuestionSolveOutcome> loadSampleSolution() =>
@@ -112,6 +121,11 @@ void main() {
       submitPhotoQuestionUseCase: SubmitPhotoQuestionUseCase(repository),
     );
     serviceLocator.registerFactory<AskByPhotoBloc>(() => bloc);
+    serviceLocator.registerFactory<DailyLimitBloc>(
+      () => DailyLimitBloc(
+        loadDailyLimitUseCase: LoadDailyLimitUseCase(repository),
+      ),
+    );
     serviceLocator.registerFactory<SolutionReaderBloc>(
       () => SolutionReaderBloc(
         loadSampleSolutionUseCase: LoadSampleSolutionUseCase(repository),
@@ -146,8 +160,8 @@ void main() {
       expect(tester.takeException(), isNull);
 
       // The hero must be reachable, not pushed off the painted column.
-      expect(find.text('UPLOAD & SOLVE'), findsOneWidget);
-      final heroWidth = tester.getSize(find.text('UPLOAD & SOLVE')).width;
+      expect(find.text('Add a photo'), findsOneWidget);
+      final heroWidth = tester.getSize(find.text('Add a photo')).width;
       expect(heroWidth, lessThanOrEqualTo(AppLayout.maxContentWidth));
     });
 
@@ -199,7 +213,7 @@ void main() {
       // matches the exact runtime type.
       buttonWidths[entry.key] = tester
           .getSize(find.ancestor(
-            of: find.text('UPLOAD & SOLVE'),
+            of: find.text('Add a photo'),
             matching: find.byType(AppButtonAtom),
           ))
           .width;
@@ -213,7 +227,7 @@ void main() {
       await tester.pump();
 
       headingHeights[entry.key] =
-          tester.getSize(find.text('Photo input')).height;
+          tester.getSize(find.text('Your question')).height;
     }
 
     void expectNoZoom(String what, Map<String, double> measured) {

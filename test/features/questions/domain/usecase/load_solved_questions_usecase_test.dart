@@ -1,3 +1,4 @@
+import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_questions_page.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_solved_questions_usecase.dart';
@@ -15,6 +16,9 @@ class _RecordingRepository implements QuestionsRepository {
     this.cursor = cursor;
     return page;
   }
+
+  @override
+  Future<DailyLimit> loadDailyLimit() => throw UnimplementedError();
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>

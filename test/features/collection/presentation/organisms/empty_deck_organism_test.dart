@@ -31,7 +31,7 @@ Widget _host(Widget child) => ScreenUtilInit(
 
 /// The default 800x600 test viewport is wider than the 360 design canvas, so
 /// ScreenUtil overscales every dimension and this tall screen (closed deck +
-/// headline + count + chips + button + shortfall line) overflows before an
+/// count + chips + button + shortfall line) overflows before an
 /// assertion ever sees the real layout. Match the design canvas so the test
 /// measures the widget, not the harness.
 void _pinDesignViewport(WidgetTester tester) {
@@ -42,12 +42,6 @@ void _pinDesignViewport(WidgetTester tester) {
 }
 
 void main() {
-  testWidgets('says nothing here yet, which is not a failure', (tester) async {
-    _pinDesignViewport(tester);
-    await tester.pumpWidget(_host(EmptyDeckOrganism(params: _params())));
-    expect(find.text('Nothing here yet'), findsOneWidget);
-  });
-
   testWidgets('states the deck size in digits', (tester) async {
     _pinDesignViewport(tester);
     await tester.pumpWidget(_host(EmptyDeckOrganism(params: _params())));

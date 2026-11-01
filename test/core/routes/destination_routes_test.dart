@@ -58,10 +58,12 @@ import 'package:doormer/src/features/profile/presentation/pages/blocked_students
 import 'package:doormer/src/features/profile/presentation/pages/friend_setup_page.dart';
 import 'package:doormer/src/features/profile/presentation/pages/profile_page.dart';
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
+import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_question_summary.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_questions_page.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
+import 'package:doormer/src/features/questions/domain/usecase/load_daily_limit_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_question_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
@@ -69,6 +71,7 @@ import 'package:doormer/src/features/questions/domain/usecase/load_solved_questi
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/ask_by_photo_bloc.dart';
+import 'package:doormer/src/features/questions/presentation/bloc/daily_limit_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/saved_questions_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
@@ -87,11 +90,17 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/profile/fake_friends_repository.dart';
 
-/// Never asked anything: the Solve page only opens here.
+/// Solve asks it for the count, which never arrives, and nothing else: the
+/// Solve page only opens here.
 class _UnusedQuestionsRepository implements QuestionsRepository {
   @override
   Future<PhotoQuestionSolveOutcome> loadQuestion(String questionId) =>
       throw UnimplementedError();
+
+  // Solve asks for the count when it opens. These tests are not about it, so
+  // it never arrives and Solve shows none.
+  @override
+  Future<DailyLimit> loadDailyLimit() => Completer<DailyLimit>().future;
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>
@@ -237,6 +246,7 @@ class _SolutionsRepository implements QuestionsRepository {
   Future<PhotoQuestionSolveOutcome> submitPhotoQuestion({
     required Uint8List imageBytes,
     required String contentType,
+    required String idempotencyKey,
   }) {
     photosSent++;
     return (solve = Completer()).future;
@@ -295,6 +305,12 @@ void main() {
       () => AskByPhotoBloc(
         submitPhotoQuestionUseCase:
             SubmitPhotoQuestionUseCase(_UnusedQuestionsRepository()),
+      ),
+    );
+    serviceLocator.registerFactory<DailyLimitBloc>(
+      () => DailyLimitBloc(
+        loadDailyLimitUseCase:
+            LoadDailyLimitUseCase(_UnusedQuestionsRepository()),
       ),
     );
     serviceLocator.registerFactory<SavedQuestionsBloc>(
@@ -1250,7 +1266,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    // The button promises a solve, so a second tap on UPLOAD & SOLVE would be
+    // The button promises a solve, so a second tap on Add a photo would be
     // one too many.
     testWidgets('Solve a question opens Solve with the photo options up',
         (tester) async {

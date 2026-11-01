@@ -1,11 +1,14 @@
 import 'package:bloc/bloc.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
+import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
+import 'package:doormer/src/features/questions/domain/failure/photo_question_failures.dart';
 import 'package:doormer/src/features/questions/domain/usecase/submit_photo_question_usecase.dart';
 import 'package:doormer/src/features/questions/utils/photo/editable_photo.dart';
 import 'package:doormer/src/features/questions/utils/photo_question_image_validator.dart';
 import 'package:equatable/equatable.dart';
+import 'package:uuid/uuid.dart';
 import 'dart:typed_data';
 
 part 'ask_by_photo_event.dart';
@@ -14,8 +17,15 @@ part 'ask_by_photo_state.dart';
 class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
   final SubmitPhotoQuestionUseCase submitPhotoQuestionUseCase;
 
-  AskByPhotoBloc({required this.submitPhotoQuestionUseCase})
-      : super(const AskByPhotoInitial()) {
+  /// Makes the key for a newly picked or edited photo. Tests pass their own
+  /// to know which key each photo gets.
+  final String Function() newIdempotencyKey;
+
+  AskByPhotoBloc({
+    required this.submitPhotoQuestionUseCase,
+    String Function()? newIdempotencyKey,
+  })  : newIdempotencyKey = newIdempotencyKey ?? _newUuid,
+        super(const AskByPhotoInitial()) {
     on<AskByPhotoPhotoPicked>(_onPhotoPicked);
     on<AskByPhotoSubmitted>(_onSubmitted);
     on<AskByPhotoClearRequested>(_onClearRequested);
@@ -34,6 +44,8 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
       fileName: event.fileName,
       mimeType: event.mimeType,
       editablePhoto: event.editablePhoto,
+      // A picked or edited photo is a new submission, so it gets a new key.
+      idempotencyKey: newIdempotencyKey(),
     ));
   }
 
@@ -49,6 +61,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
       imageBytes: selected?.imageBytes,
       fileName: selected?.fileName,
       editablePhoto: selected?.editablePhoto,
+      idempotencyKey: selected?.idempotencyKey,
     ));
 
     if (selected == null) {
@@ -63,12 +76,32 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
         imageBytes: selected.imageBytes,
         fileName: selected.fileName,
         mimeType: selected.mimeType,
+        idempotencyKey: selected.idempotencyKey,
       );
       _emitOutcome(outcome, selected, emit);
     } on ValidationFailure catch (f, stackTrace) {
       emit(AskByPhotoValidationError(f.message));
       AppLogger.error('Photo question validation failed',
           error: f, stackTrace: stackTrace);
+    } on DailyLimitReachedFailure catch (f) {
+      emit(AskByPhotoLimitReached(
+        dailyLimit: f.dailyLimit,
+        imageBytes: selected.imageBytes,
+        fileName: selected.fileName,
+        mimeType: selected.mimeType,
+        editablePhoto: selected.editablePhoto,
+        idempotencyKey: selected.idempotencyKey,
+      ));
+      AppLogger.info('Photo question refused: no questions left today');
+    } on PhotoBeingSolvedFailure {
+      emit(AskByPhotoStillSolving(
+        imageBytes: selected.imageBytes,
+        fileName: selected.fileName,
+        mimeType: selected.mimeType,
+        editablePhoto: selected.editablePhoto,
+        idempotencyKey: selected.idempotencyKey,
+      ));
+      AppLogger.info('Photo question refused: a photo is being solved');
     } on Failure catch (f, stackTrace) {
       emit(AskByPhotoNetworkError(
         f.message,
@@ -81,6 +114,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
         fileName: selected.fileName,
         mimeType: selected.mimeType,
         editablePhoto: selected.editablePhoto,
+        idempotencyKey: selected.idempotencyKey,
       ));
       AppLogger.error('Photo question submission failed',
           error: f, stackTrace: stackTrace);
@@ -92,6 +126,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
         fileName: selected.fileName,
         mimeType: selected.mimeType,
         editablePhoto: selected.editablePhoto,
+        idempotencyKey: selected.idempotencyKey,
       ));
       AppLogger.error('Photo question unexpected error',
           error: e, stackTrace: stackTrace);
@@ -103,6 +138,9 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
   ///
   /// Reading only [AskByPhotoPhotoSelected] here is what used to make a retry
   /// report "choose a photo first" over a photo already on screen.
+  ///
+  /// A photo the daily limit turned away is in hand too: it is sent once the
+  /// day resets, and the page keeps Submit off until then.
   _PhotoInHand? _photoInHand() {
     final current = state;
     if (current is AskByPhotoPhotoSelected) {
@@ -111,9 +149,11 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
         fileName: current.fileName,
         mimeType: current.mimeType,
         editablePhoto: current.editablePhoto,
+        idempotencyKey: current.idempotencyKey,
       );
     }
-    if (current is AskByPhotoSolveFailed && current.isRetryable) {
+    if (current is AskByPhotoSolveFailed &&
+        (current.isRetryable || current is AskByPhotoLimitReached)) {
       final bytes = current.imageBytes;
       if (bytes != null) {
         return _PhotoInHand(
@@ -121,6 +161,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
           fileName: current.fileName ?? 'photo.jpg',
           mimeType: current.mimeType,
           editablePhoto: current.editablePhoto,
+          idempotencyKey: current.idempotencyKey ?? newIdempotencyKey(),
         );
       }
     }
@@ -142,6 +183,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
             fileName: photo.fileName,
             mimeType: photo.mimeType,
             editablePhoto: photo.editablePhoto,
+            idempotencyKey: photo.idempotencyKey,
           ));
           return;
         }
@@ -151,30 +193,37 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
           note: outcome.note,
           topic: outcome.topic,
           method: outcome.method,
+          dailyLimit: outcome.dailyLimit,
         ));
       case PhotoQuestionSolveStatus.unreadable:
         emit(AskByPhotoUnreadable(
           questionId: outcome.questionId,
+          dailyLimit: outcome.dailyLimit,
           imageBytes: photo.imageBytes,
           fileName: photo.fileName,
           mimeType: photo.mimeType,
           editablePhoto: photo.editablePhoto,
+          idempotencyKey: photo.idempotencyKey,
         ));
       case PhotoQuestionSolveStatus.notAQuestion:
         emit(AskByPhotoNotAQuestion(
           questionId: outcome.questionId,
+          dailyLimit: outcome.dailyLimit,
           imageBytes: photo.imageBytes,
           fileName: photo.fileName,
           mimeType: photo.mimeType,
           editablePhoto: photo.editablePhoto,
+          idempotencyKey: photo.idempotencyKey,
         ));
       case PhotoQuestionSolveStatus.timeout:
         emit(AskByPhotoTimeout(
           questionId: outcome.questionId,
+          dailyLimit: outcome.dailyLimit,
           imageBytes: photo.imageBytes,
           fileName: photo.fileName,
           mimeType: photo.mimeType,
           editablePhoto: photo.editablePhoto,
+          idempotencyKey: photo.idempotencyKey,
         ));
     }
   }
@@ -183,18 +232,23 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
     AskByPhotoPreparationStarted event,
     Emitter<AskByPhotoState> emit,
   ) {
-    emit(AskByPhotoPreparingPhoto(previousSelection: _currentSelection()));
+    emit(AskByPhotoPreparingPhoto(previous: _stateToRestore()));
   }
 
-  /// The photo on screen now, or the one a preparation in progress replaced.
+  /// What a cancelled pick, or a photo that can't be prepared, brings back:
+  /// the photo on screen, or what a preparation in progress replaced.
   ///
-  /// A failed solve's photo counts: editing it prepares it again, and if that
-  /// fails the photo must come back rather than vanish.
-  AskByPhotoPhotoSelected? _currentSelection() {
+  /// A failed send that may have an answer comes back as it was. It keeps
+  /// offering Try again under its key, even with no questions left today,
+  /// because the API gives back the answer it saved under that key. Any
+  /// other failed send comes back as a plain photo under its key, so the
+  /// photo doesn't vanish.
+  AskByPhotoState? _stateToRestore() {
     final current = state;
     if (current is AskByPhotoPhotoSelected) return current;
-    if (current is AskByPhotoPreparingPhoto) return current.previousSelection;
+    if (current is AskByPhotoPreparingPhoto) return current.previous;
     if (current is AskByPhotoSolveFailed) {
+      if (current.mayHaveAnswer && current.hasPhoto) return current;
       final bytes = current.imageBytes;
       if (bytes != null) {
         return AskByPhotoPhotoSelected(
@@ -202,6 +256,7 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
           fileName: current.fileName ?? 'photo.jpg',
           mimeType: current.mimeType,
           editablePhoto: current.editablePhoto,
+          idempotencyKey: current.idempotencyKey ?? newIdempotencyKey(),
         );
       }
     }
@@ -226,26 +281,22 @@ class AskByPhotoBloc extends Bloc<AskByPhotoEvent, AskByPhotoState> {
     AskByPhotoPickCancelled event,
     Emitter<AskByPhotoState> emit,
   ) {
-    _emitNoticePreservingSelection('No photo selected.', emit);
+    _emitNoticeAndRestore('No photo selected.', emit);
   }
 
   void _onPickUnavailable(
     AskByPhotoPickUnavailable event,
     Emitter<AskByPhotoState> emit,
   ) {
-    _emitNoticePreservingSelection(event.message, emit);
+    _emitNoticeAndRestore(event.message, emit);
   }
 
-  void _emitNoticePreservingSelection(
-    String message,
-    Emitter<AskByPhotoState> emit,
-  ) {
-    final selection = _currentSelection();
+  /// Emits the Notice right before what is brought back: the page relies on
+  /// that order to tell a failed send brought back from one that just ended.
+  void _emitNoticeAndRestore(String message, Emitter<AskByPhotoState> emit) {
+    final restored = _stateToRestore();
     emit(AskByPhotoNotice(message));
-
-    if (selection != null) {
-      emit(selection);
-    }
+    if (restored != null) emit(restored);
   }
 }
 
@@ -256,11 +307,15 @@ class _PhotoInHand {
   final String fileName;
   final String? mimeType;
   final EditablePhoto? editablePhoto;
+  final String idempotencyKey;
 
   const _PhotoInHand({
     required this.imageBytes,
     required this.fileName,
     this.mimeType,
     this.editablePhoto,
+    required this.idempotencyKey,
   });
 }
+
+String _newUuid() => const Uuid().v4();

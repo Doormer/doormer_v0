@@ -2,6 +2,7 @@ import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
+import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_question_summary.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_questions_page.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
@@ -46,6 +47,9 @@ class _ScriptedRepository implements QuestionsRepository {
     if (answer is SolvedQuestionsPage) return answer;
     throw answer;
   }
+
+  @override
+  Future<DailyLimit> loadDailyLimit() => throw UnimplementedError();
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>
