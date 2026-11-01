@@ -168,9 +168,13 @@ void main() {
   });
 
   group('coming back', () {
+    final bothShown = SharedQuestionsReady(
+      questions: [..._firstPage.questions, ..._lastPage.questions],
+    );
+
     blocTest<SharedQuestionsBloc, SharedQuestionsState>(
-      'shows the first page as it is now: a question removed or no longer '
-      'shared goes, and one shared since comes in',
+      'with one page showing, reads it once, as it is now: a question removed '
+      'or no longer shared goes, and one shared since comes in',
       build: build,
       setUp: () => repository.sharedPages = {
         null: SharedQuestionsPage(questions: [_shared('304'), _shared('303')]),
@@ -180,6 +184,178 @@ void main() {
       expect: () => [
         SharedQuestionsReady(questions: [_shared('304'), _shared('303')]),
       ],
+      verify: (_) => expect(repository.calls, ['loadSharedQuestions']),
+    );
+
+    blocTest<SharedQuestionsBloc, SharedQuestionsState>(
+      'with two pages showing, reads the first page and then the next, in '
+      'order, and changes nothing when nothing changed',
+      build: build,
+      seed: () => bothShown,
+      act: (bloc) => bloc.add(const SharedQuestionsRefreshRequested()),
+      expect: () => const <SharedQuestionsState>[],
+      verify: (_) => expect(repository.calls,
+          ['loadSharedQuestions', 'loadSharedQuestions $_cursor']),
+    );
+
+    blocTest<SharedQuestionsBloc, SharedQuestionsState>(
+      'keeps the place: as many rows come back as were showing, minus a '
+      'question removed, plus one shared since on top, ending where the last '
+      'page read ends',
+      build: build,
+      setUp: () => repository.sharedPages = {
+        null: SharedQuestionsPage(
+          questions: [_shared('304'), _shared('303')],
+          nextCursor: _cursor,
+        ),
+        _cursor: SharedQuestionsPage(
+          questions: [_shared('301'), _shared('300')],
+          nextCursor: '9002',
+        ),
+        '9002': SharedQuestionsPage(questions: [_shared('299')]),
+      },
+      // Two pages showing, before 304 was shared and 302 removed.
+      seed: () => SharedQuestionsReady(
+        questions: [
+          _shared('303'),
+          _shared('302'),
+          _shared('301'),
+          _shared('300'),
+        ],
+        nextCursor: '9002',
+      ),
+      act: (bloc) => bloc.add(const SharedQuestionsRefreshRequested()),
+      expect: () => [
+        SharedQuestionsReady(
+          questions: [
+            _shared('304'),
+            _shared('303'),
+            _shared('301'),
+            _shared('300'),
+          ],
+          nextCursor: '9002',
+        ),
+      ],
+      verify: (_) => expect(repository.calls,
+          ['loadSharedQuestions', 'loadSharedQuestions $_cursor']),
+    );
+
+    blocTest<SharedQuestionsBloc, SharedQuestionsState>(
+      'stops at a page with no rows, even one that names a next page',
+      build: build,
+      setUp: () => repository.sharedPages = {
+        null: SharedQuestionsPage(
+          questions: [_shared('303')],
+          nextCursor: _cursor,
+        ),
+        _cursor: const SharedQuestionsPage(questions: [], nextCursor: _cursor),
+      },
+      seed: () => bothShown,
+      act: (bloc) => bloc.add(const SharedQuestionsRefreshRequested()),
+      expect: () => [
+        SharedQuestionsReady(questions: [_shared('303')], nextCursor: _cursor),
+      ],
+      verify: (_) => expect(repository.calls,
+          ['loadSharedQuestions', 'loadSharedQuestions $_cursor']),
+    );
+
+    blocTest<SharedQuestionsBloc, SharedQuestionsState>(
+      'is ignored while a next page is on its way',
+      build: build,
+      seed: () => firstShown.copyWith(isLoadingMore: true),
+      act: (bloc) => bloc.add(const SharedQuestionsRefreshRequested()),
+      expect: () => const <SharedQuestionsState>[],
+      verify: (_) => expect(repository.calls, isEmpty),
+    );
+
+    blocTest<SharedQuestionsBloc, SharedQuestionsState>(
+      'a next page that answers after a refresh swapped the rows is dropped: '
+      'it continues the old list',
+      build: build,
+      seed: () => firstShown,
+      act: (bloc) async {
+        final refreshRead = Completer<void>();
+        final nextPageRead = Completer<void>();
+        repository.holdInTurn.addAll([refreshRead, nextPageRead]);
+        bloc.add(const SharedQuestionsRefreshRequested());
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(const SharedQuestionsMoreRequested());
+        await Future<void>.delayed(Duration.zero);
+        repository.sharedPages = {
+          null: SharedQuestionsPage(
+            questions: [_shared('304'), _shared('303')],
+            nextCursor: '9101',
+          ),
+          _cursor: _lastPage,
+        };
+
+        refreshRead.complete();
+        await Future<void>.delayed(Duration.zero);
+        nextPageRead.complete();
+        await Future<void>.delayed(Duration.zero);
+      },
+      expect: () => [
+        firstShown.copyWith(isLoadingMore: true),
+        SharedQuestionsReady(
+          questions: [_shared('304'), _shared('303')],
+          nextCursor: '9101',
+        ),
+      ],
+      verify: (_) => expect(repository.calls,
+          ['loadSharedQuestions', 'loadSharedQuestions $_cursor']),
+    );
+
+    blocTest<SharedQuestionsBloc, SharedQuestionsState>(
+      'a refresh that answers after a next page came in is dropped, and the '
+      'rows stay as the next page left them',
+      build: build,
+      seed: () => firstShown,
+      act: (bloc) async {
+        final refreshRead = Completer<void>();
+        repository.holdInTurn.add(refreshRead);
+        bloc.add(const SharedQuestionsRefreshRequested());
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(const SharedQuestionsMoreRequested());
+        await Future<void>.delayed(Duration.zero);
+        repository.sharedPages = {
+          null:
+              SharedQuestionsPage(questions: [_shared('304'), _shared('303')]),
+        };
+
+        refreshRead.complete();
+        await Future<void>.delayed(Duration.zero);
+      },
+      expect: () => [firstShown.copyWith(isLoadingMore: true), bothShown],
+    );
+
+    blocTest<SharedQuestionsBloc, SharedQuestionsState>(
+      'quietly: a refresh whose later page fails leaves the rows as they were',
+      build: build,
+      seed: () => bothShown,
+      act: (bloc) async {
+        final firstRead = Completer<void>();
+        final laterRead = Completer<void>();
+        repository.holdInTurn.addAll([firstRead, laterRead]);
+        bloc.add(const SharedQuestionsRefreshRequested());
+        await Future<void>.delayed(Duration.zero);
+        repository.sharedPages = {
+          null: SharedQuestionsPage(
+            questions: [_shared('304'), _shared('303')],
+            nextCursor: _cursor,
+          ),
+          _cursor: _lastPage,
+        };
+        firstRead.complete();
+        await Future<void>.delayed(Duration.zero);
+        repository.failNext['loadSharedQuestions'] =
+            NetworkFailure("We couldn't load the questions shared with you.");
+
+        laterRead.complete();
+        await Future<void>.delayed(Duration.zero);
+      },
+      expect: () => const <SharedQuestionsState>[],
+      verify: (_) => expect(repository.calls,
+          ['loadSharedQuestions', 'loadSharedQuestions $_cursor']),
     );
 
     blocTest<SharedQuestionsBloc, SharedQuestionsState>(

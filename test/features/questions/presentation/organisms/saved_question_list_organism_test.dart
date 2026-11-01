@@ -107,4 +107,45 @@ void main() {
     expect(calls.retry, 1);
     expect(calls.loadMore, 0);
   });
+
+  testWidgets(
+      'on a phone, a shared row with a 16-letter nickname leaves the title '
+      'and the day as wide as they were', (tester) async {
+    SavedQuestionListParams sharedRow({
+      ({String nickname, String? artUrl})? sender,
+    }) =>
+        SavedQuestionListParams(
+          rows: [
+            SavedQuestionRowParams(
+              title: 'Algebra · Simultaneous equations',
+              detail: 'Solve 2x + y = 7 and x - y = 2.',
+              dayLabel: '30 Dec 2025',
+              thumbnailUrl: null,
+              sender: sender,
+              onOpen: () {},
+              onEnlargePhoto: () {},
+            ),
+          ],
+          hasMore: false,
+          isLoadingMore: false,
+          loadMoreFailed: false,
+          onLoadMore: () {},
+          onRetryLoadMore: () {},
+        );
+    await _pump(tester, sharedRow());
+    final title = tester.getRect(find.text('Algebra · Simultaneous equations'));
+    final day = tester.getRect(find.text('30 Dec 2025'));
+
+    const longest = 'WWWWWWWWWWWWWWWW';
+    await _pump(tester, sharedRow(sender: (nickname: longest, artUrl: null)));
+
+    // The words grow by a line and stay centred on the photo, so only their
+    // height on the screen may change.
+    final titleNow =
+        tester.getRect(find.text('Algebra · Simultaneous equations'));
+    final dayNow = tester.getRect(find.text('30 Dec 2025'));
+    expect((titleNow.left, titleNow.size), (title.left, title.size));
+    expect((dayNow.left, dayNow.size), (day.left, day.size));
+    expect(find.text(longest), findsOneWidget);
+  });
 }

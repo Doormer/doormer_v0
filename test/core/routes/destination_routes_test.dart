@@ -60,6 +60,8 @@ import 'package:doormer/src/features/profile/presentation/pages/profile_page.dar
 import 'package:doormer/src/features/questions/data/model/photo_question_response_model.dart';
 import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
 import 'package:doormer/src/features/questions/domain/entity/photo_question_solve_outcome.dart';
+import 'package:doormer/src/features/questions/domain/entity/shared_question_summary.dart';
+import 'package:doormer/src/features/questions/domain/entity/shared_questions_page.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_question_summary.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_questions_page.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
@@ -77,7 +79,9 @@ import 'package:doormer/src/features/questions/presentation/bloc/solution_reader
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
 import 'package:doormer/src/features/questions/presentation/pages/question_solution_page.dart';
 import 'package:doormer/src/features/questions/presentation/pages/saved_questions_page.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/cross_fade_indexed_stack_atom.dart';
+import 'package:doormer/src/shared/design/atomic/molecules/confirm_dialog_molecule.dart';
 import 'package:doormer/src/shared/design/atomic/molecules/page_heading_molecule.dart';
 import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
@@ -229,6 +233,10 @@ class _SolutionsRepository implements QuestionsRepository {
   final List<String> loadedIds = [];
   int photosSent = 0;
 
+  /// The friend who shared each question loaded by id, as the API sends
+  /// them. Null for the student's own questions.
+  Map<String, Object?>? sharedBy;
+
   /// The solve of the last photo sent. Made as the photo is sent, inside the
   /// test's fake time, so its answer arrives there: one made in `setUp`
   /// answers on the real event loop, which a pump never reaches.
@@ -237,7 +245,7 @@ class _SolutionsRepository implements QuestionsRepository {
   @override
   Future<PhotoQuestionSolveOutcome> loadQuestion(String questionId) async {
     loadedIds.add(questionId);
-    return _bundledSolution(questionId);
+    return _bundledSolution(questionId, sharedBy: sharedBy);
   }
 
   @override
@@ -264,16 +272,34 @@ final Uint8List _png = base64Decode(
   'YPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
 );
 
-/// The bundled sample solution, as the API sends it for [questionId].
-PhotoQuestionSolveOutcome _bundledSolution(String questionId) {
+/// The bundled sample solution, as the API sends it for [questionId]: the
+/// student's own, or one [sharedBy] shared with them.
+PhotoQuestionSolveOutcome _bundledSolution(
+  String questionId, {
+  Map<String, Object?>? sharedBy,
+}) {
   final json = jsonDecode(
     File('assets/mock/mock_question_response.json').readAsStringSync(),
   ) as Map<String, dynamic>;
   return PhotoQuestionResponseModel.fromJson({
     ...json,
     'question_id': questionId,
+    if (sharedBy != null) 'shared_by': sharedBy,
   }).toEntity();
 }
+
+/// A question Alex shared, after Sam's.
+final _alexsQuestion = SharedQuestionSummary(
+  question: SolvedQuestionSummary(
+    questionId: '302',
+    topic: 'Geometry - Angles',
+    method: 'Angles on a line',
+    questionText: 'Find angle x on the straight line.',
+    askedAt: DateTime.utc(2026, 10, 31, 8),
+  ),
+  sharedBy: const FriendSummary(friendId: '11', nickname: 'Alex'),
+  sharedAt: DateTime.utc(2026, 11, 1, 9),
+);
 
 class _FakeTokenStorage implements TokenStorage {
   String? accessToken;
@@ -515,6 +541,7 @@ void main() {
   // time Saved was opened.
   group('coming back to a page', () {
     late _CountingSavedQuestionsRepository saved;
+    late FakeQuestionSharingRepository sharing;
 
     setUp(() {
       saved = _CountingSavedQuestionsRepository();
@@ -524,6 +551,7 @@ void main() {
           loadSolvedQuestions: LoadSolvedQuestionsUseCase(saved),
         ),
       );
+      registerQuestionSharingBlocs(sharing = FakeQuestionSharingRepository());
     });
 
     testWidgets('shows it as it was left, with no spinner', (tester) async {
@@ -561,6 +589,31 @@ void main() {
       expect(
         tester.getTopLeft(find.textContaining('Question 2')).dy,
         lessThan(tester.getTopLeft(find.textContaining('Question 1')).dy),
+      );
+    });
+
+    testWidgets(
+        'Shared with me quietly shows a question a friend shared meanwhile',
+        (tester) async {
+      await pumpDestinations(tester, initialLocation: '/saved');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Shared with me'));
+      await tester.pumpAndSettle();
+      expect(sharing.calls, ['loadSharedQuestions']);
+
+      await tester.tap(find.byIcon(Icons.document_scanner_outlined));
+      await tester.pumpAndSettle();
+      sharing.sharedPages = {
+        null: SharedQuestionsPage(questions: [_alexsQuestion, samsQuestion]),
+      };
+      await tester.tap(find.byIcon(Icons.bookmark_outline));
+      await tester.pumpAndSettle();
+
+      expect(sharing.calls, ['loadSharedQuestions', 'loadSharedQuestions']);
+      expect(
+        tester.getTopLeft(find.text('Find angle x on the straight line.')).dy,
+        lessThan(
+            tester.getTopLeft(find.text('Solve 2x + y = 7 and x - y = 2.')).dy),
       );
     });
   });
@@ -767,6 +820,95 @@ void main() {
         hasLength(2),
       );
       expect(saved.reads, 1, reason: 'Mine is not read again');
+    });
+
+    group("a friend's question opened from Shared with me", () {
+      setUp(() => solutions.sharedBy = {'friend_id': '7', 'nickname': 'Sam'});
+
+      /// The button saying [label] in the dialog that asks first.
+      Finder inDialog(String label) => find.descendant(
+            of: find.byType(ConfirmDialogMolecule),
+            matching: find.widgetWithText(AppButtonAtom, label),
+          );
+
+      Future<GoRouter> openSamsQuestion(WidgetTester tester) async {
+        final router =
+            await pumpDestinations(tester, initialLocation: '/saved');
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Shared with me'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Solve 2x + y = 7 and x - y = 2.'));
+        await tester.pumpAndSettle();
+        expect(find.text('Shared by Sam'), findsOneWidget);
+        return router;
+      }
+
+      /// Saved, with Shared with me still showing, and Sam's question gone.
+      void expectBackOnSharedWithMe(WidgetTester tester, GoRouter router) {
+        expect(router.routerDelegate.currentConfiguration.uri.path, '/saved');
+        expect(find.byType(QuestionSolutionPage), findsNothing);
+        expect(tester.getSemantics(find.text('Shared with me')),
+            containsSemantics(isSelected: true));
+        expect(find.text('Question 1'), findsNothing,
+            reason: "Mine's rows are not showing");
+        expect(find.text('Solve 2x + y = 7 and x - y = 2.'), findsNothing);
+        expect(
+          find.text('Nothing shared yet. When a friend sends you a question, '
+              'it shows here.'),
+          findsOneWidget,
+        );
+      }
+
+      testWidgets(
+          'Remove goes back to Saved, on Shared with me, without the question',
+          (tester) async {
+        final semantics = tester.ensureSemantics();
+        final router = await openSamsQuestion(tester);
+
+        await tester.tap(find.text('Remove'));
+        await tester.pumpAndSettle();
+        await tester.tap(inDialog('Remove'));
+        await tester.pumpAndSettle();
+
+        expectBackOnSharedWithMe(tester, router);
+        expect(find.text('Question removed.'), findsOneWidget);
+        expect(sharing.calls, [
+          'loadSharedQuestions',
+          'removeSharedQuestion 301',
+          'loadSharedQuestions',
+        ]);
+        expect(saved.reads, 1, reason: 'Mine is not read again');
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
+        semantics.dispose();
+      });
+
+      testWidgets(
+          "Block goes back to Saved, on Shared with me, without Sam's "
+          'questions', (tester) async {
+        final semantics = tester.ensureSemantics();
+        final router = await openSamsQuestion(tester);
+
+        await tester.tap(find.text('Report'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Bullying or being mean'));
+        await tester.pump();
+        await tester.tap(find.text('Send report'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Block'));
+        await tester.pumpAndSettle();
+        await tester.tap(inDialog('Block'));
+        await tester.pumpAndSettle();
+
+        expectBackOnSharedWithMe(tester, router);
+        expect(sharing.calls, [
+          'loadSharedQuestions',
+          'reportSharedQuestion 7 301 bullying ',
+          'blockFriend 7',
+          'loadSharedQuestions',
+        ]);
+        semantics.dispose();
+      });
     });
 
     testWidgets('starting on its address opens it over a loaded Saved',

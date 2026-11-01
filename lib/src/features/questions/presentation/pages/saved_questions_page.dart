@@ -107,22 +107,21 @@ class _SavedQuestionsViewState extends State<_SavedQuestionsView> {
             .add(const SavedQuestionsRefreshRequested());
         _refreshShared();
       },
-      child: switch (_list) {
-        SavedList.mine => BlocBuilder<SavedQuestionsBloc, SavedQuestionsState>(
-            builder: (context, state) => _template(_mineBody(context, state)),
-          ),
-        SavedList.sharedWithMe =>
-          BlocBuilder<SharedQuestionsBloc, SharedQuestionsState>(
-            builder: (context, state) => _template(_sharedBody(context, state)),
-          ),
-      },
+      // One builder for both lists, so switching keeps the heading and the
+      // switch, with the focus on it, and replaces only the list below.
+      child: Builder(
+        builder: (context) => SavedQuestionsTemplate(
+          listSwitch: SavedListSwitchParams(selected: _list, onSelect: _select),
+          body: switch (_list) {
+            SavedList.mine =>
+              _mineBody(context, context.watch<SavedQuestionsBloc>().state),
+            SavedList.sharedWithMe =>
+              _sharedBody(context, context.watch<SharedQuestionsBloc>().state),
+          },
+        ),
+      ),
     );
   }
-
-  Widget _template(SavedQuestionsBodyParams body) => SavedQuestionsTemplate(
-        listSwitch: SavedListSwitchParams(selected: _list, onSelect: _select),
-        body: body,
-      );
 
   SavedQuestionsBodyParams _mineBody(
     BuildContext context,

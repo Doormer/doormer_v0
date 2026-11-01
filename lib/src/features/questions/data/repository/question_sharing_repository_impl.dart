@@ -8,10 +8,17 @@ import '../datasource/question_sharing_remote_datasource.dart';
 /// Turns the API's answers into the domain's terms. The data source has
 /// already turned every problem into a `Failure` a student can read, so
 /// failures pass straight through.
+///
+/// A read of Shared with me waits for any Remove or Block still on its way,
+/// so it never lists a question the student has just taken out.
 class QuestionSharingRepositoryImpl implements QuestionSharingRepository {
   final QuestionSharingRemoteDataSource remoteDataSource;
 
-  const QuestionSharingRepositoryImpl({required this.remoteDataSource});
+  /// Answers once every Remove and Block asked for so far has answered,
+  /// whether it worked or not.
+  Future<void> _changesAnswered = Future.value();
+
+  QuestionSharingRepositoryImpl({required this.remoteDataSource});
 
   @override
   Future<List<FriendSummary>> loadFriends() async => [
@@ -35,12 +42,14 @@ class QuestionSharingRepositoryImpl implements QuestionSharingRepository {
       remoteDataSource.stopSharing(questionId);
 
   @override
-  Future<SharedQuestionsPage> loadSharedQuestions({String? cursor}) async =>
-      (await remoteDataSource.sharedQuestions(cursor: cursor)).toEntity();
+  Future<SharedQuestionsPage> loadSharedQuestions({String? cursor}) async {
+    await _changesAnswered;
+    return (await remoteDataSource.sharedQuestions(cursor: cursor)).toEntity();
+  }
 
   @override
   Future<void> removeSharedQuestion(String questionId) =>
-      remoteDataSource.removeSharedQuestion(questionId);
+      _readsWaitFor(remoteDataSource.removeSharedQuestion(questionId));
 
   @override
   Future<void> reportSharedQuestion({
@@ -57,5 +66,16 @@ class QuestionSharingRepositoryImpl implements QuestionSharingRepository {
       );
 
   @override
-  Future<void> blockFriend(String friendId) => remoteDataSource.block(friendId);
+  Future<void> blockFriend(String friendId) =>
+      _readsWaitFor(remoteDataSource.block(friendId));
+
+  /// Makes reads of Shared with me wait until [change] has answered, however
+  /// it went, and hands it back as it is: its failure is the caller's.
+  Future<void> _readsWaitFor(Future<void> change) {
+    _changesAnswered = Future.wait([
+      _changesAnswered,
+      change.catchError((_) {}),
+    ]);
+    return change;
+  }
 }

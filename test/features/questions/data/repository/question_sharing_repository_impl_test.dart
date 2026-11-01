@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/features/questions/data/datasource/question_sharing_remote_datasource.dart';
 import 'package:doormer/src/features/questions/data/model/shared_questions_response_model.dart';
@@ -15,6 +17,10 @@ const _sam = FriendSummaryModel(friendId: '7', nickname: 'Sam');
 class _FakeRemoteDataSource implements QuestionSharingRemoteDataSource {
   Failure? failure;
   final List<String> calls = [];
+
+  /// While set, a Remove or a Block waits for it before it answers, and fails
+  /// if it fails.
+  Completer<void>? changeAnswer;
 
   void _record(String call) {
     calls.add(call);
@@ -63,8 +69,10 @@ class _FakeRemoteDataSource implements QuestionSharingRemoteDataSource {
   }
 
   @override
-  Future<void> removeSharedQuestion(String questionId) async =>
-      _record('removeSharedQuestion $questionId');
+  Future<void> removeSharedQuestion(String questionId) async {
+    _record('removeSharedQuestion $questionId');
+    await changeAnswer?.future;
+  }
 
   @override
   Future<void> report({
@@ -76,7 +84,10 @@ class _FakeRemoteDataSource implements QuestionSharingRemoteDataSource {
       _record('report $friendId $questionId ${reason.name} $note');
 
   @override
-  Future<void> block(String friendId) async => _record('block $friendId');
+  Future<void> block(String friendId) async {
+    _record('block $friendId');
+    await changeAnswer?.future;
+  }
 }
 
 const _samEntity = FriendSummary(friendId: '7', nickname: 'Sam');
@@ -131,5 +142,55 @@ void main() {
     remote.failure = failure;
 
     await expectLater(repository.blockFriend('7'), throwsA(same(failure)));
+  });
+
+  group('a read of Shared with me', () {
+    test('waits for a Remove on its way, and asks once it has answered',
+        () async {
+      final removal = remote.changeAnswer = Completer<void>();
+      final removed = repository.removeSharedQuestion('301');
+
+      final read = repository.loadSharedQuestions();
+      await Future<void>.delayed(Duration.zero);
+      expect(remote.calls, ['removeSharedQuestion 301']);
+
+      removal.complete();
+      await removed;
+      await read;
+      expect(
+          remote.calls, ['removeSharedQuestion 301', 'sharedQuestions null']);
+    });
+
+    test(
+        'still asks after a Remove that failed, which fails where it was '
+        'asked for', () async {
+      final failure = NetworkFailure("We couldn't remove that question.");
+      final removal = remote.changeAnswer = Completer<void>();
+      final removed = repository.removeSharedQuestion('301');
+
+      final read = repository.loadSharedQuestions();
+      await Future<void>.delayed(Duration.zero);
+      expect(remote.calls, ['removeSharedQuestion 301']);
+
+      removal.completeError(failure);
+      await expectLater(removed, throwsA(same(failure)));
+      expect((await read).questions.single.question.questionId, '501');
+      expect(
+          remote.calls, ['removeSharedQuestion 301', 'sharedQuestions null']);
+    });
+
+    test('waits for a Block on its way too', () async {
+      final blocking = remote.changeAnswer = Completer<void>();
+      final blocked = repository.blockFriend('7');
+
+      final read = repository.loadSharedQuestions(cursor: '9002');
+      await Future<void>.delayed(Duration.zero);
+      expect(remote.calls, ['block 7']);
+
+      blocking.complete();
+      await blocked;
+      await read;
+      expect(remote.calls, ['block 7', 'sharedQuestions 9002']);
+    });
   });
 }
