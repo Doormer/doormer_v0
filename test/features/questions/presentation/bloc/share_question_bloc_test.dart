@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
@@ -166,6 +168,23 @@ void main() {
       verify: (bloc) =>
           expect((bloc.state.sheet as ShareSheetReady).isFull, isTrue),
     );
+
+    blocTest<ShareQuestionBloc, ShareQuestionState>(
+      'once 10 are ticked, unticking one frees a place for another',
+      build: build,
+      setUp: () => repository.friends = [
+        for (var id = 1; id <= 11; id++)
+          FriendSummary(friendId: '$id', nickname: 'Friend $id'),
+      ],
+      seed: () => picking({for (var id = 1; id <= 10; id++) '$id'}),
+      act: (bloc) => bloc
+        ..add(const ShareFriendToggled('10'))
+        ..add(const ShareFriendToggled('11')),
+      expect: () => [
+        picking({for (var id = 1; id <= 9; id++) '$id'}),
+        picking({for (var id = 1; id <= 9; id++) '$id', '11'}),
+      ],
+    );
   });
 
   group('sending', () {
@@ -233,6 +252,71 @@ void main() {
         ),
       ],
     );
+
+    blocTest<ShareQuestionBloc, ShareQuestionState>(
+      'while sending, the ticks stay as they are, and Send sends nothing more',
+      build: build,
+      seed: () => picking({'11'}, isSending: true),
+      act: (bloc) => bloc
+        ..add(const ShareFriendToggled('13'))
+        ..add(const ShareFriendToggled('11'))
+        ..add(const ShareSent()),
+      expect: () => const <ShareQuestionState>[],
+      verify: (_) => expect(repository.calls, isEmpty),
+    );
+
+    blocTest<ShareQuestionBloc, ShareQuestionState>(
+      'a sheet reopened while sending shows the send, and keeps its ticks '
+      'when the send fails',
+      build: build,
+      setUp: () {
+        repository.hold = Completer<void>();
+        repository.failNext['share'] =
+            ServerFailure("We couldn't share that question. Try again.");
+      },
+      seed: () => picking({'11'}),
+      act: (bloc) async {
+        // The student closes the sheet while it sends, opens it again and
+        // ticks Kate, all before the send answers.
+        bloc
+          ..add(const ShareSent())
+          ..add(const ShareSheetOpened())
+          ..add(const ShareFriendToggled('13'));
+        await Future<void>.delayed(Duration.zero);
+        repository.hold!.complete();
+      },
+      expect: () => [
+        picking({'11'}, isSending: true),
+        picking(
+          {'11'},
+          errorMessage: "We couldn't share that question. Try again.",
+        ),
+      ],
+      verify: (_) => expect(repository.calls, ['share 501 11']),
+    );
+
+    blocTest<ShareQuestionBloc, ShareQuestionState>(
+      'a sheet reopened while sending closes once the send succeeds',
+      build: build,
+      setUp: () => repository.hold = Completer<void>(),
+      seed: () => picking({'11'}),
+      act: (bloc) async {
+        bloc
+          ..add(const ShareSent())
+          ..add(const ShareSheetOpened());
+        await Future<void>.delayed(Duration.zero);
+        repository.hold!.complete();
+      },
+      expect: () => [
+        picking({'11'}, isSending: true),
+        const ShareQuestionState(
+          questionId: ownQuestionId,
+          sharedWith: [alex],
+          notice: ShareNotice.shared,
+        ),
+      ],
+      verify: (_) => expect(repository.calls, ['share 501 11']),
+    );
   });
 
   group('stopping', () {
@@ -261,6 +345,24 @@ void main() {
           errorMessage: "We couldn't stop sharing. Try again.",
         ),
       ],
+    );
+
+    blocTest<ShareQuestionBloc, ShareQuestionState>(
+      'Stop sharing does nothing while it is stopping',
+      build: build,
+      seed: () => started(sharedWith: [sam]).copyWith(isStopping: true),
+      act: (bloc) => bloc.add(const SharingStopped()),
+      expect: () => const <ShareQuestionState>[],
+      verify: (_) => expect(repository.calls, isEmpty),
+    );
+
+    blocTest<ShareQuestionBloc, ShareQuestionState>(
+      'Stop sharing does nothing for a question shared with no one',
+      build: build,
+      seed: started,
+      act: (bloc) => bloc.add(const SharingStopped()),
+      expect: () => const <ShareQuestionState>[],
+      verify: (_) => expect(repository.calls, isEmpty),
     );
   });
 }
