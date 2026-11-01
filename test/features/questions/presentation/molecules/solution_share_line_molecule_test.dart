@@ -2,6 +2,7 @@ import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/questions/presentation/molecules/solution_share_line_molecule.dart';
 import 'package:doormer/src/features/questions/presentation/params/solution_share_line_params.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -44,6 +45,36 @@ OwnQuestionShareLineParams _own(
       onShare: () => taps.pressed.add('share'),
       onStopSharing: () => taps.pressed.add('stop'),
     );
+
+/// The widest nickname a student can pick: 16 of the widest letter.
+const _longestNickname = 'WWWWWWWWWWWWWWWW';
+
+/// Checks the line on a phone, with [words] too long to share a row with
+/// its [buttons]: the words are drawn in full, and the buttons sit together
+/// on the next line, from the left, wholly on the screen.
+void _expectWordsInFullAndButtonsBelow(
+  WidgetTester tester,
+  String words,
+  List<Key> buttons,
+) {
+  final paragraph = tester.renderObject<RenderParagraph>(find.text(words));
+  expect(paragraph.didExceedMaxLines, isFalse, reason: 'the words are cut');
+
+  final screen =
+      Offset.zero & tester.view.physicalSize / tester.view.devicePixelRatio;
+  final wordsBottom = tester.getRect(find.text(words)).bottom;
+  final lineLeft = tester.getRect(find.byType(SolutionShareLineMolecule)).left;
+  final first = tester.getRect(find.byKey(buttons.first));
+  expect(first.left, lineLeft, reason: 'the buttons start at the left');
+  for (final key in buttons) {
+    final button = tester.getRect(find.byKey(key));
+    expect(button.top, greaterThanOrEqualTo(wordsBottom),
+        reason: '$key is on the line under the words');
+    expect(button.top, first.top, reason: 'the buttons stay together');
+    expect(screen.intersect(button), button, reason: '$key is cut off');
+  }
+  expect(tester.takeException(), isNull, reason: 'nothing overflows');
+}
 
 void main() {
   testWidgets('a question shared with no one offers Share alone',
@@ -90,6 +121,28 @@ void main() {
   });
 
   testWidgets(
+      'on a phone, the longest "Shared with" is drawn in full, with Share and '
+      'Stop sharing together below it', (tester) async {
+    // Three of the longest nicknames and two more friends: the longest label
+    // the presenter makes.
+    const words = 'Shared with $_longestNickname, $_longestNickname, '
+        '$_longestNickname and 2 more';
+    final taps = await _pump(
+      tester,
+      (taps) => _own(taps, sharedWithLabel: words),
+    );
+
+    _expectWordsInFullAndButtonsBelow(
+      tester,
+      words,
+      const [Key('share_open'), Key('share_stop')],
+    );
+    await tester.tap(find.byKey(const Key('share_open')));
+    await tester.tap(find.byKey(const Key('share_stop')));
+    expect(taps.pressed, ['share', 'stop']);
+  });
+
+  testWidgets(
       'on a wide screen, the buttons follow the words instead of the far '
       'end', (tester) async {
     await _pump(
@@ -104,16 +157,21 @@ void main() {
     expect(share.left - words.right, lessThan(24));
     expect(stop.left - share.right, lessThan(24));
     expect(stop.right, lessThan(600), reason: 'not at the far end');
+    for (final button in [share, stop]) {
+      expect(button.center.dy, words.center.dy,
+          reason: "the buttons sit on the words' row");
+    }
   });
 
   group("a friend's question", () {
     FriendQuestionShareLineParams friendLine(
       _Taps taps, {
       bool isRemoving = false,
+      String nickname = 'Sam',
     }) =>
         FriendQuestionShareLineParams(
-          sharedByLabel: 'Shared by Sam',
-          nickname: 'Sam',
+          sharedByLabel: 'Shared by $nickname',
+          nickname: nickname,
           artUrl: null,
           isRemoving: isRemoving,
           onRemove: () => taps.pressed.add('remove'),
@@ -142,6 +200,40 @@ void main() {
       await _pump(tester, (taps) => friendLine(taps, isRemoving: true));
       expect(find.text('Remove'), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets(
+        'on a phone, "Shared by" the longest nickname is drawn in full, with '
+        'Remove and Report together below it', (tester) async {
+      final taps = await _pump(
+        tester,
+        (taps) => friendLine(taps, nickname: _longestNickname),
+      );
+
+      _expectWordsInFullAndButtonsBelow(
+        tester,
+        'Shared by $_longestNickname',
+        const [Key('shared_question_remove'), Key('shared_question_report')],
+      );
+      await tester.tap(find.byKey(const Key('shared_question_remove')));
+      await tester.tap(find.byKey(const Key('shared_question_report')));
+      expect(taps.pressed, ['remove', 'report']);
+    });
+
+    testWidgets("on a wide screen, Remove and Report sit on the words' row",
+        (tester) async {
+      await _pump(tester, friendLine, width: 760);
+
+      final words = tester.getRect(find.text('Shared by Sam'));
+      for (final key in const [
+        Key('shared_question_remove'),
+        Key('shared_question_report'),
+      ]) {
+        final button = tester.getRect(find.byKey(key));
+        expect(button.left, greaterThan(words.right), reason: '$key follows');
+        expect(button.center.dy, words.center.dy,
+            reason: "$key sits on the words' row");
+      }
     });
   });
 }

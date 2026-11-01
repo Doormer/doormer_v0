@@ -10,7 +10,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// sharing; for a question a friend shared, who shared it, Remove and Report.
 ///
 /// The buttons follow the words, so on a wide screen none sits at the far
-/// end of the bar, away from what it acts on.
+/// end of the bar, away from what it acts on. When the words and the buttons
+/// don't fit on one row, the words take their own line, in full, and the
+/// buttons go together on the next.
 class SolutionShareLineMolecule extends StatelessWidget {
   final SolutionShareLineParams params;
 
@@ -34,12 +36,11 @@ class SolutionShareLineMolecule extends StatelessWidget {
     if (own.sharedWithLabel.isEmpty) {
       return Align(alignment: Alignment.centerLeft, child: share);
     }
-    return Row(
-      children: [
-        Icon(Icons.group_rounded, size: 16.w, color: QuestPalette.muted),
-        SizedBox(width: 6.w),
-        Flexible(child: _Words(own.sharedWithLabel)),
-        SizedBox(width: 4.w),
+    return _WordsThenButtons(
+      lead: Icon(Icons.group_rounded, size: 16.w, color: QuestPalette.muted),
+      leadGap: 6.w,
+      words: own.sharedWithLabel,
+      buttons: [
         share,
         _LineButton(
           key: const Key('share_stop'),
@@ -53,16 +54,15 @@ class SolutionShareLineMolecule extends StatelessWidget {
   }
 
   Widget _friendQuestion(FriendQuestionShareLineParams friend) {
-    return Row(
-      children: [
-        CardPictureAtom(
-          name: friend.nickname,
-          artUrl: friend.artUrl,
-          size: 22.w,
-        ),
-        SizedBox(width: 8.w),
-        Flexible(child: _Words(friend.sharedByLabel)),
-        SizedBox(width: 4.w),
+    return _WordsThenButtons(
+      lead: CardPictureAtom(
+        name: friend.nickname,
+        artUrl: friend.artUrl,
+        size: 22.w,
+      ),
+      leadGap: 8.w,
+      words: friend.sharedByLabel,
+      buttons: [
         _LineButton(
           key: const Key('shared_question_remove'),
           label: 'Remove',
@@ -81,6 +81,46 @@ class SolutionShareLineMolecule extends StatelessWidget {
   }
 }
 
+/// The words, after their icon or picture, then the buttons. They share a
+/// row when it has room, the buttons right after the words. When it hasn't,
+/// the words take their own line, wrapping if they must, and the buttons stay
+/// together on the next, from the left.
+class _WordsThenButtons extends StatelessWidget {
+  final Widget lead;
+  final double leadGap;
+  final String words;
+  final List<Widget> buttons;
+
+  const _WordsThenButtons({
+    required this.lead,
+    required this.leadGap,
+    required this.words,
+    required this.buttons,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Wrap(
+        spacing: 4.w,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              lead,
+              SizedBox(width: leadGap),
+              Flexible(child: _Words(words)),
+            ],
+          ),
+          Row(mainAxisSize: MainAxisSize.min, children: buttons),
+        ],
+      ),
+    );
+  }
+}
+
 class _Words extends StatelessWidget {
   final String text;
 
@@ -90,8 +130,6 @@ class _Words extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
       style: TextStyle(fontSize: 12.sp, color: QuestPalette.body),
     );
   }

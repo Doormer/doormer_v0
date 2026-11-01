@@ -452,6 +452,21 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    /// The button saying [label] in the dialog that asks first.
+    Finder inDialog(String label) => find.descendant(
+          of: find.byType(ConfirmDialogMolecule),
+          matching: find.widgetWithText(AppButtonAtom, label),
+        );
+
+    /// Opens the reader on the student's own question, shared with Sam.
+    Future<void> pumpSharedWithSam(WidgetTester tester) async {
+      repository.sharedWith = [
+        {'friend_id': '7', 'nickname': 'Sam'},
+      ];
+      sharing.sharedWith[ownQuestionId] = [sam];
+      await pumpReader(tester, questionId: ownQuestionId);
+    }
+
     testWidgets('Share lists the friends, and Send shares with those ticked',
         (tester) async {
       await pumpReader(tester, questionId: ownQuestionId);
@@ -554,6 +569,62 @@ void main() {
       expect(find.text('Shared with Sam'), findsNothing);
       expect(find.text('Share'), findsOneWidget);
       await waitOutToast(tester);
+    });
+
+    testWidgets('a refused Send says why, and keeps the sheet open and ticked',
+        (tester) async {
+      sharing.failNext['share'] = RefusedFailure(
+          429, "You've done that a lot today. Try again tomorrow.");
+      await pumpReader(tester, questionId: ownQuestionId);
+
+      await tester.tap(find.text('Share'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Kate'));
+      await tester.pump();
+      await tester.tap(find.text('Send'));
+      await tester.pumpAndSettle();
+
+      expect(sharing.calls, ['loadFriends', 'share $ownQuestionId 13']);
+      expect(find.text("You've done that a lot today. Try again tomorrow."),
+          findsOneWidget);
+      expect(find.text('Share with friends'), findsOneWidget);
+      final kate = tester.widget<CheckboxListTile>(
+        find.widgetWithText(CheckboxListTile, 'Kate'),
+      );
+      expect(kate.value, isTrue, reason: 'Send again can share with Kate');
+      expect(find.text('Shared with Kate'), findsNothing);
+      await waitOutToast(tester);
+    });
+
+    testWidgets('a failed Stop sharing says why, and leaves the line as it was',
+        (tester) async {
+      sharing.failNext['stopSharing'] =
+          NetworkFailure("We couldn't stop sharing. Try again.");
+      await pumpSharedWithSam(tester);
+
+      await tester.tap(find.text('Stop sharing'));
+      await tester.pumpAndSettle();
+      await tester.tap(inDialog('Stop sharing'));
+      await tester.pumpAndSettle();
+
+      expect(sharing.calls, ['stopSharing $ownQuestionId']);
+      expect(find.text("We couldn't stop sharing. Try again."), findsOneWidget);
+      expect(find.text('Shared with Sam'), findsOneWidget);
+      expect(find.text('Stop sharing'), findsOneWidget);
+      await waitOutToast(tester);
+    });
+
+    testWidgets('Cancel on Stop sharing sends nothing', (tester) async {
+      await pumpSharedWithSam(tester);
+
+      await tester.tap(find.text('Stop sharing'));
+      await tester.pumpAndSettle();
+      await tester.tap(inDialog('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Stop sharing?'), findsNothing);
+      expect(sharing.calls, isEmpty);
+      expect(find.text('Shared with Sam'), findsOneWidget);
     });
 
     testWidgets('the sample offers no Share', (tester) async {

@@ -799,6 +799,8 @@ void main() {
 
     expect(find.byType(QuestionSolutionPage), findsOneWidget);
     expect(find.byType(SolutionReaderTemplate), findsOneWidget);
+    expect(find.byKey(const Key('share_open')), findsOneWidget,
+        reason: "the student's own question, just solved, offers Share");
     expect(router.routerDelegate.currentConfiguration.uri.path,
         '/questions/photo/q_solved/solution',
         reason: 'opened over Solve, which stays alive under it');
