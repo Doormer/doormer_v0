@@ -17,11 +17,11 @@ Future<void> _pump(WidgetTester tester, PageHeadingMolecule heading) =>
 void main() {
   testWidgets('shows the title as a heading', (tester) async {
     final semantics = tester.ensureSemantics();
-    await _pump(tester, const PageHeadingMolecule(title: 'Blocked students'));
+    await _pump(tester, const PageHeadingMolecule(title: 'Blocked'));
 
     expect(
-      tester.getSemantics(find.text('Blocked students')),
-      matchesSemantics(label: 'Blocked students', isHeader: true),
+      tester.getSemantics(find.text('Blocked')),
+      matchesSemantics(label: 'Blocked', isHeader: true),
     );
     semantics.dispose();
   });

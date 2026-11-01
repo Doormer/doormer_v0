@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-/// One row of the Blocked students list.
+/// One row of the Blocked list.
 class BlockedStudentRowParams {
   final String nickname;
 

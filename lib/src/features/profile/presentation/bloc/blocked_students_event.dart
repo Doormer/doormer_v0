@@ -7,7 +7,7 @@ sealed class BlockedStudentsEvent extends Equatable {
   List<Object?> get props => const [];
 }
 
-/// The Blocked students page opened.
+/// The Blocked page opened.
 class BlockedStudentsStarted extends BlockedStudentsEvent {
   const BlockedStudentsStarted();
 }

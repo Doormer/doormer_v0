@@ -142,7 +142,7 @@ class ProfileTemplate extends StatelessWidget {
             child: TextButton.icon(
               onPressed: friends.onOpenBlocked,
               icon: const Icon(Icons.block),
-              label: const Text('Blocked students'),
+              label: const Text('Blocked'),
             ),
           ),
         ],

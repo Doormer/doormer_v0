@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import 'blocked_student_row_params.dart';
 
-/// What fills the Blocked students page under its heading.
+/// What fills the Blocked page under its heading.
 sealed class BlockedStudentsBodyParams {
   const BlockedStudentsBodyParams();
 }

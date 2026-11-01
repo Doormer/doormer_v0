@@ -192,7 +192,7 @@ void main() {
 
   testWidgets(
       'shows the student, Add a friend, the requests and the friends, then '
-      'Blocked students and Sign out', (tester) async {
+      'Blocked and Sign out', (tester) async {
     await pumpProfile(tester);
 
     expect(find.text('Profile'), findsOneWidget);
@@ -205,7 +205,7 @@ void main() {
     expect(find.text('Friends'), findsOneWidget);
     expect(friendRow('Alex'), findsOneWidget);
     expect(friendRow('Sam'), findsOneWidget);
-    expect(find.text('Blocked students'), findsOneWidget);
+    expect(find.text('Blocked'), findsOneWidget);
     expect(find.text('Sign out'), findsOneWidget);
     expect(
       tester.getTopLeft(find.text('Requests')).dy,
@@ -493,7 +493,7 @@ void main() {
   for (final (button, page) in [
     ('Edit', 'setup page'),
     ('Add a friend', 'add page'),
-    ('Blocked students', 'blocked page'),
+    ('Blocked', 'blocked page'),
   ]) {
     testWidgets('$button opens its page', (tester) async {
       await pumpProfile(tester);

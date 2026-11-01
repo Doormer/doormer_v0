@@ -8,7 +8,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../molecules/blocked_student_row_molecule.dart';
 import '../params/blocked_students_body_params.dart';
 
-/// The Blocked students page: its heading with a way back to Profile, then
+/// The Blocked page: its heading with a way back to Profile, then
 /// whatever [body] holds. It sits inside the Profile tab, above the nav bar.
 /// On a wide screen, the students sit two to a line, as tiles, each with its
 /// Unblock.
@@ -37,7 +37,7 @@ class BlockedStudentsTemplate extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            PageHeadingMolecule(title: 'Blocked students', onBack: onBack),
+            PageHeadingMolecule(title: 'Blocked', onBack: onBack),
             Expanded(child: _content(isWide: isWide)),
           ],
         ),

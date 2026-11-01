@@ -64,7 +64,7 @@ void main() {
   testWidgets('lists the blocked students under its heading', (tester) async {
     await pumpPage(tester);
 
-    expect(find.text('Blocked students'), findsOneWidget);
+    expect(find.text('Blocked'), findsOneWidget);
     expect(find.text('Tama'), findsOneWidget);
     expect(find.text('Unblock'), findsOneWidget);
   });
