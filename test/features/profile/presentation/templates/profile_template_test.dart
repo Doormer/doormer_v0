@@ -4,6 +4,7 @@ import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/profile/presentation/molecules/friend_request_row_molecule.dart';
 import 'package:doormer/src/features/profile/presentation/molecules/friend_row_molecule.dart';
 import 'package:doormer/src/features/profile/presentation/organisms/level_card_organism.dart';
+import 'package:doormer/src/features/profile/presentation/organisms/profile_header_organism.dart';
 import 'package:doormer/src/features/profile/presentation/params/friend_request_row_params.dart';
 import 'package:doormer/src/features/profile/presentation/params/friend_row_params.dart';
 import 'package:doormer/src/features/profile/presentation/params/level_card_params.dart';
@@ -327,6 +328,38 @@ void main() {
           greaterThanOrEqualTo(tester.getRect(find.text('K7QM-2XPA')).bottom));
       expect(rect.bottom,
           lessThanOrEqualTo(tester.getRect(_button('Add a friend')).top));
+    });
+
+    testWidgets(
+        'on a wide screen sits beside the picture, nickname and friend code, '
+        'the two splitting the line as the friend tiles below do',
+        (tester) async {
+      await _pump(tester, window: _wide, body: _kai(), levelCard: card);
+
+      final rect = tester.getRect(shown);
+      final header = tester.getRect(find.byType(ProfileHeaderOrganism));
+      final leftTile = tester.getRect(_tileAround(find.text('Alex')));
+      final rightTile = tester.getRect(_tileAround(find.text('Sam')));
+      expect(header.center.dy, moreOrLessEquals(rect.center.dy),
+          reason: 'on one row, the header centred against the card');
+      expect(header.left, moreOrLessEquals(leftTile.left));
+      expect(header.right, moreOrLessEquals(leftTile.right));
+      expect(rect.left, moreOrLessEquals(rightTile.left));
+      expect(rect.right, moreOrLessEquals(rightTile.right));
+      expect(rect.bottom,
+          lessThanOrEqualTo(tester.getRect(_button('Add a friend')).top));
+    });
+
+    testWidgets(
+        'on a wide screen, before a count brings the card, the header keeps '
+        'the whole line', (tester) async {
+      await _pump(tester, window: _wide, body: _kai());
+
+      final header = tester.getRect(find.byType(ProfileHeaderOrganism));
+      expect(
+          header.right,
+          moreOrLessEquals(
+              tester.getRect(_tileAround(find.text('Sam'))).right));
     });
 
     testWidgets('sits above the friends intro before setup', (tester) async {

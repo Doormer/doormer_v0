@@ -28,8 +28,12 @@ Future<void> _loadFaces() async {
 }
 
 /// The card on the 360 by 690 design phone, 20 in from each side, as
-/// Profile places it.
-Future<void> _pump(WidgetTester tester, LevelCardParams params) async {
+/// Profile places it, or [width] wide when given.
+Future<void> _pump(
+  WidgetTester tester,
+  LevelCardParams params, {
+  double? width,
+}) async {
   tester.view.physicalSize = const Size(360, 690);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -42,7 +46,10 @@ Future<void> _pump(WidgetTester tester, LevelCardParams params) async {
           padding: const EdgeInsets.all(20),
           child: Align(
             alignment: Alignment.topCenter,
-            child: LevelCardOrganism(params: params),
+            child: SizedBox(
+              width: width,
+              child: LevelCardOrganism(params: params),
+            ),
           ),
         ),
       ),
@@ -198,6 +205,19 @@ void main() {
     expect(icons.right, lessThanOrEqualTo(title.left));
     expect(title.right, lessThanOrEqualTo(info.left));
     expect(info.right, lessThanOrEqualTo(card.right));
+  });
+
+  testWidgets(
+      'in a narrow card with big text, as half of a wide Profile can be, the '
+      'title shrinks to fit rather than running under ⓘ', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await _pump(tester, _card(), width: 200);
+
+    expect(tester.takeException(), isNull);
+    final title = tester.getRect(find.text('Level 21'));
+    final info = tester.getRect(find.byTooltip('How levels work'));
+    expect(title.right, lessThanOrEqualTo(info.left));
   });
 
   testWidgets(

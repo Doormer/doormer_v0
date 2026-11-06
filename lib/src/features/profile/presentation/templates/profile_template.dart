@@ -2,6 +2,7 @@ import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/glow_badge_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/surface_card_atom.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/tile_grid_atom.dart';
 import 'package:doormer/src/shared/design/atomic/molecules/error_with_retry_molecule.dart';
 import 'package:doormer/src/shared/design/atomic/molecules/page_heading_molecule.dart';
 import 'package:flutter/material.dart';
@@ -18,8 +19,9 @@ import '../params/profile_body_params.dart';
 /// [body] holds, and Sign out, which works whatever state friends are in.
 ///
 /// On a wide screen, friends and requests sit two to a line, as tiles, so
-/// each one's actions stay beside their name, and the buttons keep their
-/// own width instead of stretching across the column.
+/// each one's actions stay beside their name. The level card sits beside the
+/// header, the two splitting the line as two tiles would. The buttons keep
+/// their own width instead of stretching across the column.
 class ProfileTemplate extends StatelessWidget {
   /// From this width up, the screen is wide.
   ///
@@ -32,9 +34,9 @@ class ProfileTemplate extends StatelessWidget {
 
   final ProfileBodyParams body;
 
-  /// The student's level card: under the header once friends is set up,
-  /// and at the top otherwise. Null until a count of the day brings it, and
-  /// then Profile shows no card.
+  /// The student's level card. Once friends is set up it goes under the
+  /// header, or beside it on a wide screen, and before that at the top. Null
+  /// until a count of the day brings it, and then Profile shows no card.
   final LevelCardParams? levelCard;
 
   final bool isSigningOut;
@@ -164,9 +166,27 @@ class ProfileTemplate extends StatelessWidget {
           Text(message, textAlign: TextAlign.center, style: messageStyle),
         ],
       ProfileFriendsParams friends => [
-          ProfileHeaderOrganism(params: friends.header),
+          if (isWide && levelCard != null)
+            // The header and the card share the line as two tiles would:
+            // the header over the friends' left tiles, the card over the
+            // right ones.
+            Row(
+              children: [
+                Expanded(
+                  child: ProfileHeaderOrganism(params: friends.header),
+                ),
+                SizedBox(width: TileGridAtom.gap.w),
+                Expanded(child: LevelCardOrganism(params: levelCard)),
+              ],
+            )
+          else ...[
+            ProfileHeaderOrganism(params: friends.header),
+            if (levelCard != null) ...[
+              SizedBox(height: 16.h),
+              LevelCardOrganism(params: levelCard),
+            ],
+          ],
           SizedBox(height: 16.h),
-          ...card,
           _keepOwnWidthWhenWide(
             AppButtonAtom(
               label: 'Add a friend',

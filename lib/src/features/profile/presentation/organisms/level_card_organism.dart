@@ -81,38 +81,58 @@ class LevelCardOrganism extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Row(
-                        children: [
-                          if (level.number > 0) ...[
-                            // "Level 21" says it, so screen readers skip the
-                            // icons. A long row of them shrinks to leave the
-                            // title whole.
-                            Flexible(
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerLeft,
-                                child: LevelIconsAtom(
-                                  suns: level.suns,
-                                  moons: level.moons,
-                                  stars: level.stars,
-                                  size: 30.w,
-                                  semanticLabel: null,
+                      // The icons give way first: a long row of them shrinks
+                      // to leave the title whole. Only when the title alone
+                      // can't fit, in a narrow card with big text, does it
+                      // shrink too, rather than run under ⓘ.
+                      child: LayoutBuilder(
+                        builder: (context, box) {
+                          final hasIcons = level.number > 0;
+                          final gap = hasIcons ? 12.w : 0.0;
+                          return Row(
+                            children: [
+                              if (hasIcons) ...[
+                                // "Level 21" says it, so screen readers skip
+                                // the icons.
+                                Flexible(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: LevelIconsAtom(
+                                      suns: level.suns,
+                                      moons: level.moons,
+                                      stars: level.stars,
+                                      size: 30.w,
+                                      semanticLabel: null,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: gap),
+                              ],
+                              ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: box.maxWidth > gap
+                                      ? box.maxWidth - gap
+                                      : 0,
+                                ),
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    params.title,
+                                    maxLines: 1,
+                                    style: TextStyle(
+                                      fontFamily: kDisplayFont,
+                                      fontSize: 22.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: QuestPalette.levelCream,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                            SizedBox(width: 12.w),
-                          ],
-                          Text(
-                            params.title,
-                            maxLines: 1,
-                            style: TextStyle(
-                              fontFamily: kDisplayFont,
-                              fontSize: 22.sp,
-                              fontWeight: FontWeight.w700,
-                              color: QuestPalette.levelCream,
-                            ),
-                          ),
-                        ],
+                            ],
+                          );
+                        },
                       ),
                     ),
                     IconButton(

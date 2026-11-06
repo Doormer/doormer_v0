@@ -6,6 +6,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// tallest on its line. A line that isn't full keeps its tiles that width,
 /// from the left.
 class TileGridAtom extends StatelessWidget {
+  /// The space between tiles, across and down, in design pixels.
+  static const double gap = 12;
+
   final int columns;
   final List<Widget> children;
 
@@ -21,13 +24,13 @@ class TileGridAtom extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (var first = 0; first < children.length; first += columns) ...[
-          if (first > 0) SizedBox(height: 12.h),
+          if (first > 0) SizedBox(height: gap.h),
           IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (var i = first; i < first + columns; i++) ...[
-                  if (i > first) SizedBox(width: 12.w),
+                  if (i > first) SizedBox(width: gap.w),
                   Expanded(
                     child: i < children.length
                         ? children[i]
