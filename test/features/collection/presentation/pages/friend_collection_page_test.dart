@@ -25,7 +25,8 @@ import 'package:go_router/go_router.dart';
 
 const _sam = FriendSummary(friendId: '42', nickname: 'Sam');
 
-/// Sam, as the API sends him with his collection: at level 6.
+/// Sam at level 6, as the friends list knows him. His collection's page shows
+/// no level, even if it gets one.
 const _samAtLevel6 = FriendSummary(
   friendId: '42',
   nickname: 'Sam',
@@ -257,5 +258,6 @@ void main() {
 
     expect(find.text("Sam's cards"), findsOneWidget);
     expect(find.byType(LevelIconsAtom), findsNothing);
+    expect(find.textContaining('Level'), findsNothing);
   });
 }

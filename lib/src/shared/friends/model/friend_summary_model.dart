@@ -9,7 +9,7 @@ class FriendSummaryModel {
   final String nickname;
   final CardPictureModel? picture;
 
-  /// Only on the routes that show friends, and only from level 1.
+  /// Only on the friends list and an accepted request, and only from level 1.
   final LevelModel? level;
 
   const FriendSummaryModel({

@@ -202,6 +202,11 @@ void main() {
     final info = tester.getRect(find.byTooltip('How levels work'));
     final card = tester.getRect(find.byType(LevelCardOrganism));
     expect(icons.width, lessThan(8 * 30), reason: 'drawn smaller than 30');
+    expect(
+        title.width,
+        moreOrLessEquals(
+            tester.renderObject<RenderBox>(find.text('Level 47')).size.width),
+        reason: 'the title keeps its size: the icons give way');
     expect(icons.right, lessThanOrEqualTo(title.left));
     expect(title.right, lessThanOrEqualTo(info.left));
     expect(info.right, lessThanOrEqualTo(card.right));

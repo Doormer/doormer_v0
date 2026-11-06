@@ -17,7 +17,8 @@ class FriendSummary extends Equatable {
   final CardPicture? picture;
 
   /// Null below level 1, and wherever the API shows no level: finding a
-  /// code, requests and Blocked. Only friends see a level.
+  /// code, requests, Blocked, and a friend's decks and cards. Only friends
+  /// see a level, in their friends list.
   final Level? level;
 
   const FriendSummary({

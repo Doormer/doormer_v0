@@ -169,7 +169,9 @@ class ProfileTemplate extends StatelessWidget {
           if (isWide && levelCard != null)
             // The header and the card share the line as two tiles would:
             // the header over the friends' left tiles, the card over the
-            // right ones.
+            // right ones. A plain Row, not TileGridAtom: its IntrinsicHeight
+            // would reach the card's LayoutBuilder, and it would stretch the
+            // header rather than centre it.
             Row(
               children: [
                 Expanded(
