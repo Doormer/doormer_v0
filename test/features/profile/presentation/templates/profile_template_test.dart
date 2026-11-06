@@ -351,6 +351,18 @@ void main() {
     });
 
     testWidgets(
+        'on a wide screen, screen readers still hear the card on its own, '
+        'not as part of the header', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await _pump(tester, window: _wide, body: _kai(), levelCard: card);
+
+      expect(
+          find.bySemanticsLabel(RegExp(r'Kai[\s\S]*Level 21')), findsNothing);
+      expect(find.bySemanticsLabel(RegExp(r'^Level 21')), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets(
         'on a wide screen, before a count brings the card, the header keeps '
         'the whole line', (tester) async {
       await _pump(tester, window: _wide, body: _kai());

@@ -18,6 +18,12 @@ class LevelCardOrganism extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Its own node for screen readers, wherever Profile places it. Beside the
+    // header on a wide screen, it would otherwise be heard as part of it.
+    return Semantics(container: true, child: _card());
+  }
+
+  Widget _card() {
     final level = params.level;
     final lineStyle = TextStyle(
       fontFamily: kBodyFont,
