@@ -63,7 +63,7 @@ class FriendRowMolecule extends StatelessWidget {
                   suns: level.suns,
                   moons: level.moons,
                   stars: level.stars,
-                  size: 14.w,
+                  size: 16.w,
                   semanticLabel: null,
                 ),
               ],

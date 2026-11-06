@@ -91,6 +91,7 @@ void main() {
     final icons = find.byType(LevelIconsAtom);
     final drawn = tester.widget<LevelIconsAtom>(icons);
     expect((drawn.suns, drawn.moons, drawn.stars), (0, 1, 2));
+    expect(drawn.size, 16.w);
     expect(tester.getRect(icons).left - tester.getRect(find.text('Sam')).right,
         moreOrLessEquals(6.w));
     expect(tester.getSemantics(find.text('Sam')).label, 'Sam, level 6');
