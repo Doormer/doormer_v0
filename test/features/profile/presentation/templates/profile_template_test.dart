@@ -312,7 +312,7 @@ void main() {
       nextLevelIcon: LevelIcon.star,
       activeDaysLabel: '548 active days',
       daysToGoLabel: '24 days',
-      nextLevelLabel: 'to your next star',
+      toNextIconLabel: 'to your next star',
       onExplain: () {},
     );
     final shown = find.byType(LevelCardOrganism);

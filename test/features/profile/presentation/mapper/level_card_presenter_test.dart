@@ -47,6 +47,11 @@ void main() {
         _progress(1, _level0, 4),
         0.2,
       ),
+      (
+        "empty, not broken, when the days to go don't add up",
+        _progress(525, _level21, 0),
+        0.0,
+      ),
     ]) {
       test(name, () {
         expect(LevelCardPresenter.barFillOf(progress), moreOrLessEquals(fill));
@@ -85,11 +90,11 @@ void main() {
     expect(card.nextLevelIcon, LevelIcon.star);
     expect(card.activeDaysLabel, '548 active days');
     expect(card.daysToGoLabel, '24 days');
-    expect(card.nextLevelLabel, 'to your next star');
+    expect(card.toNextIconLabel, 'to your next star');
     expect(explained, 1);
   });
 
-  for (final (progress, nextLevelLabel) in [
+  for (final (progress, toNextIconLabel) in [
     (_progress(31, _level3, 1, LevelIcon.moon), 'to your next moon'),
     (_progress(319, _level15, 1, LevelIcon.sun), 'to your next sun'),
   ]) {
@@ -100,7 +105,8 @@ void main() {
       )!;
 
       expect(card.daysToGoLabel, '1 day');
-      expect(card.nextLevelLabel, nextLevelLabel);
+      expect(card.toNextIconLabel, toNextIconLabel);
+      expect(card.nextLevelIcon, progress.nextLevelIcon);
     });
   }
 

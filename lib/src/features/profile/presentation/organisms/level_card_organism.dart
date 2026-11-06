@@ -35,8 +35,8 @@ class LevelCardOrganism extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          // The mockup's 160°: downward, leaning to the right.
-          transform: GradientRotation(-20 * math.pi / 180),
+          // The mockup's `linear-gradient(160deg, …)`.
+          transform: _CssAngle(160),
           colors: [
             QuestPalette.levelCardTop,
             QuestPalette.levelCardMiddle,
@@ -56,6 +56,9 @@ class LevelCardOrganism extends StatelessWidget {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: RadialGradient(
+                  // The mockup's `radial-gradient(closest-side, …)`: an
+                  // ellipse filling the 260 by 160 box.
+                  transform: const _FillBoxAsEllipse(),
                   colors: [
                     QuestPalette.levelHalo.withValues(alpha: 0.22),
                     QuestPalette.levelHalo.withValues(alpha: 0),
@@ -65,10 +68,12 @@ class LevelCardOrganism extends StatelessWidget {
             ),
           ),
           Padding(
-            // The ⓘ button is 40 tall, 10 more than the icons, and its icon
-            // sits 10 in from its right: the padding gives that back, so the
-            // card's content sits 16 in from every edge.
-            padding: EdgeInsets.fromLTRB(16.w, 11.h, 6.w, 14.h),
+            // The ⓘ button is 48 square with its 20 icon in the middle, so the
+            // top row is 9 taller than the icons above and below them, and the
+            // icon sits 14 in from the button's right. These paddings, and the
+            // bar's, give that back: the content sits 16 in from every edge,
+            // and the bar 14 under the icons.
+            padding: EdgeInsets.fromLTRB(16.w, 7.h, 2.w, 14.h),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -118,8 +123,8 @@ class LevelCardOrganism extends StatelessWidget {
                       padding: EdgeInsets.zero,
                       visualDensity: VisualDensity.standard,
                       constraints: BoxConstraints.tightFor(
-                        width: 40.w,
-                        height: 40.w,
+                        width: 48.w,
+                        height: 48.w,
                       ),
                       style: IconButton.styleFrom(
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -128,7 +133,7 @@ class LevelCardOrganism extends StatelessWidget {
                   ],
                 ),
                 Padding(
-                  padding: EdgeInsets.only(top: 9.h, right: 10.w),
+                  padding: EdgeInsets.only(top: 5.h, right: 14.w),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -137,27 +142,27 @@ class LevelCardOrganism extends StatelessWidget {
                         nextLevelIcon: params.nextLevelIcon,
                       ),
                       SizedBox(height: 9.h),
-                      Row(
+                      // Side by side when they fit. With big text, the days
+                      // to go drop under the active days.
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        spacing: 12.w,
                         children: [
                           Text(params.activeDaysLabel, style: lineStyle),
-                          SizedBox(width: 12.w),
-                          Expanded(
-                            child: Text.rich(
-                              TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: params.daysToGoLabel,
-                                    style: const TextStyle(
-                                      color: QuestPalette.levelPaleGold,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: params.daysToGoLabel,
+                                  style: const TextStyle(
+                                    color: QuestPalette.levelPaleGold,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                  TextSpan(text: ' ${params.nextLevelLabel}'),
-                                ],
-                              ),
-                              textAlign: TextAlign.end,
-                              style: lineStyle,
+                                ),
+                                TextSpan(text: ' ${params.toNextIconLabel}'),
+                              ],
                             ),
+                            style: lineStyle,
                           ),
                         ],
                       ),
@@ -170,5 +175,46 @@ class LevelCardOrganism extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Runs a top-to-bottom [LinearGradient] at a CSS angle in [degrees]
+/// (0 is up, 90 right). Like CSS, it puts the first colour on one corner
+/// and the last on the opposite one.
+class _CssAngle extends GradientTransform {
+  final double degrees;
+
+  const _CssAngle(this.degrees);
+
+  @override
+  Matrix4 transform(Rect bounds, {TextDirection? textDirection}) {
+    final angle = degrees * math.pi / 180;
+    // CSS's gradient line: long enough that lines across it at its two
+    // ends pass through the corners.
+    final length = (bounds.width * math.sin(angle)).abs() +
+        (bounds.height * math.cos(angle)).abs();
+    final centre = bounds.center;
+    return Matrix4.identity()
+      ..translate(centre.dx, centre.dy)
+      ..rotateZ(angle - math.pi)
+      ..scale(1.0, length / bounds.height)
+      ..translate(-centre.dx, -centre.dy);
+  }
+}
+
+/// Stretches a [RadialGradient] from a circle into the ellipse that fills
+/// its box, as CSS's `radial-gradient(closest-side, …)` does. Flutter
+/// draws a circle as wide as the box's shorter side.
+class _FillBoxAsEllipse extends GradientTransform {
+  const _FillBoxAsEllipse();
+
+  @override
+  Matrix4 transform(Rect bounds, {TextDirection? textDirection}) {
+    final centre = bounds.center;
+    return Matrix4.identity()
+      ..translate(centre.dx, centre.dy)
+      ..scale(bounds.width / bounds.shortestSide,
+          bounds.height / bounds.shortestSide)
+      ..translate(-centre.dx, -centre.dy);
   }
 }

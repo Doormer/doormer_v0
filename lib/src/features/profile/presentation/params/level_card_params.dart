@@ -23,8 +23,9 @@ class LevelCardParams {
   /// Under the bar on the right, in gold, such as `24 days`.
   final String daysToGoLabel;
 
-  /// After [daysToGoLabel], such as `to your next star`.
-  final String nextLevelLabel;
+  /// After [daysToGoLabel]: `to your next star`, `to your next moon` or
+  /// `to your next sun`.
+  final String toNextIconLabel;
 
   /// Opens How levels work.
   final VoidCallback onExplain;
@@ -36,7 +37,7 @@ class LevelCardParams {
     required this.nextLevelIcon,
     required this.activeDaysLabel,
     required this.daysToGoLabel,
-    required this.nextLevelLabel,
+    required this.toNextIconLabel,
     required this.onExplain,
   });
 }

@@ -24,7 +24,7 @@ abstract final class LevelCardPresenter {
       nextLevelIcon: progress.nextLevelIcon,
       activeDaysLabel: activeDaysLabelOf(progress.activeDays),
       daysToGoLabel: daysToGoLabelOf(progress.activeDaysToNextLevel),
-      nextLevelLabel: 'to your next $nextIcon',
+      toNextIconLabel: 'to your next $nextIcon',
       onExplain: onExplain,
     );
   }

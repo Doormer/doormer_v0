@@ -7,11 +7,24 @@ import 'package:doormer/src/shared/design/atomic/atoms/level_icons_atom.dart';
 import 'package:doormer/src/shared/levels/entity/level.dart';
 import 'package:doormer/src/shared/levels/entity/level_icon.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _level21 = Level(number: 21, suns: 1, moons: 1, stars: 1);
 const _toNextStar = '24 days to your next star';
+
+/// Loads the app's faces, so words take the room they take in the app
+/// rather than the test font's 1 em a letter.
+Future<void> _loadFaces() async {
+  final display = FontLoader(kDisplayFont)
+    ..addFont(rootBundle.load('assets/fonts/Fredoka-700.ttf'));
+  final body = FontLoader(kBodyFont);
+  for (final weight in [400, 600]) {
+    body.addFont(rootBundle.load('assets/fonts/SpaceGrotesk-$weight.ttf'));
+  }
+  await Future.wait([display.load(), body.load()]);
+}
 
 /// The card on the 360 by 690 design phone, 20 in from each side, as
 /// Profile places it.
@@ -52,11 +65,13 @@ LevelCardParams _card({
       nextLevelIcon: LevelIcon.star,
       activeDaysLabel: activeDaysLabel,
       daysToGoLabel: daysToGoLabel,
-      nextLevelLabel: 'to your next star',
+      toNextIconLabel: 'to your next star',
       onExplain: onExplain ?? () {},
     );
 
 void main() {
+  setUpAll(_loadFaces);
+
   testWidgets('shows the icons at 30, then the level, with ⓘ at the right',
       (tester) async {
     await _pump(tester, _card());
@@ -98,6 +113,8 @@ void main() {
     expect(activeDays.top, greaterThan(bar.bottom));
     expect(activeDays.left, moreOrLessEquals(bar.left));
     expect(toNextStar.right, moreOrLessEquals(bar.right));
+    expect(toNextStar.top, moreOrLessEquals(activeDays.top),
+        reason: 'on one line');
     final spans =
         (tester.widget<Text>(find.text(_toNextStar)).textSpan! as TextSpan)
             .children!;
@@ -105,6 +122,21 @@ void main() {
     expect(daysToGo.text, '24 days');
     expect(daysToGo.style?.color, QuestPalette.levelPaleGold);
     expect(daysToGo.style?.fontWeight, FontWeight.w600);
+  });
+
+  testWidgets(
+      'with big text, the days to go drop under the active days, and the '
+      'card still fits', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await _pump(tester, _card());
+
+    final bar = tester.getRect(find.byType(LevelProgressBarMolecule));
+    final activeDays = tester.getRect(find.text('548 active days'));
+    final toNextStar = tester.getRect(find.text(_toNextStar));
+    expect(toNextStar.top, greaterThanOrEqualTo(activeDays.bottom));
+    expect(toNextStar.left, moreOrLessEquals(bar.left));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets(
@@ -154,6 +186,29 @@ void main() {
     expect(icons.right, lessThanOrEqualTo(title.left));
     expect(title.right, lessThanOrEqualTo(info.left));
     expect(info.right, lessThanOrEqualTo(card.right));
+  });
+
+  testWidgets(
+      'ⓘ is 48 square, big enough to tap on a phone, and the content still '
+      'sits 16 in from the edges, with the bar 14 under the icons',
+      (tester) async {
+    final semantics = tester.ensureSemantics();
+    await _pump(tester, _card());
+
+    expect(
+        tester.getSize(find.byTooltip('How levels work')), const Size(48, 48));
+    await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+    final card = tester.getRect(find.byType(LevelCardOrganism));
+    final icons = tester.getRect(find.byType(LevelIconsAtom));
+    final info = tester.getRect(find.byIcon(Icons.info_outline_rounded));
+    final bar = tester.getRect(find.byType(LevelProgressBarMolecule));
+    // 16 in, plus the card's 1 px border.
+    expect(icons.left - card.left, moreOrLessEquals(17));
+    expect(icons.top - card.top, moreOrLessEquals(17));
+    expect(card.right - info.right, moreOrLessEquals(17));
+    expect(card.right - bar.right, moreOrLessEquals(17));
+    expect(bar.top - icons.bottom, moreOrLessEquals(14));
+    semantics.dispose();
   });
 
   testWidgets('ⓘ opens How levels work', (tester) async {
