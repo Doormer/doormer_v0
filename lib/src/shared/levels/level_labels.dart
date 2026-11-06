@@ -11,7 +11,7 @@ abstract final class LevelLabels {
         LevelIcon.sun => 'sun',
       };
 
-  /// `Level 21`: the heading of the student's own level strip, and what
+  /// `Level 21`: the heading of the student's own level card, and what
   /// screen readers hear for a friend's icons.
   static String levelOf(Level level) => 'Level ${level.number}';
 

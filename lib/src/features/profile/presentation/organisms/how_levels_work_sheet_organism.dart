@@ -4,7 +4,7 @@ import 'package:doormer/src/shared/design/atomic/atoms/level_icons_atom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// How levels work, opened from the ⓘ on Profile's level strip: what counts
+/// How levels work, opened from the ⓘ on Profile's level card: what counts
 /// as an active day, that a level never goes down, how stars, moons and suns
 /// add up, and that friends see the level. Nothing in it urges a visit.
 class HowLevelsWorkSheetOrganism extends StatelessWidget {

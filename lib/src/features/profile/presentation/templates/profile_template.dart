@@ -9,9 +9,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../organisms/friend_list_organism.dart';
 import '../organisms/friend_request_list_organism.dart';
-import '../organisms/level_strip_organism.dart';
+import '../organisms/level_card_organism.dart';
 import '../organisms/profile_header_organism.dart';
-import '../params/level_strip_params.dart';
+import '../params/level_card_params.dart';
 import '../params/profile_body_params.dart';
 
 /// Profile, the home for friends: its heading, the student's level, whatever
@@ -32,10 +32,10 @@ class ProfileTemplate extends StatelessWidget {
 
   final ProfileBodyParams body;
 
-  /// The student's level: under the header once friends is set up, and at
-  /// the top otherwise. Null until a count of the day brings it, and then
-  /// Profile shows no strip.
-  final LevelStripParams? levelStrip;
+  /// The student's level card: under the header once friends is set up,
+  /// and at the top otherwise. Null until a count of the day brings it, and
+  /// then Profile shows no card.
+  final LevelCardParams? levelCard;
 
   final bool isSigningOut;
   final VoidCallback onSignOut;
@@ -43,7 +43,7 @@ class ProfileTemplate extends StatelessWidget {
   const ProfileTemplate({
     super.key,
     required this.body,
-    this.levelStrip,
+    this.levelCard,
     required this.isSigningOut,
     required this.onSignOut,
   });
@@ -100,17 +100,17 @@ class ProfileTemplate extends StatelessWidget {
   List<Widget> _content({required bool isWide}) {
     final messageStyle = TextStyle(fontSize: 13.sp, color: QuestPalette.body);
     final columns = isWide ? 2 : 1;
-    final levelStrip = this.levelStrip;
+    final levelCard = this.levelCard;
     // The level, with room under it, for every student who has one.
-    final strip = [
-      if (levelStrip != null) ...[
-        LevelStripOrganism(params: levelStrip),
+    final card = [
+      if (levelCard != null) ...[
+        LevelCardOrganism(params: levelCard),
         SizedBox(height: 16.h),
       ],
     ];
     return switch (body) {
       ProfileLoadingParams() => [
-          ...strip,
+          ...card,
           Padding(
             padding: EdgeInsets.symmetric(vertical: 40.h),
             child: const Center(
@@ -119,7 +119,7 @@ class ProfileTemplate extends StatelessWidget {
           ),
         ],
       ProfileErrorParams(:final message, :final onRetry) => [
-          ...strip,
+          ...card,
           ErrorWithRetryMolecule(
             message: message,
             onRetry: onRetry,
@@ -127,7 +127,7 @@ class ProfileTemplate extends StatelessWidget {
           ),
         ],
       ProfileNotSetUpParams(:final onSetUp) => [
-          ...strip,
+          ...card,
           SurfaceCardAtom(
             child: Column(
               children: [
@@ -160,13 +160,13 @@ class ProfileTemplate extends StatelessWidget {
           ),
         ],
       ProfileTurnedOffParams(:final message) => [
-          ...strip,
+          ...card,
           Text(message, textAlign: TextAlign.center, style: messageStyle),
         ],
       ProfileFriendsParams friends => [
           ProfileHeaderOrganism(params: friends.header),
           SizedBox(height: 16.h),
-          ...strip,
+          ...card,
           _keepOwnWidthWhenWide(
             AppButtonAtom(
               label: 'Add a friend',

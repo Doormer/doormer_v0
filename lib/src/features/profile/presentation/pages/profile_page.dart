@@ -16,7 +16,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../utils/friend_codes.dart';
 import '../bloc/friends_bloc.dart';
 import '../bloc/profile_bloc.dart';
-import '../mapper/level_strip_presenter.dart';
+import '../mapper/level_card_presenter.dart';
 import '../organisms/how_levels_work_sheet_organism.dart';
 import '../organisms/report_sheet_organism.dart';
 import '../params/friend_request_row_params.dart';
@@ -106,7 +106,7 @@ class _ProfileViewState extends State<_ProfileView> {
             final friendsState = context.watch<FriendsBloc>().state;
             return ProfileTemplate(
               body: _bodyFor(context, friendsState),
-              levelStrip: LevelStripPresenter.stripFor(
+              levelCard: LevelCardPresenter.cardFor(
                 levelProgress,
                 onExplain: () => _explainLevels(context),
               ),

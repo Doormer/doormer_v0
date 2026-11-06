@@ -1,7 +1,7 @@
 part of 'level_progress_bloc.dart';
 
 class LevelProgressState extends Equatable {
-  /// Null until a count of the day brings it. Profile shows no level strip
+  /// Null until a count of the day brings it. Profile shows no level card
   /// until then.
   final LevelProgress? progress;
 

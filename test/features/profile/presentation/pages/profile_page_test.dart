@@ -20,7 +20,7 @@ import 'package:doormer/src/features/profile/presentation/bloc/friends_bloc.dart
 import 'package:doormer/src/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:doormer/src/features/profile/presentation/molecules/friend_request_row_molecule.dart';
 import 'package:doormer/src/features/profile/presentation/molecules/friend_row_molecule.dart';
-import 'package:doormer/src/features/profile/presentation/organisms/level_strip_organism.dart';
+import 'package:doormer/src/features/profile/presentation/organisms/level_card_organism.dart';
 import 'package:doormer/src/features/profile/presentation/pages/profile_page.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/level_icons_atom.dart';
@@ -591,15 +591,16 @@ void main() {
       "shows the student's level under their friend code once a count of "
       'the day brings it', (tester) async {
     await pumpProfile(tester);
-    expect(find.byType(LevelStripOrganism), findsNothing,
+    expect(find.byType(LevelCardOrganism), findsNothing,
         reason: 'no count of the day yet');
 
     serviceLocator<LevelProgressBloc>().add(const LevelProgressUpdated(_at540));
     await tester.pumpAndSettle();
 
     expect(find.text('Level 21'), findsOneWidget);
-    expect(find.text('540 active days · 32 to your next star'), findsOneWidget);
-    expect(tester.getRect(find.byType(LevelStripOrganism)).top,
+    expect(find.text('540 active days'), findsOneWidget);
+    expect(find.text('32 days to your next star'), findsOneWidget);
+    expect(tester.getRect(find.byType(LevelCardOrganism)).top,
         greaterThanOrEqualTo(tester.getRect(find.text('K7QM-2XPA')).bottom));
   });
 
@@ -617,9 +618,10 @@ void main() {
     await pumpProfile(tester);
 
     expect(find.text('Level 0'), findsOneWidget);
-    expect(find.text('1 active day · 4 to your next star'), findsOneWidget);
+    expect(find.text('1 active day'), findsOneWidget);
+    expect(find.text('4 days to your next star'), findsOneWidget);
     expect(
-      tester.getRect(find.byType(LevelStripOrganism)).bottom,
+      tester.getRect(find.byType(LevelCardOrganism)).bottom,
       lessThanOrEqualTo(tester
           .getRect(find.text(
               "Add friends with a friend code and see each other's cards."))

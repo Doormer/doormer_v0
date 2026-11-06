@@ -3,10 +3,10 @@ import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/features/profile/presentation/molecules/friend_request_row_molecule.dart';
 import 'package:doormer/src/features/profile/presentation/molecules/friend_row_molecule.dart';
-import 'package:doormer/src/features/profile/presentation/organisms/level_strip_organism.dart';
+import 'package:doormer/src/features/profile/presentation/organisms/level_card_organism.dart';
 import 'package:doormer/src/features/profile/presentation/params/friend_request_row_params.dart';
 import 'package:doormer/src/features/profile/presentation/params/friend_row_params.dart';
-import 'package:doormer/src/features/profile/presentation/params/level_strip_params.dart';
+import 'package:doormer/src/features/profile/presentation/params/level_card_params.dart';
 import 'package:doormer/src/features/profile/presentation/params/profile_body_params.dart';
 import 'package:doormer/src/features/profile/presentation/params/profile_header_params.dart';
 import 'package:doormer/src/features/profile/presentation/templates/profile_template.dart';
@@ -14,6 +14,7 @@ import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/glow_badge_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/surface_card_atom.dart';
 import 'package:doormer/src/shared/levels/entity/level.dart';
+import 'package:doormer/src/shared/levels/entity/level_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -41,7 +42,7 @@ Future<void> _pump(
   WidgetTester tester, {
   required Size window,
   required ProfileBodyParams body,
-  LevelStripParams? levelStrip,
+  LevelCardParams? levelCard,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = window;
@@ -52,7 +53,7 @@ Future<void> _pump(
     builder: (context, child) => ResponsiveAppShell(child: child!),
     home: ProfileTemplate(
       body: body,
-      levelStrip: levelStrip,
+      levelCard: levelCard,
       isSigningOut: false,
       onSignOut: () {},
     ),
@@ -303,19 +304,23 @@ void main() {
     });
   });
 
-  group('the level strip', () {
-    final strip = LevelStripParams(
+  group('the level card', () {
+    final card = LevelCardParams(
       level: const Level(number: 21, suns: 1, moons: 1, stars: 1),
       title: 'Level 21',
-      activeDaysLine: '540 active days · 32 to your next star',
+      barFill: 23 / 47,
+      nextLevelIcon: LevelIcon.star,
+      activeDaysLabel: '548 active days',
+      daysToGoLabel: '24 days',
+      nextLevelLabel: 'to your next star',
       onExplain: () {},
     );
-    final shown = find.byType(LevelStripOrganism);
+    final shown = find.byType(LevelCardOrganism);
 
     testWidgets(
         'sits under the picture, nickname and friend code once friends is '
         'set up, above Add a friend', (tester) async {
-      await _pump(tester, window: _narrow, body: _kai(), levelStrip: strip);
+      await _pump(tester, window: _narrow, body: _kai(), levelCard: card);
 
       final rect = tester.getRect(shown);
       expect(rect.top,
@@ -329,7 +334,7 @@ void main() {
         tester,
         window: _narrow,
         body: ProfileNotSetUpParams(onSetUp: () {}),
-        levelStrip: strip,
+        levelCard: card,
       );
 
       const intro =
@@ -345,7 +350,7 @@ void main() {
         tester,
         window: _narrow,
         body: const ProfileTurnedOffParams(message: turnedOff),
-        levelStrip: strip,
+        levelCard: card,
       );
 
       expect(tester.getRect(shown).bottom,
@@ -358,7 +363,7 @@ void main() {
         tester,
         window: _narrow,
         body: ProfileErrorParams(message: error, onRetry: () {}),
-        levelStrip: strip,
+        levelCard: card,
       );
 
       expect(tester.getRect(shown).bottom,

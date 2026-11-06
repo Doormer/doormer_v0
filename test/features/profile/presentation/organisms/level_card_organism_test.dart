@@ -1,0 +1,167 @@
+import 'package:doormer/src/core/theme/app_theme.dart';
+import 'package:doormer/src/core/theme/quest_palette.dart';
+import 'package:doormer/src/features/profile/presentation/molecules/level_progress_bar_molecule.dart';
+import 'package:doormer/src/features/profile/presentation/organisms/level_card_organism.dart';
+import 'package:doormer/src/features/profile/presentation/params/level_card_params.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/level_icons_atom.dart';
+import 'package:doormer/src/shared/levels/entity/level.dart';
+import 'package:doormer/src/shared/levels/entity/level_icon.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+const _level21 = Level(number: 21, suns: 1, moons: 1, stars: 1);
+const _toNextStar = '24 days to your next star';
+
+/// The card on the 360 by 690 design phone, 20 in from each side, as
+/// Profile places it.
+Future<void> _pump(WidgetTester tester, LevelCardParams params) async {
+  tester.view.physicalSize = const Size(360, 690);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(ScreenUtilInit(
+    designSize: const Size(360, 690),
+    builder: (_, __) => MaterialApp(
+      theme: AppTheme.dark,
+      home: Scaffold(
+        body: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: LevelCardOrganism(params: params),
+          ),
+        ),
+      ),
+    ),
+  ));
+}
+
+/// Level 21 at 548 active days, 24 from a star, unless told otherwise.
+LevelCardParams _card({
+  Level level = _level21,
+  String title = 'Level 21',
+  double barFill = 23 / 47,
+  String activeDaysLabel = '548 active days',
+  String daysToGoLabel = '24 days',
+  VoidCallback? onExplain,
+}) =>
+    LevelCardParams(
+      level: level,
+      title: title,
+      barFill: barFill,
+      nextLevelIcon: LevelIcon.star,
+      activeDaysLabel: activeDaysLabel,
+      daysToGoLabel: daysToGoLabel,
+      nextLevelLabel: 'to your next star',
+      onExplain: onExplain ?? () {},
+    );
+
+void main() {
+  testWidgets('shows the icons at 30, then the level, with ⓘ at the right',
+      (tester) async {
+    await _pump(tester, _card());
+
+    final icons = find.byType(LevelIconsAtom);
+    final drawn = tester.widget<LevelIconsAtom>(icons);
+    expect((drawn.suns, drawn.moons, drawn.stars), (1, 1, 1));
+    expect(drawn.size, 30);
+    final title = tester.getRect(find.text('Level 21'));
+    final info = tester.getRect(find.byTooltip('How levels work'));
+    final card = tester.getRect(find.byType(LevelCardOrganism));
+    expect(tester.getRect(icons).right, lessThanOrEqualTo(title.left));
+    expect(info.left, greaterThanOrEqualTo(title.right));
+    expect(card.right - info.right, lessThanOrEqualTo(8),
+        reason: 'at the right of the card');
+  });
+
+  testWidgets(
+      "shows how far through the level the student is, and the next level's "
+      'icon, under the title', (tester) async {
+    await _pump(tester, _card());
+
+    final bar = find.byType(LevelProgressBarMolecule);
+    expect(tester.widget<LevelProgressBarMolecule>(bar).fill, 23 / 47);
+    expect(tester.widget<LevelProgressBarMolecule>(bar).nextLevelIcon,
+        LevelIcon.star);
+    expect(tester.getRect(bar).top,
+        greaterThan(tester.getRect(find.text('Level 21')).bottom));
+  });
+
+  testWidgets(
+      'puts the active days on the left and the days to go on the right, '
+      'those in gold', (tester) async {
+    await _pump(tester, _card());
+
+    final bar = tester.getRect(find.byType(LevelProgressBarMolecule));
+    final activeDays = tester.getRect(find.text('548 active days'));
+    final toNextStar = tester.getRect(find.text(_toNextStar));
+    expect(activeDays.top, greaterThan(bar.bottom));
+    expect(activeDays.left, moreOrLessEquals(bar.left));
+    expect(toNextStar.right, moreOrLessEquals(bar.right));
+    final spans =
+        (tester.widget<Text>(find.text(_toNextStar)).textSpan! as TextSpan)
+            .children!;
+    final daysToGo = spans.first as TextSpan;
+    expect(daysToGo.text, '24 days');
+    expect(daysToGo.style?.color, QuestPalette.levelPaleGold);
+    expect(daysToGo.style?.fontWeight, FontWeight.w600);
+  });
+
+  testWidgets(
+      'at level 0 shows "Level 0" with no icons, and the bar filling toward '
+      'a star', (tester) async {
+    await _pump(
+      tester,
+      _card(
+        level: const Level(number: 0, suns: 0, moons: 0, stars: 0),
+        title: 'Level 0',
+        barFill: 0.2,
+        activeDaysLabel: '1 active day',
+        daysToGoLabel: '4 days',
+      ),
+    );
+
+    expect(find.byType(LevelIconsAtom), findsNothing);
+    expect(find.text('Level 0'), findsOneWidget);
+    expect(find.text('1 active day'), findsOneWidget);
+    expect(find.text('4 days to your next star'), findsOneWidget);
+    expect(
+      tester
+          .widget<LevelProgressBarMolecule>(
+              find.byType(LevelProgressBarMolecule))
+          .fill,
+      0.2,
+    );
+  });
+
+  testWidgets(
+      'a long row of icons shrinks to fit, so the level and ⓘ stay whole',
+      (tester) async {
+    // Level 47: two suns, three moons and three stars.
+    await _pump(
+      tester,
+      _card(
+        level: const Level(number: 47, suns: 2, moons: 3, stars: 3),
+        title: 'Level 47',
+      ),
+    );
+
+    final icons = tester.getRect(find.byType(LevelIconsAtom));
+    final title = tester.getRect(find.text('Level 47'));
+    final info = tester.getRect(find.byTooltip('How levels work'));
+    final card = tester.getRect(find.byType(LevelCardOrganism));
+    expect(icons.width, lessThan(8 * 30), reason: 'drawn smaller than 30');
+    expect(icons.right, lessThanOrEqualTo(title.left));
+    expect(title.right, lessThanOrEqualTo(info.left));
+    expect(info.right, lessThanOrEqualTo(card.right));
+  });
+
+  testWidgets('ⓘ opens How levels work', (tester) async {
+    var explained = 0;
+    await _pump(tester, _card(onExplain: () => explained++));
+
+    await tester.tap(find.byTooltip('How levels work'));
+
+    expect(explained, 1);
+  });
+}

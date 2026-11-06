@@ -6,7 +6,7 @@ import '../entity/level_progress.dart';
 part 'level_progress_event.dart';
 part 'level_progress_state.dart';
 
-/// The signed-in student's latest level progress, for Profile's level strip.
+/// The signed-in student's latest level progress, for Profile's level card.
 /// One for the whole app.
 ///
 /// It only holds the progress. The levels feature's active day bloc tells it
