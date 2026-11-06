@@ -10,9 +10,10 @@ import 'package:doormer/src/shared/design/atomic/molecules/error_with_retry_mole
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// The Saved page: its heading, Mine and Shared with me, then whatever
-/// [body] holds for the list shown. The destination shell lays the page out
-/// above the nav bar, so the last row is never hidden under it.
+/// The Saved page: Mine and Shared with me at the top, then whatever [body]
+/// holds for the list shown. The nav bar already names the page, so it has no
+/// visible heading. The destination shell lays the page out above the nav
+/// bar, so the last row is never hidden under it.
 class SavedQuestionsTemplate extends StatelessWidget {
   final SavedListSwitchParams listSwitch;
   final SavedQuestionsBodyParams body;
@@ -35,24 +36,15 @@ class SavedQuestionsTemplate extends StatelessWidget {
           children: [
             Padding(
               padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 12.h),
-              child: Semantics(
-                header: true,
-                child: Text(
-                  'Saved',
-                  style: TextStyle(
-                    fontFamily: kDisplayFont,
-                    fontSize: 22.sp,
-                    fontWeight: FontWeight.w600,
-                    color: QuestPalette.cream,
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: SavedListSwitchMolecule(params: listSwitch),
+                // On the web, the nav bar reads each tab out without saying
+                // which one is selected, so the switch names the page.
+                child: Semantics(
+                  container: true,
+                  label: 'Saved',
+                  child: SavedListSwitchMolecule(params: listSwitch),
+                ),
               ),
             ),
             // Each list keeps its own place: switching starts the other one

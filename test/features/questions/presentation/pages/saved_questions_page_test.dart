@@ -13,6 +13,7 @@ import 'package:doormer/src/features/questions/presentation/bloc/saved_questions
 import 'package:doormer/src/features/questions/presentation/organisms/photo_enlarge_organism.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
 import 'package:doormer/src/features/questions/presentation/pages/saved_questions_page.dart';
+import 'package:doormer/src/features/questions/presentation/templates/saved_questions_template.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -445,10 +446,10 @@ void main() {
 
     testWidgets(
         'switching lists keeps the focus on the switch, for the keyboard and '
-        'a screen reader, and keeps the heading', (tester) async {
+        'a screen reader, and keeps the page in place', (tester) async {
       final semantics = tester.ensureSemantics();
       await pumpSaved(tester);
-      final heading = tester.element(find.text('Saved'));
+      final page = tester.element(find.byType(SavedQuestionsTemplate));
       final sharedChoice =
           Focus.of(tester.element(find.text('Shared with me')));
       final sharedNodeId = tester.getSemantics(find.text('Shared with me')).id;
@@ -465,7 +466,8 @@ void main() {
       expect(sharedChoice.hasPrimaryFocus, isTrue);
       expect(tester.getSemantics(find.text('Shared with me')).id, sharedNodeId,
           reason: "a screen reader's place");
-      expect(tester.element(find.text('Saved')), same(heading));
+      expect(tester.element(find.byType(SavedQuestionsTemplate)), same(page),
+          reason: 'switching updates the page; it builds no new one');
       semantics.dispose();
     });
 
