@@ -15,6 +15,9 @@ import '../params/new_level_pop_up_params.dart';
 
 /// Opens the pop-up for a new level over the whole screen, nav bar
 /// included. Nice!, the back gesture, Escape and a tap outside it close it.
+/// On the web, the browser's back button moves the app's router instead,
+/// so it changes the page under the pop-up and leaves it open, as it does
+/// for every dialog in the app.
 Future<void> showNewLevelPopUp(
   BuildContext context,
   NewLevelPopUpParams params,
@@ -105,16 +108,23 @@ class _NewLevelPopUpOrganismState extends State<NewLevelPopUpOrganism>
       child: Center(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 19.w),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: NewLevelPopUpOrganism.maxWidth.w,
-            ),
-            child: AnimatedBuilder(
-              animation: _clock,
-              builder: (context, _) => _card(
-                MotionPolicy.of(context)
-                    ? _Moment(_clock.value, merges: merges)
-                    : _Moment.still(merges: merges),
+          // On a short screen, such as a phone turned sideways, the card
+          // scrolls rather than cutting Nice! off. When it fits, the scroll
+          // view is only as big as the card, so a tap beside it still
+          // reaches the scrim. Clip.none keeps the card's shadow.
+          child: SingleChildScrollView(
+            clipBehavior: Clip.none,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: NewLevelPopUpOrganism.maxWidth.w,
+              ),
+              child: AnimatedBuilder(
+                animation: _clock,
+                builder: (context, _) => _card(
+                  MotionPolicy.of(context)
+                      ? _Moment(_clock.value, merges: merges)
+                      : _Moment.still(merges: merges),
+                ),
               ),
             ),
           ),

@@ -1,3 +1,4 @@
+import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/features/levels/presentation/atoms/sunburst_atom.dart';
 import 'package:doormer/src/features/levels/presentation/organisms/new_level_pop_up_organism.dart';
@@ -64,6 +65,24 @@ Future<void> _pump(
   ));
 }
 
+/// [home] in a [window], scaled as the app scales every screen: the app's
+/// `ResponsiveAppShell` picks the scale, which stops at its floor of 0.85 on
+/// a short window.
+Future<void> _pumpInWindow(
+  WidgetTester tester,
+  Widget home, {
+  required Size window,
+}) async {
+  tester.view.physicalSize = window;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(MaterialApp(
+    theme: AppTheme.dark,
+    builder: (context, child) => ResponsiveAppShell(child: child!),
+    home: Scaffold(body: home),
+  ));
+}
+
 /// [params]' pop-up on its own, as it first shows.
 Future<void> _pumpPopUp(
   WidgetTester tester,
@@ -77,26 +96,30 @@ Future<void> _pumpPopUp(
     );
 
 /// Opens [params]' pop-up from a page, as the nav bar shell does, and lets
-/// its first 0.2 s run. Answers how many times it has closed so far.
+/// its first 0.2 s run: on the design phone, or in [window] as the app
+/// scales it. Answers how many times it has closed so far.
 Future<int Function()> _open(
   WidgetTester tester,
-  NewLevelPopUpParams params,
-) async {
+  NewLevelPopUpParams params, {
+  Size? window,
+}) async {
   var closed = 0;
-  await _pump(
-    tester,
-    Builder(
-      builder: (context) => Center(
-        child: TextButton(
-          onPressed: () async {
-            await showNewLevelPopUp(context, params);
-            closed++;
-          },
-          child: const Text('Open'),
-        ),
+  final page = Builder(
+    builder: (context) => Center(
+      child: TextButton(
+        onPressed: () async {
+          await showNewLevelPopUp(context, params);
+          closed++;
+        },
+        child: const Text('Open'),
       ),
     ),
   );
+  if (window == null) {
+    await _pump(tester, page);
+  } else {
+    await _pumpInWindow(tester, page, window: window);
+  }
   await tester.tap(find.text('Open'));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 200));
@@ -166,7 +189,14 @@ void main() {
     final semantics = tester.ensureSemantics();
     final closed = await _open(tester, _newMoon);
 
-    expect(find.bySemanticsLabel("New moon! You're level 4."), findsOneWidget);
+    expect(
+      tester.getSemantics(find.bySemanticsLabel("New moon! You're level 4.")),
+      containsSemantics(
+        label: "New moon! You're level 4.",
+        namesRoute: true,
+        scopesRoute: true,
+      ),
+    );
 
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
@@ -185,9 +215,12 @@ void main() {
     expect(find.byType(NewLevelPopUpOrganism), findsNothing);
   });
 
-  testWidgets('the back gesture closes it', (tester) async {
+  testWidgets('the system back gesture closes it', (tester) async {
     final closed = await _open(tester, _newMoon);
 
+    // The back button or gesture of a phone app, sent as a pop. On the
+    // web the browser's back button goes to the router instead, which
+    // leaves dialogs open.
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
 
@@ -219,6 +252,33 @@ void main() {
     expect(closed(), 1);
     expect(find.byType(NewLevelPopUpOrganism), findsNothing);
   });
+
+  for (final textScale in [1, 2]) {
+    testWidgets(
+        'on a short screen, such as a phone turned sideways, the card scrolls '
+        'and Nice! still closes it, at text scale $textScale', (tester) async {
+      // With motion off the pop-up stands still, so the frames can settle.
+      tester.platformDispatcher
+        ..accessibilityFeaturesTestValue =
+            const FakeAccessibilityFeatures(disableAnimations: true)
+        ..textScaleFactorTestValue = textScale.toDouble();
+      addTearDown(
+          tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final closed =
+          await _open(tester, _newMoon, window: const Size(740, 330));
+
+      expect(tester.takeException(), isNull);
+
+      await tester.ensureVisible(find.text('Nice!'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Nice!'));
+      await tester.pumpAndSettle();
+
+      expect(closed(), 1);
+      expect(find.byType(NewLevelPopUpOrganism), findsNothing);
+    });
+  }
 
   testWidgets(
       'for a new moon, four stars pop in and fly together, then a flash, and '
