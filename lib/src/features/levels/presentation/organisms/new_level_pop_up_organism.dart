@@ -397,7 +397,7 @@ class _NewLevelPopUpOrganismState extends State<NewLevelPopUpOrganism>
   }
 
   Widget _niceButton() {
-    final shape = BorderRadius.circular(22.r);
+    final corners = BorderRadius.circular(22.r);
     return TextButton(
       autofocus: true,
       onPressed: widget.onClose,
@@ -407,7 +407,7 @@ class _NewLevelPopUpOrganismState extends State<NewLevelPopUpOrganism>
         // 44 on computers too, where the default compact density would
         // take 8 off.
         visualDensity: VisualDensity.standard,
-        shape: RoundedRectangleBorder(borderRadius: shape),
+        shape: RoundedRectangleBorder(borderRadius: corners),
         textStyle: TextStyle(
           fontFamily: kDisplayFont,
           fontSize: 17.sp,
@@ -418,7 +418,7 @@ class _NewLevelPopUpOrganismState extends State<NewLevelPopUpOrganism>
         backgroundBuilder: (context, states, child) => Ink(
           key: const ValueKey('nice-gold'),
           decoration: BoxDecoration(
-            borderRadius: shape,
+            borderRadius: corners,
             gradient: const LinearGradient(
               colors: [QuestPalette.levelButton, QuestPalette.levelGold],
             ),
