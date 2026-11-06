@@ -280,6 +280,18 @@ void main() {
     });
   }
 
+  testWidgets('Nice! is a 44-tall gold pill on phones and computers alike',
+      (tester) async {
+    await _pumpPopUp(tester, _newMoon, reduceMotion: true);
+
+    final gold = tester.getSize(find.byKey(const ValueKey('nice-gold')));
+    expect(gold.height, moreOrLessEquals(44));
+    expect(gold.width,
+        moreOrLessEquals(tester.getSize(find.byType(TextButton)).width));
+  },
+      variant: const TargetPlatformVariant(
+          {TargetPlatform.android, TargetPlatform.macOS}));
+
   testWidgets(
       'for a new moon, four stars pop in and fly together, then a flash, and '
       'the moon pops in before the words rise', (tester) async {

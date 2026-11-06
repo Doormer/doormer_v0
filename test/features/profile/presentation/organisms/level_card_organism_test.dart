@@ -7,6 +7,7 @@ import 'package:doormer/src/shared/design/atomic/atoms/level_icons_atom.dart';
 import 'package:doormer/src/shared/levels/entity/level.dart';
 import 'package:doormer/src/shared/levels/entity/level_icon.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -124,20 +125,31 @@ void main() {
     expect(daysToGo.style?.fontWeight, FontWeight.w600);
   });
 
-  testWidgets(
-      'with big text, the days to go drop under the active days, and the '
-      'card still fits', (tester) async {
-    tester.platformDispatcher.textScaleFactorTestValue = 2;
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    await _pump(tester, _card());
+  for (final scale in [1.5, 2.0]) {
+    testWidgets(
+        'with text at $scale×, the days to go drop under the active days, '
+        'starting at the left, and the card still fits', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = scale;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await _pump(tester, _card());
 
-    final bar = tester.getRect(find.byType(LevelProgressBarMolecule));
-    final activeDays = tester.getRect(find.text('548 active days'));
-    final toNextStar = tester.getRect(find.text(_toNextStar));
-    expect(toNextStar.top, greaterThanOrEqualTo(activeDays.bottom));
-    expect(toNextStar.left, moreOrLessEquals(bar.left));
-    expect(tester.takeException(), isNull);
-  });
+      final bar = tester.getRect(find.byType(LevelProgressBarMolecule));
+      final activeDays = tester.getRect(find.text('548 active days'));
+      final toNextStar = find.text(_toNextStar);
+      expect(tester.getRect(toNextStar).top,
+          greaterThanOrEqualTo(activeDays.bottom));
+      // Where the words start, not their box, which fills the line once
+      // they wrap.
+      final words = tester.renderObject<RenderParagraph>(toNextStar);
+      final firstLetter = words
+          .getBoxesForSelection(
+              const TextSelection(baseOffset: 0, extentOffset: 1))
+          .first;
+      expect(words.localToGlobal(Offset(firstLetter.left, 0)).dx,
+          moreOrLessEquals(bar.left, epsilon: 0.5));
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets(
       'at level 0 shows "Level 0" with no icons, and the bar filling toward '

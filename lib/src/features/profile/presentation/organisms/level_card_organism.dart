@@ -1,5 +1,4 @@
-import 'dart:math' as math;
-
+import 'package:doormer/src/core/theme/css_gradients.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/level_icons_atom.dart';
 import 'package:flutter/material.dart';
@@ -36,7 +35,7 @@ class LevelCardOrganism extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           // The mockup's `linear-gradient(160deg, …)`.
-          transform: _CssAngle(160),
+          transform: CssAngle(160),
           colors: [
             QuestPalette.levelCardTop,
             QuestPalette.levelCardMiddle,
@@ -58,7 +57,7 @@ class LevelCardOrganism extends StatelessWidget {
                 gradient: RadialGradient(
                   // The mockup's `radial-gradient(closest-side, …)`: an
                   // ellipse filling the 260 by 160 box.
-                  transform: const _FillBoxAsEllipse(),
+                  transform: const FillBoxAsEllipse(),
                   colors: [
                     QuestPalette.levelHalo.withValues(alpha: 0.22),
                     QuestPalette.levelHalo.withValues(alpha: 0),
@@ -71,8 +70,9 @@ class LevelCardOrganism extends StatelessWidget {
             // The ⓘ button is 48 square with its 20 icon in the middle, so the
             // top row is 9 taller than the icons above and below them, and the
             // icon sits 14 in from the button's right. These paddings, and the
-            // bar's, give that back: the content sits 16 in from every edge,
-            // and the bar 14 under the icons.
+            // bar's, give that back: the content sits 16 in from the top and
+            // sides and 14 from the bottom, as in the mockup, and the bar 14
+            // under the icons.
             padding: EdgeInsets.fromLTRB(16.w, 7.h, 2.w, 14.h),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -175,46 +175,5 @@ class LevelCardOrganism extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-/// Runs a top-to-bottom [LinearGradient] at a CSS angle in [degrees]
-/// (0 is up, 90 right). Like CSS, it puts the first colour on one corner
-/// and the last on the opposite one.
-class _CssAngle extends GradientTransform {
-  final double degrees;
-
-  const _CssAngle(this.degrees);
-
-  @override
-  Matrix4 transform(Rect bounds, {TextDirection? textDirection}) {
-    final angle = degrees * math.pi / 180;
-    // CSS's gradient line: long enough that lines across it at its two
-    // ends pass through the corners.
-    final length = (bounds.width * math.sin(angle)).abs() +
-        (bounds.height * math.cos(angle)).abs();
-    final centre = bounds.center;
-    return Matrix4.identity()
-      ..translate(centre.dx, centre.dy)
-      ..rotateZ(angle - math.pi)
-      ..scale(1.0, length / bounds.height)
-      ..translate(-centre.dx, -centre.dy);
-  }
-}
-
-/// Stretches a [RadialGradient] from a circle into the ellipse that fills
-/// its box, as CSS's `radial-gradient(closest-side, …)` does. Flutter
-/// draws a circle as wide as the box's shorter side.
-class _FillBoxAsEllipse extends GradientTransform {
-  const _FillBoxAsEllipse();
-
-  @override
-  Matrix4 transform(Rect bounds, {TextDirection? textDirection}) {
-    final centre = bounds.center;
-    return Matrix4.identity()
-      ..translate(centre.dx, centre.dy)
-      ..scale(bounds.width / bounds.shortestSide,
-          bounds.height / bounds.shortestSide)
-      ..translate(-centre.dx, -centre.dy);
   }
 }

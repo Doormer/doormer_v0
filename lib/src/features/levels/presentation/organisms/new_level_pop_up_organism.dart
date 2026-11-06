@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:doormer/src/core/motion/motion_policy.dart';
+import 'package:doormer/src/core/theme/css_gradients.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/card_pop_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/level_icon_atom.dart';
@@ -47,7 +48,8 @@ class NewLevelPopUpOrganism extends StatefulWidget {
   /// The widest the card grows, in design pixels.
   static const double maxWidth = 322;
 
-  /// The dimmed screen around it: the mockup's `rgba(5, 3, 14, .74)`.
+  /// The dimmed screen around it: [QuestPalette.night] at 74%, standing in
+  /// for the mockup's `rgba(5, 3, 14, .74)`.
   static final Color scrimColor = QuestPalette.night.withValues(alpha: 0.74);
 
   final NewLevelPopUpParams params;
@@ -184,8 +186,8 @@ class _NewLevelPopUpOrganismState extends State<NewLevelPopUpOrganism>
               gradient: const LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                // The mockup's 170°: downward, leaning a little right.
-                transform: GradientRotation(-10 * math.pi / 180),
+                // The mockup's `linear-gradient(170deg, …)`.
+                transform: CssAngle(170),
                 colors: [
                   QuestPalette.levelPopUpTop,
                   QuestPalette.levelCardMiddle,
@@ -395,30 +397,36 @@ class _NewLevelPopUpOrganismState extends State<NewLevelPopUpOrganism>
   }
 
   Widget _niceButton() {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22.r),
-        gradient: const LinearGradient(
-          colors: [QuestPalette.levelButton, QuestPalette.levelGold],
+    final shape = BorderRadius.circular(22.r);
+    return TextButton(
+      autofocus: true,
+      onPressed: widget.onClose,
+      style: TextButton.styleFrom(
+        foregroundColor: QuestPalette.onLevelGold,
+        minimumSize: Size.fromHeight(44.h),
+        // 44 on computers too, where the default compact density would
+        // take 8 off.
+        visualDensity: VisualDensity.standard,
+        shape: RoundedRectangleBorder(borderRadius: shape),
+        textStyle: TextStyle(
+          fontFamily: kDisplayFont,
+          fontSize: 17.sp,
+          fontWeight: FontWeight.w700,
+        ),
+        // The gold is inked inside the button's own shape, under its press
+        // highlight. A phone's bigger tap area around it stays clear.
+        backgroundBuilder: (context, states, child) => Ink(
+          key: const ValueKey('nice-gold'),
+          decoration: BoxDecoration(
+            borderRadius: shape,
+            gradient: const LinearGradient(
+              colors: [QuestPalette.levelButton, QuestPalette.levelGold],
+            ),
+          ),
+          child: child,
         ),
       ),
-      child: TextButton(
-        autofocus: true,
-        onPressed: widget.onClose,
-        style: TextButton.styleFrom(
-          foregroundColor: QuestPalette.onLevelGold,
-          minimumSize: Size.fromHeight(44.h),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22.r),
-          ),
-          textStyle: TextStyle(
-            fontFamily: kDisplayFont,
-            fontSize: 17.sp,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        child: const Text('Nice!'),
-      ),
+      child: const Text('Nice!'),
     );
   }
 
