@@ -14,6 +14,13 @@ class ProfileHeaderOrganism extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Its own node for screen readers, wherever Profile places it. The friend
+    // code makes it a read-only text field, and beside the level card on a
+    // wide screen that field would otherwise span the card too.
+    return Semantics(container: true, child: _header());
+  }
+
+  Widget _header() {
     return Row(
       children: [
         CardPictureAtom(

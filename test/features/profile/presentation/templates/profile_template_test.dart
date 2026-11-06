@@ -359,6 +359,11 @@ void main() {
       expect(
           find.bySemanticsLabel(RegExp(r'Kai[\s\S]*Level 21')), findsNothing);
       expect(find.bySemanticsLabel(RegExp(r'^Level 21')), findsOneWidget);
+      final header = find.byType(ProfileHeaderOrganism);
+      expect(tester.getSemantics(header).rect.width,
+          lessThanOrEqualTo(tester.getSize(header).width + 0.5),
+          reason:
+              "the header's node covers the header, not the card beside it");
       semantics.dispose();
     });
 
