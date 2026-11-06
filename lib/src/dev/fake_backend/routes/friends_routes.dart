@@ -293,7 +293,7 @@ class FriendsRoutes {
     final friend = _friendIn(request);
     if (friend == null) return _notFound;
     return FakeResponse.ok({
-      'friend': _friendSummary(friend),
+      'friend': _summary(friend),
       'decks': [
         for (final deck in fakeDecks)
           {
@@ -315,7 +315,7 @@ class FriendsRoutes {
     final deck = fakeDeckById(request.fields['deck_id']?.toString());
     if (friend == null || deck == null) return _notFound;
     return FakeResponse.ok({
-      'friend': _friendSummary(friend),
+      'friend': _summary(friend),
       'deck': {'deck_id': deck.id, 'name': deck.name},
       'cards': [
         for (final card in deck.cards)
@@ -362,9 +362,9 @@ class FriendsRoutes {
         ..._pictureField(student.picture),
       };
 
-  /// A friend as the routes that show friends send them: [_summary], with
-  /// their level from level 1. Finding a code, requests and Blocked show
-  /// students, never a level.
+  /// A friend as the friends list and an accepted request send them:
+  /// [_summary], with their level from level 1. Finding a code, requests,
+  /// Blocked, and a friend's decks and cards show students, never a level.
   Map<String, Object?> _friendSummary(FakeStudent student) {
     final level = fakeLevelFor(student.activeDays);
     return {

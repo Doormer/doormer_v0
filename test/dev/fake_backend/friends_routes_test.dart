@@ -272,12 +272,12 @@ void main() {
       );
     });
 
-    test("Sam's decks and cards come with Sam's level", () async {
+    test("Sam's decks and cards never carry a level", () async {
       final decks = await collections.decks('201');
       final cards = await collections.cards('201', 'cinder-01');
 
-      expect(decks.friend.toEntity().level, samsLevel);
-      expect(cards.friend.toEntity().level, samsLevel);
+      expect(decks.friend.toEntity().level, isNull);
+      expect(cards.friend.toEntity().level, isNull);
     });
 
     test('finding a code, requests and Blocked never carry a level', () async {

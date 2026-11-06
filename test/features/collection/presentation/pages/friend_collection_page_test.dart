@@ -250,27 +250,12 @@ void main() {
     expect(find.text('Profile page'), findsOneWidget);
   });
 
-  testWidgets(
-      "shows Sam's level beside the heading, heard by screen readers and "
-      'never as a number', (tester) async {
+  testWidgets('shows no level, even for a friend who has one', (tester) async {
     repository.friend = _samAtLevel6;
-    final semantics = tester.ensureSemantics();
 
     await pumpCollection(tester);
 
-    final icons = find.byType(LevelIconsAtom);
-    final drawn = tester.widget<LevelIconsAtom>(icons);
-    expect((drawn.suns, drawn.moons, drawn.stars), (0, 1, 2));
-    expect(tester.getRect(icons).left,
-        greaterThan(tester.getRect(find.text("Sam's cards")).right));
-    expect(tester.getSemantics(icons), containsSemantics(label: 'Level 6'));
-    expect(find.textContaining('Level'), findsNothing);
-    semantics.dispose();
-  });
-
-  testWidgets('a friend with no level shows no icons', (tester) async {
-    await pumpCollection(tester);
-
+    expect(find.text("Sam's cards"), findsOneWidget);
     expect(find.byType(LevelIconsAtom), findsNothing);
   });
 }

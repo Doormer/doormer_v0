@@ -1,9 +1,7 @@
 import 'package:doormer/src/core/theme/quest_palette.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/card_picture_atom.dart';
-import 'package:doormer/src/shared/design/atomic/atoms/level_icons_atom.dart';
 import 'package:doormer/src/shared/design/atomic/molecules/error_with_retry_molecule.dart';
 import 'package:doormer/src/shared/design/atomic/molecules/page_heading_molecule.dart';
-import 'package:doormer/src/shared/levels/entity/level.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -11,10 +9,10 @@ import '../organisms/card_grid_organism.dart';
 import '../organisms/deck_list_organism.dart';
 import '../params/friend_collection_body_params.dart';
 
-/// A friend's collection, headed with their picture, "Sam's cards" and their
-/// level's icons: their decks, then the cards of the one open. There are no
-/// quarks, draws or shatters, and nothing compares it with the student's
-/// own. It sits inside the Profile tab, above the nav bar.
+/// A friend's collection, headed with their picture and "Sam's cards": their
+/// decks, then the cards of the one open. There are no quarks, draws or
+/// shatters, and nothing compares it with the student's own. It sits inside
+/// the Profile tab, above the nav bar.
 class FriendCollectionTemplate extends StatelessWidget {
   /// Wider than this, cards keep their size and centre, as on Cards.
   static const double wideBreakpoint = 700;
@@ -28,13 +26,6 @@ class FriendCollectionTemplate extends StatelessWidget {
   /// Null when the friend has no picture.
   final String? artUrl;
 
-  /// The friend's level, drawn beside the title. Null below level 1, and
-  /// until the friend is known.
-  final Level? level;
-
-  /// What screen readers hear for the level's icons, such as `Level 6`.
-  final String? levelLabel;
-
   final FriendCollectionBodyParams body;
   final VoidCallback onBack;
 
@@ -43,8 +34,6 @@ class FriendCollectionTemplate extends StatelessWidget {
     required this.title,
     required this.nickname,
     required this.artUrl,
-    this.level,
-    this.levelLabel,
     required this.body,
     required this.onBack,
   });
@@ -52,7 +41,6 @@ class FriendCollectionTemplate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final nickname = this.nickname;
-    final level = this.level;
     final isWide = MediaQuery.sizeOf(context).width >= wideBreakpoint;
     return Scaffold(
       body: SafeArea(
@@ -66,15 +54,6 @@ class FriendCollectionTemplate extends StatelessWidget {
               leading: nickname == null
                   ? null
                   : CardPictureAtom(name: nickname, artUrl: artUrl, size: 32.w),
-              trailing: level == null
-                  ? null
-                  : LevelIconsAtom(
-                      suns: level.suns,
-                      moons: level.moons,
-                      stars: level.stars,
-                      size: 18.w,
-                      semanticLabel: levelLabel,
-                    ),
             ),
             Expanded(
               child: Padding(
