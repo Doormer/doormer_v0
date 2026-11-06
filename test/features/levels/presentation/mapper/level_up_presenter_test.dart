@@ -33,19 +33,25 @@ const _newSunAt320 = ActiveDayOutcome(
 );
 
 void main() {
-  for (final (name, outcome, toast) in [
-    ('a new star', _newStarAt45, "New star! You're level 5."),
-    ('a new moon', newMoonAt32, "New moon! You're level 4."),
-    ('a new sun', _newSunAt320, "New sun! You're level 16."),
+  for (final (name, outcome, title, line, smallerIcon) in [
+    ('a new star', _newStarAt45, 'New star!', "You're level 5.", null),
+    ('a new moon', newMoonAt32, 'New moon!', "You're level 4.", LevelIcon.star),
+    ('a new sun', _newSunAt320, 'New sun!', "You're level 16.", LevelIcon.moon),
   ]) {
     test('celebrates $name with the level the progress names', () {
-      expect(LevelUpPresenter.toastFor(ActiveDayCounted(outcome)), toast);
+      final popUp = LevelUpPresenter.popUpFor(ActiveDayCounted(outcome))!;
+
+      expect(popUp.newIcon, outcome.newIcon);
+      expect(popUp.smallerIcon, smallerIcon);
+      expect(popUp.title, title);
+      expect(popUp.levelLine, line);
+      expect(popUp.announcement, '$title $line');
     });
   }
 
   test('says nothing for a count that raised no level', () {
     expect(
-      LevelUpPresenter.toastFor(const ActiveDayCounted(alreadyCountedAt32)),
+      LevelUpPresenter.popUpFor(const ActiveDayCounted(alreadyCountedAt32)),
       isNull,
     );
   });
@@ -56,7 +62,7 @@ void main() {
       ActiveDayCounting(),
       ActiveDayError("We couldn't count today as an active day."),
     ]) {
-      expect(LevelUpPresenter.toastFor(state), isNull, reason: '$state');
+      expect(LevelUpPresenter.popUpFor(state), isNull, reason: '$state');
     }
   });
 }

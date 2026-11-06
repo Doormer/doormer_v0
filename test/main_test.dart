@@ -95,7 +95,7 @@ void main() {
   });
 
   // A count still on its way when someone signs in was asked for the last
-  // student. Its answer must not bring back their level, or their toast.
+  // student. Its answer must not bring back their level, or their pop-up.
   testWidgets("a session starting drops the last student's count on its way",
       (tester) async {
     final lastStudentsAnswer = Completer<void>();

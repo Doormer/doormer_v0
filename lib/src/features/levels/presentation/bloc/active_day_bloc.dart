@@ -16,7 +16,7 @@ part 'active_day_state.dart';
 /// comes back into view. The API counts each day once, so asking again the
 /// same day changes nothing. Each answer's progress goes to the app-wide
 /// [LevelProgressBloc], and the state says when a count raised the level,
-/// for the shell's toast. A count that fails is only logged: the next open
+/// for the shell's pop-up. A count that fails is only logged: the next open
 /// or tab return tries again.
 ///
 /// A new session starts it afresh. The answer to a count asked for before

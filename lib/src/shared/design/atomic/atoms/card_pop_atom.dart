@@ -11,7 +11,11 @@ import 'package:flutter/material.dart';
 /// Rebuild this under a key that changes with the content, otherwise the same
 /// state is reused and the pop never replays.
 class CardPopAtom extends StatefulWidget {
-  static const Duration _pop = Duration(milliseconds: 480);
+  /// How long the pop takes. A new level's icon pops in for as long.
+  static const Duration duration = Duration(milliseconds: 480);
+
+  /// The pop's overshoot, which a new level's icon shares.
+  static const Curve overshoot = Cubic(.34, 1.56, .64, 1);
 
   final Widget child;
 
@@ -30,7 +34,8 @@ class _CardPopAtomState extends State<CardPopAtom>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: CardPopAtom._pop);
+    _controller =
+        AnimationController(vsync: this, duration: CardPopAtom.duration);
   }
 
   @override
@@ -54,7 +59,7 @@ class _CardPopAtomState extends State<CardPopAtom>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final t = const Cubic(.34, 1.56, .64, 1).transform(_controller.value);
+        final t = CardPopAtom.overshoot.transform(_controller.value);
         return Opacity(
           opacity: (0.45 + 0.55 * _controller.value).clamp(0.0, 1.0),
           child: Transform.scale(scale: 0.96 + 0.04 * t, child: child),

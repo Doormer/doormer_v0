@@ -2,6 +2,7 @@ import 'package:doormer/src/core/di/service_locator.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/routes/destination_shell.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
+import 'package:doormer/src/features/levels/presentation/organisms/new_level_pop_up_organism.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/toast_atom.dart';
 import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
 import 'package:doormer/src/shared/levels/bloc/level_progress_bloc.dart';
@@ -14,7 +15,13 @@ import 'package:go_router/go_router.dart';
 import '../../features/levels/fake_levels_repository.dart';
 import '../../features/levels/register_levels.dart';
 
-const _newMoon = "New moon! You're level 4.";
+/// Turns motion off, as for a student whose device asks for less of it:
+/// the new-level pop-up then stands still, so the frames can settle.
+void _reduceMotion(WidgetTester tester) {
+  tester.platformDispatcher.accessibilityFeaturesTestValue =
+      const FakeAccessibilityFeatures(disableAnimations: true);
+  addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+}
 
 /// Tells the app the browser tab is now [state], as the engine does. The
 /// binding fills in the states between, so hidden to resumed passes through
@@ -79,12 +86,6 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// Lets the toast run its course.
-  Future<void> waitOutToast(WidgetTester tester) async {
-    await tester.pump(const Duration(seconds: 5));
-    await tester.pumpAndSettle();
-  }
-
   testWidgets('counts the day when it first shows, and keeps the progress',
       (tester) async {
     final levels = registerLevels(FakeLevelsRepository([alreadyCountedAt32]));
@@ -123,22 +124,22 @@ void main() {
     expect(levels.counts, 1);
   });
 
-  testWidgets(
-      'a new level shows its toast at the top for 4 seconds, and only once',
+  testWidgets('a new level opens its pop-up, not a toast, and only once',
       (tester) async {
+    _reduceMotion(tester);
     final levels =
         registerLevels(FakeLevelsRepository([newMoonAt32, alreadyCountedAt32]));
 
     await pumpShell(tester);
 
-    final toast = find.widgetWithText(ToastAtom, _newMoon);
-    expect(toast, findsOneWidget);
-    expect(tester.widget<ToastAtom>(toast).kind, ToastKind.success);
-    expect(tester.getCenter(toast).dy, lessThan(690 / 2));
-    await tester.pump(const Duration(seconds: 3));
-    expect(find.text(_newMoon), findsOneWidget, reason: 'still there at 3 s');
-    await waitOutToast(tester);
-    expect(find.text(_newMoon), findsNothing);
+    expect(find.byType(NewLevelPopUpOrganism), findsOneWidget);
+    expect(find.text('New moon!'), findsOneWidget);
+    expect(find.text("You're level 4."), findsOneWidget);
+    expect(find.byType(ToastAtom), findsNothing);
+
+    await tester.tap(find.text('Nice!'));
+    await tester.pumpAndSettle();
+    expect(find.byType(NewLevelPopUpOrganism), findsNothing);
 
     // The same day, counted again when the tab comes back, then another
     // page, which rebuilds the shell but counts nothing: nothing new to
@@ -148,25 +149,25 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(levels.counts, 2);
-    expect(find.text(_newMoon), findsNothing);
+    expect(find.byType(NewLevelPopUpOrganism), findsNothing);
   });
 
   testWidgets(
       'a count that fails shows nothing, and the next tab return tries again',
       (tester) async {
+    _reduceMotion(tester);
     final levels = registerLevels(FakeLevelsRepository([newMoonAt32]))
       ..failNext = ServerFailure("We couldn't count today as an active day.");
 
     await pumpShell(tester);
 
     expect(levels.counts, 1);
-    expect(find.byType(ToastAtom), findsNothing);
+    expect(find.byType(NewLevelPopUpOrganism), findsNothing);
     expect(serviceLocator<LevelProgressBloc>().state.progress, isNull);
 
     await _leaveTabAndReturn(tester);
 
     expect(levels.counts, 2);
-    expect(find.text(_newMoon), findsOneWidget);
-    await waitOutToast(tester);
+    expect(find.text('New moon!'), findsOneWidget);
   });
 }
