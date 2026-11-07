@@ -19,12 +19,14 @@ class Signup {
 
   Signup(this.authRepository);
 
+  /// Sends [email] without the spaces around it, which the form's check
+  /// ignores, and [password] exactly as typed.
   Future<User> call({
     required String email,
     required String password,
   }) async {
     return await authRepository.signup(
-      email: email,
+      email: email.trim(),
       password: password,
     );
   }
@@ -35,11 +37,13 @@ class Login {
 
   Login(this.authRepository);
 
+  /// Sends [email] without the spaces around it, which the form's check
+  /// ignores, and [password] exactly as typed.
   Future<User> call({
     required String email,
     required String password,
   }) async {
-    return await authRepository.login(email: email, password: password);
+    return await authRepository.login(email: email.trim(), password: password);
   }
 }
 

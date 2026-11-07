@@ -1,12 +1,13 @@
 class AuthValidators {
-  /// Validates an email address
+  /// Validates an email address, ignoring any spaces around it.
   static String? validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
+    final email = value?.trim() ?? '';
+    if (email.isEmpty) {
       return 'Email is required';
     }
     final emailRegex =
         RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-    if (!emailRegex.hasMatch(value)) {
+    if (!emailRegex.hasMatch(email)) {
       return 'Enter a valid email address';
     }
     return null;
