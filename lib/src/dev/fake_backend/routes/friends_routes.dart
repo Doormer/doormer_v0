@@ -1,6 +1,7 @@
 import 'package:doormer/src/dev/fake_backend/fake_backend_state.dart';
 import 'package:doormer/src/dev/fake_backend/fake_decks.dart';
 import 'package:doormer/src/dev/fake_backend/fake_levels.dart';
+import 'package:doormer/src/dev/fake_backend/fake_friend_summary.dart';
 import 'package:doormer/src/dev/fake_backend/fake_request.dart';
 import 'package:doormer/src/dev/fake_backend/fake_response.dart';
 import 'package:doormer/src/dev/fake_backend/fake_route.dart';
@@ -11,11 +12,9 @@ import 'package:doormer/src/dev/fake_backend/fake_route.dart';
 /// the API sends them; the app shows its own words instead.
 ///
 /// No other student ever answers: a request sent stays "Request sent".
+/// Removing or blocking a friend ends every share between the two, and a
+/// report can carry a question the friend shared.
 class FriendsRoutes {
-  /// The student's own ID, as the API would give it in a find of their own
-  /// code.
-  static const _studentId = '100';
-
   /// The codes Reset code hands out, in turn.
   static const _newCodes = ['ZQ9X4W2T', 'MX3V7K8P', 'H6TB9C2W'];
 
@@ -133,9 +132,9 @@ class FriendsRoutes {
     if (code == profile.friendCode) {
       return FakeResponse.ok({
         'student': {
-          'friend_id': _studentId,
+          'friend_id': FakeFriends.studentId,
           'nickname': profile.nickname,
-          ..._pictureField(profile.picture),
+          ...fakePictureField(profile.picture),
         },
         'relation': 'you',
       });
@@ -233,17 +232,21 @@ class FriendsRoutes {
     });
   }
 
+  /// Ends the friendship, and every share between the two.
   FakeResponse _remove(FakeRequest request, FakeFriendProfile profile) {
     final friendId = request.fields['friend_id'];
     if (friendId is! String) return _badRequest;
+    _friends.endSharesWith(friendId);
     _friends.friendIds.remove(friendId);
     return const FakeResponse.ok({});
   }
 
-  /// Ends the friendship and declines any requests between the two.
+  /// Ends the friendship, every share between the two, and declines any
+  /// requests between them.
   FakeResponse _block(FakeRequest request, FakeFriendProfile profile) {
     final student = _reachable(request.fields['friend_id']);
     if (student == null) return _notFound;
+    _friends.endSharesWith(student.id);
     _friends.friendIds.remove(student.id);
     _friends.requestedIds.remove(student.id);
     _friends.waitingRequests
@@ -269,21 +272,34 @@ class FriendsRoutes {
         ],
       });
 
+  /// A report about a question must name one the student reported shared
+  /// with this student, and the share must still stand. That is checked
+  /// after the rest of the body, before who can be reported.
   FakeResponse _report(FakeRequest request, FakeFriendProfile profile) {
     final fields = request.fields;
     final reason = fields['reason'];
     final note = fields['note'] ?? '';
+    final questionId = fields['question_id'] ?? '';
     // As the API counts it: code points, once trimmed.
     if (!_reasons.contains(reason) ||
         note is! String ||
-        note.trim().runes.length > 500) {
+        note.trim().runes.length > 500 ||
+        questionId is! String ||
+        (questionId.isNotEmpty && int.tryParse(questionId) == null)) {
       return _badRequest;
+    }
+    if (questionId.isNotEmpty &&
+        _friends.sharerOf(questionId)?.id != fields['friend_id']) {
+      return _notFound;
     }
     final student = _reachable(fields['friend_id']);
     if (student == null) return _notFound;
-    _friends.reports.add(
-      (studentId: student.id, reason: reason as String, note: note),
-    );
+    _friends.reports.add((
+      studentId: student.id,
+      reason: reason as String,
+      note: note,
+      questionId: questionId.isEmpty ? null : questionId,
+    ));
     return const FakeResponse.ok({});
   }
 
@@ -349,18 +365,15 @@ class FriendsRoutes {
     return {
       'has_profile': true,
       'nickname': profile.nickname,
-      ..._pictureField(profile.picture),
+      ...fakePictureField(profile.picture),
       'friend_code': profile.friendCode,
       'friends_turned_off': false,
       'waiting_requests': _friends.waitingRequests.length,
     };
   }
 
-  Map<String, Object?> _summary(FakeStudent student) => {
-        'friend_id': student.id,
-        'nickname': student.nickname,
-        ..._pictureField(student.picture),
-      };
+  Map<String, Object?> _summary(FakeStudent student) =>
+      fakeFriendSummary(student);
 
   /// A friend as the friends list and an accepted request send them:
   /// [_summary], with their level from level 1. Finding a code, requests,
@@ -370,21 +383,6 @@ class FriendsRoutes {
     return {
       ..._summary(student),
       if (level > 0) 'level': fakeLevelJson(level),
-    };
-  }
-
-  /// The `picture` field, left out with no picture, or for a card no longer
-  /// in the catalog.
-  Map<String, Object?> _pictureField(FakePicture? picture) {
-    if (picture == null) return const {};
-    final card = fakeDeckById(picture.deckId)?.cardById(picture.cardId);
-    if (card == null) return const {};
-    return {
-      'picture': {
-        'deck_id': picture.deckId,
-        'card_id': picture.cardId,
-        'art_url': card.artUrl,
-      },
     };
   }
 

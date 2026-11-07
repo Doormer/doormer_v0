@@ -1,11 +1,11 @@
 import 'package:doormer/src/shared/friends/entity/card_picture.dart';
 import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
+import 'package:doormer/src/shared/friends/entity/report_reason.dart';
 
 import '../../domain/entity/found_student.dart';
 import '../../domain/entity/friend_profile.dart';
 import '../../domain/entity/friend_request.dart';
 import '../../domain/entity/picture_choice.dart';
-import '../../domain/entity/report_reason.dart';
 import '../../domain/repository/friends_repository.dart';
 import '../datasource/friends_remote_datasource.dart';
 

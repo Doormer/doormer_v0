@@ -45,7 +45,7 @@ To check the UI in a real browser, follow `.agents/skills/browser-testing/SKILL.
 
 ### Running without the backend
 
-`lib/main_fake_backend.dart` starts the app as `main.dart` does, then answers every API request from a fake backend held in memory (`lib/src/dev/fake_backend/`), so `taka-api` isn't needed. Any email and password signs in, as one student with quarks, cards, saved questions, friends and 31 active days, so the first count of the day after each reload makes the 32nd: a new moon, at level 4. Friends Sam and Alex are at levels 6 and 0. Signing up instead gives a student with no friend profile and no active days, for trying friends setup and level 0. Each day allows 5 questions and 20 photos and counts one active day, as the API does, and ends at the device's midnight. The data starts over on every page reload. To change an answer, edit its route in `lib/src/dev/fake_backend/routes/`. Production builds use `lib/main.dart`, which never imports any of it. Google sign-in, the camera and ads don't go through it.
+`lib/main_fake_backend.dart` starts the app as `main.dart` does, then answers every API request from a fake backend held in memory (`lib/src/dev/fake_backend/`), so `taka-api` isn't needed. Any email and password signs in, as one student with quarks, cards, saved questions, friends, questions friends shared with them, and 31 active days, so the first count of the day after each reload makes the 32nd: a new moon, at level 4. Friends Sam and Alex are at levels 6 and 0. Signing up instead gives a student with no friend profile and no active days, for trying friends setup and level 0. Each day allows 5 questions and 20 photos and counts one active day, as the API does, and ends at the device's midnight. The data starts over on every page reload. To change an answer, edit its route in `lib/src/dev/fake_backend/routes/`. Production builds use `lib/main.dart`, which never imports any of it. Google sign-in, the camera and ads don't go through it.
 
 ## Architecture — Clean Architecture
 
@@ -102,6 +102,7 @@ lib/src/
 - Central setup: `core/di/service_locator.dart` → calls each feature's `init<Feature>Module()` (actual names: `initAuthModule()`, `initRegisterModule()` — registration abbreviates to "Register").
 - **factory** for BLoCs (each page needs a fresh instance with clean state).
 - **lazySingleton** for repos, usecases, datasources, and services (stateless — one instance is enough).
+  - `QuestionSharingRepositoryImpl` holds a Remove or Block on its way, so that reads of Shared with me wait for it, and must stay a single lazy singleton.
 - **singleton** (eager) for app-wide BLoCs (e.g. `GlobalSessionBloc`) and platform services (e.g. `TokenStorage`) that must exist before any lazy resolution occurs.
 - Access: `serviceLocator<T>()`.
 
@@ -120,7 +121,7 @@ lib/src/
 
 ### Error Handling
 
-Typed `Failure` hierarchy in `core/errors/failure.dart` (pure Dart): `NetworkFailure`, `ServerFailure`, `ApiFailure(statusCode, message)`, `RefusedFailure(statusCode, message)`, `AuthFailure`, `ValidationFailure`, `DatabaseFailure`, `UnknownFailure`. `Failure.toString()` returns its `message`. A data source that words a 4xx itself, as the friends data sources do for each status the API refuses with, throws `RefusedFailure`: unlike `ApiFailure`, its message is shown as it is, and a bloc can tell the statuses apart. A feature can add its own `Failure` subclasses in `domain/failure/`, such as the questions feature's `DailyLimitReachedFailure` and `PhotoBeingSolvedFailure`, which its bloc catches before the generic `Failure`.
+Typed `Failure` hierarchy in `core/errors/failure.dart` (pure Dart): `NetworkFailure`, `ServerFailure`, `ApiFailure(statusCode, message)`, `RefusedFailure(statusCode, message)`, `AuthFailure`, `ValidationFailure`, `DatabaseFailure`, `UnknownFailure`. `Failure.toString()` returns its `message`. A data source that words a 4xx itself, as the friends data sources and the questions feature's sharing data source do for each status the API refuses with, throws `RefusedFailure`: unlike `ApiFailure`, its message is shown as it is, and a bloc can tell the statuses apart. A feature can add its own `Failure` subclasses in `domain/failure/`, such as the questions feature's `DailyLimitReachedFailure` and `PhotoBeingSolvedFailure`, which its bloc catches before the generic `Failure`.
 
 Rules:
 
@@ -148,7 +149,7 @@ try {
 - Routes: `core/routes/app_router.dart` + `web_router.dart` (`AppRouter` delegates to `WebRouter.router`). `PathUrlStrategy` (no hash) is set in `main.dart` via `setUrlStrategy()`, not in the router files.
 - Session expiry → redirect to `/auth` via `BlocListener<GlobalSessionBloc>` in `main.dart`.
 - **The nav bar's pages are tabs of one `StatefulShellRoute`** (`destination_routes.dart`), and each stays alive while another is shown.
-  - A page that covers the nav bar, such as a solution, is a child route of its tab with `parentNavigatorKey: rootNavigatorKey`, so the tabs stay alive under it. See `solutionRoute` in `question_solution_routes.dart`.
+  - A page that covers the nav bar, such as a solution, is a child route of its tab with `parentNavigatorKey: rootNavigatorKey`, so the tabs stay alive under it. See `solutionRoute` in `question_solution_routes.dart`. The tab's page can still be told when it's covered, as below: `SavedQuestionsPage(isCovered: state.uri.path != '/saved')` reads Shared with me again when a solution closes.
   - Never make such a page a top-level route: going there throws the tabs away.
   - A page that stays inside its tab, under the nav bar, is a child route of the tab without `parentNavigatorKey`, such as Profile's `setup`, `add`, `blocked` and `friends/:friendId/cards`. The tab's own page is told when such a page covers it, as `ProfilePage(isCovered: state.uri.path != '/profile')` is, and refreshes when that page closes.
   - Every router that loads `destinationRoutes`, test routers included, is built with `navigatorKey: rootNavigatorKey`.

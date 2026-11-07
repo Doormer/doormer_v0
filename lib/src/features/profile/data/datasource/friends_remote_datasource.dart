@@ -3,11 +3,12 @@ import 'package:doormer/src/core/connection/dio_exception_mapper.dart';
 import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/shared/friends/entity/card_picture.dart';
+import 'package:doormer/src/shared/friends/entity/report_reason.dart';
 import 'package:doormer/src/shared/friends/friends_messages.dart';
 import 'package:doormer/src/shared/friends/model/friend_summary_model.dart';
+import 'package:doormer/src/shared/friends/model/report_reason_model.dart';
 
 import '../../domain/entity/friend_request.dart';
-import '../../domain/entity/report_reason.dart';
 import '../model/friends_response_models.dart';
 
 /// The friends routes, one method each, named as the API names them. A
@@ -202,19 +203,12 @@ class FriendsRemoteDataSourceImpl implements FriendsRemoteDataSource {
         '/v1/friends/report',
         {
           'friend_id': friendId,
-          'reason': _reasonName(reason),
+          'reason': ReportReasonModel.toJson(reason),
           if (note.isNotEmpty) 'note': note,
         },
         callMessage: FriendsMessages.couldNotReport,
         refusals: const {404: FriendsMessages.studentNotFound},
       );
-
-  static String _reasonName(ReportReason reason) => switch (reason) {
-        ReportReason.rudeNickname => 'rude_nickname',
-        ReportReason.bullying => 'bullying',
-        ReportReason.pretending => 'pretending',
-        ReportReason.other => 'other',
-      };
 
   /// Posts [body] to [path] and reads the answer with [parse]. An answer it
   /// cannot read fails with [callMessage].

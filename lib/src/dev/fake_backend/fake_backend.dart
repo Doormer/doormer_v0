@@ -8,6 +8,7 @@ import 'package:doormer/src/dev/fake_backend/routes/friends_routes.dart';
 import 'package:doormer/src/dev/fake_backend/routes/levels_routes.dart';
 import 'package:doormer/src/dev/fake_backend/routes/questions_routes.dart';
 import 'package:doormer/src/dev/fake_backend/routes/registration_routes.dart';
+import 'package:doormer/src/dev/fake_backend/routes/sharing_routes.dart';
 import 'package:flutter/services.dart';
 
 /// A fake `taka-api`: one student's data, kept in memory, and an answer to
@@ -15,18 +16,23 @@ import 'package:flutter/services.dart';
 ///
 /// Every answer takes [delay], and a photo solve [solveDelay] more, so
 /// loading states show. Draws use [random]; the default seed draws the same
-/// cards every run. [clock] dates the saved questions and friend requests,
-/// and the daily limits and the active day start over when it passes the
-/// device's midnight.
+/// cards every run. [clock] dates the saved questions, friend requests and
+/// shared questions, and the daily limits and the active day start over when
+/// it passes the device's midnight.
+///
+/// The data starts as [FakeBackendState.starting] has it at [clock]'s time,
+/// unless a test passes its own [state], to arrange what no request can,
+/// such as a friend sharing a question.
 FakeBackendAdapter fakeBackend({
   Random? random,
   AssetBundle? bundle,
   DateTime Function()? clock,
+  FakeBackendState? state,
   Duration delay = const Duration(milliseconds: 400),
   Duration solveDelay = const Duration(seconds: 3),
 }) {
   final now = clock ?? DateTime.now;
-  final state = FakeBackendState.starting(now: now());
+  state ??= FakeBackendState.starting(now: now());
   return FakeBackendAdapter(
     [
       ...AuthRoutes(state).routes,
@@ -34,6 +40,7 @@ FakeBackendAdapter fakeBackend({
       ...CollectionRoutes(state, random ?? Random(7)).routes,
       ...FriendsRoutes(state).routes,
       ...LevelsRoutes(state, clock: now).routes,
+      ...SharingRoutes(state, clock: now).routes,
       ...QuestionsRoutes(
         state,
         bundle: bundle ?? rootBundle,

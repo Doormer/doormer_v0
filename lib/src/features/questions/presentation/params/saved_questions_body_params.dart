@@ -20,6 +20,11 @@ class SavedQuestionsEmptyParams extends SavedQuestionsBodyParams {
   const SavedQuestionsEmptyParams({required this.onSolve});
 }
 
+/// No friend has shared a question with the student.
+class SharedQuestionsEmptyParams extends SavedQuestionsBodyParams {
+  const SharedQuestionsEmptyParams();
+}
+
 /// The first page could not load.
 class SavedQuestionsErrorParams extends SavedQuestionsBodyParams {
   final String message;

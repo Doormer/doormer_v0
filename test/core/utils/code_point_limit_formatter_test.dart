@@ -1,4 +1,4 @@
-import 'package:doormer/src/features/profile/utils/code_point_limit_formatter.dart';
+import 'package:doormer/src/core/utils/code_point_limit_formatter.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 

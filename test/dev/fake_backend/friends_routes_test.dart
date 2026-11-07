@@ -6,9 +6,9 @@ import 'package:doormer/src/features/collection/data/datasource/friend_collectio
 import 'package:doormer/src/features/profile/data/datasource/friends_remote_datasource.dart';
 import 'package:doormer/src/features/profile/domain/entity/found_student.dart';
 import 'package:doormer/src/features/profile/domain/entity/friend_request.dart';
-import 'package:doormer/src/features/profile/domain/entity/report_reason.dart';
 import 'package:doormer/src/shared/friends/entity/card_picture.dart';
 import 'package:doormer/src/shared/levels/entity/level.dart';
+import 'package:doormer/src/shared/friends/entity/report_reason.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Matcher _refused(int status, String message) => throwsA(isA<RefusedFailure>()

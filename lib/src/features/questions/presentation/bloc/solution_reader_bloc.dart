@@ -6,6 +6,7 @@ import 'package:doormer/src/features/questions/domain/usecase/load_question_usec
 import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
+import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:equatable/equatable.dart';
 
 part 'solution_reader_event.dart';
@@ -116,6 +117,8 @@ class SolutionReaderBloc
       note: outcome.note,
       topic: outcome.topic,
       method: outcome.method,
+      sharedWith: outcome.sharedWith,
+      sharedBy: outcome.sharedBy,
     );
   }
 
@@ -125,6 +128,8 @@ class SolutionReaderBloc
     String note = '',
     String topic = '',
     String method = '',
+    List<FriendSummary> sharedWith = const [],
+    FriendSummary? sharedBy,
   }) async {
     emit(SolutionReaderReady(
       document: document,
@@ -132,6 +137,8 @@ class SolutionReaderBloc
       note: note,
       topic: topic,
       method: method,
+      sharedWith: sharedWith,
+      sharedBy: sharedBy,
     ));
     await _attachQuarkBalance(emit);
   }
@@ -256,13 +263,15 @@ class SolutionReaderBloc
       return;
     }
 
+    // Only the student who asked a question is paid for it, so a question a
+    // friend shared opens here and never asks reveal-answer.
+    final questionId = current.sharedBy == null ? event.questionId : null;
     emit(current.copyWith(
       answerRevealed: true,
       revealRewardRequested:
-          current.revealRewardRequested || event.questionId != null,
+          current.revealRewardRequested || questionId != null,
     ));
 
-    final questionId = event.questionId;
     if (questionId == null || current.revealRewardRequested) return;
 
     try {

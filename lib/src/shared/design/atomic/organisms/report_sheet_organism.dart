@@ -1,15 +1,17 @@
 import 'package:doormer/src/core/theme/quest_palette.dart';
+import 'package:doormer/src/core/utils/code_point_limit_formatter.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
+import 'package:doormer/src/shared/design/atomic/params/report_sheet_params.dart';
+import 'package:doormer/src/shared/friends/entity/report_reason.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../domain/entity/report_reason.dart';
-import '../../utils/code_point_limit_formatter.dart';
-import '../params/report_sheet_params.dart';
-
 /// Reports a student to the Doormer team: a reason, an optional note, then
-/// thanks. It also points to help beyond the app, and offers Block. A report
-/// on its own doesn't remove or block anyone.
+/// thanks. It also points to help beyond the app, and offers Block when
+/// given a way to block. A report on its own doesn't remove or block anyone.
+///
+/// Profile reports a friend or a student who sent a request; the reader
+/// reports a friend about a question they shared.
 class ReportSheetOrganism extends StatefulWidget {
   static final netsafe = Uri.parse('https://netsafe.org.nz');
   static final eSafety = Uri.parse('https://www.esafety.gov.au/report');
@@ -47,8 +49,9 @@ class _ReportSheetOrganismState extends State<ReportSheetOrganism> {
   /// a word was composing can hold more than the cap allows.
   void _send() {
     final reason = _reason;
-    if (reason == null) return;
-    widget.params.onSend(
+    final onSend = widget.params.onSend;
+    if (reason == null || onSend == null) return;
+    onSend(
       reason,
       CodePointLimitFormatter.truncate(
         _note.text.trim(),
@@ -149,7 +152,8 @@ class _ReportSheetOrganismState extends State<ReportSheetOrganism> {
                   label: 'Send report',
                   expand: true,
                   isLoading: params.isSending,
-                  onPressed: _reason == null ? null : _send,
+                  onPressed:
+                      _reason == null || params.onSend == null ? null : _send,
                 ),
               ],
               SizedBox(height: 20.h),
@@ -172,13 +176,15 @@ class _ReportSheetOrganismState extends State<ReportSheetOrganism> {
                   ),
                 ],
               ),
-              SizedBox(height: 8.h),
-              AppButtonAtom(
-                label: 'Block',
-                variant: AppButtonVariant.outlined,
-                expand: true,
-                onPressed: params.isSending ? null : params.onBlock,
-              ),
+              if (params.onBlock != null) ...[
+                SizedBox(height: 8.h),
+                AppButtonAtom(
+                  label: 'Block',
+                  variant: AppButtonVariant.outlined,
+                  expand: true,
+                  onPressed: params.isSending ? null : params.onBlock,
+                ),
+              ],
             ],
           ),
         ),

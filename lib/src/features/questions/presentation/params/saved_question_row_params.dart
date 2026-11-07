@@ -7,10 +7,15 @@ class SavedQuestionRowParams {
   /// Empty when there is no second line to show.
   final String detail;
 
-  final String askedLabel;
+  /// The day the question was asked, or in Shared with me, the day it was
+  /// shared: "Today", "3 Oct".
+  final String dayLabel;
 
   /// Null when the question has no thumbnail.
   final String? thumbnailUrl;
+
+  /// The friend who shared the question, in Shared with me. Null in Mine.
+  final ({String nickname, String? artUrl})? sender;
 
   /// Opens the question's solution.
   final VoidCallback onOpen;
@@ -21,8 +26,9 @@ class SavedQuestionRowParams {
   const SavedQuestionRowParams({
     required this.title,
     required this.detail,
-    required this.askedLabel,
+    required this.dayLabel,
     required this.thumbnailUrl,
+    this.sender,
     required this.onOpen,
     required this.onEnlargePhoto,
   });

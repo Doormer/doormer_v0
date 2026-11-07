@@ -3,6 +3,8 @@ import 'package:doormer/src/core/errors/failure.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/features/questions/domain/entity/daily_limit.dart';
+import 'package:doormer/src/features/questions/domain/entity/shared_question_summary.dart';
+import 'package:doormer/src/features/questions/domain/entity/shared_questions_page.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_question_summary.dart';
 import 'package:doormer/src/features/questions/domain/entity/solved_questions_page.dart';
 import 'package:doormer/src/features/questions/domain/repository/questions_repository.dart';
@@ -11,10 +13,14 @@ import 'package:doormer/src/features/questions/presentation/bloc/saved_questions
 import 'package:doormer/src/features/questions/presentation/organisms/photo_enlarge_organism.dart';
 import 'package:doormer/src/features/questions/presentation/pages/ask_by_photo_page.dart';
 import 'package:doormer/src/features/questions/presentation/pages/saved_questions_page.dart';
+import 'package:doormer/src/features/questions/presentation/templates/saved_questions_template.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../fake_question_sharing_repository.dart';
 
 /// Tuesday 6 October 2026, 8pm, local time.
 final _now = DateTime(2026, 10, 6, 20);
@@ -25,6 +31,32 @@ SolvedQuestionSummary _question(int id) => SolvedQuestionSummary(
       method: 'Area by decomposition',
       questionText: 'Question $id text',
       askedAt: DateTime(2026, 10, 6, 9),
+    );
+
+/// Sam's question, asked late in September and shared yesterday.
+final _samsQuestion = SharedQuestionSummary(
+  question: SolvedQuestionSummary(
+    questionId: '301',
+    topic: 'Algebra - Simultaneous equations',
+    method: 'Elimination',
+    questionText: 'Solve 2x + y = 7 and x - y = 2.',
+    askedAt: DateTime(2026, 9, 29, 9),
+  ),
+  sharedBy: sam,
+  sharedAt: DateTime(2026, 10, 5, 18),
+);
+
+/// One of many questions Sam shared.
+SharedQuestionSummary _sharedQuestion(int id) => SharedQuestionSummary(
+      question: SolvedQuestionSummary(
+        questionId: '$id',
+        topic: 'Geometry - Angles',
+        method: 'Angles on a line',
+        questionText: 'Shared question $id',
+        askedAt: DateTime(2026, 9, 29, 9),
+      ),
+      sharedBy: sam,
+      sharedAt: DateTime(2026, 10, 5, 18),
     );
 
 /// Plays the API. For each cursor it answers, in turn, with the pages or
@@ -60,6 +92,7 @@ void main() {
   setUpAll(AppLogger.disable);
 
   late _ScriptedRepository repository;
+  late FakeQuestionSharingRepository sharing;
   late GoRouter router;
 
   void registerBloc() {
@@ -68,6 +101,8 @@ void main() {
         loadSolvedQuestions: LoadSolvedQuestionsUseCase(repository),
       ),
     );
+    sharing = FakeQuestionSharingRepository();
+    registerQuestionSharingBlocs(sharing);
   }
 
   tearDown(() async {
@@ -84,7 +119,10 @@ void main() {
       routes: [
         GoRoute(
           path: '/saved',
-          builder: (_, __) => SavedQuestionsPage(now: () => _now),
+          builder: (_, state) => SavedQuestionsPage(
+            now: () => _now,
+            isCovered: state.uri.path != '/saved',
+          ),
           routes: [
             GoRoute(
               path: ':questionId/solution',
@@ -131,7 +169,8 @@ void main() {
     expect(find.text('Today'), findsOneWidget);
   });
 
-  testWidgets('tapping a row opens its solution at its own address, under Saved',
+  testWidgets(
+      'tapping a row opens its solution at its own address, under Saved',
       (tester) async {
     repository = _ScriptedRepository({
       null: [
@@ -232,5 +271,215 @@ void main() {
 
     expect(find.text('Question 20 text'), findsOneWidget);
     expect(repository.cursors, [null, '21']);
+  });
+
+  group('Shared with me', () {
+    setUp(() {
+      repository = _ScriptedRepository({
+        null: [
+          SolvedQuestionsPage(questions: [_question(42)])
+        ],
+      });
+      registerBloc();
+      sharing.sharedPages = {
+        null: SharedQuestionsPage(questions: [_samsQuestion]),
+      };
+    });
+
+    Future<void> openSharedWithMe(WidgetTester tester) async {
+      await tester.tap(find.text('Shared with me'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('Mine shows first, and Shared with me loads only once opened',
+        (tester) async {
+      await pumpSaved(tester);
+
+      expect(find.text('Question 42 text'), findsOneWidget);
+      expect(sharing.calls, isEmpty);
+      await openSharedWithMe(tester);
+
+      expect(sharing.calls, ['loadSharedQuestions']);
+      expect(find.text('Question 42 text'), findsNothing);
+    });
+
+    testWidgets(
+        'lists what friends shared, with who shared it and when, and a row '
+        'opens its reader under Saved', (tester) async {
+      await pumpSaved(tester);
+      await openSharedWithMe(tester);
+
+      expect(find.text('Algebra · Simultaneous equations'), findsOneWidget);
+      expect(find.text('Solve 2x + y = 7 and x - y = 2.'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('saved_question_sender')),
+          matching: find.text('Sam'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Yesterday'), findsOneWidget,
+          reason: 'when it was shared');
+      expect(find.text('29 Sep'), findsNothing,
+          reason: 'not when it was asked');
+      await tester.tap(find.text('Solve 2x + y = 7 and x - y = 2.'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Reader for 301'), findsOneWidget);
+      expect(router.routerDelegate.currentConfiguration.uri.path,
+          '/saved/301/solution');
+    });
+
+    testWidgets('with nothing shared, says how questions arrive',
+        (tester) async {
+      sharing.sharedPages = {null: const SharedQuestionsPage(questions: [])};
+      await pumpSaved(tester);
+      await openSharedWithMe(tester);
+
+      expect(
+        find.text('Nothing shared yet. When a friend sends you a question, it '
+            'shows here.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a list that fails to load offers Try again, which loads it',
+        (tester) async {
+      sharing.failNext['loadSharedQuestions'] =
+          NetworkFailure("We couldn't load the questions shared with you.");
+      await pumpSaved(tester);
+      await openSharedWithMe(tester);
+
+      expect(find.text("We couldn't load the questions shared with you."),
+          findsOneWidget);
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Solve 2x + y = 7 and x - y = 2.'), findsOneWidget);
+    });
+
+    testWidgets(
+        'reads the list again once a solution over Saved closes, so a '
+        'question removed there is gone', (tester) async {
+      await pumpSaved(tester);
+      await openSharedWithMe(tester);
+      await tester.tap(find.text('Solve 2x + y = 7 and x - y = 2.'));
+      await tester.pumpAndSettle();
+
+      // Removed from the reader.
+      await sharing.removeSharedQuestion('301');
+      router.go('/saved');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Solve 2x + y = 7 and x - y = 2.'), findsNothing);
+      expect(
+        find.text('Nothing shared yet. When a friend sends you a question, it '
+            'shows here.'),
+        findsOneWidget,
+      );
+      expect(sharing.calls.where((call) => call == 'loadSharedQuestions'),
+          hasLength(2));
+    });
+
+    testWidgets(
+        'back from a question far down the list shows the list where it was '
+        'left', (tester) async {
+      sharing.sharedPages = {
+        null: SharedQuestionsPage(
+          questions: [for (var id = 340; id > 320; id--) _sharedQuestion(id)],
+          nextCursor: '9001',
+        ),
+        '9001': SharedQuestionsPage(
+          questions: [for (var id = 320; id > 300; id--) _sharedQuestion(id)],
+        ),
+      };
+      await pumpSaved(tester);
+      await openSharedWithMe(tester);
+      await tester.drag(
+          find.byKey(const Key('saved_question_list')), const Offset(0, -3000));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Shared question 310'),
+        300,
+        scrollable: find.descendant(
+          of: find.byKey(const Key('saved_question_list')),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final rowTop = tester.getTopLeft(find.text('Shared question 310')).dy;
+
+      await tester.tap(find.text('Shared question 310'));
+      await tester.pumpAndSettle();
+      expect(find.text('Reader for 310'), findsOneWidget);
+      router.go('/saved');
+      await tester.pumpAndSettle();
+
+      expect(tester.getTopLeft(find.text('Shared question 310')).dy, rowTop,
+          reason: 'the 31st row, where it was left');
+      expect(sharing.calls, [
+        'loadSharedQuestions',
+        'loadSharedQuestions 9001',
+        // As the question closed: as many rows as were showing.
+        'loadSharedQuestions',
+        'loadSharedQuestions 9001',
+      ]);
+    });
+
+    testWidgets('opened again, reads what changed meanwhile', (tester) async {
+      await pumpSaved(tester);
+      await openSharedWithMe(tester);
+      await tester.tap(find.text('Mine'));
+      await tester.pumpAndSettle();
+      sharing.sharedPages = {
+        null: SharedQuestionsPage(
+          questions: [_sharedQuestion(302), _samsQuestion],
+        ),
+      };
+
+      await openSharedWithMe(tester);
+
+      expect(find.text('Shared question 302'), findsOneWidget);
+      expect(find.text('Solve 2x + y = 7 and x - y = 2.'), findsOneWidget);
+      expect(sharing.calls, ['loadSharedQuestions', 'loadSharedQuestions']);
+    });
+
+    testWidgets(
+        'switching lists keeps the focus on the switch, for the keyboard and '
+        'a screen reader, and keeps the page in place', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpSaved(tester);
+      final page = tester.element(find.byType(SavedQuestionsTemplate));
+      final sharedChoice =
+          Focus.of(tester.element(find.text('Shared with me')));
+      final sharedNodeId = tester.getSemantics(find.text('Shared with me')).id;
+      sharedChoice.requestFocus();
+      await tester.pump();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Solve 2x + y = 7 and x - y = 2.'), findsOneWidget,
+          reason: 'Shared with me shows');
+      expect(Focus.of(tester.element(find.text('Shared with me'))),
+          same(sharedChoice));
+      expect(sharedChoice.hasPrimaryFocus, isTrue);
+      expect(tester.getSemantics(find.text('Shared with me')).id, sharedNodeId,
+          reason: "a screen reader's place");
+      expect(tester.element(find.byType(SavedQuestionsTemplate)), same(page),
+          reason: 'switching updates the page; it builds no new one');
+      semantics.dispose();
+    });
+
+    testWidgets('switching back shows Mine as it was', (tester) async {
+      await pumpSaved(tester);
+      await openSharedWithMe(tester);
+
+      await tester.tap(find.text('Mine'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Question 42 text'), findsOneWidget);
+      expect(repository.cursors, [null], reason: 'Mine was not read again');
+    });
   });
 }

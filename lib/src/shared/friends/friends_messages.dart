@@ -56,6 +56,23 @@ abstract final class FriendsMessages {
       ? couldNotLoadFriendCards
       : "We couldn't load $nickname's cards.";
 
+  // Sharing questions: a status one call answers with.
+  static const addFriendsToShare =
+      'Add friends on Profile to share questions with them.';
+  static const friendsListChanged =
+      'Your friends list changed. Check the ticks and send again.';
+  static const onlySolvedCanBeShared = 'Only a solved question can be shared.';
+  static const questionNotFound = "We couldn't find this question.";
+  static const noLongerShared = "That question isn't shared with you any more.";
+
+  // Sharing questions: anything else, by call.
+  static const couldNotShare = "We couldn't share that question. Try again.";
+  static const couldNotStopSharing = "We couldn't stop sharing. Try again.";
+  static const couldNotLoadSharedQuestions =
+      "We couldn't load the questions shared with you.";
+  static const couldNotRemoveSharedQuestion =
+      "We couldn't remove that question. Try again.";
+
   // An error that isn't a Failure, which the app didn't expect.
   static const somethingWentWrong = 'Something went wrong. Try again.';
 

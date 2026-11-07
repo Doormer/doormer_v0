@@ -3,13 +3,17 @@ import 'dart:math';
 
 import 'package:doormer/src/dev/fake_backend/fake_backend_state.dart';
 import 'package:doormer/src/dev/fake_backend/fake_diagram.dart';
+import 'package:doormer/src/dev/fake_backend/fake_friend_summary.dart';
 import 'package:doormer/src/dev/fake_backend/fake_request.dart';
 import 'package:doormer/src/dev/fake_backend/fake_response.dart';
 import 'package:doormer/src/dev/fake_backend/fake_route.dart';
 import 'package:flutter/services.dart';
 
 /// Solving photos within the daily limits, saved questions, revealing answers
-/// and the quark balance. Every question opens the same worked solution.
+/// and the quark balance. Every question opens the same worked solution: the
+/// student's own, with who it is shared with, and one a friend shared, with
+/// who shared it. Revealing a friend's answer is refused, as it pays only
+/// the student who asked.
 class QuestionsRoutes {
   /// A real solved question, already bundled with the app.
   static const solutionAsset = 'assets/mock/mock_question_response.json';
@@ -119,9 +123,28 @@ class QuestionsRoutes {
   void _startNewDayIfDue() => _state.startNewDayIfDue(_clock());
 
   Future<FakeResponse> _solution(FakeRequest request) async {
-    final question = _questionIn(request);
-    if (question == null) return const FakeResponse(404, 'question not found');
-    return FakeResponse.ok(_answerTo(question, await _workedSolution()));
+    final friends = _state.friends;
+    final own = _questionIn(request);
+    if (own != null) {
+      return FakeResponse.ok({
+        ..._answerTo(own, await _workedSolution()),
+        'shared_with': [
+          for (final friend in friends.sharedWith(own.id))
+            fakeFriendSummary(friend),
+        ],
+      });
+    }
+    final questionId = request.fields['question_id']?.toString();
+    final sharedBy = friends.sharerOf(questionId);
+    if (sharedBy == null) return const FakeResponse(404, 'question not found');
+    return FakeResponse.ok({
+      ..._answerTo(
+        friends.friendQuestion(questionId)!.question,
+        await _workedSolution(),
+      ),
+      'shared_with': const <Object?>[],
+      'shared_by': fakeFriendSummary(sharedBy),
+    });
   }
 
   FakeResponse _solvedQuestions(FakeRequest request) => FakeResponse.ok({

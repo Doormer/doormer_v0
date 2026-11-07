@@ -58,6 +58,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../levels/register_levels.dart';
+import '../../fake_question_sharing_repository.dart';
 
 class _FakeQuestionsRepository implements QuestionsRepository {
   _FakeQuestionsRepository({this.outcome, this.pending, this.failure});
@@ -272,6 +273,8 @@ void main() {
         revealAnswerUseCase: RevealAnswerUseCase(repository),
       ),
     );
+    // A finished solve opens the student's own solution, which offers Share.
+    registerQuestionSharingBlocs(FakeQuestionSharingRepository());
     fileInput = _FakePhotoFileInput();
     preparer = _FakePhotoPreparer();
     serviceLocator.registerLazySingleton<PhotoFileInput>(() => fileInput);
@@ -798,6 +801,8 @@ void main() {
 
     expect(find.byType(QuestionSolutionPage), findsOneWidget);
     expect(find.byType(SolutionReaderTemplate), findsOneWidget);
+    expect(find.byKey(const Key('share_open')), findsOneWidget,
+        reason: "the student's own question, just solved, offers Share");
     expect(router.routerDelegate.currentConfiguration.uri.path,
         '/questions/photo/q_solved/solution',
         reason: 'opened over Solve, which stays alive under it');

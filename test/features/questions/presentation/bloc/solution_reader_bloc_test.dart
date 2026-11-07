@@ -13,6 +13,7 @@ import 'package:doormer/src/features/questions/domain/usecase/load_quark_balance
 import 'package:doormer/src/features/questions/domain/usecase/load_sample_solution_usecase.dart';
 import 'package:doormer/src/features/questions/domain/usecase/reveal_answer_usecase.dart';
 import 'package:doormer/src/features/questions/presentation/bloc/solution_reader_bloc.dart';
+import 'package:doormer/src/shared/friends/entity/friend_summary.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _document = SolutionDocument(
@@ -73,6 +74,9 @@ const _oneStepBriefedDocument = SolutionDocument(
     TextSolutionSegment('One move is enough.'),
   ]),
 );
+
+const _alex = FriendSummary(friendId: '11', nickname: 'Alex');
+const _sam = FriendSummary(friendId: '7', nickname: 'Sam');
 
 class _StubRepository implements QuestionsRepository {
   final PhotoQuestionSolveOutcome? outcome;
@@ -210,6 +214,53 @@ void main() {
             .having((s) => s.onBriefing, 'onBriefing', isTrue),
         isA<SolutionReaderReady>()
             .having((s) => s.quarkBalance, 'quarkBalance', 128),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      'a question loaded by id says who it is shared with, and keeps saying it',
+      build: () => _bloc(
+        loadedOutcome: const PhotoQuestionSolveOutcome(
+          status: PhotoQuestionSolveStatus.solved,
+          questionId: '57',
+          solution: _document,
+          sharedWith: [_alex, _sam],
+        ),
+      ),
+      act: (bloc) => bloc.add(const SolutionReaderStarted(questionId: '57')),
+      skip: 1,
+      expect: () => [
+        const SolutionReaderReady(
+          document: _document,
+          sharedWith: [_alex, _sam],
+        ),
+        const SolutionReaderReady(
+          document: _document,
+          sharedWith: [_alex, _sam],
+          quarkBalance: 128,
+        ),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      "a friend's question says who shared it, and keeps saying it",
+      build: () => _bloc(
+        loadedOutcome: const PhotoQuestionSolveOutcome(
+          status: PhotoQuestionSolveStatus.solved,
+          questionId: '301',
+          solution: _document,
+          sharedBy: _sam,
+        ),
+      ),
+      act: (bloc) => bloc.add(const SolutionReaderStarted(questionId: '301')),
+      skip: 1,
+      expect: () => [
+        const SolutionReaderReady(document: _document, sharedBy: _sam),
+        const SolutionReaderReady(
+          document: _document,
+          sharedBy: _sam,
+          quarkBalance: 128,
+        ),
       ],
     );
 
@@ -640,6 +691,34 @@ void main() {
           document: _document,
           stepIndex: 2,
           answerRevealed: true,
+        ),
+      ],
+    );
+
+    blocTest<SolutionReaderBloc, SolutionReaderState>(
+      "opens a friend's answer without calling reveal-answer, so it earns "
+      'nothing',
+      build: () {
+        final built = _blocWithRepository();
+        addTearDown(() => expect(built.repository.revealedIds, isEmpty));
+        return built.bloc;
+      },
+      seed: () => const SolutionReaderReady(
+        document: _document,
+        stepIndex: 2,
+        quarkBalance: 128,
+        sharedBy: _sam,
+      ),
+      act: (bloc) =>
+          bloc.add(const SolutionReaderAnswerRevealed(questionId: '301')),
+      wait: const Duration(milliseconds: 1),
+      expect: () => const [
+        SolutionReaderReady(
+          document: _document,
+          stepIndex: 2,
+          answerRevealed: true,
+          quarkBalance: 128,
+          sharedBy: _sam,
         ),
       ],
     );

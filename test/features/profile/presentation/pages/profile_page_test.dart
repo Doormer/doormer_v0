@@ -177,10 +177,11 @@ void main() {
       find.widgetWithText(FriendRequestRowMolecule, nickname);
 
   const removeMessage =
-      "You'll stop seeing each other's cards. You can add each other again "
-      'later.';
-  const blockMessage = "They won't see your cards, and their requests won't "
-      "reach you. They won't be told.";
+      "You'll stop seeing each other's cards and shared questions. You can "
+      'add each other again later.';
+  const blockMessage =
+      "They won't see your cards or anything you shared, and their requests "
+      "won't reach you. They won't be told.";
 
   /// The dialog that asks before Remove or Block.
   final dialog = find.byType(ConfirmDialogMolecule);

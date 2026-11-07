@@ -326,6 +326,7 @@ class _SolutionReaderTemplateState extends State<SolutionReaderTemplate>
                       onBack: params.onBack,
                       showSwipeHint: !content.onBriefing,
                       swipeHintUsed: content.hasMoved,
+                      share: params.share,
                     ),
                   ),
                 ],
