@@ -19,11 +19,9 @@ class AuthRoutes {
         FakeRoute('POST', '/v1/token/refresh', _renewAccessToken),
       ];
 
-  /// A new student has not registered yet, so the app opens registration,
-  /// has no friend profile, so Profile offers Set up friends, and has no
-  /// active days, so their first count makes 1.
+  /// A new student has no friend profile, so Profile offers Set up friends,
+  /// and has no active days, so their first count makes 1.
   FakeResponse _signUp(FakeRequest request) {
-    _state.registrationStatus = 0;
     _state.friends.profile = null;
     _state
       ..activeDays = 0
@@ -41,6 +39,7 @@ class AuthRoutes {
   FakeResponse _signedIn() => FakeResponse.ok({
         'access_token': _state.newToken('access'),
         'refresh_token': _state.newToken('refresh'),
-        'user_info': {'user_registration_status': _state.registrationStatus},
+        // What the API sends for a student. The app no longer acts on it.
+        'user_info': {'user_registration_status': 0},
       });
 }

@@ -1,6 +1,6 @@
 # Doormer — Project Instructions
 
-Doormer is a Flutter **web-first** application for candidate onboarding (auth, registration, learning tools).  
+Doormer is a Flutter **web-first** homework-help application: students solve questions from photos, collect cards and add friends.  
 **Flutter 3.27.1 / Dart SDK ^3.5.3** · Primary target: **web** (cookies via `universal_html`, `flutter_web_plugins` for URL strategy).
 
 ## Build & Run
@@ -99,7 +99,7 @@ lib/src/
 
 ### Dependency Injection (GetIt)
 
-- Central setup: `core/di/service_locator.dart` → calls each feature's `init<Feature>Module()` (actual names: `initAuthModule()`, `initRegisterModule()` — registration abbreviates to "Register").
+- Central setup: `core/di/service_locator.dart` → calls each feature's `init<Feature>Module()` (`initAuthModule()`, `initQuestionsModule()`, `initCollectionModule()`, `initProfileModule()`, `initLevelsModule()`).
 - **factory** for BLoCs (each page needs a fresh instance with clean state).
 - **lazySingleton** for repos, usecases, datasources, and services (stateless — one instance is enough).
   - `QuestionSharingRepositoryImpl` holds a Remove or Block on its way, so that reads of Shared with me wait for it, and must stay a single lazy singleton.

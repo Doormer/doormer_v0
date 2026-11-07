@@ -9,8 +9,6 @@ import 'package:doormer/src/core/utils/token_storage/token_storage.dart';
 import 'package:doormer/src/features/auth/presentation/pages/login_page.dart';
 import 'package:doormer/src/features/auth/presentation/pages/signup_page.dart';
 import 'package:doormer/src/core/routes/destination_routes.dart';
-import 'package:doormer/src/features/registration/presentation/pages/candidate_registration.dart';
-import 'package:doormer/src/features/registration/presentation/pages/registration_complete_page.dart';
 import 'package:doormer/src/core/utils/app_logger.dart';
 import 'package:doormer/src/shared/widget/not_found_page.dart';
 
@@ -48,12 +46,6 @@ class WebRouter {
             path: 'login',
             builder: (context, state) => const LoginPageWeb(),
           ),
-          GoRoute(
-              path: 'registration',
-              builder: (context, state) => const CandidateRegistrationPage()),
-          GoRoute(
-              path: 'registration-complete',
-              builder: (context, state) => const RegistrationCompletePage()),
         ],
       ),
       ...destinationRoutes,

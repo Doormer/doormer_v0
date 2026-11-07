@@ -10,7 +10,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:doormer/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:doormer/src/features/auth/presentation/utils/auth_autofill.dart';
 import 'package:doormer/src/core/di/service_locator.dart';
-import 'package:doormer/src/shared/sessions/bloc/global_session_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in_web/google_sign_in_web.dart';
 import 'package:toastification/toastification.dart';
@@ -85,16 +84,9 @@ class _LoginPageWebState extends State<LoginPageWeb> {
 
                         if (state is AuthSuccess) {
                           AuthAutofill.finishOnAuthSuccess(state);
-                          final sessionState =
-                              context.read<GlobalSessionBloc>().state;
-                          if (sessionState is SessionActiveState) {
-                            final user = sessionState.user;
-                            if (user.userRegistrationStatus == 0) {
-                              router.go('/auth/registration');
-                            } else {
-                              router.go('/auth/registration-complete');
-                            }
-                          }
+                          // The route guard sends a signed-in student on to
+                          // their first page: Solve, or an invite's check.
+                          router.go('/');
                         }
 
                         if (state is AuthError) {

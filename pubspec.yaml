@@ -31,7 +31,6 @@ dependencies:
   web: ^1.1.0
   google_sign_in:  ^6.3.0
   google_sign_in_web:
-  file_picker:
   google_sign_in_platform_interface: 
   flutter_markdown: 
   toastification: ^3.0.3
@@ -88,4 +87,3 @@ flutter:
     - assets/images/brand/
     - assets/mock/mock_login_response.json
     - assets/mock/mock_question_response.json
-    - assets/candidate_registration_options/candidate_registration_options.json

@@ -7,7 +7,6 @@ import 'package:doormer/src/dev/fake_backend/routes/collection_routes.dart';
 import 'package:doormer/src/dev/fake_backend/routes/friends_routes.dart';
 import 'package:doormer/src/dev/fake_backend/routes/levels_routes.dart';
 import 'package:doormer/src/dev/fake_backend/routes/questions_routes.dart';
-import 'package:doormer/src/dev/fake_backend/routes/registration_routes.dart';
 import 'package:doormer/src/dev/fake_backend/routes/sharing_routes.dart';
 import 'package:flutter/services.dart';
 
@@ -36,7 +35,6 @@ FakeBackendAdapter fakeBackend({
   return FakeBackendAdapter(
     [
       ...AuthRoutes(state).routes,
-      ...RegistrationRoutes(state).routes,
       ...CollectionRoutes(state, random ?? Random(7)).routes,
       ...FriendsRoutes(state).routes,
       ...LevelsRoutes(state, clock: now).routes,

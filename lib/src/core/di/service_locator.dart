@@ -11,7 +11,6 @@ import 'package:doormer/src/features/collection/di/collection_module.dart';
 import 'package:doormer/src/features/levels/di/levels_module.dart';
 import 'package:doormer/src/features/profile/di/profile_module.dart';
 import 'package:doormer/src/features/questions/di/questions_module.dart';
-import 'package:doormer/src/features/registration/di/registration_module.dart';
 import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
 import 'package:doormer/src/shared/levels/bloc/level_progress_bloc.dart';
 import 'package:doormer/src/shared/sessions/bloc/global_session_bloc.dart';
@@ -67,7 +66,6 @@ Future<void> initDependencies() async {
 
   // Initialize feature-specific modules
   initAuthModule(); // Initializes dependencies for the auth feature
-  initRegisterModule();
   initQuestionsModule();
   initCollectionModule();
   initProfileModule();

@@ -62,20 +62,17 @@ void main() {
     );
   });
 
-  test('signing up gives tokens and a student who has not registered',
-      () async {
+  test('signing up gives tokens', () async {
     final signedUp = await auth.signup('ana@example.test', 'secret');
 
     expect(signedUp.accessToken, isNotEmpty);
     expect(signedUp.refreshToken, isNotEmpty);
-    expect(signedUp.user?.userRegistrationStatus, 0);
   });
 
-  test('any email and password sign in, as a registered student', () async {
+  test('any email and password sign in', () async {
     final signedIn = await auth.login('anyone@example.test', 'any password');
 
     expect(signedIn.accessToken, isNotEmpty);
-    expect(signedIn.user?.userRegistrationStatus, 1);
   });
 
   test('each sign-in gets its own access token', () async {

@@ -70,11 +70,7 @@ void main() {
   });
 
   group('either way', () {
-    for (final path in [
-      '/auth/registration',
-      '/auth/registration-complete',
-      '/no-such-page',
-    ]) {
+    for (final path in ['/no-such-page']) {
       for (final signedIn in [true, false]) {
         test('$path stays (signed in: $signedIn)', () {
           expect(redirectFor(path, isSignedIn: signedIn), isNull);
@@ -126,7 +122,6 @@ void main() {
       '/profile/add/K7QM2XPA',
       '/profile/setup',
       '/saved/abc/solution',
-      '/auth/registration-complete',
     ]) {
       test('signed in with a code kept, $path stays', () {
         expect(
@@ -185,7 +180,8 @@ void main() {
 
       tokens.refreshToken = 'refresh';
 
-      expect(await guard('/auth/registration-complete'), isNull);
+      // Signing in goes to the app's start, which is Solve.
+      expect(await guard('/'), '/questions/photo');
       expect(await guard('/questions/photo'), '/profile/add/K7QM2XPA');
     });
 

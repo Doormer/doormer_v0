@@ -51,11 +51,11 @@ String _checkOf(String code) => '/profile/add/$code';
 /// signed out, it keeps the code of an invite link being opened, for 7 days.
 /// Then it applies [redirectFor] to the stored session and kept code.
 ///
-/// Sign-in ends on the older registration pages, so the code waits for the
-/// first app page the student reaches. A signed-in student goes straight to
-/// the check, which takes the code from its path, so nothing is kept. Back to
-/// the link would otherwise keep the code again, and the check already
-/// showing wouldn't forget it.
+/// The code waits for the first app page the student reaches once signed in,
+/// which may be days later. A signed-in student goes straight to the check,
+/// which takes the code from its path, so nothing is kept. Back to the link
+/// would otherwise keep the code again, and the check already showing
+/// wouldn't forget it.
 Future<String?> guardNavigation(
   String path, {
   required TokenStorage tokens,

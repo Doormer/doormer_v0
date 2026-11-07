@@ -367,9 +367,6 @@ class FakeFriends {
 
 /// Everything the fake backend remembers about its one student.
 class FakeBackendState {
-  /// `0` until the student finishes registration, then `1`.
-  int registrationStatus;
-
   int quarkBalance;
 
   /// Copies held, by deck id and then card id.
@@ -398,7 +395,6 @@ class FakeBackendState {
   int _lastTokenNumber = 0;
 
   FakeBackendState({
-    required this.registrationStatus,
     required this.quarkBalance,
     required this.activeDays,
     required this.holdings,
@@ -406,14 +402,13 @@ class FakeBackendState {
     required this.friends,
   });
 
-  /// A registered student with quarks for five draws, three Meridian cards
+  /// A student with quarks for five draws, three Meridian cards
   /// (one with a spare copy to shatter, one with a special copy), nothing
   /// from Cinder, three saved questions, friends as [FakeFriends.starting]
   /// has them, and 31 active days: the first count after a reload makes the
   /// 32nd, a new moon at level 4.
   factory FakeBackendState.starting({required DateTime now}) =>
       FakeBackendState(
-        registrationStatus: 1,
         quarkBalance: 200,
         activeDays: 31,
         holdings: {

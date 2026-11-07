@@ -1314,11 +1314,10 @@ void main() {
             path: '/auth',
             builder: (_, __) => const Scaffold(body: Text('sign-up page')),
             routes: [
-              for (final page in ['login', 'registration-complete'])
-                GoRoute(
-                  path: page,
-                  builder: (_, __) => Scaffold(body: Text('$page page')),
-                ),
+              GoRoute(
+                path: 'login',
+                builder: (_, __) => const Scaffold(body: Text('login page')),
+              ),
             ],
           ),
           ...destinationRoutes,
@@ -1354,13 +1353,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('login page'), findsOneWidget);
 
-      // Signing in ends on the older registration pages.
+      // Signing in goes to the app's start, as the sign-in pages do.
       tokens.accessToken = 'access';
-      router.go('/auth/registration-complete');
-      await tester.pumpAndSettle();
-      expect(find.text('registration-complete page'), findsOneWidget);
-
-      // The student opens the app.
       router.go('/');
       await tester.pumpAndSettle();
 

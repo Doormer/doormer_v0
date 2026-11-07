@@ -1,6 +1,6 @@
-/// Keeps the friend code of an invite link the student opened, so the check
-/// can open once they have signed in and reached the app. Sign-in ends on the
-/// older registration pages, so the code has to outlive the visit.
+/// Keeps the friend code of an invite link the student opened while signed
+/// out, so the check can open once they have signed in and reached the app,
+/// which may be in a later visit.
 abstract class InviteCodeStorage {
   /// How long a kept code lasts.
   static const lifetime = Duration(days: 7);
