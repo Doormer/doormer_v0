@@ -170,33 +170,41 @@ class ProfileTemplate extends StatelessWidget {
           if (isWide && levelCard != null)
             // On a wide screen the header and the level share one gold
             // panel, as Steam's profile header does: the name on the left,
-            // the level on the right with more room for its icons.
+            // the level on the right. The name side takes the room the
+            // nickname and friend code need, up to 60%, so a name isn't cut
+            // where the app's scale grows; the level gets the rest.
             GoldPanelAtom(
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 42,
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 16.w,
-                        vertical: 16.h,
+              child: LayoutBuilder(
+                builder: (context, panel) => Row(
+                  children: [
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: panel.maxWidth * 0.6,
                       ),
-                      child: ProfileHeaderOrganism(params: friends.header),
+                      child: IntrinsicWidth(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 16.h,
+                          ),
+                          child: ProfileHeaderOrganism(params: friends.header),
+                        ),
+                      ),
                     ),
-                  ),
-                  Container(
-                    width: 1,
-                    height: 80.h,
-                    color: QuestPalette.levelGold.withValues(alpha: 0.16),
-                  ),
-                  Expanded(
-                    flex: 58,
-                    child: LevelCardOrganism(
-                      params: levelCard,
-                      framed: false,
+                    Container(
+                      key: const ValueKey('profile-panel-divider'),
+                      width: 1,
+                      height: 80.h,
+                      color: QuestPalette.levelGold.withValues(alpha: 0.16),
                     ),
-                  ),
-                ],
+                    Expanded(
+                      child: LevelCardOrganism(
+                        params: levelCard,
+                        framed: false,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             )
           else ...[

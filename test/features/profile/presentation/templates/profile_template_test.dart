@@ -29,14 +29,18 @@ const _wide = Size(760, 1400);
 /// A phone's window, 360 wide.
 const _narrow = Size(360, 1400);
 
-/// Loads the app's reading face, so labels take the room they take in the
-/// app rather than the test font's 1 em a letter.
-Future<void> _loadReadingFace() async {
-  final face = FontLoader(kBodyFont);
+/// Loads the app's faces, so names and labels take the room they take in
+/// the app rather than the test font's 1 em a letter.
+Future<void> _loadFaces() async {
+  final reading = FontLoader(kBodyFont);
   for (final weight in [400, 500, 600, 700]) {
-    face.addFont(rootBundle.load('assets/fonts/SpaceGrotesk-$weight.ttf'));
+    reading.addFont(rootBundle.load('assets/fonts/SpaceGrotesk-$weight.ttf'));
   }
-  await face.load();
+  final display = FontLoader(kDisplayFont);
+  for (final weight in [600, 700]) {
+    display.addFont(rootBundle.load('assets/fonts/Fredoka-$weight.ttf'));
+  }
+  await Future.wait([reading.load(), display.load()]);
 }
 
 /// Profile as the app shows it in a [window] of that size.
@@ -65,13 +69,14 @@ Future<void> _pump(
 /// Kai, set up, with [friends] and requests from [requesters]. Opening a
 /// friend tells [onOpen] their nickname.
 ProfileFriendsParams _kai({
+  String nickname = 'Kai',
   List<String> friends = const ['Alex', 'Sam'],
   List<String> requesters = const ['Rua', 'Nia'],
   void Function(String nickname)? onOpen,
 }) =>
     ProfileFriendsParams(
       header: ProfileHeaderParams(
-        nickname: 'Kai',
+        nickname: nickname,
         artUrl: null,
         friendCode: 'K7QM-2XPA',
         onEdit: () {},
@@ -126,7 +131,7 @@ int _linesOf(WidgetTester tester, Finder text) {
 }
 
 void main() {
-  setUpAll(_loadReadingFace);
+  setUpAll(_loadFaces);
 
   group('on a wide screen', () {
     testWidgets('friends and requests sit two to a line, each in a tile',
@@ -336,8 +341,8 @@ void main() {
 
     testWidgets(
         'on a wide screen shares one gold panel with the picture, nickname '
-        'and friend code: the name on the left, the level on the right with '
-        'more room', (tester) async {
+        'and friend code: the name on the left, the level on the right',
+        (tester) async {
       await _pump(tester, window: _wide, body: _kai(), levelCard: card);
 
       final panel = find.byType(GoldPanelAtom);
@@ -348,8 +353,13 @@ void main() {
       final panelRect = tester.getRect(panel);
       final headerRect = tester.getRect(header);
       final levelRect = tester.getRect(shown);
-      expect(headerRect.right, lessThan(levelRect.left));
-      expect(levelRect.width, greaterThan(headerRect.width));
+      final divider =
+          tester.getRect(find.byKey(const ValueKey('profile-panel-divider')));
+      expect(headerRect.right, lessThan(divider.left));
+      expect(divider.width, moreOrLessEquals(1));
+      expect(levelRect.left, moreOrLessEquals(divider.right));
+      expect(levelRect.right, moreOrLessEquals(panelRect.right - 1),
+          reason: 'the level gets the rest, inside the edge');
       expect(headerRect.center.dy, moreOrLessEquals(panelRect.center.dy),
           reason: 'the header is centred in the panel');
       expect(
@@ -363,6 +373,30 @@ void main() {
       expect(panelRect.bottom,
           lessThanOrEqualTo(tester.getRect(_button('Add a friend')).top));
     });
+
+    for (final (window, nickname) in [
+      (const Size(1440, 900), 'Maximilian'),
+      (_wide, 'Sophia'),
+    ]) {
+      testWidgets(
+          'in the wide panel at ${window.width.toInt()} by '
+          '${window.height.toInt()}, "$nickname" shows whole and the level '
+          'keeps at least 40%', (tester) async {
+        await _pump(tester,
+            window: window, body: _kai(nickname: nickname), levelCard: card);
+
+        expect(
+            tester
+                .renderObject<RenderParagraph>(find.text(nickname))
+                .didExceedMaxLines,
+            isFalse,
+            reason: 'the nickname is not cut short');
+        expect(
+            tester.getRect(shown).width,
+            greaterThanOrEqualTo(
+                tester.getRect(find.byType(GoldPanelAtom)).width * 0.4 - 1));
+      });
+    }
 
     testWidgets(
         'on a wide screen, screen readers still hear the card on its own, '
