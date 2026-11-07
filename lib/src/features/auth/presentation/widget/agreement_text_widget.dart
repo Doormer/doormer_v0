@@ -12,8 +12,8 @@ class AgreementTextWidget extends StatelessWidget {
       showDragHandle: true,
       context: context,
       builder: (_) => const _AgreementSheet(
-        title: 'Terms of Service',
-        child: AgreementText.termsAndConditions,
+        title: 'Terms of use',
+        child: AgreementText.termsOfUse,
       ),
     );
   }
@@ -49,7 +49,7 @@ class AgreementTextWidget extends StatelessWidget {
         style: baseStyle,
         children: [
           TextSpan(
-            text: "Terms & Conditions",
+            text: "Terms of use",
             style: linkStyle,
             recognizer: TapGestureRecognizer()
               ..onTap = () {

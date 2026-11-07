@@ -1,124 +1,103 @@
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 class AgreementText {
-  static const termsAndConditions = Markdown(data: """
-# Terms and Conditions
+  static const termsOfUse = Markdown(
+    data: """
+These terms are the agreement between you and Doormer when you use our website and app. Please read them with a parent or guardian if you're under 18.
 
-**These terms and conditions** govern the use of Doormer. This site is a matching website for recruiters and candidates.
-_ (the "Site"). This Site is owned and operated by  
-By using this Site, you indicate that you have read and understand these Terms and Conditions and agree to abide by them at all times.
+**Last updated:** 7 November 2026
 
-THESE TERMS AND CONDITIONS CONTAIN A DISPUTE RESOLUTION CLAUSE THAT IMPACTS YOUR RIGHTS ABOUT HOW TO RESOLVE DISPUTES. PLEASE READ IT CAREFULLY.
+## In short
 
-**Intellectual Property**  
-All content published and made available on our Site is the property of Doormer and the Site's creators. This includes, but is not limited to, images, text, logos, documents, downloadable files, and anything that contributes to the composition of our Site.
+- Use Doormer to learn.
+- Follow your school's rules.
+- Be kind to other students.
+- AI answers can be wrong.
+- Quarks and cards have no cash value.
+- You keep your photos.
 
-**Acceptable Use**  
-As a user of our Site, you agree to use our Site legally, not to use our Site for illegal purposes, and not to:
-- Harass or mistreat other users of our Site;
-- Violate the rights of other users of our Site;
-- Violate the intellectual property rights of the Site owners or any third party to the Site;
-- Hack into the account of another user of the Site;
-- Act in any way that could be considered fraudulent; or
-- Post any material that may be deemed inappropriate or offensive.
+## Using Doormer
 
-If we believe you are using our Site illegally or in a manner that violates these Terms and Conditions, we reserve the right to limit, suspend, or terminate your access to our Site. We also reserve the right to take any legal steps necessary to prevent you from accessing our Site.
+By using Doormer, you agree to these terms. Doormer is for learners of all ages. If you're under 16, you need a parent's or guardian's OK to use it.
 
-**User Contributions**  
-Users may post the following information on our Site:
-- Photos;
-- Employers Company profile information;
-- Employers Job descriptions and requirements; 
-- Employers' Messages and communication with candidates;
-- candidatePersonal profile details (e.g., name, skills, job preferences); and 
-- candidate Responses to employer messages.
+Doormer is for personal, non-commercial use.
 
-By posting publicly on our Site, you agree not to act illegally or violate these Terms and Conditions.
+## Your account
 
-**Accounts**  
-When you create an account on our Site, you agree to the following:
-1. You are solely responsible for your account and the security and privacy of your account, including passwords or sensitive information attached to that account; and
-2. All personal information you provide to us through your account is up to date, accurate, and truthful and that you will update your personal information if it changes.
+Use accurate details when you create an account. Keep your password private. One account is for one person. Tell us if you think someone else has used your account without permission.
 
-We reserve the right to suspend or terminate your account if you are using our Site illegally or if you violate these Terms and Conditions.
+## Acceptable use
 
-**Sale of Services**  
-These Terms and Conditions govern the sale of services available on our Site.  
-The following services are available on our Site:
-- Matching.
+When you use Doormer, do not:
 
-The services will be paid for in full when the services are ordered.  
-These Terms and Conditions apply to all the services that are displayed on our Site at the time you access it. All information, descriptions, or images that we provide about our services are as accurate as possible. However, we are not legally bound by such information, descriptions, or images as we cannot guarantee the accuracy of all services we provide. You agree to purchase services from our Site at your own risk.
+- break the law;
+- upload other people's personal information or anything offensive, harmful or unrelated to schoolwork;
+- try to break, overload, scrape, copy or reverse-engineer Doormer, or use bots;
+- get around limits or security;
+- resell or redistribute Doormer.
 
-We reserve the right to modify, reject, or cancel your order whenever it becomes necessary. If we cancel your order and have already processed your payment, we will give you a refund equal to the amount you paid. You agree that it is your responsibility to monitor your payment instrument to verify receipt of any refund.
+## Friends and sharing
 
-**Third Party Goods and Services**  
-Our Site may offer goods and services from third parties. We cannot guarantee the quality or accuracy of goods and services made available by third parties on our Site.
+Friends let students see each other's nicknames, pictures and cards, and share solved questions with each other. When you use friends, don't:
 
-**User Goods and Services**  
-Our Site allows users to sell goods and services. We do not assume any responsibility for the goods and services users sell on our Site. We cannot guarantee the quality or accuracy of any goods and services sold by users on our Site. However, if we are made aware that a user is violating these Terms and Conditions, we reserve the right to suspend or prohibit the user from selling goods and services on our Site.
+- choose a nickname that's unkind, or that pretends to be someone else;
+- bully, threaten, embarrass or pressure anyone;
+- share anything offensive or harmful, or anyone's personal information.
 
-**Subscriptions**  
-subscription.  
-Your subscription automatically renews and you will be automatically billed until we receive notification that you want to cancel the subscription.  
-To cancel your subscription, please follow these steps: Cancellation Terms Businesses can cancel their subscription at any time.  
-There is no refund policy—once canceled, no refunds will be issued.
+Only share questions you're happy for your friends to see. You can block or report another student at any time, and the Doormer team reviews reports. When these rules are broken, we may reset a nickname to “Student” or turn friends off for an account.
 
-**Data Retention**  
-After cancellation, company data will still be retained in the system.  
-Businesses can resubscribe at any time and regain access to their data.
+## Learning and academic integrity
 
-**Resubscription**  
-Companies may reactivate their subscription without any waiting period.
+Doormer is a study aid. Follow your school's and exam board's rules. Don't hand in Doormer's work as your own where that is not allowed.
 
-**Beta Disclaimer**  
-The platform is currently in beta testing and does not offer any subscriptions at this time.  
-If a subscription model is introduced in the future, businesses will be notified in advance.
+You are responsible for how you use solutions.
 
-**Payments**  
-We accept the following payment methods on our Site:
-- Direct Debit.
+## Your photos and content
 
-When you provide us with your payment information, you authorise our use of and access to the payment instrument you have chosen to use. By providing us with your payment information, you authorise us to charge the amount due to this payment instrument.
+You keep ownership of your photos and content. You give Doormer permission to store and process them, including with our AI provider, to provide and improve the service.
 
-If we believe your payment has violated any law or these Terms and Conditions, we reserve the right to cancel or reverse your transaction.
+Only upload material you're allowed to use for your own study.
 
-**Consumer Protection Law**  
-Where the Consumer Gurantees Act 1993, the Contract and Commercial Law Act 2017, or any other consumer protection legislation in your jurisdiction applies and cannot be excluded, these Terms and Conditions will not limit your legal rights and remedies under that legislation. These Terms and Conditions will be read subject to the mandatory provisions of that legislation. If there is a conflict between these Terms and Conditions and that legislation, the mandatory provisions of the legislation will apply.
+## AI answers can be wrong
 
-**Links to Other Websites**  
-Our Site contains links to third party websites or services that we do not own or control. We are not responsible for the content, policies, or practices of any third party website or service linked to on our Site. It is your responsibility to read the terms and conditions and privacy policies of these third party websites before using these sites.
+Doormer checks its answers, but AI answers can still be wrong. Doormer is not professional advice. Check important work with your teacher.
 
-**Limitation of Liability**  
-Doormer ltd. and our directors, officers, agents, employees, subsidiaries, and affiliates will not be liable for any actions, claims, losses, damages, liabilities and expenses including legal fees from your use of the Site.
+## Quarks and cards
 
-**Indemnity**  
-Except where prohibited by law, by using this Site you indemnify and hold harmless Doormer and our directors, officers, agents, employees, subsidiaries, and affiliates from any actions, claims, losses, damages, liabilities and expenses including legal fees arising out of your use of our Site or your violation of these Terms and Conditions.
+Quarks and cards are virtual items for fun, earned in the app. They have no cash value and can't be sold, traded or transferred for money.
 
-**Applicable Law**  
-These Terms and Conditions are governed by the laws of New Zealand.
+We may adjust balances to fix mistakes. We may also change or end the collection, giving notice where reasonable.
 
-**Dispute Resolution**  
-Subject to any exceptions specified in these Terms and Conditions, if you and Doormer ltd. are unable to resolve any dispute through informal discussion, then you and Doormer ltd. agree to submit the issue before an arbitrator. The decision of the arbitrator will be final and binding. Any arbitrator must be a neutral party acceptable to both you and Doormer ltd. The costs of any arbitration will be paid by the unsuccessful party.
+## Ads and a free service
 
-Notwithstanding any other provision in these Terms and Conditions, you and Doormer ltd. agree that you both retain the right to bring an action in small claims court and to bring an action for injunctive relief or intellectual property infringement.
+Doormer is free. Ads may appear while photos are solved. If we ever add paid features, we'll tell you first and nothing will be charged without your agreement.
 
-**Severability**  
-If at any time any of the provisions set forth in these Terms and Conditions are found to be inconsistent or invalid under applicable laws, those provisions will be deemed void and will be removed from these Terms and Conditions. All other provisions will not be affected by the removal and the rest of these Terms and Conditions will still be considered valid.
+## Beta, changes and availability
 
-**Changes**  
-These Terms and Conditions may be amended from time to time in order to maintain compliance with the law and to reflect any changes to the way we operate our Site and the way we expect users to behave on our Site. We will notify users by email of changes to these Terms and Conditions or post a notice on our Site.
+Doormer is in beta. Features can change. We can't promise it will always be available or error-free.
 
-**Contact Details**  
-Please contact us if you have any questions or concerns. Our contact details are as follows:
+## Our content
 
-Doormer ltd  
-Email: doormerapp@gmail.com  
-Address: Centre For Innovation And Entrepreneurship,  
-12 Grafton Road, Auckland Central, Auckland 1010
+Doormer's software, design, text, card art and brand belong to Doormer or its licensors. They are for personal use only.
 
-You can also connect with us through feedback available on the site.
-""", selectable: true);
+## Our responsibility to you
+
+To the extent the law allows, we're not liable for indirect loss, or loss from relying on an answer. Nothing in these terms limits rights you have under consumer law that can't be excluded, including the New Zealand Consumer Guarantees Act 1993 and the Australian Consumer Law.
+
+## Ending your use
+
+You can stop using Doormer any time and ask us to delete your account. We may suspend or close accounts that break these terms.
+
+## Changes to these terms
+
+We'll update the date above when these terms change. We'll tell you about significant changes. Continuing to use Doormer means you accept the changed terms.
+
+## Contact
+
+Email doormerapp@gmail.com.
+""",
+    selectable: true,
+  );
 
   static const privacyPolicy = Markdown(
     data: """
@@ -162,7 +141,7 @@ Doormer (“we”, “us”) runs the Doormer website and app. You can contact u
 
 **Reports.** When you report a student, we keep who made the report, who it's about, the reason, any note you add, their nickname at the time, and the shared question if the report is about one.
 
-**Older sign-up form.** After you create an account, the app may show a form from Doormer's earlier job-matching service. It asks for your first name, last name, phone number, a CV and job preferences, such as roles and industries. Doormer doesn't need these to help with your questions. If you fill it in, we keep what you enter, including the CV. You can ask us to delete it.
+**Job-matching details.** Earlier versions of the app showed new accounts a form from Doormer's old job-matching service, asking for a first name, last name, phone number, a CV and job preferences, such as roles and industries. If you filled it in, we keep what you entered, including the CV. You can ask us to delete it.
 
 **Messages and technical information.** Messages you send us. Our servers also collect technical information as they run, including IP address, browser and device type, pages requested, times and error logs.
 

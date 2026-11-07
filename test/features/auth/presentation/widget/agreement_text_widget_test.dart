@@ -13,6 +13,14 @@ void main() {
     expect(richText.textAlign, TextAlign.center);
   });
 
+  testWidgets('asks the student to agree to the Terms of use', (tester) async {
+    await tester.pumpWidget(_pump(const AgreementTextWidget()));
+
+    final richText = tester.widget<RichText>(find.byType(RichText).first);
+
+    expect(richText.text.toPlainText(), contains('Terms of use'));
+  });
+
   testWidgets('terms sheet shows a drag handle and closes from the header',
       (tester) async {
     await tester.pumpWidget(_pump(const AgreementTextWidget()));
@@ -21,14 +29,14 @@ void main() {
     recognizerFor(richText.text, 'Terms')!.onTap!();
     await tester.pumpAndSettle();
 
-    expect(find.text('Terms of Service'), findsOneWidget);
+    expect(find.text('Terms of use'), findsOneWidget);
     expect(_findMaterialDragHandle(), findsOneWidget);
     expect(find.byTooltip('Close'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Terms of Service'), findsNothing);
+    expect(find.text('Terms of use'), findsNothing);
   });
 }
 
