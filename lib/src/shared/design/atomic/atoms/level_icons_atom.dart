@@ -20,8 +20,9 @@ class LevelIconsAtom extends StatelessWidget {
   /// like.
   final double size;
 
-  /// What screen readers hear, such as `Level 6`. Null where words beside
-  /// the icons already say it: screen readers then skip them.
+  /// What screen readers hear, such as `Level 6`. Null where something else
+  /// already says it, such as words beside the icons or a label around them:
+  /// screen readers then skip the icons.
   final String? semanticLabel;
 
   const LevelIconsAtom({
