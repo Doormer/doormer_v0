@@ -1,5 +1,6 @@
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
+import 'package:doormer/src/features/profile/presentation/atoms/gold_panel_atom.dart';
 import 'package:doormer/src/features/profile/presentation/molecules/level_progress_bar_molecule.dart';
 import 'package:doormer/src/features/profile/presentation/organisms/level_card_organism.dart';
 import 'package:doormer/src/features/profile/presentation/params/level_card_params.dart';
@@ -33,6 +34,7 @@ Future<void> _pump(
   WidgetTester tester,
   LevelCardParams params, {
   double? width,
+  bool framed = true,
 }) async {
   tester.view.physicalSize = const Size(360, 690);
   tester.view.devicePixelRatio = 1;
@@ -48,7 +50,7 @@ Future<void> _pump(
             alignment: Alignment.topCenter,
             child: SizedBox(
               width: width,
-              child: LevelCardOrganism(params: params),
+              child: LevelCardOrganism(params: params, framed: framed),
             ),
           ),
         ),
@@ -246,6 +248,17 @@ void main() {
     expect(card.right - bar.right, moreOrLessEquals(17));
     expect(bar.top - icons.bottom, moreOrLessEquals(14));
     semantics.dispose();
+  });
+
+  testWidgets(
+      'draws its own gold panel, or none when it shares one, as beside the '
+      'header on a wide Profile', (tester) async {
+    await _pump(tester, _card());
+    expect(find.byType(GoldPanelAtom), findsOneWidget);
+
+    await _pump(tester, _card(), framed: false);
+    expect(find.byType(GoldPanelAtom), findsNothing);
+    expect(find.text('Level 21'), findsOneWidget);
   });
 
   testWidgets('ⓘ opens How levels work', (tester) async {

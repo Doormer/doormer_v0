@@ -1,6 +1,7 @@
 import 'package:doormer/src/core/responsive/responsive_app_shell.dart';
 import 'package:doormer/src/core/theme/app_theme.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
+import 'package:doormer/src/features/profile/presentation/atoms/gold_panel_atom.dart';
 import 'package:doormer/src/features/profile/presentation/molecules/friend_request_row_molecule.dart';
 import 'package:doormer/src/features/profile/presentation/molecules/friend_row_molecule.dart';
 import 'package:doormer/src/features/profile/presentation/organisms/level_card_organism.dart';
@@ -328,25 +329,38 @@ void main() {
           greaterThanOrEqualTo(tester.getRect(find.text('K7QM-2XPA')).bottom));
       expect(rect.bottom,
           lessThanOrEqualTo(tester.getRect(_button('Add a friend')).top));
+      expect(find.descendant(of: shown, matching: find.byType(GoldPanelAtom)),
+          findsOneWidget,
+          reason: 'on a phone the card has its own panel');
     });
 
     testWidgets(
-        'on a wide screen sits beside the picture, nickname and friend code, '
-        'the two splitting the line as the friend tiles below do',
-        (tester) async {
+        'on a wide screen shares one gold panel with the picture, nickname '
+        'and friend code: the name on the left, the level on the right with '
+        'more room', (tester) async {
       await _pump(tester, window: _wide, body: _kai(), levelCard: card);
 
-      final rect = tester.getRect(shown);
-      final header = tester.getRect(find.byType(ProfileHeaderOrganism));
-      final leftTile = tester.getRect(_tileAround(find.text('Alex')));
-      final rightTile = tester.getRect(_tileAround(find.text('Sam')));
-      expect(header.center.dy, moreOrLessEquals(rect.center.dy),
-          reason: 'on one row, the header centred against the card');
-      expect(header.left, moreOrLessEquals(leftTile.left));
-      expect(header.right, moreOrLessEquals(leftTile.right));
-      expect(rect.left, moreOrLessEquals(rightTile.left));
-      expect(rect.right, moreOrLessEquals(rightTile.right));
-      expect(rect.bottom,
+      final panel = find.byType(GoldPanelAtom);
+      final header = find.byType(ProfileHeaderOrganism);
+      expect(panel, findsOneWidget, reason: 'one panel, not one each');
+      expect(find.descendant(of: panel, matching: header), findsOneWidget);
+      expect(find.descendant(of: panel, matching: shown), findsOneWidget);
+      final panelRect = tester.getRect(panel);
+      final headerRect = tester.getRect(header);
+      final levelRect = tester.getRect(shown);
+      expect(headerRect.right, lessThan(levelRect.left));
+      expect(levelRect.width, greaterThan(headerRect.width));
+      expect(headerRect.center.dy, moreOrLessEquals(panelRect.center.dy),
+          reason: 'the header is centred in the panel');
+      expect(
+          panelRect.left,
+          moreOrLessEquals(
+              tester.getRect(_tileAround(find.text('Alex'))).left));
+      expect(
+          panelRect.right,
+          moreOrLessEquals(
+              tester.getRect(_tileAround(find.text('Sam'))).right));
+      expect(panelRect.bottom,
           lessThanOrEqualTo(tester.getRect(_button('Add a friend')).top));
     });
 
@@ -368,10 +382,11 @@ void main() {
     });
 
     testWidgets(
-        'on a wide screen, before a count brings the card, the header keeps '
-        'the whole line', (tester) async {
+        'on a wide screen, before a count brings the level, the header stands '
+        'alone, with no panel', (tester) async {
       await _pump(tester, window: _wide, body: _kai());
 
+      expect(find.byType(GoldPanelAtom), findsNothing);
       final header = tester.getRect(find.byType(ProfileHeaderOrganism));
       expect(
           header.right,
