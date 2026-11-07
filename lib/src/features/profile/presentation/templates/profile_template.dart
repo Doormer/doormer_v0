@@ -3,7 +3,6 @@ import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/glow_badge_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/surface_card_atom.dart';
 import 'package:doormer/src/shared/design/atomic/molecules/error_with_retry_molecule.dart';
-import 'package:doormer/src/shared/design/atomic/molecules/page_heading_molecule.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -15,8 +14,9 @@ import '../organisms/profile_header_organism.dart';
 import '../params/level_card_params.dart';
 import '../params/profile_body_params.dart';
 
-/// Profile, the home for friends: its heading, the student's level, whatever
-/// [body] holds, and Sign out, which works whatever state friends are in.
+/// Profile, the home for friends: the student's level, whatever [body] holds,
+/// and Sign out, which works whatever state friends are in. The nav bar
+/// already names the page, so it has no visible heading.
 ///
 /// On a wide screen, friends and requests sit two to a line, as tiles, so
 /// each one's actions stay beside their name. The header and the level share
@@ -60,24 +60,29 @@ class ProfileTemplate extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const PageHeadingMolecule(title: 'Profile'),
             Expanded(
-              child: ListView(
-                padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 24.h),
-                children: [
-                  ..._content(isWide: isWide),
-                  SizedBox(height: 24.h),
-                  _keepOwnWidthWhenWide(
-                    AppButtonAtom(
-                      label: 'Sign out',
-                      variant: AppButtonVariant.outlined,
-                      expand: !isWide,
-                      isLoading: isSigningOut,
-                      onPressed: isSigningOut ? null : onSignOut,
+              // On the web, the nav bar reads each tab out without saying
+              // which one is selected, so the page names itself.
+              child: Semantics(
+                container: true,
+                label: 'Profile',
+                child: ListView(
+                  padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 24.h),
+                  children: [
+                    ..._content(isWide: isWide),
+                    SizedBox(height: 24.h),
+                    _keepOwnWidthWhenWide(
+                      AppButtonAtom(
+                        label: 'Sign out',
+                        variant: AppButtonVariant.outlined,
+                        expand: !isWide,
+                        isLoading: isSigningOut,
+                        onPressed: isSigningOut ? null : onSignOut,
+                      ),
+                      isWide: isWide,
                     ),
-                    isWide: isWide,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],

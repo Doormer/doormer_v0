@@ -82,7 +82,6 @@ import 'package:doormer/src/features/questions/presentation/pages/saved_question
 import 'package:doormer/src/shared/design/atomic/atoms/app_button_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/cross_fade_indexed_stack_atom.dart';
 import 'package:doormer/src/shared/design/atomic/molecules/confirm_dialog_molecule.dart';
-import 'package:doormer/src/shared/design/atomic/molecules/page_heading_molecule.dart';
 import 'package:doormer/src/shared/design/atomic/organisms/navigation_bar_organism.dart';
 import 'package:doormer/src/shared/design/atomic/params/navigation_bar_params.dart';
 import 'package:doormer/src/shared/friends/bloc/waiting_friend_requests_bloc.dart';
@@ -522,7 +521,6 @@ void main() {
     await tester.pump();
 
     expect(find.byType(ProfilePage), findsOneWidget);
-    expect(find.widgetWithText(PageHeadingMolecule, 'Profile'), findsOneWidget);
     expect(litDestination(tester), AppDestination.profile.index);
     expect(tester.getRect(find.byType(NavigationBarOrganism)), bar);
   });

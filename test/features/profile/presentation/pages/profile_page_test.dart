@@ -229,7 +229,6 @@ void main() {
       'Blocked and Sign out', (tester) async {
     await pumpProfile(tester);
 
-    expect(find.text('Profile'), findsOneWidget);
     expect(find.text('Kai'), findsOneWidget);
     expect(find.text('K7QM-2XPA'), findsOneWidget);
     expect(find.text('Edit'), findsOneWidget);

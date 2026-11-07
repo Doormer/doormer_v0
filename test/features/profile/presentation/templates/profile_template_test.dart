@@ -133,6 +133,45 @@ int _linesOf(WidgetTester tester, Finder text) {
 void main() {
   setUpAll(_loadFaces);
 
+  // The nav bar already names the page, so Profile has no heading of its own.
+  testWidgets('opens with Kai at the top, clear of the status bar',
+      (tester) async {
+    tester.view.padding = const FakeViewPadding(top: 44);
+    await _pump(tester, window: _narrow, body: _kai());
+
+    final headerTop = tester.getRect(find.byType(ProfileHeaderOrganism)).top;
+    final textTops = tester
+        .renderObjectList<RenderParagraph>(find.byType(RichText))
+        .map((text) => text.localToGlobal(Offset.zero).dy);
+    expect(headerTop, greaterThanOrEqualTo(44),
+        reason: 'nothing hides under the status bar');
+    expect(textTops, everyElement(greaterThanOrEqualTo(headerTop)),
+        reason: 'no heading sits above Kai');
+  });
+
+  // On the web, the nav bar reads each tab out without saying which one is
+  // selected, so the page carries its name for a screen reader, whatever it
+  // shows.
+  for (final (state, body) in <(String, ProfileBodyParams)>[
+    ('loading', const ProfileLoadingParams()),
+    ('with friends', _kai()),
+  ]) {
+    testWidgets('names the page Profile for a screen reader, $state',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await _pump(tester, window: _narrow, body: body);
+
+      expect(
+        find.ancestor(
+          of: find.byType(ListView),
+          matching: find.bySemanticsLabel('Profile'),
+        ),
+        findsOneWidget,
+      );
+      semantics.dispose();
+    });
+  }
+
   group('on a wide screen', () {
     testWidgets('friends and requests sit two to a line, each in a tile',
         (tester) async {
