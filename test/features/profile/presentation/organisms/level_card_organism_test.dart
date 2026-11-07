@@ -94,7 +94,9 @@ void main() {
     expect((drawn.suns, drawn.moons, drawn.stars), (1, 1, 1));
     expect(drawn.size, 34);
     expect(find.textContaining('Level'), findsNothing);
-    expect(find.bySemanticsLabel('Level 21'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'^Level 21\n548 active days')),
+        findsOneWidget,
+        reason: 'screen readers hear the level first, then the days');
     final info = tester.getRect(find.byTooltip('How levels work'));
     final card = tester.getRect(find.byType(LevelCardOrganism));
     expect(info.left, greaterThan(tester.getRect(icons).right));
@@ -190,7 +192,8 @@ void main() {
           .opacity,
       0.35,
     );
-    expect(find.bySemanticsLabel('Level 0'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'^Level 0\n1 active day')),
+        findsOneWidget);
     expect(find.textContaining('Level'), findsNothing);
     expect(find.text('1 active day'), findsOneWidget);
     expect(find.text('4 days to your next star'), findsOneWidget);

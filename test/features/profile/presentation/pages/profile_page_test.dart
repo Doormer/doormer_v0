@@ -598,7 +598,7 @@ void main() {
     serviceLocator<LevelProgressBloc>().add(const LevelProgressUpdated(_at540));
     await tester.pumpAndSettle();
 
-    expect(find.bySemanticsLabel('Level 21'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'^Level 21\n')), findsOneWidget);
     expect(find.text('540 active days'), findsOneWidget);
     expect(find.text('32 days to your next star'), findsOneWidget);
     expect(tester.getRect(find.byType(LevelCardOrganism)).top,
@@ -620,7 +620,7 @@ void main() {
 
     await pumpProfile(tester);
 
-    expect(find.bySemanticsLabel('Level 0'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'^Level 0\n')), findsOneWidget);
     expect(find.text('1 active day'), findsOneWidget);
     expect(find.text('4 days to your next star'), findsOneWidget);
     expect(

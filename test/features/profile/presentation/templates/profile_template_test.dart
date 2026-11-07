@@ -391,12 +391,30 @@ void main() {
                 .didExceedMaxLines,
             isFalse,
             reason: 'the nickname is not cut short');
-        expect(
-            tester.getRect(shown).width,
-            greaterThanOrEqualTo(
-                tester.getRect(find.byType(GoldPanelAtom)).width * 0.4 - 1));
+        final inside = tester.getRect(find.byType(GoldPanelAtom)).width - 2 - 1;
+        expect(tester.getRect(shown).width, greaterThanOrEqualTo(inside * 0.4),
+            reason: 'inside the 1-wide edges, after the 1-wide divider');
       });
     }
+
+    testWidgets(
+        'in the wide panel, a name long enough to reach the 60% cap is cut '
+        'short, and the level keeps its 40%', (tester) async {
+      await _pump(tester,
+          window: _wide,
+          body: _kai(nickname: 'Maximiliana Rose'),
+          levelCard: card);
+
+      expect(
+          tester
+              .renderObject<RenderParagraph>(find.text('Maximiliana Rose'))
+              .didExceedMaxLines,
+          isTrue,
+          reason: 'at the cap');
+      final inside = tester.getRect(find.byType(GoldPanelAtom)).width - 2 - 1;
+      expect(tester.getRect(shown).width,
+          moreOrLessEquals(inside * 0.4, epsilon: 0.01));
+    });
 
     testWidgets(
         'on a wide screen, screen readers still hear the card on its own, '

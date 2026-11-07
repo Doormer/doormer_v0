@@ -178,8 +178,10 @@ class ProfileTemplate extends StatelessWidget {
                 builder: (context, panel) => Row(
                   children: [
                     ConstrainedBox(
+                      // 60% of the room left after the 1-wide divider, so
+                      // the level keeps its 40%.
                       constraints: BoxConstraints(
-                        maxWidth: panel.maxWidth * 0.6,
+                        maxWidth: (panel.maxWidth - 1) * 0.6,
                       ),
                       child: IntrinsicWidth(
                         child: Padding(

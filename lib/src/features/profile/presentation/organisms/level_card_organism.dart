@@ -10,10 +10,10 @@ import '../atoms/gold_panel_atom.dart';
 import '../molecules/level_progress_bar_molecule.dart';
 import '../params/level_card_params.dart';
 
-/// The student's own level, at the top of Profile: its golden icons and
-/// "Level 21", with ⓘ for How levels work at the right, then a bar of how
-/// far through this level they are, their active days, and the days to the
-/// next level's icon.
+/// The student's own level, at the top of Profile: its golden icons, with ⓘ
+/// for How levels work at the right, then a bar of how far through this
+/// level they are, their active days, and the days to the next level's icon.
+/// Screen readers hear the level, such as "Level 21", first.
 class LevelCardOrganism extends StatelessWidget {
   final LevelCardParams params;
 
@@ -38,7 +38,7 @@ class LevelCardOrganism extends StatelessWidget {
     );
   }
 
-  /// The glow, the icons and title with ⓘ, the bar and the line under it.
+  /// The glow, the icons with ⓘ, the bar and the line under it.
   Widget _level() {
     final level = params.level;
     final lineStyle = TextStyle(
@@ -89,30 +89,31 @@ class LevelCardOrganism extends StatelessWidget {
                     // leave ⓘ whole.
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: level.number > 0
-                            ? LevelIconsAtom(
-                                suns: level.suns,
-                                moons: level.moons,
-                                stars: level.stars,
-                                size: 34.w,
-                                semanticLabel: params.levelLabel,
-                              )
-                            // Level 0: a faded star where the first one will
-                            // be.
-                            : Semantics(
-                                container: true,
-                                label: params.levelLabel,
-                                child: Opacity(
+                      // Merged into the card's node, so screen readers hear
+                      // "Level 21" first, then the days.
+                      child: Semantics(
+                        label: params.levelLabel,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: level.number > 0
+                              ? LevelIconsAtom(
+                                  suns: level.suns,
+                                  moons: level.moons,
+                                  stars: level.stars,
+                                  size: 34.w,
+                                  semanticLabel: null,
+                                )
+                              // Level 0: a faded star where the first one
+                              // will be.
+                              : Opacity(
                                   opacity: 0.35,
                                   child: LevelIconAtom(
                                     icon: LevelIcon.star,
                                     size: 34.w,
                                   ),
                                 ),
-                              ),
+                        ),
                       ),
                     ),
                   ),
