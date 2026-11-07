@@ -122,184 +122,122 @@ You can also connect with us through feedback available on the site.
 
   static const privacyPolicy = Markdown(
     data: """
-# Privacy Policy
+This policy explains what information Doormer collects, why, and the choices you have. We've written it to be read by students and parents.
 
-**Type of website:** Recruiting website
+**Last updated:** 7 November 2026
 
-**Effective date:** Tuesday, 11/03/2025  
-Contact at: doormerapp@gmail.com
+## In short
 
-**Centre For Innovation And Entrepreneurship, 12 Grafton Road, Auckland Central, Auckland 1010**
+- We collect what we need to solve and save your questions, and to run friends and sharing.
+- Photos go to Microsoft Azure's AI service to be solved.
+- Friends see your nickname, picture and cards, and only the questions you share with them. No other student sees your email address.
+- We don't sell personal information.
+- Every ad request is tagged for child treatment, so ads aren't based on your browsing.
+- You can ask to see, correct or delete your information.
 
-**Purpose**  
-The purpose of this privacy policy (this "Privacy Policy") is to inform users of our Site of the following:
-- The personal data we will collect;
-- Use of collected data;
-- Who has access to the data collected;
-- The rights of Site users; and
-- The Site's cookie policy.
+## Who we are
 
-This Privacy Policy applies in addition to the terms and conditions of our Site.
+Doormer (“we”, “us”) runs the Doormer website and app. You can contact us at doormerapp@gmail.com.
 
-**Consent**  
-By using our Site, users agree that they consent to:
-- The conditions set out in this Privacy Policy; and  
-1. The collection, use, and retention of the data listed in this Privacy Policy.
+## Information we collect
 
-**Personal Data We Collect**  
-We only collect data that helps us achieve the purpose set out in this Privacy Policy. We will not collect any additional data beyond the data listed below without notifying you first.  
-If you choose not to provide us with the personal data listed below, or if we are unable to collect that data, we may not be able to provide you with certain services or information, or may not be able to carry out an activity you have requested.
+**Account details.** Your email address, and your password, which we store only in a protected form. If you sign in with Google, Google confirms your email address to us, and that's all we keep from Google.
 
-**Data Collected Automatically**  
-When you visit and use our Site, we may automatically collect and store the following information:
-- IP address;
-- Location;
-- Hardware and software details;
-- Clicked links; and
-- Content viewed.
+**Question photos and solutions.** The question photos you upload, and the solutions, steps, diagrams, topics and methods Doormer creates.
 
-**Data Collected in a Non-Automatic Way**  
-We may also collect the following data when you perform certain functions on our Site:
-- First and last name;
-- Age;
-- Date of birth;
-- Sex;
-- Email address;
-- Phone number;
-- Address;
-- Payment information;
-- Company Information;
-- Job Posting Data;
-- Account and Profile Data;
-- Usage Data;
-- Communication Data; and
-- RAFT  
-- Device and Technical Data.
+**Learning activity.** Questions you've solved and saved, answers you've opened, your quark balance and history, and your card collection.
 
-This data may be collected using the following methods:
-- Create an account;
-- Company create job;
-- Profile;  
-- Chat.
+**Daily limits.** How many photos you send and questions are solved each day, and how often you look up friend codes, so we can apply the app's limits.
 
-**How We Use Personal Data**  
-Data collected on our Site will only be used for the purposes specified in this Privacy Policy or indicated on the relevant pages of our Site.  
-We will not use your data beyond what we disclose in this Privacy Policy.
+**Friends.** If you set up friends, we keep:
 
-The data we collect automatically is used for the following purposes:
-- Analytics and Improvement;
-- Site Performance and Security;
-- Personalization;
-- Marketing; and 
-- Legal Compliance;
+- the nickname and picture you choose (a card you own, or the first letter of your nickname)
+- your friend code
+- when you agreed that friends may see your nickname, picture and cards
+- your friends, and when you became friends
+- the friend requests you send and receive, whether they came from a friend code or an invite link, and how they were answered
+- the students you've blocked
 
-The data we collect when the user performs certain functions may be used for the following purposes:
-- Account Management;
-- Job Posting & Matching;
-- Communication;
-- Analytics and Improvement;
-- Legal Compliance; and
-- Security & Monitoring.
+**Shared questions.** When you share a solved question, we keep which friends you shared it with and when.
 
-**Who We Share Personal Data With**
+**Reports.** When you report a student, we keep who made the report, who it's about, the reason, any note you add, their nickname at the time, and the shared question if the report is about one.
 
-**Employees**  
-This may disclose user data to any member of our organisation who reasonably needs access to user data to achieve the purposes set out in this policy.
+**Older sign-up form.** After you create an account, the app may show a form from Doormer's earlier job-matching service. It asks for your first name, last name, phone number, a CV and job preferences, such as roles and industries. Doormer doesn't need these to help with your questions. If you fill it in, we keep what you enter, including the CV. You can ask us to delete it.
 
-**Third Party**  
-We may share user data with the following third parties:
-- Service Providers;
-- Legal and Compliance Services; and
-- Partners for Integrations.
+**Messages and technical information.** Messages you send us. Our servers also collect technical information as they run, including IP address, browser and device type, pages requested, times and error logs.
 
-We may share the following user data with third parties:
-- Account and Profile Information;
-- Usage Data;
-- Communication Data;
-- Device and Technical Information;
-- Transaction Data; and
-- Cookies and Tracking Data.
+## How we use it
 
-We may share user data with third parties for the following purposes:
-- Platform Functionality;
-- Analytics and Performance Improvement;
-- Payment Processing;
-- Communication Services;
-- Legal and Compliance Obligations; and
-- Security and Fraud Prevention.
+We use this information to run your account and sign you in, read and solve your questions, keep them in Saved, keep quarks and cards working, run friends and sharing, apply daily limits, review reports and keep students safe, respond to messages, keep Doormer secure, fix problems, show the in-app ad that keeps Doormer free, and meet legal obligations.
 
-Third parties will not be able to access user data beyond what is reasonably necessary to achieve the given purpose.
+We don't sell personal information.
 
-**Other Disclosures**  
-We will not sell or share your data with other third parties, except in the following cases:
-- If the law requires it;
-- If it is required for any legal proceeding;
-- To prove or protect our legal rights; and
-- To buyers or potential buyers of this company in the event that we seek to sell the company.
+## What other students can see
 
-If you follow hyperlinks from our Site to another Site, please note that we are not responsible for and have no control over their privacy policies and practices.
+- **Students who enter your friend code or open your invite link** in the app see your nickname and picture, so they know they're adding the right person.
+- **Students you send a friend request to, or get one from,** see your nickname and picture.
+- **Your friends** see your nickname, picture and card collection.
+- **Friends you share a question with** see its photo and full solution, and that it came from you. They don't see who else it's shared with. Questions you don't share stay private.
 
-**How Long We Store Personal Data**  
-User data will be stored until the purpose the data was collected for has been achieved.  
-You will be notified if your data is kept for longer than this period.
+Sharing ends when you stop sharing a question, remove it from Saved, or remove or block the friend. A friend can also remove a question you shared from their list. When sharing ends, the friend can't open the question any more. Links to photos stop working after 24 hours, so a copied link doesn't keep working.
 
-**How We Protect Your Personal Data**
+Blocking is private: the student you block isn't told. Blocking ends your friendship and any sharing between you, and stops their friend requests reaching you.
 
-**Data Encryption**  
-We use encryption protocols (such as SSL/TLS for data in transit and AES for data at rest) to protect sensitive user data from unauthorized access during transmission and storage.
+The Doormer team reviews reports. The student you report isn't told. We may turn off friends for an account, for example after a report or when a parent asks.
 
-**Azure Hosting and Secure Infrastructure**  
-Our platform is hosted on Microsoft Azure, which provides industry-leading security features such as DDoS protection, firewalls, and data encryption to protect user data. Azure's secure infrastructure is regularly updated with the latest security patches and features.
+## How your photos are solved
 
-**Access Control**  
-We implement strict access controls to ensure that only authorized personnel and service providers can access user data. Access to data is granted based on the principle of least privilege and is regularly reviewed.
+Photos and question text are processed by Microsoft's Azure OpenAI Service to read and solve the question. They're stored in Microsoft Azure so you can see them again in Saved, and so friends you share them with can see them.
 
-**Regular Security Audits**  
-We perform regular security audits and vulnerability assessments to identify and address any potential risks or weaknesses in our platform's infrastructure.
+Under Microsoft's terms for this service, the data we send is not used to train OpenAI's models.
 
-**Multi-Factor Authentication (MFA)**  
-We encourage users to enable multi-factor authentication (MFA) for an added layer of security when accessing their accounts, especially for accounts with sensitive data.
+## Ads and cookies
 
-**Data Backup**  
-User data is regularly backed up using Azure's backup solutions to ensure that it can be restored in case of data loss or security incidents.
+Website pages, including home, guides, about and legal pages, show no ads and set no cookies. In the app, while a photo is being solved, you may see one ad from Google AdSense.
 
-**User Education**  
-We educate our users about best practices for online security, such as using strong passwords, protecting account login details, and being cautious of phishing attempts.
+Google's standard notice for sites that show its ads: third-party vendors, including Google, use cookies to serve ads based on a user's prior visits to a website or to other websites, and Google's use of advertising cookies enables it and its partners to serve ads based on visits to a website and/or other sites on the internet.
 
-**Third-Party Security**  
-We require our third-party service providers to comply with our security standards and ensure that they follow appropriate measures to protect user data.
+On Doormer, that kind of advertising is switched off. Doormer tags every ad request for child treatment, which turns off ads based on browsing history (personalised ads) and remarketing. Google may still use cookies or similar technology for things like limiting how often an ad is shown, reporting and preventing fraud.
 
-While we take all reasonable precautions to ensure that user data is secure and that users are protected, there always remains the risk of harm. The Internet as a whole can be insecure at times and therefore we are unable to guarantee the security of user data beyond what is reasonably practical.
+You can opt out of personalised advertising in Google's Ads Settings at adssettings.google.com, and opt out of some third-party vendors' cookies for personalised advertising at aboutads.info. You can read how Google uses information from sites or apps that use its services at policies.google.com/technologies/partner-sites.
 
-**Children**  
-We do not knowingly collect or use personal data from children under 16 years of age. If we learn that we have collected personal data from a child under 16 years of age, the personal data will be deleted as soon as possible. If a child under 16 years of age has provided us with personal data, their parent or guardian may contact our privacy officer.
+Doormer's own cookies are two sign-in cookies that keep you signed in. One lasts until you close your browser, the other up to 30 days. They're needed for the app to work. If you open a friend's invite link before signing in, the app keeps its invite code in your browser for up to 7 days, so the invite can open once you sign in. Doormer uses no analytics or advertising trackers of its own.
 
-**How to Access, Modify, Delete, or Challenge the Data Collected**  
-If you would like to know if we have collected your personal data, how we have used your personal data, if we have disclosed your personal data and to whom we disclosed your personal data, or if you would like your data to be deleted or modified in any way, please contact our privacy officer here:  
+## Who we share it with
 
-**Raymond Chan**  
-doormerapp@gmail.com  
-Centre For Innovation And Entrepreneurship, 12 Grafton Road, Auckland Central, Auckland 1010
+We share information with service providers who run Doormer for us: Microsoft for Azure hosting, storage and the AI service, and Google for Google sign-in and ads in the app.
 
-**How to Opt-Out of Data Collection, Use or Disclosure**  
-In addition to the method(s) described in the "How to Access, Modify, Delete, or Challenge the Data Collected" section, we provide the following specific opt-out methods for the forms of collection, use, or disclosure of your personal data specified below:
-1. **Targeted Advertising:** You can opt-out by disabling cookies or adjusting tracking settings in your browser preferences.
-2. **Location Tracking:** You can opt-out by disabling location services on your devices or within the platform settings.
+We may disclose information if the law requires it, to protect people's safety, or as part of a sale or reorganisation of Doormer, with this policy still applying. We don't sell personal information.
 
-**Cookie Policy**  
-A cookie is a small file, stored on a user's hard drive by a website. Its purpose is to collect data relating to the user's browsing habits. You can choose to be notified each time a cookie is transmitted. You can also choose to disable cookies entirely in your internet browser, but this may decrease the quality of your user experience.  
-We use the following types of cookies on our site:
-- **Functional cookies:** Used to remember the selections you make on our Site so that your selections are saved for your next visits.
-- **Analytical cookies:** Allow us to improve the design and functionality of our Site by collecting data on how you access our Site, for example data on the content you access, how long you stay on our Site, etc.
-- **Targeting cookies:** Collect data on how you use the Site and your preferences. This allows us to personalise the information you see on our site for you.
+## Where it's stored and how we protect it
 
-**Modifications**  
-This Privacy Policy may be amended from time to time in order to maintain compliance with the law and to reflect any changes to our data collection process. When we amend this Privacy Policy we will update the "Effective Date" at the top of this Privacy Policy. We recommend that our users periodically review our Privacy Policy to ensure that they are notified of any updates. If necessary, we may notify users by email of changes to this Privacy Policy.
+Information is stored with Microsoft Azure, which may be in data centres outside New Zealand and Australia. Connections use HTTPS. Azure encrypts stored data by default. Access is limited to people who need it.
 
-**Contact Information**  
-If you have any questions, concerns or complaints, you can contact our privacy officer, Raymond Chan, at:  
-doormerapp@gmail.com  
-Centre For Innovation And Entrepreneurship, 12 Grafton Road, Auckland Central, Auckland 1010
+No system is completely secure. Tell us if you think your account is at risk.
+
+## How long we keep it
+
+We keep information while your account is open and as long as needed for the purposes above. When sharing ends, we delete the record of that share. When you ask us to delete your account, we delete or de-identify your information unless the law requires us to keep it.
+
+## Students and parents
+
+Doormer is for learners of all ages. If you're under 16, you need a parent's or guardian's OK to use Doormer. Parents and guardians can contact us to see, correct or delete their child's information, or to have friends turned off for their child's account.
+
+## Your choices and rights
+
+In the app, you can change your nickname and picture, reset your friend code, stop sharing a question, and remove, block or unblock other students at any time.
+
+You can ask to access or correct your personal information under the New Zealand Privacy Act 2020 or the Australian Privacy Act 1988. You can also ask us to delete your account. Email doormerapp@gmail.com.
+
+If you're unhappy with our response, you can contact New Zealand's Office of the Privacy Commissioner (privacy.org.nz) or the Office of the Australian Information Commissioner (oaic.gov.au).
+
+## Changes to this policy
+
+We'll update the date above when this policy changes. For significant changes, we'll tell you in the app or by email.
+
+## Contact us
+
+Email doormerapp@gmail.com. Please never send us your password.
 """,
     selectable: true,
   );
