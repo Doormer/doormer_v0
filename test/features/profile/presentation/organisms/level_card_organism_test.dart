@@ -4,6 +4,7 @@ import 'package:doormer/src/features/profile/presentation/atoms/gold_panel_atom.
 import 'package:doormer/src/features/profile/presentation/molecules/level_progress_bar_molecule.dart';
 import 'package:doormer/src/features/profile/presentation/organisms/level_card_organism.dart';
 import 'package:doormer/src/features/profile/presentation/params/level_card_params.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/level_icon_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/level_icons_atom.dart';
 import 'package:doormer/src/shared/levels/entity/level.dart';
 import 'package:doormer/src/shared/levels/entity/level_icon.dart';
@@ -62,7 +63,7 @@ Future<void> _pump(
 /// Level 21 at 548 active days, 24 from a star, unless told otherwise.
 LevelCardParams _card({
   Level level = _level21,
-  String title = 'Level 21',
+  String levelLabel = 'Level 21',
   double barFill = 23 / 47,
   String activeDaysLabel = '548 active days',
   String daysToGoLabel = '24 days',
@@ -70,7 +71,7 @@ LevelCardParams _card({
 }) =>
     LevelCardParams(
       level: level,
-      title: title,
+      levelLabel: levelLabel,
       barFill: barFill,
       nextLevelIcon: LevelIcon.star,
       activeDaysLabel: activeDaysLabel,
@@ -82,26 +83,29 @@ LevelCardParams _card({
 void main() {
   setUpAll(_loadFaces);
 
-  testWidgets('shows the icons at 30, then the level, with ⓘ at the right',
-      (tester) async {
+  testWidgets(
+      'shows the icons at 34 with ⓘ at the right, and no level number: '
+      'screen readers hear it', (tester) async {
+    final semantics = tester.ensureSemantics();
     await _pump(tester, _card());
 
     final icons = find.byType(LevelIconsAtom);
     final drawn = tester.widget<LevelIconsAtom>(icons);
     expect((drawn.suns, drawn.moons, drawn.stars), (1, 1, 1));
-    expect(drawn.size, 30);
-    final title = tester.getRect(find.text('Level 21'));
+    expect(drawn.size, 34);
+    expect(find.textContaining('Level'), findsNothing);
+    expect(find.bySemanticsLabel('Level 21'), findsOneWidget);
     final info = tester.getRect(find.byTooltip('How levels work'));
     final card = tester.getRect(find.byType(LevelCardOrganism));
-    expect(tester.getRect(icons).right, lessThanOrEqualTo(title.left));
-    expect(info.left, greaterThanOrEqualTo(title.right));
+    expect(info.left, greaterThan(tester.getRect(icons).right));
     expect(card.right - info.right, lessThanOrEqualTo(8),
         reason: 'at the right of the card');
+    semantics.dispose();
   });
 
   testWidgets(
       "shows how far through the level the student is, and the next level's "
-      'icon, under the title', (tester) async {
+      'icon, under the icons', (tester) async {
     await _pump(tester, _card());
 
     final bar = find.byType(LevelProgressBarMolecule);
@@ -109,7 +113,7 @@ void main() {
     expect(tester.widget<LevelProgressBarMolecule>(bar).nextLevelIcon,
         LevelIcon.star);
     expect(tester.getRect(bar).top,
-        greaterThan(tester.getRect(find.text('Level 21')).bottom));
+        greaterThan(tester.getRect(find.byType(LevelIconsAtom)).bottom));
   });
 
   testWidgets(
@@ -161,13 +165,14 @@ void main() {
   }
 
   testWidgets(
-      'at level 0 shows "Level 0" with no icons, and the bar filling toward '
-      'a star', (tester) async {
+      'at level 0 shows a faded star where the first one will be, heard as '
+      '"Level 0", and the bar filling toward it', (tester) async {
+    final semantics = tester.ensureSemantics();
     await _pump(
       tester,
       _card(
         level: const Level(number: 0, suns: 0, moons: 0, stars: 0),
-        title: 'Level 0',
+        levelLabel: 'Level 0',
         barFill: 0.2,
         activeDaysLabel: '1 active day',
         daysToGoLabel: '4 days',
@@ -175,7 +180,18 @@ void main() {
     );
 
     expect(find.byType(LevelIconsAtom), findsNothing);
-    expect(find.text('Level 0'), findsOneWidget);
+    final first = find.byType(LevelIconAtom).first;
+    final star = tester.widget<LevelIconAtom>(first);
+    expect((star.icon, star.size), (LevelIcon.star, 34.0));
+    expect(
+      tester
+          .widget<Opacity>(
+              find.ancestor(of: first, matching: find.byType(Opacity)).first)
+          .opacity,
+      0.35,
+    );
+    expect(find.bySemanticsLabel('Level 0'), findsOneWidget);
+    expect(find.textContaining('Level'), findsNothing);
     expect(find.text('1 active day'), findsOneWidget);
     expect(find.text('4 days to your next star'), findsOneWidget);
     expect(
@@ -185,46 +201,26 @@ void main() {
           .fill,
       0.2,
     );
+    semantics.dispose();
   });
 
-  testWidgets(
-      'a long row of icons shrinks to fit, so the level and ⓘ stay whole',
+  testWidgets('a long row of icons shrinks to fit, so ⓘ stays whole',
       (tester) async {
     // Level 47: two suns, three moons and three stars.
     await _pump(
       tester,
       _card(
         level: const Level(number: 47, suns: 2, moons: 3, stars: 3),
-        title: 'Level 47',
+        levelLabel: 'Level 47',
       ),
     );
 
     final icons = tester.getRect(find.byType(LevelIconsAtom));
-    final title = tester.getRect(find.text('Level 47'));
     final info = tester.getRect(find.byTooltip('How levels work'));
     final card = tester.getRect(find.byType(LevelCardOrganism));
-    expect(icons.width, lessThan(8 * 30), reason: 'drawn smaller than 30');
-    expect(
-        title.width,
-        moreOrLessEquals(
-            tester.renderObject<RenderBox>(find.text('Level 47')).size.width),
-        reason: 'the title keeps its size: the icons give way');
-    expect(icons.right, lessThanOrEqualTo(title.left));
-    expect(title.right, lessThanOrEqualTo(info.left));
+    expect(icons.width, lessThan(8 * 34), reason: 'drawn smaller than 34');
+    expect(icons.right, lessThanOrEqualTo(info.left));
     expect(info.right, lessThanOrEqualTo(card.right));
-  });
-
-  testWidgets(
-      'in a narrow card with big text, as half of a wide Profile can be, the '
-      'title shrinks to fit rather than running under ⓘ', (tester) async {
-    tester.platformDispatcher.textScaleFactorTestValue = 2;
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    await _pump(tester, _card(), width: 200);
-
-    expect(tester.takeException(), isNull);
-    final title = tester.getRect(find.text('Level 21'));
-    final info = tester.getRect(find.byTooltip('How levels work'));
-    expect(title.right, lessThanOrEqualTo(info.left));
   });
 
   testWidgets(
@@ -258,7 +254,7 @@ void main() {
 
     await _pump(tester, _card(), framed: false);
     expect(find.byType(GoldPanelAtom), findsNothing);
-    expect(find.text('Level 21'), findsOneWidget);
+    expect(find.byType(LevelIconsAtom), findsOneWidget);
   });
 
   testWidgets('ⓘ opens How levels work', (tester) async {

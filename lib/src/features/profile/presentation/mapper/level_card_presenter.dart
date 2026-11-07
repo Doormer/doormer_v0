@@ -19,7 +19,7 @@ abstract final class LevelCardPresenter {
     final nextIcon = LevelLabels.iconName(progress.nextLevelIcon);
     return LevelCardParams(
       level: progress.level,
-      title: LevelLabels.levelOf(progress.level),
+      levelLabel: LevelLabels.levelOf(progress.level),
       barFill: barFillOf(progress),
       nextLevelIcon: progress.nextLevelIcon,
       activeDaysLabel: activeDaysLabelOf(progress.activeDays),

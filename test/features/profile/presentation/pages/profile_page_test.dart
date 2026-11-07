@@ -590,6 +590,7 @@ void main() {
   testWidgets(
       "shows the student's level under their friend code once a count of "
       'the day brings it', (tester) async {
+    final semantics = tester.ensureSemantics();
     await pumpProfile(tester);
     expect(find.byType(LevelCardOrganism), findsNothing,
         reason: 'no count of the day yet');
@@ -597,11 +598,12 @@ void main() {
     serviceLocator<LevelProgressBloc>().add(const LevelProgressUpdated(_at540));
     await tester.pumpAndSettle();
 
-    expect(find.text('Level 21'), findsOneWidget);
+    expect(find.bySemanticsLabel('Level 21'), findsOneWidget);
     expect(find.text('540 active days'), findsOneWidget);
     expect(find.text('32 days to your next star'), findsOneWidget);
     expect(tester.getRect(find.byType(LevelCardOrganism)).top,
         greaterThanOrEqualTo(tester.getRect(find.text('K7QM-2XPA')).bottom));
+    semantics.dispose();
   });
 
   testWidgets('before setup, the level sits above the friends intro',
@@ -614,10 +616,11 @@ void main() {
       waitingRequests: 0,
     );
     serviceLocator<LevelProgressBloc>().add(const LevelProgressUpdated(_at1));
+    final semantics = tester.ensureSemantics();
 
     await pumpProfile(tester);
 
-    expect(find.text('Level 0'), findsOneWidget);
+    expect(find.bySemanticsLabel('Level 0'), findsOneWidget);
     expect(find.text('1 active day'), findsOneWidget);
     expect(find.text('4 days to your next star'), findsOneWidget);
     expect(
@@ -627,6 +630,7 @@ void main() {
               "Add friends with a friend code and see each other's cards."))
           .top),
     );
+    semantics.dispose();
   });
 
   testWidgets('ⓘ opens How levels work, and Got it closes it', (tester) async {

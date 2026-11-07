@@ -4,11 +4,12 @@ import 'package:flutter/foundation.dart';
 
 /// The student's own level, on Profile's level card.
 class LevelCardParams {
-  /// Drawn as icons before [title]. Level 0 has none.
+  /// Drawn as icons. Level 0 has none, and shows a faded star instead.
   final Level level;
 
-  /// Such as `Level 21`.
-  final String title;
+  /// What screen readers hear for the icons, such as `Level 21`. It isn't
+  /// shown: the icons say it, and the days to the next star hint at them.
+  final String levelLabel;
 
   /// How much of this level's days are done, from 0 to 1: how full the bar
   /// is.
@@ -32,7 +33,7 @@ class LevelCardParams {
 
   const LevelCardParams({
     required this.level,
-    required this.title,
+    required this.levelLabel,
     required this.barFill,
     required this.nextLevelIcon,
     required this.activeDaysLabel,

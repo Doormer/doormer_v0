@@ -309,7 +309,7 @@ void main() {
   group('the level card', () {
     final card = LevelCardParams(
       level: const Level(number: 21, suns: 1, moons: 1, stars: 1),
-      title: 'Level 21',
+      levelLabel: 'Level 21',
       barFill: 23 / 47,
       nextLevelIcon: LevelIcon.star,
       activeDaysLabel: '548 active days',

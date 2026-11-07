@@ -1,6 +1,8 @@
 import 'package:doormer/src/core/theme/css_gradients.dart';
 import 'package:doormer/src/core/theme/quest_palette.dart';
+import 'package:doormer/src/shared/design/atomic/atoms/level_icon_atom.dart';
 import 'package:doormer/src/shared/design/atomic/atoms/level_icons_atom.dart';
+import 'package:doormer/src/shared/levels/entity/level_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -68,12 +70,12 @@ class LevelCardOrganism extends StatelessWidget {
         ),
         Padding(
           // The ⓘ button is 48 square with its 20 icon in the middle, so the
-          // top row is 9 taller than the icons above and below them, and the
+          // top row is 7 taller than the icons above and below them, and the
           // icon sits 14 in from the button's right. These paddings, and the
           // bar's, give that back: the content sits 16 in from the top and
           // sides and 14 from the bottom, as in the mockup, and the bar 14
           // under the icons.
-          padding: EdgeInsets.fromLTRB(16.w, 7.h, 2.w, 14.h),
+          padding: EdgeInsets.fromLTRB(16.w, 9.h, 2.w, 14.h),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -81,57 +83,37 @@ class LevelCardOrganism extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    // The icons give way first: a long row of them shrinks
-                    // to leave the title whole. Only when the title alone
-                    // can't fit, in a narrow card with big text, does it
-                    // shrink too, rather than run under ⓘ.
-                    child: LayoutBuilder(
-                      builder: (context, box) {
-                        final hasIcons = level.number > 0;
-                        final gap = hasIcons ? 12.w : 0.0;
-                        return Row(
-                          children: [
-                            if (hasIcons) ...[
-                              // "Level 21" says it, so screen readers skip
-                              // the icons.
-                              Flexible(
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  alignment: Alignment.centerLeft,
-                                  child: LevelIconsAtom(
-                                    suns: level.suns,
-                                    moons: level.moons,
-                                    stars: level.stars,
-                                    size: 30.w,
-                                    semanticLabel: null,
+                    // The icons, with no "Level 21" beside them: the days to
+                    // the next star under the bar hint at what they mean,
+                    // and screen readers hear it. A long row shrinks to
+                    // leave ⓘ whole.
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: level.number > 0
+                            ? LevelIconsAtom(
+                                suns: level.suns,
+                                moons: level.moons,
+                                stars: level.stars,
+                                size: 34.w,
+                                semanticLabel: params.levelLabel,
+                              )
+                            // Level 0: a faded star where the first one will
+                            // be.
+                            : Semantics(
+                                container: true,
+                                label: params.levelLabel,
+                                child: Opacity(
+                                  opacity: 0.35,
+                                  child: LevelIconAtom(
+                                    icon: LevelIcon.star,
+                                    size: 34.w,
                                   ),
                                 ),
                               ),
-                              SizedBox(width: gap),
-                            ],
-                            ConstrainedBox(
-                              constraints: BoxConstraints(
-                                maxWidth:
-                                    box.maxWidth > gap ? box.maxWidth - gap : 0,
-                              ),
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  params.title,
-                                  maxLines: 1,
-                                  style: TextStyle(
-                                    fontFamily: kDisplayFont,
-                                    fontSize: 22.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: QuestPalette.levelCream,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
+                      ),
                     ),
                   ),
                   IconButton(
@@ -152,7 +134,7 @@ class LevelCardOrganism extends StatelessWidget {
                 ],
               ),
               Padding(
-                padding: EdgeInsets.only(top: 5.h, right: 14.w),
+                padding: EdgeInsets.only(top: 7.h, right: 14.w),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

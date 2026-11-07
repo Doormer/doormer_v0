@@ -84,7 +84,7 @@ void main() {
     )!;
     card.onExplain();
 
-    expect(card.title, 'Level 21');
+    expect(card.levelLabel, 'Level 21');
     expect(card.level, _level21);
     expect(card.barFill, moreOrLessEquals(23 / 47));
     expect(card.nextLevelIcon, LevelIcon.star);
@@ -116,7 +116,7 @@ void main() {
       onExplain: () {},
     )!;
 
-    expect(card.title, 'Level 0');
+    expect(card.levelLabel, 'Level 0');
     expect(card.level, _level0);
   });
 
