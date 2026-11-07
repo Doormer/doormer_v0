@@ -33,7 +33,7 @@ class AuthRepositoryImpl implements AuthRepository {
           error: e, stackTrace: stackTrace);
       throw DatabaseFailure('Session could not be saved. Please try again.');
     }
-    return User(userRegistrationStatus: 0);
+    return const User();
   }
 
   @override
@@ -51,7 +51,7 @@ class AuthRepositoryImpl implements AuthRepository {
           error: e, stackTrace: stackTrace);
       throw DatabaseFailure('Session could not be saved. Please try again.');
     }
-    return loginResponse.user!.toEntity();
+    return const User();
   }
 
   @override
@@ -80,6 +80,6 @@ class AuthRepositoryImpl implements AuthRepository {
           error: e, stackTrace: stackTrace);
       throw DatabaseFailure('Session could not be saved. Please try again.');
     }
-    return loginResponse.user?.toEntity() ?? User(userRegistrationStatus: 0);
+    return const User();
   }
 }

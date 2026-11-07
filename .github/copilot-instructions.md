@@ -64,7 +64,7 @@ lib/src/
 │   ├── domain/        # entity/, failure/ (the feature's own Failure types), repository/ (abstract), usecase/
 │   ├── presentation/  # bloc/, pages/, widget/
 │   └── utils/         # feature-level helpers and validators
-└── shared/     # cross-feature code: user/ (User entity + model), sessions/ (GlobalSessionBloc), widget/
+└── shared/     # cross-feature code: user/ (User entity), sessions/ (GlobalSessionBloc), widget/
 ```
 
 ### Layer rules — enforce these

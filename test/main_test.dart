@@ -71,8 +71,7 @@ void main() {
     await tester.pumpWidget(const MyApp());
     expect(waiting.state.count, 3);
 
-    serviceLocator<GlobalSessionBloc>()
-        .add(SessionStarted(User(userRegistrationStatus: 1)));
+    serviceLocator<GlobalSessionBloc>().add(const SessionStarted(User()));
     await tester.pump();
 
     expect(waiting.state.count, 0);
@@ -87,8 +86,7 @@ void main() {
     await tester.pumpWidget(const MyApp());
     expect(levels.state.progress, _at32);
 
-    serviceLocator<GlobalSessionBloc>()
-        .add(SessionStarted(User(userRegistrationStatus: 1)));
+    serviceLocator<GlobalSessionBloc>().add(const SessionStarted(User()));
     await tester.pump();
 
     expect(levels.state.progress, isNull);
@@ -104,8 +102,7 @@ void main() {
       ..add(const ActiveDayCountRequested());
     await tester.pumpWidget(const MyApp());
 
-    serviceLocator<GlobalSessionBloc>()
-        .add(SessionStarted(User(userRegistrationStatus: 1)));
+    serviceLocator<GlobalSessionBloc>().add(const SessionStarted(User()));
     await tester.pump();
     lastStudentsAnswer.complete();
     await tester.pump();

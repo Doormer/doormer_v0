@@ -58,7 +58,6 @@ AuthRemoteDataSource _dataSource(_FakeAdapter adapter) => AuthRemoteDataSource(
 const _signedIn = {
   'access_token': 'access',
   'refresh_token': 'refresh',
-  'user_info': {'user_registration_status': 0},
 };
 
 void main() {

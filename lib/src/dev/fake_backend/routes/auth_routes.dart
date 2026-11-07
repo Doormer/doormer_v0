@@ -39,7 +39,5 @@ class AuthRoutes {
   FakeResponse _signedIn() => FakeResponse.ok({
         'access_token': _state.newToken('access'),
         'refresh_token': _state.newToken('refresh'),
-        // What the API sends for a student. The app no longer acts on it.
-        'user_info': {'user_registration_status': 0},
       });
 }

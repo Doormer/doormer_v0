@@ -50,11 +50,13 @@ class GlobalSessionBloc extends Bloc<GlobalSessionEvent, GlobalSessionState> {
     }
   }
 
-  /// Handles session start by emitting SessionActiveState and logging.
+  /// Every sign-in passes through loading, so listeners hear each one, even
+  /// when the same student signs in again: sign-out doesn't end the session.
   Future<void> _onSessionStarted(
-    SessionStarted event, // Fix the event type here
+    SessionStarted event,
     Emitter<GlobalSessionState> emit,
   ) async {
+    emit(SessionLoadingState());
     emit(SessionActiveState(event.user));
     AppLogger.info('Session Started');
   }

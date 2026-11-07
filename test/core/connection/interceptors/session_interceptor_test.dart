@@ -119,8 +119,8 @@ void main() {
 
     expect(response.statusCode, 200);
     expect(session.refreshCalls, 1);
-    expect(server.authorizations,
-        ['Bearer expired-access', 'Bearer new-access']);
+    expect(
+        server.authorizations, ['Bearer expired-access', 'Bearer new-access']);
     expect(session.logoutCalls, 0);
   });
 
@@ -184,8 +184,8 @@ void main() {
     final session = _FakeSessionService();
     final client = _client(session, _AcceptsNewAccessToken());
 
-    final response = await client.dio.post('/v1/candidate/register',
-        data: FormData.fromMap({'first_name': 'Ana'}));
+    final response = await client.dio.post('/v1/friends/profile/save',
+        data: FormData.fromMap({'nickname': 'Ana'}));
 
     expect(response.statusCode, 200);
     expect(session.refreshCalls, 1);
